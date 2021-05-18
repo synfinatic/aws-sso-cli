@@ -19,36 +19,29 @@ package main
  */
 
 import (
-	"fmt"
+// "fmt"
 
-	//	log "github.com/sirupsen/logrus"
-	"github.com/synfinatic/onelogin-aws-role/utils"
+//	log "github.com/sirupsen/logrus"
+//  "github.com/synfinatic/onelogin-aws-role/utils"
 )
-
-type ListCmd struct {
-	Fields     []string `kong:"optional,arg,enum='AccountId,AccountName,Arn,Expires,Profile,Region',help='Fields to display',default=${defaultListFields}'"`
-	ListFields bool     `kong:"optional,short='f',help='List available fields'"`
-}
 
 // Fields match those in FlatConfig.  Used when user doesn't have the `fields` in
 // their YAML config file or provided list on the CLI
 var defaultListFields = []string{
+	"AccountId",
 	"AccountName",
+	"Role",
 	"Profile",
-	"Arn",
 	"Region",
 	"Expires",
 }
 
-func (cc *ListCmd) Run(ctx *RunContext) error {
-	cfgList := ctx.Config.GetSSOConfigList()
+type ListCmd struct {
+	Fields     []string `kong:"optional,arg,enum='AccountId,AccountName,Arn,Role,Expires,Profile,Region,SSORegion,StartUrl',help='Fields to display',default='${defaultListFields}',env=AWS_SSO_FIELDS"`
+	ListFields bool     `kong:"optional,short='f',help='List available fields'"`
+}
 
-	ts := []utils.TableStruct{}
-	for _, x := range cfgList {
-		ts = append(ts, x)
-	}
-	fields := []string{"Name", "StartUrl", "SSORegion", "Regon"}
-	utils.GenerateTable(ts, fields)
-	fmt.Printf("\n")
+// what should this actually do?
+func (cc *ListCmd) Run(ctx *RunContext) error {
 	return nil
 }
