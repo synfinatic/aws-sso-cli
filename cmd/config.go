@@ -25,7 +25,8 @@ type AWSProfile struct {
 	AccountId string `koanf:"account_id"` // AWS AccountId
 }
 
-type ConfigFile struct {
+type SSOConfig struct {
+	Region      string `koanf:"region"`
 	SSORegion   string `koanf:"sso_region"`
 	StartUrl    string `koanf:"start_url"`
 	SecureStore string `koanf:"secure_store"`

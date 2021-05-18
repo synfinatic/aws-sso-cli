@@ -22,20 +22,42 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path"
 
+	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 )
 
+// Define the interface for storing our AWS SSO data
+type SecureStorage interface {
+	SaveRegisterClientData(string, RegisterClientData) error
+	GetRegisterClientData(string, *RegisterClientData) error
+	DeleteRegisterClientData(string) error
+	/*
+		SaveStartDeviceAuthData(string, StartDeviceAuthData) error
+		GetStartDeviceAuthData(string, *StartDeviceAuthData) error
+		DeleteStartDeviceAuthData(string) error
+	*/
+	SaveCreateTokenResponse(string, CreateTokenResponse) error
+	GetCreateTokenResponse(string, *CreateTokenResponse) error
+	DeleteCreateTokenResponse(string) error
+}
+
 // Impliments SecureStorage insecurely
 type JsonStore struct {
-	Filename        string
-	registerClient  map[string]RegisterClientData  `json:"RegisterClient"`
-	startDeviceAuth map[string]StartDeviceAuthData `json:"StartDeviceAuth"`
+	Filename            string
+	RegisterClient      map[string]RegisterClientData  `json:"RegisterClient,omitempty"`
+	StartDeviceAuth     map[string]StartDeviceAuthData `json:"StartDeviceAuth,omitempty"`
+	CreateTokenResponse map[string]CreateTokenResponse `json:"CreateTokenResponse,omitempty"`
 }
 
 func OpenJsonStore(fileName string) (*JsonStore, error) {
 	cache := JsonStore{
-		Filename: fileName,
+		Filename:            fileName,
+		RegisterClient:      map[string]RegisterClientData{},
+		StartDeviceAuth:     map[string]StartDeviceAuthData{},
+		CreateTokenResponse: map[string]CreateTokenResponse{},
 	}
 
 	cacheBytes, err := ioutil.ReadFile(fileName)
@@ -48,10 +70,36 @@ func OpenJsonStore(fileName string) (*JsonStore, error) {
 	return &cache, nil
 }
 
+// ensures the given directory exists for the filename
+func ensureDirExists(filename string) error {
+	storeDir := path.Dir(filename)
+	f, err := os.Open(storeDir)
+	if err != nil {
+		err = os.MkdirAll(storeDir, 0700)
+		if err != nil {
+			return fmt.Errorf("Unable to create %s: %s", storeDir, err.Error())
+		}
+	}
+	info, err := f.Stat()
+	if err != nil {
+		return fmt.Errorf("Unable to stat %s: %s", storeDir, err.Error())
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("%s exists and is not a directory!", storeDir)
+	}
+	return nil
+}
+
+// save the cache file, creating the directory if necessary
 func (jc *JsonStore) saveCache() error {
+	log.Debugf("Saving JSON Cache")
 	jbytes, err := json.Marshal(jc)
 	if err != nil {
 		log.WithError(err).Errorf("Unable to marshal json")
+		return err
+	}
+	err = ensureDirExists(jc.Filename)
+	if err != nil {
 		return err
 	}
 
@@ -60,13 +108,14 @@ func (jc *JsonStore) saveCache() error {
 
 // RegisterClientData
 func (jc *JsonStore) SaveRegisterClientData(key string, client RegisterClientData) error {
-	jc.registerClient[key] = client
+	log.Debugf("saving RegisterClient: %s", spew.Sdump(client))
+	jc.RegisterClient[key] = client
 	return jc.saveCache()
 }
 
 func (jc *JsonStore) GetRegisterClientData(key string, client *RegisterClientData) error {
 	var ok bool
-	*client, ok = jc.registerClient[key]
+	*client, ok = jc.RegisterClient[key]
 	if !ok {
 		return fmt.Errorf("No RegisterClientData for %s", key)
 	}
@@ -74,19 +123,20 @@ func (jc *JsonStore) GetRegisterClientData(key string, client *RegisterClientDat
 }
 
 func (jc *JsonStore) DeleteRegisterClientData(key string) error {
-	jc.registerClient[key] = RegisterClientData{}
+	jc.RegisterClient[key] = RegisterClientData{}
 	return jc.saveCache()
 }
 
 // StartDeviceAuthData
 func (jc *JsonStore) SaveStartDeviceAuthData(key string, data StartDeviceAuthData) error {
-	jc.startDeviceAuth[key] = data
+	log.Debugf("saving StartDeviceAuth: %s", spew.Sdump(data))
+	jc.StartDeviceAuth[key] = data
 	return jc.saveCache()
 }
 
 func (jc *JsonStore) GetStartDeviceAuthData(key string, data *StartDeviceAuthData) error {
 	var ok bool
-	*data, ok = jc.startDeviceAuth[key]
+	*data, ok = jc.StartDeviceAuth[key]
 	if !ok {
 		return fmt.Errorf("No StartDeviceAuthData for %s", key)
 	}
@@ -94,6 +144,27 @@ func (jc *JsonStore) GetStartDeviceAuthData(key string, data *StartDeviceAuthDat
 }
 
 func (jc *JsonStore) DeleteStartDeviceAuthData(key string) error {
-	jc.startDeviceAuth[key] = StartDeviceAuthData{}
+	jc.StartDeviceAuth[key] = StartDeviceAuthData{}
+	return jc.saveCache()
+}
+
+// CreateTokenResponse
+func (jc *JsonStore) SaveCreateTokenResponse(key string, token CreateTokenResponse) error {
+	log.Debugf("saving CreateTokenResponse: %s", spew.Sdump(token))
+	jc.CreateTokenResponse[key] = token
+	return jc.saveCache()
+}
+
+func (jc *JsonStore) GetCreateTokenResponse(key string, token *CreateTokenResponse) error {
+	var ok bool
+	*token, ok = jc.CreateTokenResponse[key]
+	if !ok {
+		return fmt.Errorf("No CreateTokenResponse for %s", key)
+	}
+	return nil
+}
+
+func (jc *JsonStore) DeleteCreateTokenResponse(key string) error {
+	jc.CreateTokenResponse[key] = CreateTokenResponse{}
 	return jc.saveCache()
 }

@@ -41,7 +41,7 @@ type RunContext struct {
 	Kctx   *kong.Context
 	Cli    *CLI
 	Konf   *koanf.Koanf
-	Config *ConfigFile
+	Config *SSOConfig
 }
 
 const (
@@ -53,6 +53,7 @@ const (
 	ENV_SSO_FILE_PASSWORD = "AWS_SSO_FILE_PASSPHRASE"
 	ENV_SSO_REGION        = "AWS_SSO_DEFAULT_REGION"
 	ENV_DURATION          = "AWS_SSO_DURATION"
+	DEFAULT_STORE         = "json" // XXX: FIXME
 )
 
 type CLI struct {
@@ -60,11 +61,15 @@ type CLI struct {
 	LogLevel   string `kong:"optional,short='L',name='loglevel',default='info',enum='error,warn,info,debug',help='Logging level [error|warn|info|debug]'"`
 	Lines      bool   `kong:"optional,name='lines',help='Print line number in logs'"`
 	Browser    string `kong:"optional,name='browser',short='b',help='Path to browser to use',env='${ENV_BROWSER}'"`
-	PrintUrl   bool   `kong:"optional,name='url',short='u',help='Don\'t open URL with browser and just print it'"`
+	PrintUrl   bool   `kong:"optional,name='url',short='u',help='Print URL insetad of open in browser'"`
 	ConfigFile string `kong:"optional,name='config',short='c',default='${CONFIG_FILE}',help='Config file',env=${ENV_CONFIG}"`
 	// AWS Params
-	Region   string `kong:"optional,short='r',help='AWS Region',env='AWS_DEFAULT_REGION'"`
-	Duration int64  `kong:"optional,short='d',help='AWS Session duration in minutes (default 60)',default=60,env=${ENV_DURATION}"`
+	Region   string `kong:"optional,name='regoin',short='r',help='AWS Region',env='AWS_DEFAULT_REGION'"`
+	Duration int64  `kong:"optional,name='duration',short='d',help='AWS Session duration in minutes (default 60)',default=60,env=${ENV_DURATION}"`
+
+	// Store
+	Store     string `kong:"optional,name='store',short='s',default='${DEFAULT_STORE}',enum='json,keyring',help='Data secure store'"`
+	JsonStore string `kong:"optional,name='json-store',short='j',default='${JSON_STORE_FILE}',help='Path to JSON store file'"`
 
 	// Commands
 	//	Exec    ExecCmd    `kong:"cmd,help='Execute command using specified AWS Role/Profile'"`
@@ -81,7 +86,7 @@ func main() {
 		Kctx:   ctx,
 		Cli:    &cli,
 		Konf:   koanf.New("."),
-		Config: &ConfigFile{},
+		Config: &SSOConfig{},
 	}
 
 	config := GetPath(cli.ConfigFile)
@@ -110,6 +115,8 @@ func parse_args(cli *CLI) *kong.Context {
 		"ENV_SSO_FILE_PASSWORD": ENV_SSO_FILE_PASSWORD,
 		"ENV_SSO_REGION":        ENV_SSO_REGION,
 		"ENV_DURATION":          ENV_DURATION,
+		"DEFAULT_STORE":         DEFAULT_STORE,
+		"JSON_STORE_FILE":       JSON_STORE_FILE,
 	}
 	ctx := kong.Parse(cli, op, vars)
 
