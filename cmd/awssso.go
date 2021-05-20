@@ -51,7 +51,7 @@ type AWSSSO struct {
 	DeviceAuth StartDeviceAuthData `json:"StartDeviceAuth"`
 	Token      CreateTokenResponse `json:"TokenResponse"`
 	accounts   []AccountInfo
-	roles      []RoleInfo
+	roles      map[string][]RoleInfo
 }
 
 func NewAWSSSO(region, ssoRegion, startUrl string, store *SecureStorage) *AWSSSO {
@@ -67,12 +67,54 @@ func NewAWSSSO(region, ssoRegion, startUrl string, store *SecureStorage) *AWSSSO
 		ClientType: awsSSOClientType,
 		SsoRegion:  ssoRegion,
 		StartUrl:   startUrl,
+		roles:      map[string][]RoleInfo{},
 	}
 	return &as
 }
 
 func (as *AWSSSO) storeKey() string {
 	return fmt.Sprintf("%s:%s", as.SsoRegion, as.StartUrl)
+}
+
+func (as *AWSSSO) Authenticate() error {
+	// see if we have valid cached data
+	token := CreateTokenResponse{}
+	err := as.store.GetCreateTokenResponse(as.storeKey(), &token)
+	// XXX: I think an hour buffer here is fine?
+	if err == nil && !as.Token.Expired() {
+		log.Info("Using CreateToken cache")
+		return nil
+	}
+
+	// Nope- fall back to our standard process
+	err = as.RegisterClient()
+	if err != nil {
+		return fmt.Errorf("Unable to RegisterClient: %s", err.Error())
+	}
+
+	err = as.StartDeviceAuthorization()
+	if err != nil {
+		return fmt.Errorf("Unable to StartDeviceAuth: %s", err.Error())
+	}
+
+	auth, err := as.GetDeviceAuthInfo()
+	if err != nil {
+		return fmt.Errorf("Unable to get DeviceAuthInfo: %s", err.Error())
+	}
+
+	fmt.Printf(`Please open the following URL in your browser:
+
+	%s
+
+`, auth.VerificationUriComplete)
+	log.Debugf("Waiting for SSO authentication")
+
+	err = as.CreateToken()
+	if err != nil {
+		return fmt.Errorf("Unable to get AWS SSO Token: %s", err.Error())
+	}
+
+	return nil
 }
 
 const (
@@ -95,11 +137,18 @@ type RegisterClientData struct {
 	TokenEndpoint         string `json:"tokenEndpoint,omitempty"`
 }
 
+func (r *RegisterClientData) Expired() bool {
+	// XXX: I think an hour buffer here is fine?
+	if r.ClientSecretExpiresAt > time.Now().Add(time.Hour).Unix() {
+		return false
+	}
+	return true
+}
+
 // Does the needful to talk to AWS or read our cache to get the RegisterClientData
 func (as *AWSSSO) RegisterClient() error {
 	err := as.store.GetRegisterClientData(as.storeKey(), &as.ClientData)
-	// XXX: I think an hour buffer here is fine?
-	if err == nil && as.ClientData.ClientSecretExpiresAt > time.Now().Add(time.Hour).Unix() {
+	if err == nil && !as.ClientData.Expired() {
 		log.Info("Using RegisterClient cache")
 		return nil
 	}
@@ -202,11 +251,19 @@ type CreateTokenResponse struct {
 	TokenType    string `json:"tokenType"`
 }
 
+func (t *CreateTokenResponse) Expired() bool {
+	// XXX: I think an hour buffer here is fine?
+	if t.ExpiresAt > time.Now().Add(time.Hour).Unix() {
+		return false
+	}
+	return true
+}
+
 // Blocks until we have a token
 func (as *AWSSSO) CreateToken() error {
 	err := as.store.GetCreateTokenResponse(as.storeKey(), &as.Token)
 	// XXX: I think an hour buffer here is fine?
-	if err == nil && as.ClientData.ClientSecretExpiresAt > time.Now().Add(time.Hour).Unix() {
+	if err == nil && !as.Token.Expired() {
 		log.Info("Using CreateToken cache")
 		return nil
 	}
@@ -282,9 +339,11 @@ type RoleCredentials struct { // Cache
 }
 
 type RoleInfo struct {
-	Idx       int    `header:"Id"`
-	AccountId string `yaml:"AccountId" json:"AccountId" header:"AccountId"`
-	RoleName  string `yaml:"RoleName" json:"RoleName" header:"RoleName"`
+	Idx          int    `header:"Id"`
+	RoleName     string `yaml:"RoleName" json:"RoleName" header:"RoleName"`
+	AccountId    string `yaml:"AccountId" json:"AccountId" header:"AccountId"`
+	AccountName  string `yaml:"AccountName" json:"AccountName" header:"AccountName"`
+	EmailAddress string `yaml:"EmailAddress" json:"EmailAddress" header:"EmailAddress"`
 }
 
 func (ri RoleInfo) GetHeader(fieldName string) (string, error) {
@@ -292,43 +351,49 @@ func (ri RoleInfo) GetHeader(fieldName string) (string, error) {
 	return utils.GetHeaderTag(v, fieldName)
 }
 
-func (as *AWSSSO) GetRoles(accountId string) ([]RoleInfo, error) {
-	if len(as.roles) > 0 {
-		return as.roles, nil
+func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
+	roles, ok := as.roles[account.AccountId]
+	if ok && len(roles) > 0 {
+		return roles, nil
 	}
+	as.roles[account.AccountId] = []RoleInfo{}
 
 	input := sso.ListAccountRolesInput{
 		AccessToken: aws.String(as.Token.AccessToken),
-		AccountId:   aws.String(accountId),
+		AccountId:   aws.String(account.AccountId),
 		MaxResults:  aws.Int64(1000),
 	}
 	output, err := as.sso.ListAccountRoles(&input)
 	if err != nil {
-		return as.roles, err
+		return as.roles[account.AccountId], err
 	}
 	for i, r := range output.RoleList {
-		as.roles = append(as.roles, RoleInfo{
-			Idx:       i,
-			AccountId: aws.StringValue(r.AccountId),
-			RoleName:  aws.StringValue(r.RoleName),
+		as.roles[account.AccountId] = append(as.roles[account.AccountId], RoleInfo{
+			Idx:          i,
+			AccountId:    aws.StringValue(r.AccountId),
+			RoleName:     aws.StringValue(r.RoleName),
+			AccountName:  account.AccountName,
+			EmailAddress: account.EmailAddress,
 		})
 	}
-	for *output.NextToken != "" {
+	for aws.StringValue(output.NextToken) != "" {
 		input.NextToken = output.NextToken
 		output, err := as.sso.ListAccountRoles(&input)
 		if err != nil {
-			return as.roles, err
+			return as.roles[account.AccountId], err
 		}
 		x := len(as.roles)
 		for i, r := range output.RoleList {
-			as.roles = append(as.roles, RoleInfo{
-				Idx:       x + i,
-				AccountId: aws.StringValue(r.AccountId),
-				RoleName:  aws.StringValue(r.RoleName),
+			as.roles[account.AccountId] = append(as.roles[account.AccountId], RoleInfo{
+				Idx:          x + i,
+				AccountId:    aws.StringValue(r.AccountId),
+				RoleName:     aws.StringValue(r.RoleName),
+				AccountName:  account.AccountName,
+				EmailAddress: account.EmailAddress,
 			})
 		}
 	}
-	return as.roles, nil
+	return as.roles[account.AccountId], nil
 }
 
 type AccountInfo struct {

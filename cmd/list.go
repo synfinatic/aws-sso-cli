@@ -56,31 +56,9 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 	}
 
 	awssso := NewAWSSSO(ctx.Config.Region, ctx.Config.SSORegion, ctx.Config.StartUrl, &secureStore)
-	err = awssso.RegisterClient()
+	err = awssso.Authenticate()
 	if err != nil {
-		log.WithError(err).Panicf("Unable to RegisterClient")
-	}
-
-	err = awssso.StartDeviceAuthorization()
-	if err != nil {
-		log.WithError(err).Panicf("Unable to StartDeviceAuth")
-	}
-
-	auth, err := awssso.GetDeviceAuthInfo()
-	if err != nil {
-		log.WithError(err).Panicf("Unable to get DeviceAuthInfo")
-	}
-
-	fmt.Printf(`Please open the following URL in your browser:
-
-	%s
-
-`, auth.VerificationUriComplete)
-	log.Debugf("Waiting for SSO authentication")
-
-	err = awssso.CreateToken()
-	if err != nil {
-		log.WithError(err).Panicf("Unable to get AWS SSO Token")
+		log.WithError(err).Panicf("Unable to authenticate")
 	}
 
 	fmt.Printf("\n\nThe following accounts are authorized:\n")
@@ -90,10 +68,20 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 	}
 
 	tr := []utils.TableStruct{}
+	idx := 0
 	for _, a := range accounts {
-		tr = append(tr, a)
+		roles, err := awssso.GetRoles(a)
+		if err != nil {
+			log.WithError(err).Panicf("Unable to get roles for AccountId: %s", a.AccountId)
+		}
+
+		for _, r := range roles {
+			r.Idx = idx
+			idx += 1
+			tr = append(tr, r)
+		}
 	}
-	utils.GenerateTable(tr, []string{"Idx", "AccountId", "AccountName", "EmailAddress"})
+	utils.GenerateTable(tr, []string{"Idx", "RoleName", "AccountId", "AccountName", "EmailAddress"})
 	fmt.Printf("\n")
 
 	/*
