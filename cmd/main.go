@@ -59,14 +59,10 @@ type CLI struct {
 	// Common Arguments
 	LogLevel   string `kong:"optional,short='L',name='loglevel',default='info',enum='error,warn,info,debug',help='Logging level [error|warn|info|debug]'"`
 	Lines      bool   `kong:"optional,name='lines',help='Print line number in logs'"`
+	ConfigFile string `kong:"optional,name='config',short='c',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
 	Browser    string `kong:"optional,name='browser',short='b',help='Path to browser to use',env='AWS_SSO_BROWSER'"`
 	PrintUrl   bool   `kong:"optional,name='url',short='u',help='Print URL insetad of open in browser'"`
-	ConfigFile string `kong:"optional,name='config',short='c',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
 	SSO        string `kong:"optional,name='sso',short='S',help='AWS SSO Instance',env='AWS_SSO'"`
-
-	// AWS Params
-	Region   string `kong:"optional,name='region',help='AWS Region',env='AWS_DEFAULT_REGION'"`
-	Duration int64  `kong:"optional,name='duration',short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
 
 	// Store
 	Store     string `kong:"optional,name='store',default='${DEFAULT_STORE}',enum='json,keyring',help='Data secure store'"`
@@ -74,7 +70,7 @@ type CLI struct {
 
 	// Commands
 	Exec    ExecCmd    `kong:"cmd,help='Execute command using specified AWS Role/Profile'"`
-	Expire  ExpireCmd  `kong:"cmd,help='Force expire of AWS OIDC credentials'"`
+	Flush   FlushCmd   `kong:"cmd,help='Force delete of AWS SSO credentials'"`
 	List    ListCmd    `kong:"cmd,help='List all accounts / role (default command)',default='1'"`
 	Tags    TagsCmd    `kong:"cmd,help='List tags'"`
 	Version VersionCmd `kong:"cmd,help='Print version and exit'"`

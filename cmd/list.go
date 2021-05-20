@@ -33,18 +33,16 @@ import (
 // Fields match those in FlatConfig.  Used when user doesn't have the `fields` in
 // their YAML config file or provided list on the CLI
 var defaultListFields = []string{
-	"Id",
-	"RoleName",
 	"AccountId",
 	"AccountName",
-	"EmailAddress",
+	"RoleName",
 }
 
 var allListFields = map[string]string{
 	"Id":           "Column Index",
 	"AccountId":    "AWS AccountID",
 	"AccountName":  "AWS AccountName",
-	"EmailAddress": "AWS Account Email",
+	"EmailAddress": "Root Email",
 	"RoleName":     "AWS Role",
 	"Expires":      "Creds Expire",
 	"Profile":      "AWS_PROFILE",

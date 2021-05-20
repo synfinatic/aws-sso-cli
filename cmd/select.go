@@ -59,7 +59,15 @@ func (tc *TagsCompleter) Executor(args string) {
 
 	allRoles := map[string][]RoleInfo{}
 	err := tc.ctx.Store.GetRoles(&allRoles)
+	if err != nil {
+		log.Fatalf("Unable to load roles from store: %s", err.Error())
+	}
 	ssoRoles := tc.sso.GetRoleMatches(argsMap)
+	if len(ssoRoles) == 0 {
+		log.Fatalf("No matching roles")
+	} else if len(ssoRoles) > 1 {
+		log.Fatalf("Invalid selection")
+	}
 
 	accountid := ssoRoles[0].GetAccountId()
 	role := ssoRoles[0].GetRoleName()
