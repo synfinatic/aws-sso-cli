@@ -29,27 +29,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Define the interface for storing our AWS SSO data
-type SecureStorage interface {
-	SaveRegisterClientData(string, RegisterClientData) error
-	GetRegisterClientData(string, *RegisterClientData) error
-	DeleteRegisterClientData(string) error
-	/*
-		SaveStartDeviceAuthData(string, StartDeviceAuthData) error
-		GetStartDeviceAuthData(string, *StartDeviceAuthData) error
-		DeleteStartDeviceAuthData(string) error
-	*/
-	SaveCreateTokenResponse(string, CreateTokenResponse) error
-	GetCreateTokenResponse(string, *CreateTokenResponse) error
-	DeleteCreateTokenResponse(string) error
-}
-
 // Impliments SecureStorage insecurely
 type JsonStore struct {
 	Filename            string
 	RegisterClient      map[string]RegisterClientData  `json:"RegisterClient,omitempty"`
 	StartDeviceAuth     map[string]StartDeviceAuthData `json:"StartDeviceAuth,omitempty"`
 	CreateTokenResponse map[string]CreateTokenResponse `json:"CreateTokenResponse,omitempty"`
+	Roles               RoleCache                      `json:"Roles,omitempty"`
 }
 
 func OpenJsonStore(fileName string) (*JsonStore, error) {
@@ -58,6 +44,7 @@ func OpenJsonStore(fileName string) (*JsonStore, error) {
 		RegisterClient:      map[string]RegisterClientData{},
 		StartDeviceAuth:     map[string]StartDeviceAuthData{},
 		CreateTokenResponse: map[string]CreateTokenResponse{},
+		Roles:               RoleCache{},
 	}
 
 	cacheBytes, err := ioutil.ReadFile(fileName)
@@ -127,27 +114,6 @@ func (jc *JsonStore) DeleteRegisterClientData(key string) error {
 	return jc.saveCache()
 }
 
-// StartDeviceAuthData
-func (jc *JsonStore) SaveStartDeviceAuthData(key string, data StartDeviceAuthData) error {
-	log.Debugf("saving StartDeviceAuth: %s", spew.Sdump(data))
-	jc.StartDeviceAuth[key] = data
-	return jc.saveCache()
-}
-
-func (jc *JsonStore) GetStartDeviceAuthData(key string, data *StartDeviceAuthData) error {
-	var ok bool
-	*data, ok = jc.StartDeviceAuth[key]
-	if !ok {
-		return fmt.Errorf("No StartDeviceAuthData for %s", key)
-	}
-	return nil
-}
-
-func (jc *JsonStore) DeleteStartDeviceAuthData(key string) error {
-	jc.StartDeviceAuth[key] = StartDeviceAuthData{}
-	return jc.saveCache()
-}
-
 // CreateTokenResponse
 func (jc *JsonStore) SaveCreateTokenResponse(key string, token CreateTokenResponse) error {
 	log.Debugf("saving CreateTokenResponse: %s", spew.Sdump(token))
@@ -166,5 +132,30 @@ func (jc *JsonStore) GetCreateTokenResponse(key string, token *CreateTokenRespon
 
 func (jc *JsonStore) DeleteCreateTokenResponse(key string) error {
 	jc.CreateTokenResponse[key] = CreateTokenResponse{}
+	return jc.saveCache()
+}
+
+// GetRoles reads the roles from the cache.  Returns error if missing or expired
+func (jc *JsonStore) GetRoles(roles *map[string][]RoleInfo) error {
+	if jc.Roles.CreatedAt == 0 {
+		return fmt.Errorf("No Roles available in cache")
+	}
+	if jc.Roles.Expired() {
+		return fmt.Errorf("Roles have expired")
+	}
+
+	*roles = jc.Roles.Roles
+	return nil
+}
+
+// SaveRoles saves the roles to the cache
+func (jc *JsonStore) SaveRoles(roles map[string][]RoleInfo) error {
+	jc.Roles = RoleInfoCache(roles)
+	return jc.saveCache()
+}
+
+// DeleteRoles removes the roles from the cache
+func (jc *JsonStore) DeleteRoles() error {
+	jc.Roles = RoleCache{}
 	return jc.saveCache()
 }

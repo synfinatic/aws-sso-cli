@@ -38,14 +38,16 @@ var defaultListFields = []string{
 }
 
 type ListCmd struct {
-	Fields     []string `kong:"optional,arg,enum='AccountId,AccountName,Arn,Role,Expires,Profile,Region,SSORegion,StartUrl',help='Fields to display'"`
-	ListFields bool     `kong:"optional,short='f',help='List available fields'"`
+	Fields      []string `kong:"optional,arg,enum='AccountId,AccountName,Arn,Role,Expires,Profile,Region,SSORegion,StartUrl',help='Fields to display'"`
+	ListFields  bool     `kong:"optional,name='list-fields',short='f',help='List available fields'"`
+	ForceUpdate bool     `kong:"optional,name='force-update',help='Force cache update'"`
 }
 
 // what should this actually do?
 func (cc *ListCmd) Run(ctx *RunContext) error {
 	var secureStore SecureStorage
 	var err error
+
 	if ctx.Cli.Store == "json" {
 		secureStore, err = OpenJsonStore(GetPath(ctx.Cli.JsonStore))
 		if err != nil {
@@ -55,46 +57,53 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 		log.Panicf("SecureStorage '%s' is not yet supported", ctx.Cli.Store)
 	}
 
-	awssso := NewAWSSSO(ctx.Config.Region, ctx.Config.SSORegion, ctx.Config.StartUrl, &secureStore)
-	err = awssso.Authenticate()
-	if err != nil {
-		log.WithError(err).Panicf("Unable to authenticate")
+	roles := map[string][]RoleInfo{}
+	err = secureStore.GetRoles(&roles)
+	if err != nil || ctx.Cli.List.ForceUpdate {
+		roles = map[string][]RoleInfo{} // zero out roles if we are doing a --force-update
+		awssso := NewAWSSSO(ctx.Config.Region, ctx.Config.SSORegion, ctx.Config.StartUrl, &secureStore)
+		err = awssso.Authenticate()
+		if err != nil {
+			log.WithError(err).Panicf("Unable to authenticate")
+		}
+
+		accounts, err := awssso.GetAccounts()
+		if err != nil {
+			log.WithError(err).Panicf("Unable to get accounts")
+		}
+
+		for _, a := range accounts {
+			account := a.AccountId
+			roleInfo, err := awssso.GetRoles(a)
+			if err != nil {
+				log.WithError(err).Panicf("Unable to get roles for AccountId: %s", account)
+			}
+
+			for _, r := range roleInfo {
+				roles[account] = append(roles[account], r)
+			}
+		}
+		secureStore.SaveRoles(roles)
+	} else {
+		log.Info("Using cache.  Use --force-update to force a cache update.")
 	}
 
-	fmt.Printf("\n\nThe following accounts are authorized:\n")
-	accounts, err := awssso.GetAccounts()
-	if err != nil {
-		log.WithError(err).Panicf("Unable to get accounts")
-	}
+	printRoles(roles)
 
+	return nil
+}
+
+func printRoles(roles map[string][]RoleInfo) {
 	tr := []utils.TableStruct{}
 	idx := 0
-	for _, a := range accounts {
-		roles, err := awssso.GetRoles(a)
-		if err != nil {
-			log.WithError(err).Panicf("Unable to get roles for AccountId: %s", a.AccountId)
-		}
-
-		for _, r := range roles {
-			r.Idx = idx
+	for _, roleInfo := range roles {
+		for _, role := range roleInfo {
+			role.Idx = idx
 			idx += 1
-			tr = append(tr, r)
+			tr = append(tr, role)
 		}
 	}
+
 	utils.GenerateTable(tr, []string{"Idx", "RoleName", "AccountId", "AccountName", "EmailAddress"})
 	fmt.Printf("\n")
-
-	/*
-		fmt.Printf("The following roles are authorized:\n")
-		roles, err := awssso.GetRoles()
-		if err != nil {
-			log.WithError(err).Panicf("Unable to get roles")
-		}
-
-		for _, r := range roles {
-			fmt.Printf("%d %s\n", r.AccountId, r.RoleName)
-		}
-		fmt.Printf("\n")
-	*/
-	return nil
 }
