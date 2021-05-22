@@ -43,15 +43,15 @@ type AWSSSO struct {
 	sso        sso.SSO
 	ssooidc    ssooidc.SSOOIDC
 	store      SecureStorage
-	ClientName string              `json:"ClientName"`
-	ClientType string              `json:"ClientType"`
-	SsoRegion  string              `json:"ssoRegion"`
-	StartUrl   string              `json:"startUrl"`
-	ClientData RegisterClientData  `json:"RegisterClient"`
-	DeviceAuth StartDeviceAuthData `json:"StartDeviceAuth"`
-	Token      CreateTokenResponse `json:"TokenResponse"`
-	accounts   []AccountInfo
-	roles      map[string][]RoleInfo
+	ClientName string                `json:"ClientName"`
+	ClientType string                `json:"ClientType"`
+	SsoRegion  string                `json:"ssoRegion"`
+	StartUrl   string                `json:"startUrl"`
+	ClientData RegisterClientData    `json:"RegisterClient"`
+	DeviceAuth StartDeviceAuthData   `json:"StartDeviceAuth"`
+	Token      CreateTokenResponse   `json:"TokenResponse"`
+	Accounts   []AccountInfo         `json:"Accounts"`
+	Roles      map[string][]RoleInfo `json:"Roles"`
 }
 
 func NewAWSSSO(region, ssoRegion, startUrl string, store *SecureStorage) *AWSSSO {
@@ -67,7 +67,7 @@ func NewAWSSSO(region, ssoRegion, startUrl string, store *SecureStorage) *AWSSSO
 		ClientType: awsSSOClientType,
 		SsoRegion:  ssoRegion,
 		StartUrl:   startUrl,
-		roles:      map[string][]RoleInfo{},
+		Roles:      map[string][]RoleInfo{},
 	}
 	return &as
 }
@@ -339,7 +339,7 @@ type RoleCredentials struct { // Cache
 }
 
 type RoleInfo struct {
-	Idx          int    `header:"Id"`
+	Idx          int    `yaml:"Id" json:"Id" header:"Id"`
 	RoleName     string `yaml:"RoleName" json:"RoleName" header:"RoleName"`
 	AccountId    string `yaml:"AccountId" json:"AccountId" header:"AccountId"`
 	AccountName  string `yaml:"AccountName" json:"AccountName" header:"AccountName"`
@@ -352,11 +352,11 @@ func (ri RoleInfo) GetHeader(fieldName string) (string, error) {
 }
 
 func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
-	roles, ok := as.roles[account.AccountId]
+	roles, ok := as.Roles[account.AccountId]
 	if ok && len(roles) > 0 {
 		return roles, nil
 	}
-	as.roles[account.AccountId] = []RoleInfo{}
+	as.Roles[account.AccountId] = []RoleInfo{}
 
 	input := sso.ListAccountRolesInput{
 		AccessToken: aws.String(as.Token.AccessToken),
@@ -365,10 +365,10 @@ func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 	}
 	output, err := as.sso.ListAccountRoles(&input)
 	if err != nil {
-		return as.roles[account.AccountId], err
+		return as.Roles[account.AccountId], err
 	}
 	for i, r := range output.RoleList {
-		as.roles[account.AccountId] = append(as.roles[account.AccountId], RoleInfo{
+		as.Roles[account.AccountId] = append(as.Roles[account.AccountId], RoleInfo{
 			Idx:          i,
 			AccountId:    aws.StringValue(r.AccountId),
 			RoleName:     aws.StringValue(r.RoleName),
@@ -380,11 +380,11 @@ func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 		input.NextToken = output.NextToken
 		output, err := as.sso.ListAccountRoles(&input)
 		if err != nil {
-			return as.roles[account.AccountId], err
+			return as.Roles[account.AccountId], err
 		}
-		x := len(as.roles)
+		x := len(as.Roles)
 		for i, r := range output.RoleList {
-			as.roles[account.AccountId] = append(as.roles[account.AccountId], RoleInfo{
+			as.Roles[account.AccountId] = append(as.Roles[account.AccountId], RoleInfo{
 				Idx:          x + i,
 				AccountId:    aws.StringValue(r.AccountId),
 				RoleName:     aws.StringValue(r.RoleName),
@@ -393,11 +393,11 @@ func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 			})
 		}
 	}
-	return as.roles[account.AccountId], nil
+	return as.Roles[account.AccountId], nil
 }
 
 type AccountInfo struct {
-	Idx          int    `header:"Id"`
+	Idx          int    `yaml:"Id" json:"Id" header:"Id"`
 	AccountId    string `yaml:"AccountId" json:"AccountId" header:"AccountId"`
 	AccountName  string `yaml:"AccountName" json:"AccountName" header:"AccountName"`
 	EmailAddress string `yaml:"EmailAddress" json:"EmailAddress" header:"EmailAddress"`
@@ -409,8 +409,8 @@ func (ai AccountInfo) GetHeader(fieldName string) (string, error) {
 }
 
 func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {
-	if len(as.accounts) > 0 {
-		return as.accounts, nil
+	if len(as.Accounts) > 0 {
+		return as.Accounts, nil
 	}
 
 	input := sso.ListAccountsInput{
@@ -419,10 +419,10 @@ func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {
 	}
 	output, err := as.sso.ListAccounts(&input)
 	if err != nil {
-		return as.accounts, err
+		return as.Accounts, err
 	}
 	for i, r := range output.AccountList {
-		as.accounts = append(as.accounts, AccountInfo{
+		as.Accounts = append(as.Accounts, AccountInfo{
 			Idx:          i,
 			AccountId:    aws.StringValue(r.AccountId),
 			AccountName:  aws.StringValue(r.AccountName),
@@ -433,11 +433,11 @@ func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {
 		input.NextToken = output.NextToken
 		output, err := as.sso.ListAccounts(&input)
 		if err != nil {
-			return as.accounts, err
+			return as.Accounts, err
 		}
-		x := len(as.accounts)
+		x := len(as.Accounts)
 		for i, r := range output.AccountList {
-			as.accounts = append(as.accounts, AccountInfo{
+			as.Accounts = append(as.Accounts, AccountInfo{
 				Idx:          x + i,
 				AccountId:    aws.StringValue(r.AccountId),
 				AccountName:  aws.StringValue(r.AccountName),
@@ -445,6 +445,6 @@ func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {
 			})
 		}
 	}
-	return as.accounts, nil
+	return as.Accounts, nil
 
 }
