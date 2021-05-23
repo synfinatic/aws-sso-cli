@@ -59,10 +59,11 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 
 	roles := map[string][]RoleInfo{}
 	err = secureStore.GetRoles(&roles)
+
 	if err != nil || ctx.Cli.List.ForceUpdate {
 		roles = map[string][]RoleInfo{} // zero out roles if we are doing a --force-update
 		awssso := NewAWSSSO(ctx.Config.Region, ctx.Config.SSORegion, ctx.Config.StartUrl, &secureStore)
-		err = awssso.Authenticate()
+		err = awssso.Authenticate(ctx.Cli.PrintUrl, ctx.Cli.Browser)
 		if err != nil {
 			log.WithError(err).Panicf("Unable to authenticate")
 		}

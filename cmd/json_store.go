@@ -25,7 +25,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/davecgh/go-spew/spew"
+	// "github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -95,7 +95,6 @@ func (jc *JsonStore) saveCache() error {
 
 // RegisterClientData
 func (jc *JsonStore) SaveRegisterClientData(key string, client RegisterClientData) error {
-	log.Debugf("saving RegisterClient: %s", spew.Sdump(client))
 	jc.RegisterClient[key] = client
 	return jc.saveCache()
 }
@@ -116,7 +115,6 @@ func (jc *JsonStore) DeleteRegisterClientData(key string) error {
 
 // CreateTokenResponse
 func (jc *JsonStore) SaveCreateTokenResponse(key string, token CreateTokenResponse) error {
-	log.Debugf("saving CreateTokenResponse: %s", spew.Sdump(token))
 	jc.CreateTokenResponse[key] = token
 	return jc.saveCache()
 }
