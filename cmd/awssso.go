@@ -72,18 +72,21 @@ func NewAWSSSO(region, ssoRegion, startUrl string, store *SecureStorage) *AWSSSO
 	return &as
 }
 
-func (as *AWSSSO) storeKey() string {
+func (as *AWSSSO) StoreKey() string {
 	return fmt.Sprintf("%s:%s", as.SsoRegion, as.StartUrl)
 }
 
-func (as *AWSSSO) Authenticate() error {
+func (as *AWSSSO) Authenticate(printUrl bool, browser string) error {
 	// see if we have valid cached data
 	token := CreateTokenResponse{}
-	err := as.store.GetCreateTokenResponse(as.storeKey(), &token)
-	// XXX: I think an hour buffer here is fine?
-	if err == nil && !as.Token.Expired() {
-		log.Info("Using CreateToken cache")
+	err := as.store.GetCreateTokenResponse(as.StoreKey(), &token)
+	if err == nil && !token.Expired() {
+		as.Token = token
 		return nil
+	} else if err != nil {
+		log.WithError(err).Errorf("Unable to use cache")
+	} else {
+		log.Errorf("token has expired: %d", as.Token.ExpiresAt)
 	}
 
 	// Nope- fall back to our standard process
@@ -102,11 +105,20 @@ func (as *AWSSSO) Authenticate() error {
 		return fmt.Errorf("Unable to get DeviceAuthInfo: %s", err.Error())
 	}
 
-	fmt.Printf(`Please open the following URL in your browser:
+	if !printUrl {
+		if len(browser) == 0 {
+			err = open.Start(auth.VerificationUriComplete)
+		} else {
+			err = open.StartWith(auth.VerificationUriComplete, browser)
+		}
+		if err != nil {
+			log.WithError(err).Errorf("Unable to open %s", auth.VerificationUriComplete)
+		}
+	} else {
+		fmt.Printf("Please open the following URL in your browser:\n\n%s\n\n",
+			auth.VerificationUriComplete)
+	}
 
-	%s
-
-`, auth.VerificationUriComplete)
 	log.Debugf("Waiting for SSO authentication")
 
 	err = as.CreateToken()
@@ -147,7 +159,7 @@ func (r *RegisterClientData) Expired() bool {
 
 // Does the needful to talk to AWS or read our cache to get the RegisterClientData
 func (as *AWSSSO) RegisterClient() error {
-	err := as.store.GetRegisterClientData(as.storeKey(), &as.ClientData)
+	err := as.store.GetRegisterClientData(as.StoreKey(), &as.ClientData)
 	if err == nil && !as.ClientData.Expired() {
 		log.Info("Using RegisterClient cache")
 		return nil
@@ -171,7 +183,7 @@ func (as *AWSSSO) RegisterClient() error {
 		ClientSecretExpiresAt: aws.Int64Value(resp.ClientSecretExpiresAt),
 		// TokenEndpoint:         *resp.TokenEndpoint,
 	}
-	err = as.store.SaveRegisterClientData(as.storeKey(), as.ClientData)
+	err = as.store.SaveRegisterClientData(as.StoreKey(), as.ClientData)
 	if err != nil {
 		log.WithError(err).Errorf("Unable to save RegisterClientData")
 	}
@@ -252,8 +264,8 @@ type CreateTokenResponse struct {
 }
 
 func (t *CreateTokenResponse) Expired() bool {
-	// XXX: I think an hour buffer here is fine?
-	if t.ExpiresAt > time.Now().Add(time.Hour).Unix() {
+	// XXX: I think an minute buffer here is fine?
+	if t.ExpiresAt > time.Now().Add(time.Minute).Unix() {
 		return false
 	}
 	return true
@@ -261,8 +273,7 @@ func (t *CreateTokenResponse) Expired() bool {
 
 // Blocks until we have a token
 func (as *AWSSSO) CreateToken() error {
-	err := as.store.GetCreateTokenResponse(as.storeKey(), &as.Token)
-	// XXX: I think an hour buffer here is fine?
+	err := as.store.GetCreateTokenResponse(as.StoreKey(), &as.Token)
 	if err == nil && !as.Token.Expired() {
 		log.Info("Using CreateToken cache")
 		return nil
@@ -319,7 +330,7 @@ func (as *AWSSSO) CreateToken() error {
 		RefreshToken: aws.StringValue(resp.RefreshToken), // per AWS docs, not currently implimented
 		TokenType:    aws.StringValue(resp.TokenType),
 	}
-	err = as.store.SaveCreateTokenResponse(as.storeKey(), as.Token)
+	err = as.store.SaveCreateTokenResponse(as.StoreKey(), as.Token)
 	if err != nil {
 		log.WithError(err).Errorf("Unable to save CreateTokenResponse")
 	}

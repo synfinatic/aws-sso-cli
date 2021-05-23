@@ -73,8 +73,8 @@ type CLI struct {
 
 	// Commands
 	//	Exec    ExecCmd    `kong:"cmd,help='Execute command using specified AWS Role/Profile'"`
-	List ListCmd `kong:"cmd,help='List all accounts / role (default command)',default='1'"`
-	//	Expire  ExpireCmd  `kong:"cmd,help='Force expire of AWS Role/Profile credentials from keychain'"`
+	List    ListCmd    `kong:"cmd,help='List all accounts / role (default command)',default='1'"`
+	Expire  ExpireCmd  `kong:"cmd,help='Force expire of AWS OIDC credentials'"`
 	Version VersionCmd `kong:"cmd,help='Print version and exit'"`
 }
 
