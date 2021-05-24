@@ -20,8 +20,8 @@ package main
 
 import (
 	"fmt"
+	"reflect"
 
-	//	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/onelogin-aws-role/utils"
 )
@@ -29,24 +29,40 @@ import (
 // Fields match those in FlatConfig.  Used when user doesn't have the `fields` in
 // their YAML config file or provided list on the CLI
 var defaultListFields = []string{
+	"Idx",
+	"RoleName",
 	"AccountId",
 	"AccountName",
-	"Role",
-	"Profile",
-	"Region",
-	"Expires",
+	"EmailAddress",
+}
+
+var allListFields = map[string]string{
+	"AccountId":   "AWS AccountID",
+	"AccountName": "AWS AccountName",
+	"RoleName":    "AWS Role",
+	"Expires":     "Creds Expire",
+	"Profile":     "AWS_PROFILE",
+	"Region":      "AWS_DEFAULT_REGION",
+	"SSORegion":   "SSO Region",
+	"StartUrl":    "SSO Start URL",
 }
 
 type ListCmd struct {
-	Fields      []string `kong:"optional,arg,enum='AccountId,AccountName,Arn,Role,Expires,Profile,Region,SSORegion,StartUrl',help='Fields to display'"`
+	Fields      []string `kong:"optional,arg,enum='AccountId,AccountName,RoleName,Expires,Profile,Region,SSORegion,StartUrl',help='Fields to display'"`
 	ListFields  bool     `kong:"optional,name='list-fields',short='f',help='List available fields'"`
-	ForceUpdate bool     `kong:"optional,name='force-update',help='Force cache update'"`
+	ForceUpdate bool     `kong:"optional,name='force-update',help='Force account/role cache update'"`
 }
 
 // what should this actually do?
 func (cc *ListCmd) Run(ctx *RunContext) error {
 	var secureStore SecureStorage
 	var err error
+
+	// If `-f` then print our fields and exit
+	if ctx.Cli.List.ListFields {
+		listAllFields()
+		return nil
+	}
 
 	if ctx.Cli.Store == "json" {
 		secureStore, err = OpenJsonStore(GetPath(ctx.Cli.JsonStore))
@@ -89,22 +105,53 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 		log.Info("Using cache.  Use --force-update to force a cache update.")
 	}
 
-	printRoles(roles)
+	fields := defaultListFields
+	if len(ctx.Cli.List.Fields) > 0 {
+		fields = ctx.Cli.List.Fields
+	}
+
+	printRoles(roles, fields)
 
 	return nil
 }
 
-func printRoles(roles map[string][]RoleInfo) {
+// Print all our roles
+func printRoles(roles map[string][]RoleInfo, fields []string) {
 	tr := []utils.TableStruct{}
 	idx := 0
-	for _, roleInfo := range roles {
-		for _, role := range roleInfo {
+	for _, roleInfoList := range roles {
+		for _, role := range roleInfoList {
 			role.Idx = idx
 			idx += 1
 			tr = append(tr, role)
 		}
 	}
 
-	utils.GenerateTable(tr, []string{"Idx", "RoleName", "AccountId", "AccountName", "EmailAddress"})
+	utils.GenerateTable(tr, fields)
+	fmt.Printf("\n")
+}
+
+// Code to --list-fields
+type ConfigFieldNames struct {
+	Field       string `header:"Field"`
+	Description string `header:"Description"`
+}
+
+func (cfn ConfigFieldNames) GetHeader(fieldName string) (string, error) {
+	v := reflect.ValueOf(cfn)
+	return utils.GetHeaderTag(v, fieldName)
+}
+
+func listAllFields() {
+	ts := []utils.TableStruct{}
+	for k, v := range allListFields {
+		ts = append(ts, ConfigFieldNames{
+			Field:       k,
+			Description: v,
+		})
+	}
+
+	fields := []string{"Field", "Description"}
+	utils.GenerateTable(ts, fields)
 	fmt.Printf("\n")
 }

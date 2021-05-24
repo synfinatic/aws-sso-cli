@@ -48,11 +48,8 @@ const (
 	CONFIG_DIR            = "~/.aws-sso"
 	CONFIG_FILE           = CONFIG_DIR + "/config.yaml"
 	JSON_STORE_FILE       = CONFIG_DIR + "/store.json"
-	ENV_BROWSER           = "AWS_SSO_BROWSER"
-	ENV_CONFIG            = "AWS_SSO_CONFIG"
 	ENV_SSO_FILE_PASSWORD = "AWS_SSO_FILE_PASSPHRASE"
 	ENV_SSO_REGION        = "AWS_SSO_DEFAULT_REGION"
-	ENV_DURATION          = "AWS_SSO_DURATION"
 	DEFAULT_STORE         = "json" // XXX: FIXME
 )
 
@@ -60,12 +57,12 @@ type CLI struct {
 	// Common Arguments
 	LogLevel   string `kong:"optional,short='L',name='loglevel',default='info',enum='error,warn,info,debug',help='Logging level [error|warn|info|debug]'"`
 	Lines      bool   `kong:"optional,name='lines',help='Print line number in logs'"`
-	Browser    string `kong:"optional,name='browser',short='b',help='Path to browser to use',env='${ENV_BROWSER}'"`
+	Browser    string `kong:"optional,name='browser',short='b',help='Path to browser to use',env='AWS_SSO_BROWSER'"`
 	PrintUrl   bool   `kong:"optional,name='url',short='u',help='Print URL insetad of open in browser'"`
-	ConfigFile string `kong:"optional,name='config',short='c',default='${CONFIG_FILE}',help='Config file',env=${ENV_CONFIG}"`
+	ConfigFile string `kong:"optional,name='config',short='c',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
 	// AWS Params
-	Region   string `kong:"optional,name='regoin',short='r',help='AWS Region',env='AWS_DEFAULT_REGION'"`
-	Duration int64  `kong:"optional,name='duration',short='d',help='AWS Session duration in minutes (default 60)',default=60,env=${ENV_DURATION}"`
+	Region   string `kong:"optional,name='region',short='r',help='AWS Region',env='AWS_DEFAULT_REGION'"`
+	Duration int64  `kong:"optional,name='duration',short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
 
 	// Store
 	Store     string `kong:"optional,name='store',short='s',default='${DEFAULT_STORE}',enum='json,keyring',help='Data secure store'"`
@@ -108,15 +105,10 @@ func parse_args(cli *CLI) *kong.Context {
 	op := kong.Description("Securely manage temporary AWS API Credentials issued via AWS SSO")
 	// need to pass in the variables for defaults
 	vars := kong.Vars{
-		"CONFIG_DIR":            CONFIG_DIR,
-		"CONFIG_FILE":           CONFIG_FILE,
-		"ENV_BROWSER":           ENV_BROWSER,
-		"ENV_CONFIG":            ENV_CONFIG,
-		"ENV_SSO_FILE_PASSWORD": ENV_SSO_FILE_PASSWORD,
-		"ENV_SSO_REGION":        ENV_SSO_REGION,
-		"ENV_DURATION":          ENV_DURATION,
-		"DEFAULT_STORE":         DEFAULT_STORE,
-		"JSON_STORE_FILE":       JSON_STORE_FILE,
+		"CONFIG_DIR":      CONFIG_DIR,
+		"CONFIG_FILE":     CONFIG_FILE,
+		"DEFAULT_STORE":   DEFAULT_STORE,
+		"JSON_STORE_FILE": JSON_STORE_FILE,
 	}
 	ctx := kong.Parse(cli, op, vars)
 

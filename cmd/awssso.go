@@ -355,6 +355,11 @@ type RoleInfo struct {
 	AccountId    string `yaml:"AccountId" json:"AccountId" header:"AccountId"`
 	AccountName  string `yaml:"AccountName" json:"AccountName" header:"AccountName"`
 	EmailAddress string `yaml:"EmailAddress" json:"EmailAddress" header:"EmailAddress"`
+	Expires      int64  `yaml:"Expires" json:"Expires" header:"Expires"`
+	Profile      string `yaml:"Profile" json:"Profile" header:"Profile"`
+	Region       string `yaml:"Region" json:"Region" header:"Region"`
+	SSORegion    string `header:"SSORegion"`
+	StartUrl     string `header:"StartUrl"`
 }
 
 func (ri RoleInfo) GetHeader(fieldName string) (string, error) {
@@ -385,6 +390,8 @@ func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 			RoleName:     aws.StringValue(r.RoleName),
 			AccountName:  account.AccountName,
 			EmailAddress: account.EmailAddress,
+			SSORegion:    as.SsoRegion,
+			StartUrl:     as.StartUrl,
 		})
 	}
 	for aws.StringValue(output.NextToken) != "" {
