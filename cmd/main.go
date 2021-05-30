@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kong"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
@@ -41,7 +42,8 @@ type RunContext struct {
 	Kctx   *kong.Context
 	Cli    *CLI
 	Konf   *koanf.Koanf
-	Config *SSOConfig
+	Config *ConfigFile // whole config file
+	Sso    *SSOConfig  // selected SSO config
 }
 
 const (
@@ -60,6 +62,8 @@ type CLI struct {
 	Browser    string `kong:"optional,name='browser',short='b',help='Path to browser to use',env='AWS_SSO_BROWSER'"`
 	PrintUrl   bool   `kong:"optional,name='url',short='u',help='Print URL insetad of open in browser'"`
 	ConfigFile string `kong:"optional,name='config',short='c',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
+	SSO        string `kong:"optional,name='sso',short='S',help='AWS SSO Instance',env='AWS_SSO'"`
+
 	// AWS Params
 	Region   string `kong:"optional,name='region',short='r',help='AWS Region',env='AWS_DEFAULT_REGION'"`
 	Duration int64  `kong:"optional,name='duration',short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
@@ -83,7 +87,8 @@ func main() {
 		Kctx:   ctx,
 		Cli:    &cli,
 		Konf:   koanf.New("."),
-		Config: &SSOConfig{},
+		Config: &ConfigFile{},
+		Sso:    &SSOConfig{},
 	}
 
 	config := GetPath(cli.ConfigFile)
@@ -93,6 +98,27 @@ func main() {
 	err := run_ctx.Konf.Unmarshal("", run_ctx.Config)
 	if err != nil {
 		log.WithError(err).Fatalf("Unable to process config file")
+	}
+
+	log.Debugf("%s\n", spew.Sdump(run_ctx.Config))
+
+	// load the selected SSO provider
+	if run_ctx.Cli.SSO != "" {
+		var ok bool
+		run_ctx.Sso, ok = run_ctx.Config.SSO[run_ctx.Cli.SSO]
+		if !ok {
+			names := []string{}
+			for sso, _ := range run_ctx.Config.SSO {
+				names = append(names, sso)
+			}
+			log.Fatalf("Invalid SSO name: %s.  Valid options: %s", run_ctx.Cli.SSO, strings.Join(names, ", "))
+		}
+	} else if len(run_ctx.Config.SSO) == 1 {
+		for _, config := range run_ctx.Config.SSO {
+			run_ctx.Sso = config
+		}
+	} else {
+		log.Fatalf("Please specify --sso, $AWS_SSO or set DefaultSSO in the config file")
 	}
 
 	err = ctx.Run(&run_ctx)

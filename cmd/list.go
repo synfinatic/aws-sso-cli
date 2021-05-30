@@ -21,6 +21,7 @@ package main
 import (
 	"fmt"
 	"reflect"
+	"sort"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/onelogin-aws-role/utils"
@@ -37,18 +38,17 @@ var defaultListFields = []string{
 }
 
 var allListFields = map[string]string{
-	"AccountId":   "AWS AccountID",
-	"AccountName": "AWS AccountName",
-	"RoleName":    "AWS Role",
-	"Expires":     "Creds Expire",
-	"Profile":     "AWS_PROFILE",
-	"Region":      "AWS_DEFAULT_REGION",
-	"SSORegion":   "SSO Region",
-	"StartUrl":    "SSO Start URL",
+	"Idx":          "Column Index",
+	"AccountId":    "AWS AccountID",
+	"AccountName":  "AWS AccountName",
+	"EmailAddress": "AWS Account Email",
+	"RoleName":     "AWS Role",
+	"Expires":      "Creds Expire",
+	"Profile":      "AWS_PROFILE",
 }
 
 type ListCmd struct {
-	Fields      []string `kong:"optional,arg,enum='AccountId,AccountName,RoleName,Expires,Profile,Region,SSORegion,StartUrl',help='Fields to display'"`
+	Fields      []string `kong:"optional,arg,enum='Idx,AccountId,AccountName,EmailAddress,RoleName,Expires,Profile',help='Fields to display',env='AWS_SSO_FIELDS'"`
 	ListFields  bool     `kong:"optional,name='list-fields',short='f',help='List available fields'"`
 	ForceUpdate bool     `kong:"optional,name='force-update',help='Force account/role cache update'"`
 }
@@ -70,7 +70,7 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 			log.Panicf("Unable to open JSON Secure store: %s", err)
 		}
 	} else {
-		log.Panicf("SecureStorage '%s' is not yet supported", ctx.Cli.Store)
+		log.Panicf("SecureStorage '%s' is not supported", ctx.Cli.Store)
 	}
 
 	roles := map[string][]RoleInfo{}
@@ -78,7 +78,7 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 
 	if err != nil || ctx.Cli.List.ForceUpdate {
 		roles = map[string][]RoleInfo{} // zero out roles if we are doing a --force-update
-		awssso := NewAWSSSO(ctx.Config.Region, ctx.Config.SSORegion, ctx.Config.StartUrl, &secureStore)
+		awssso := NewAWSSSO(ctx.Sso.SSORegion, ctx.Sso.StartUrl, &secureStore)
 		err = awssso.Authenticate(ctx.Cli.PrintUrl, ctx.Cli.Browser)
 		if err != nil {
 			log.WithError(err).Panicf("Unable to authenticate")
@@ -119,8 +119,16 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 func printRoles(roles map[string][]RoleInfo, fields []string) {
 	tr := []utils.TableStruct{}
 	idx := 0
-	for _, roleInfoList := range roles {
-		for _, role := range roleInfoList {
+
+	// print in AccountId order
+	accounts := []string{}
+	for account, _ := range roles {
+		accounts = append(accounts, account)
+	}
+	sort.Strings(accounts)
+
+	for _, account := range accounts {
+		for _, role := range roles[account] {
 			role.Idx = idx
 			idx += 1
 			tr = append(tr, role)

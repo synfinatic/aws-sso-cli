@@ -54,10 +54,10 @@ type AWSSSO struct {
 	Roles      map[string][]RoleInfo `json:"Roles"`
 }
 
-func NewAWSSSO(region, ssoRegion, startUrl string, store *SecureStorage) *AWSSSO {
+func NewAWSSSO(ssoRegion, startUrl string, store *SecureStorage) *AWSSSO {
 	mySession := session.Must(session.NewSession())
-	oidcSession := ssooidc.New(mySession, aws.NewConfig().WithRegion(region))
-	ssoSession := sso.New(mySession, aws.NewConfig().WithRegion(region))
+	oidcSession := ssooidc.New(mySession, aws.NewConfig().WithRegion(ssoRegion))
+	ssoSession := sso.New(mySession, aws.NewConfig().WithRegion(ssoRegion))
 
 	as := AWSSSO{
 		sso:        *ssoSession,
@@ -73,7 +73,7 @@ func NewAWSSSO(region, ssoRegion, startUrl string, store *SecureStorage) *AWSSSO
 }
 
 func (as *AWSSSO) StoreKey() string {
-	return fmt.Sprintf("%s:%s", as.SsoRegion, as.StartUrl)
+	return fmt.Sprintf("%s|%s", as.SsoRegion, as.StartUrl)
 }
 
 func (as *AWSSSO) Authenticate(printUrl bool, browser string) error {
