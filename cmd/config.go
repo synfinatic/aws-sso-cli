@@ -19,23 +19,41 @@ package main
  */
 
 type AWSProfile struct {
-	Alias     string `koanf:"alias"`      // Friendly name
-	Role      string `koanf:"role"`       // AWS Role Name
-	Region    string `koanf:"region"`     // AWS Default Region
-	AccountId string `koanf:"account_id"` // AWS AccountId
+	Alias     string `koanf:"Alias"`     // Friendly name
+	Role      string `koanf:"Role"`      // AWS Role Name
+	Region    string `koanf:"Region"`    // AWS Default Region
+	AccountId string `koanf:"AccountId"` // AWS AccountId
+}
+
+type ConfigFile struct {
+	SSO          map[string]*SSOConfig `koanf:"SSOConfig"`
+	DefaultSSO   string                `koanf:"DefaultSSO"`  // specify default SSO by key
+	SecureStore  string                `koanf:"SecureStore"` // json or keyring
+	JsonStore    JsonStoreConfig       `koanf:"JsonStore"`
+	KeyringStore KeyringStoreConfig    `koanf:"KeyringStore"`
 }
 
 type SSOConfig struct {
-	Region      string `koanf:"region"`
-	SSORegion   string `koanf:"sso_region"`
-	StartUrl    string `koanf:"start_url"`
-	SecureStore string `koanf:"secure_store"`
-	JsonStore   struct {
-		File string `koanf:"file"`
-		// ??
-	} `koanf:"json_store"`
-	KeyringStore struct {
-		// ???
-	} `koanf:"keyring_store"`
-	Profiles *[]AWSProfile `koanf:"profiles"`
+	SSORegion string                `koanf:"SSORegion"`
+	StartUrl  string                `koanf:"StartUrl"`
+	Accounts  map[int64]*SSOAccount `koanf:"Accounts"`
+}
+
+type SSOAccount struct {
+	Name  string            `koanf:"Name"` // Admin configured Account Name
+	Tags  map[string]string `koanf:"Tags"`
+	Roles []*SSORole        `koanf:"Roles"`
+}
+
+type SSORole struct {
+	ARN  string            `koanf:"ARN"`
+	Tags map[string]string `koanf:"Tags"`
+}
+
+type JsonStoreConfig struct {
+	File string `koanf:"File"` // Filename
+}
+
+type KeyringStoreConfig struct {
+	// ???
 }

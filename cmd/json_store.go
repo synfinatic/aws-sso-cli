@@ -80,7 +80,7 @@ func ensureDirExists(filename string) error {
 // save the cache file, creating the directory if necessary
 func (jc *JsonStore) saveCache() error {
 	log.Debugf("Saving JSON Cache")
-	jbytes, err := json.Marshal(jc)
+	jbytes, err := json.MarshalIndent(jc, "", "  ")
 	if err != nil {
 		log.WithError(err).Errorf("Unable to marshal json")
 		return err

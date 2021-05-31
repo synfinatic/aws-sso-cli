@@ -38,7 +38,7 @@ func (cc *ExpireCmd) Run(ctx *RunContext) error {
 		log.Panicf("SecureStorage '%s' is not yet supported", ctx.Cli.Store)
 	}
 
-	awssso := NewAWSSSO(ctx.Config.Region, ctx.Config.SSORegion, ctx.Config.StartUrl, &secureStore)
+	awssso := NewAWSSSO(ctx.Sso.SSORegion, ctx.Sso.StartUrl, &secureStore)
 
 	err = secureStore.DeleteCreateTokenResponse(awssso.StoreKey())
 	if err != nil {
