@@ -338,17 +338,6 @@ func (as *AWSSSO) CreateToken() error {
 	return nil
 }
 
-type RoleCredentialsResponse struct {
-	Credentials RoleCredentials `json:"roleCredentials"`
-}
-
-type RoleCredentials struct { // Cache
-	AccessKeyId     string `json:"accessKeyId"`
-	SecretAccessKey string `json:"secretAccessKey"`
-	SessionToken    string `json:"sessionToken"`
-	Expiration      uint64 `json:"expiration"`
-}
-
 type RoleInfo struct {
 	Idx          int    `yaml:"Id" json:"Id" header:"Id"`
 	RoleName     string `yaml:"RoleName" json:"RoleName" header:"RoleName"`
@@ -465,4 +454,41 @@ func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {
 	}
 	return as.Accounts, nil
 
+}
+
+type RoleCredentials struct { // Cache
+	RoleName        string `json:"RoleName"`
+	AccountId       string `json:"AccountId"`
+	AccessKeyId     string `json:"accessKeyId"`
+	SecretAccessKey string `json:"secretAccessKey"`
+	SessionToken    string `json:"sessionToken"`
+	Expiration      int64  `json:"expiration"`
+}
+
+func (r *RoleCredentials) RoleArn() string {
+	return fmt.Sprintf("arn:aws:iam:%s:role/%s", r.AccountId, r.RoleName)
+}
+
+func (r *RoleCredentials) ExpireString() string {
+	return time.Unix(r.Expiration, 0).String()
+}
+
+func (as *AWSSSO) GetRoleCredentials(accountid, role string) (RoleCredentials, error) {
+	input := sso.GetRoleCredentialsInput{
+		AccessToken: aws.String(as.Token.AccessToken),
+		AccountId:   aws.String(accountid),
+		RoleName:    aws.String(role),
+	}
+	output, err := as.sso.GetRoleCredentials(&input)
+	if err != nil {
+		return RoleCredentials{}, err
+	}
+
+	ret := RoleCredentials{
+		AccessKeyId:     aws.StringValue(output.RoleCredentials.AccessKeyId),
+		SecretAccessKey: aws.StringValue(output.RoleCredentials.SecretAccessKey),
+		SessionToken:    aws.StringValue(output.RoleCredentials.SessionToken),
+		Expiration:      aws.Int64Value(output.RoleCredentials.Expiration),
+	}
+	return ret, nil
 }

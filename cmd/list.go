@@ -55,7 +55,6 @@ type ListCmd struct {
 
 // what should this actually do?
 func (cc *ListCmd) Run(ctx *RunContext) error {
-	var secureStore SecureStorage
 	var err error
 
 	// If `-f` then print our fields and exit
@@ -64,21 +63,12 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 		return nil
 	}
 
-	if ctx.Cli.Store == "json" {
-		secureStore, err = OpenJsonStore(GetPath(ctx.Cli.JsonStore))
-		if err != nil {
-			log.Panicf("Unable to open JSON Secure store: %s", err)
-		}
-	} else {
-		log.Panicf("SecureStorage '%s' is not supported", ctx.Cli.Store)
-	}
-
 	roles := map[string][]RoleInfo{}
-	err = secureStore.GetRoles(&roles)
+	err = ctx.Store.GetRoles(&roles)
 
 	if err != nil || ctx.Cli.List.ForceUpdate {
 		roles = map[string][]RoleInfo{} // zero out roles if we are doing a --force-update
-		awssso := NewAWSSSO(ctx.Sso.SSORegion, ctx.Sso.StartUrl, &secureStore)
+		awssso := NewAWSSSO(ctx.Sso.SSORegion, ctx.Sso.StartUrl, &ctx.Store)
 		err = awssso.Authenticate(ctx.Cli.PrintUrl, ctx.Cli.Browser)
 		if err != nil {
 			log.WithError(err).Panicf("Unable to authenticate")
@@ -100,7 +90,7 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 				roles[account] = append(roles[account], r)
 			}
 		}
-		secureStore.SaveRoles(roles)
+		ctx.Store.SaveRoles(roles)
 	} else {
 		log.Info("Using cache.  Use --force-update to force a cache update.")
 	}
@@ -116,7 +106,8 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 }
 
 // Print all our roles
-func printRoles(roles map[string][]RoleInfo, fields []string) {
+func printRoles(roles map[string][]RoleInfo, fields []string) []RoleInfo {
+	ret := []RoleInfo{}
 	tr := []utils.TableStruct{}
 	idx := 0
 
@@ -132,11 +123,13 @@ func printRoles(roles map[string][]RoleInfo, fields []string) {
 			role.Idx = idx
 			idx += 1
 			tr = append(tr, role)
+			ret = append(ret, role)
 		}
 	}
 
 	utils.GenerateTable(tr, fields)
 	fmt.Printf("\n")
+	return ret
 }
 
 // Code to --list-fields
