@@ -26,28 +26,18 @@ type ExpireCmd struct {
 }
 
 func (cc *ExpireCmd) Run(ctx *RunContext) error {
-	var secureStore SecureStorage
 	var err error
 
-	if ctx.Cli.Store == "json" {
-		secureStore, err = OpenJsonStore(GetPath(ctx.Cli.JsonStore))
-		if err != nil {
-			log.Panicf("Unable to open JSON Secure store: %s", err)
-		}
-	} else {
-		log.Panicf("SecureStorage '%s' is not yet supported", ctx.Cli.Store)
-	}
+	awssso := NewAWSSSO(ctx.Sso.SSORegion, ctx.Sso.StartUrl, &ctx.Store)
 
-	awssso := NewAWSSSO(ctx.Sso.SSORegion, ctx.Sso.StartUrl, &secureStore)
-
-	err = secureStore.DeleteCreateTokenResponse(awssso.StoreKey())
+	err = ctx.Store.DeleteCreateTokenResponse(awssso.StoreKey())
 	if err != nil {
 		log.WithError(err).Errorf("Unable to delete Token")
 	} else {
 		log.Infof("Deleted cached Token for %s", awssso.StoreKey())
 	}
 	if ctx.Cli.Expire.All {
-		err = secureStore.DeleteRegisterClientData(awssso.StoreKey())
+		err = ctx.Store.DeleteRegisterClientData(awssso.StoreKey())
 		if err != nil {
 			log.WithError(err).Errorf("Unable to delete ClientData")
 		} else {

@@ -44,6 +44,7 @@ type RunContext struct {
 	Konf   *koanf.Koanf
 	Config *ConfigFile // whole config file
 	Sso    *SSOConfig  // selected SSO config
+	Store  SecureStorage
 }
 
 const (
@@ -73,7 +74,7 @@ type CLI struct {
 	JsonStore string `kong:"optional,name='json-store',short='j',default='${JSON_STORE_FILE}',help='Path to JSON store file'"`
 
 	// Commands
-	//	Exec    ExecCmd    `kong:"cmd,help='Execute command using specified AWS Role/Profile'"`
+	Exec    ExecCmd    `kong:"cmd,help='Execute command using specified AWS Role/Profile'"`
 	List    ListCmd    `kong:"cmd,help='List all accounts / role (default command)',default='1'"`
 	Expire  ExpireCmd  `kong:"cmd,help='Force expire of AWS OIDC credentials'"`
 	Version VersionCmd `kong:"cmd,help='Print version and exit'"`
@@ -119,6 +120,16 @@ func main() {
 		}
 	} else {
 		log.Fatalf("Please specify --sso, $AWS_SSO or set DefaultSSO in the config file")
+	}
+
+	switch run_ctx.Cli.Store {
+	case "json":
+		run_ctx.Store, err = OpenJsonStore(GetPath(run_ctx.Cli.JsonStore))
+		if err != nil {
+			log.Fatalf("Unable to open JSON Secure store: %s", err)
+		}
+	default:
+		log.Fatalf("SecureStorage '%s' is not supported", run_ctx.Cli.Store)
 	}
 
 	err = ctx.Run(&run_ctx)

@@ -7,6 +7,7 @@ replace github.com/keybase/go-keychain => github.com/99designs/go-keychain v0.0.
 
 require (
 	github.com/99designs/keyring v1.1.6
+	github.com/Songmu/prompter v0.4.0 // indirect
 	github.com/alecthomas/kong v0.2.15
 	github.com/aws/aws-sdk-go v1.38.40
 	github.com/davecgh/go-spew v1.1.1
