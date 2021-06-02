@@ -30,7 +30,7 @@ import (
 // Fields match those in FlatConfig.  Used when user doesn't have the `fields` in
 // their YAML config file or provided list on the CLI
 var defaultListFields = []string{
-	"Idx",
+	"Id",
 	"RoleName",
 	"AccountId",
 	"AccountName",
@@ -38,7 +38,7 @@ var defaultListFields = []string{
 }
 
 var allListFields = map[string]string{
-	"Idx":          "Column Index",
+	"Id":           "Column Index",
 	"AccountId":    "AWS AccountID",
 	"AccountName":  "AWS AccountName",
 	"EmailAddress": "AWS Account Email",
@@ -48,7 +48,7 @@ var allListFields = map[string]string{
 }
 
 type ListCmd struct {
-	Fields      []string `kong:"optional,arg,enum='Idx,AccountId,AccountName,EmailAddress,RoleName,Expires,Profile',help='Fields to display',env='AWS_SSO_FIELDS'"`
+	Fields      []string `kong:"optional,arg,enum='Id,AccountId,AccountName,EmailAddress,RoleName,Expires,Profile',help='Fields to display',env='AWS_SSO_FIELDS'"`
 	ListFields  bool     `kong:"optional,name='list-fields',short='f',help='List available fields'"`
 	ForceUpdate bool     `kong:"optional,name='force-update',help='Force account/role cache update'"`
 }
@@ -120,7 +120,7 @@ func printRoles(roles map[string][]RoleInfo, fields []string) []RoleInfo {
 
 	for _, account := range accounts {
 		for _, role := range roles[account] {
-			role.Idx = idx
+			role.Id = idx
 			idx += 1
 			tr = append(tr, role)
 			ret = append(ret, role)

@@ -28,9 +28,9 @@ import (
 )
 
 type ExecCmd struct {
-	// 	Fields []string `kong:"optional,arg,enum='Idx,AccountId,AccountName,EmailAddress,RoleName,Expires,Profile',help='Fields to display',env='AWS_SSO_FIELDS'"`
-	Cmd  string   `kong:"arg,optional,name='command',help='Command to execute',env='SHELL'"`
-	Args []string `kong:"arg,optional,name='args',help='Associated arguments for the command'"`
+	Fields []string `kong:"optional,enum='Id,AccountId,AccountName,EmailAddress,RoleName,Expires,Profile',help='Fields to display',env='AWS_SSO_FIELDS'"`
+	Cmd    string   `kong:"arg,optional,name='command',help='Command to execute',env='SHELL'"`
+	Args   []string `kong:"arg,optional,name='args',help='Associated arguments for the command'"`
 }
 
 func (cc *ExecCmd) Run(ctx *RunContext) error {
@@ -40,11 +40,9 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 	err = ctx.Store.GetRoles(&roles)
 
 	fields := defaultListFields
-	/*
-		if len(ctx.Cli.Exec.Fields) > 0 {
-			fields = ctx.Cli.Exec.Fields
-		}
-	*/
+	if len(ctx.Cli.Exec.Fields) > 0 {
+		fields = ctx.Cli.Exec.Fields
+	}
 	table := printRoles(roles, fields)
 	var roleid string
 	for len(roleid) == 0 {
@@ -73,11 +71,11 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 	os.Setenv("AWS_ACCESS_KEY_ID", creds.AccessKeyId)
 	os.Setenv("AWS_SECRET_ACCESS_KEY", creds.SecretAccessKey)
 	os.Setenv("AWS_SESSION_TOKEN", creds.SessionToken)
-	/*
-		if cli.Region != "" {
-			os.Setenv("AWS_DEFAULT_REGION", cli.Region)
-		}
-	*/
+	os.Setenv("AWS_ACCOUNT_ID", creds.AccountId)
+	os.Setenv("AWS_ROLE_NAME", creds.RoleName)
+	if ctx.Cli.Region != "" {
+		os.Setenv("AWS_DEFAULT_REGION", ctx.Cli.Region)
+	}
 	os.Setenv("AWS_SESSION_EXPIRATION", creds.ExpireString())
 	//	os.Setenv("AWS_ENABLED_PROFILE", cli.Exec.Profile)
 	os.Setenv("AWS_ROLE_ARN", creds.RoleArn())
