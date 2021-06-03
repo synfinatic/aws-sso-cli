@@ -356,6 +356,10 @@ func (ri RoleInfo) GetHeader(fieldName string) (string, error) {
 	return utils.GetHeaderTag(v, fieldName)
 }
 
+func (ri RoleInfo) RoleArn() string {
+	return fmt.Sprintf("arn:aws:iam:%s:role/%s", ri.AccountId, ri.RoleName)
+}
+
 func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 	roles, ok := as.Roles[account.AccountId]
 	if ok && len(roles) > 0 {

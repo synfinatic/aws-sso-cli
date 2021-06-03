@@ -28,7 +28,8 @@ type ExpireCmd struct {
 func (cc *ExpireCmd) Run(ctx *RunContext) error {
 	var err error
 
-	awssso := NewAWSSSO(ctx.Sso.SSORegion, ctx.Sso.StartUrl, &ctx.Store)
+	sso := ctx.Config.SSO[ctx.Cli.SSO]
+	awssso := NewAWSSSO(sso.SSORegion, sso.StartUrl, &ctx.Store)
 
 	err = ctx.Store.DeleteCreateTokenResponse(awssso.StoreKey())
 	if err != nil {
