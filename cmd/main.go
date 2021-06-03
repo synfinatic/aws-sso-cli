@@ -43,7 +43,6 @@ type RunContext struct {
 	Cli    *CLI
 	Konf   *koanf.Koanf
 	Config *ConfigFile // whole config file
-	Sso    *SSOConfig  // selected SSO config
 	Store  SecureStorage
 }
 
@@ -75,8 +74,8 @@ type CLI struct {
 
 	// Commands
 	Exec    ExecCmd    `kong:"cmd,help='Execute command using specified AWS Role/Profile'"`
-	List    ListCmd    `kong:"cmd,help='List all accounts / role (default command)',default='1'"`
 	Expire  ExpireCmd  `kong:"cmd,help='Force expire of AWS OIDC credentials'"`
+	List    ListCmd    `kong:"cmd,help='List all accounts / role (default command)',default='1'"`
 	Version VersionCmd `kong:"cmd,help='Print version and exit'"`
 }
 
@@ -89,9 +88,9 @@ func main() {
 		Cli:    &cli,
 		Konf:   koanf.New("."),
 		Config: &ConfigFile{},
-		Sso:    &SSOConfig{},
 	}
 
+	// Load the config file
 	config := GetPath(cli.ConfigFile)
 	if err := run_ctx.Konf.Load(file.Provider(config), yaml.Parser()); err != nil {
 		log.WithError(err).Fatalf("Unable to open config file: %s", config)
@@ -103,10 +102,10 @@ func main() {
 
 	log.Debugf("%s\n", spew.Sdump(run_ctx.Config))
 
-	// load the selected SSO provider
+	// validate the SSO Provider
 	if run_ctx.Cli.SSO != "" {
 		var ok bool
-		run_ctx.Sso, ok = run_ctx.Config.SSO[run_ctx.Cli.SSO]
+		_, ok = run_ctx.Config.SSO[run_ctx.Cli.SSO]
 		if !ok {
 			names := []string{}
 			for sso, _ := range run_ctx.Config.SSO {
@@ -115,8 +114,8 @@ func main() {
 			log.Fatalf("Invalid SSO name: %s.  Valid options: %s", run_ctx.Cli.SSO, strings.Join(names, ", "))
 		}
 	} else if len(run_ctx.Config.SSO) == 1 {
-		for _, config := range run_ctx.Config.SSO {
-			run_ctx.Sso = config
+		for name, _ := range run_ctx.Config.SSO {
+			run_ctx.Cli.SSO = name
 		}
 	} else {
 		log.Fatalf("Please specify --sso, $AWS_SSO or set DefaultSSO in the config file")

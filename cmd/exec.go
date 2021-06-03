@@ -50,7 +50,8 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 	}
 	log.Debugf("Role %s selected", roleid)
 
-	awssso := NewAWSSSO(ctx.Sso.SSORegion, ctx.Sso.StartUrl, &ctx.Store)
+	sso := ctx.Config.SSO[ctx.Cli.SSO]
+	awssso := NewAWSSSO(sso.SSORegion, sso.StartUrl, &ctx.Store)
 	err = awssso.Authenticate(ctx.Cli.PrintUrl, ctx.Cli.Browser)
 	if err != nil {
 		log.WithError(err).Fatalf("Unable to authenticate")

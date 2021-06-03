@@ -20,11 +20,14 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"reflect"
 	"sort"
 
+	"github.com/Songmu/prompter"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/onelogin-aws-role/utils"
+	yaml "gopkg.in/yaml.v3"
 )
 
 // Fields match those in FlatConfig.  Used when user doesn't have the `fields` in
@@ -68,22 +71,23 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 
 	if err != nil || ctx.Cli.List.ForceUpdate {
 		roles = map[string][]RoleInfo{} // zero out roles if we are doing a --force-update
-		awssso := NewAWSSSO(ctx.Sso.SSORegion, ctx.Sso.StartUrl, &ctx.Store)
+		sso := ctx.Config.SSO[ctx.Cli.SSO]
+		awssso := NewAWSSSO(sso.SSORegion, sso.StartUrl, &ctx.Store)
 		err = awssso.Authenticate(ctx.Cli.PrintUrl, ctx.Cli.Browser)
 		if err != nil {
-			log.WithError(err).Panicf("Unable to authenticate")
+			log.WithError(err).Fatalf("Unable to authenticate")
 		}
 
 		accounts, err := awssso.GetAccounts()
 		if err != nil {
-			log.WithError(err).Panicf("Unable to get accounts")
+			log.WithError(err).Fatalf("Unable to get accounts")
 		}
 
 		for _, a := range accounts {
 			account := a.AccountId
 			roleInfo, err := awssso.GetRoles(a)
 			if err != nil {
-				log.WithError(err).Panicf("Unable to get roles for AccountId: %s", account)
+				log.WithError(err).Fatalf("Unable to get roles for AccountId: %s", account)
 			}
 
 			for _, r := range roleInfo {
@@ -91,6 +95,24 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 			}
 		}
 		ctx.Store.SaveRoles(roles)
+
+		// now update our config.yaml
+		changes, err := sso.UpdateRoles(roles)
+		if err != nil {
+			log.WithError(err).Fatalf("Unable to update our config file")
+		}
+		if changes > 0 {
+			p := fmt.Sprintf("Update config file with %d new roles?", changes)
+			if prompter.YN(p, true) {
+				b, _ := yaml.Marshal(ctx.Config)
+				cfile := fmt.Sprintf("%s", ctx.Cli.ConfigFile)
+				err = ioutil.WriteFile(cfile, b, 0644)
+				if err != nil {
+					log.WithError(err).Fatalf("Unable to save config %s", cfile)
+				}
+			}
+		}
+
 	} else {
 		log.Info("Using cache.  Use --force-update to force a cache update.")
 	}
