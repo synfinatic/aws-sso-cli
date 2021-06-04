@@ -19,7 +19,9 @@ package main
  */
 
 import (
+	"sort"
 	"strconv"
+	"strings"
 )
 
 type AWSProfile struct {
@@ -38,21 +40,24 @@ type ConfigFile struct {
 }
 
 type SSOConfig struct {
-	SSORegion string                `koanf:"SSORegion" yaml:"SSORegion"`
-	Region    string                `koanf:"Region" yaml:"Region"`
-	StartUrl  string                `koanf:"StartUrl" yaml:"StartUrl"`
-	Accounts  map[int64]*SSOAccount `koanf:"Accounts" yaml:"Accounts,omitempty"`
+	SSORegion     string                `koanf:"SSORegion" yaml:"SSORegion"`
+	StartUrl      string                `koanf:"StartUrl" yaml:"StartUrl"`
+	Accounts      map[int64]*SSOAccount `koanf:"Accounts" yaml:"Accounts,omitempty"`
+	DefaultRegion string                `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
 }
 
 type SSOAccount struct {
-	Name  string            `koanf:"Name" yaml:"Name,omitempty"` // Admin configured Account Name
-	Tags  map[string]string `koanf:"Tags" yaml:"Tags,omitempty" `
-	Roles []*SSORole        `koanf:"Roles" yaml:"Roles,omitempty"`
+	Name          string            `koanf:"Name" yaml:"Name,omitempty"` // Admin configured Account Name
+	Tags          map[string]string `koanf:"Tags" yaml:"Tags,omitempty" `
+	Roles         []*SSORole        `koanf:"Roles" yaml:"Roles,omitempty"`
+	DefaultRegion string            `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
 }
 
 type SSORole struct {
-	ARN  string            `koanf:"ARN" yaml:"ARN"`
-	Tags map[string]string `koanf:"Tags" yaml:"Tags,omitempty"`
+	ARN           string            `koanf:"ARN" yaml:"ARN"`
+	Profile       string            `koanf:"Profile" yaml:"Profile,omitempty"`
+	Tags          map[string]string `koanf:"Tags" yaml:"Tags,omitempty"`
+	DefaultRegion string            `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
 }
 
 type JsonStoreConfig struct {
@@ -87,6 +92,7 @@ func (s *SSOConfig) UpdateRoles(roles map[string][]RoleInfo) (int64, error) {
 		_, hasAccount := s.Accounts[accountId]
 		if !hasAccount {
 			s.Accounts[accountId] = &SSOAccount{
+				Name:  accountInfo[0].AccountName,
 				Roles: []*SSORole{},
 			}
 		}
@@ -95,10 +101,101 @@ func (s *SSOConfig) UpdateRoles(roles map[string][]RoleInfo) (int64, error) {
 			if !hasAccount || !s.Accounts[accountId].HasRole(roleInfo.RoleArn()) {
 				changes += 1
 				s.Accounts[accountId].Roles = append(s.Accounts[accountId].Roles, &SSORole{
-					ARN: roleInfo.RoleArn(),
+					ARN:     roleInfo.RoleArn(),
+					Profile: roleInfo.Profile,
 				})
 			}
 		}
 	}
 	return changes, nil
+}
+
+// GetTags returns all of the user defined tags and calculated tags for this account
+func (a *SSOAccount) GetTags(id int64) map[string]string {
+	tags := map[string]string{
+		"AccountName": a.Name,
+	}
+	if id > 0 {
+		accountId := strconv.FormatInt(id, 10)
+		tags["AccountId"] = accountId
+	}
+	if a.DefaultRegion != "" {
+		tags["DefaultRegion"] = a.DefaultRegion
+	}
+	for k, v := range a.Tags {
+		tags[k] = v
+	}
+	return tags
+}
+
+// GetTags returns all of the user defined and calculated tags for this role
+func (r *SSORole) GetTags() map[string]string {
+	tags := map[string]string{
+		"RoleName":  r.GetRoleName(),
+		"AccountId": r.GetAccountId(),
+	}
+	if r.DefaultRegion != "" {
+		tags["DefaultRegion"] = r.DefaultRegion
+	}
+	for k, v := range r.Tags {
+		tags[k] = v
+	}
+	return tags
+}
+
+// GetRoleName returns the role name portion of the ARN
+func (r *SSORole) GetRoleName() string {
+	s := strings.Split(r.ARN, "/")
+	return s[1]
+}
+
+// GetAccountId returns the accountId portion of the ARN
+func (r *SSORole) GetAccountId() string {
+	s := strings.Split(r.ARN, ":")
+	return s[3]
+}
+
+// insertSortedString inserts s into ss in a sorted manner
+func insertSortedString(ss []string, s string) []string {
+	i := sort.SearchStrings(ss, s)
+	ss = append(ss, "")
+	copy(ss[i+1:], ss[i:])
+	ss[i] = s
+	return ss
+}
+
+// addKeyValue inserts the v into the slice for the given k
+func addKeyValue(tags *map[string][]string, k, v string) {
+	t := *tags
+	if t[k] == nil {
+		t[k] = []string{}
+	}
+	hasValue := false
+	for _, value := range t[k] {
+		if value == v {
+			hasValue = true
+			break
+		}
+	}
+	if !hasValue {
+		t[k] = insertSortedString(t[k], v)
+	}
+}
+
+// returns all of the available account & role tags for our SSO Provider
+func (s *SSOConfig) GetAllTags() map[string][]string {
+	tags := map[string][]string{}
+	for account, accountInfo := range s.Accounts {
+		if accountInfo.Tags != nil {
+			for k, v := range accountInfo.GetTags(account) {
+				addKeyValue(&tags, k, v)
+			}
+		}
+		for _, roleInfo := range accountInfo.Roles {
+			for k, v := range roleInfo.GetTags() {
+				addKeyValue(&tags, k, v)
+			}
+		}
+	}
+	return tags
 }
