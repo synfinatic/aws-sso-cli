@@ -65,12 +65,12 @@ type CLI struct {
 	SSO        string `kong:"optional,name='sso',short='S',help='AWS SSO Instance',env='AWS_SSO'"`
 
 	// AWS Params
-	Region   string `kong:"optional,name='region',short='r',help='AWS Region',env='AWS_DEFAULT_REGION'"`
+	Region   string `kong:"optional,name='region',help='AWS Region',env='AWS_DEFAULT_REGION'"`
 	Duration int64  `kong:"optional,name='duration',short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
 
 	// Store
-	Store     string `kong:"optional,name='store',short='s',default='${DEFAULT_STORE}',enum='json,keyring',help='Data secure store'"`
-	JsonStore string `kong:"optional,name='json-store',short='j',default='${JSON_STORE_FILE}',help='Path to JSON store file'"`
+	Store     string `kong:"optional,name='store',default='${DEFAULT_STORE}',enum='json,keyring',help='Data secure store'"`
+	JsonStore string `kong:"optional,name='json-store',default='${JSON_STORE_FILE}',help='Path to JSON store file'"`
 
 	// Commands
 	Exec    ExecCmd    `kong:"cmd,help='Execute command using specified AWS Role/Profile'"`

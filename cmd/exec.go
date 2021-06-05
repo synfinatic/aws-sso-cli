@@ -19,25 +19,50 @@ package main
  */
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 
 	"github.com/Songmu/prompter"
 	log "github.com/sirupsen/logrus"
 )
 
 type ExecCmd struct {
-	Fields []string `kong:"optional,enum='Id,AccountId,AccountName,EmailAddress,RoleName,Expires,Profile',help='Fields to display',env='AWS_SSO_FIELDS'"`
-	Cmd    string   `kong:"arg,optional,name='command',help='Command to execute',env='SHELL'"`
-	Args   []string `kong:"arg,optional,name='args',help='Associated arguments for the command'"`
+	Fields    []string `kong:"optional,help='Fields to display',enum='Id,AccountId,AccountName,EmailAddress,RoleName,Expires,Profile',env='AWS_SSO_FIELDS'"`
+	Arn       string   `kong:"optional,name='arn',short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN'"`
+	AccountId string   `kong:"optional,name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNTID'"`
+	Role      string   `kong:"optional,name='role',short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE'"`
+	Cmd       string   `kong:"arg,optional,name='command',help='Command to execute',env='SHELL'"`
+	Args      []string `kong:"arg,optional,name='args',help='Associated arguments for the command'"`
 }
 
 func (cc *ExecCmd) Run(ctx *RunContext) error {
-	var err error
+	// Did user specify the ARN or account/role?
+	if ctx.Cli.Exec.Arn != "" {
+		awssso := doAuth(ctx)
+		s := strings.Split(ctx.Cli.Exec.Arn, ":")
+		if len(s) == 2 {
+			// short account:Role format
+			return execCmd(ctx, awssso, s[0], s[1])
+		}
+		// long format for arn:aws:iam:XXXXXXXXXX:role/YYYYYYYY
+		accountid := s[3]
+		s = strings.Split(s[4], "/")
+		role := s[1]
+		return execCmd(ctx, awssso, accountid, role)
+	} else if ctx.Cli.Exec.AccountId != "" || ctx.Cli.Exec.Role != "" {
+		if ctx.Cli.Exec.AccountId == "" || ctx.Cli.Exec.Role == "" {
+			return fmt.Errorf("Please specify both --account and --role")
+		}
+		awssso := doAuth(ctx)
+		return execCmd(ctx, awssso, ctx.Cli.Exec.AccountId, ctx.Cli.Exec.Role)
+	}
 
+	// Prompt user for the role
 	roles := map[string][]RoleInfo{}
-	err = ctx.Store.GetRoles(&roles)
+	err := ctx.Store.GetRoles(&roles)
 
 	fields := defaultListFields
 	if len(ctx.Cli.Exec.Fields) > 0 {
@@ -50,22 +75,30 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 	}
 	log.Debugf("Role %s selected", roleid)
 
-	sso := ctx.Config.SSO[ctx.Cli.SSO]
-	awssso := NewAWSSSO(sso.SSORegion, sso.StartUrl, &ctx.Store)
-	err = awssso.Authenticate(ctx.Cli.PrintUrl, ctx.Cli.Browser)
-	if err != nil {
-		log.WithError(err).Fatalf("Unable to authenticate")
-	}
-
 	tableid, err := strconv.Atoi(roleid)
 	if err != nil {
 		log.Fatalf("Invalid Role Id: %s", roleid)
 	} else if tableid < 0 || tableid > len(table) {
 		log.Fatalf("Role Id is outside of valid range")
 	}
-	creds, err := awssso.GetRoleCredentials(table[tableid].AccountId, table[tableid].RoleName)
+	awssso := doAuth(ctx)
+	return execCmd(ctx, awssso, table[tableid].AccountId, table[tableid].RoleName)
+}
+
+func doAuth(ctx *RunContext) *AWSSSO {
+	sso := ctx.Config.SSO[ctx.Cli.SSO]
+	awssso := NewAWSSSO(sso.SSORegion, sso.StartUrl, &ctx.Store)
+	err := awssso.Authenticate(ctx.Cli.PrintUrl, ctx.Cli.Browser)
 	if err != nil {
-		log.WithError(err).Fatalf("Unable to get role credentials for %s", roleid)
+		log.WithError(err).Fatalf("Unable to authenticate")
+	}
+	return awssso
+}
+
+func execCmd(ctx *RunContext, awssso *AWSSSO, accountid, role string) error {
+	creds, err := awssso.GetRoleCredentials(accountid, role)
+	if err != nil {
+		log.WithError(err).Fatalf("Unable to get role credentials for %s", role)
 	}
 
 	// set our ENV & execute the command
