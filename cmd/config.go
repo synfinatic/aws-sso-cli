@@ -140,7 +140,7 @@ func (s *SSOConfig) GetRoles() []*SSORole {
 // GetAllTags returns all of the user defined tags and calculated tags for this account
 func (a *SSOAccount) GetAllTags(id int64) map[string]string {
 	tags := map[string]string{
-		"AccountName": a.Name,
+		"AccountName": strings.ReplaceAll(a.Name, " ", "_"),
 	}
 	if id > 0 {
 		accountId := strconv.FormatInt(id, 10)
