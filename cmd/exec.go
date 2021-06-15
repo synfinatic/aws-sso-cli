@@ -22,10 +22,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 
-	"github.com/Songmu/prompter"
+	"github.com/c-bata/go-prompt"
+	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -60,29 +60,19 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 		return execCmd(ctx, awssso, ctx.Cli.Exec.AccountId, ctx.Cli.Exec.Role)
 	}
 
-	// Prompt user for the role
-	roles := map[string][]RoleInfo{}
-	err := ctx.Store.GetRoles(&roles)
-
-	fields := defaultListFields
-	if len(ctx.Cli.Exec.Fields) > 0 {
-		fields = ctx.Cli.Exec.Fields
-	}
-	table := printRoles(roles, fields)
-	var roleid string
-	for len(roleid) == 0 {
-		roleid = prompter.Prompt("Select Role Id", "")
-	}
-	log.Debugf("Role %s selected", roleid)
-
-	tableid, err := strconv.Atoi(roleid)
-	if err != nil {
-		log.Fatalf("Invalid Role Id: %s", roleid)
-	} else if tableid < 0 || tableid > len(table) {
-		log.Fatalf("Role Id is outside of valid range")
-	}
-	awssso := doAuth(ctx)
-	return execCmd(ctx, awssso, table[tableid].AccountId, table[tableid].RoleName)
+	// use completer to figure out the role
+	sso := ctx.Config.SSO[ctx.Cli.SSO]
+	sso.Refresh()
+	log.Debugf("sso: %s", spew.Sdump(sso))
+	c := NewTagsCompleter(ctx, sso)
+	p := prompt.New(
+		c.Executor,
+		c.Complete,
+		prompt.OptionPrefix(">>> "),
+		prompt.OptionSetExitCheckerOnInput(c.ExitChecker),
+	)
+	p.Run()
+	return nil
 }
 
 func doAuth(ctx *RunContext) *AWSSSO {
@@ -111,7 +101,7 @@ func execCmd(ctx *RunContext, awssso *AWSSSO, accountid, role string) error {
 		os.Setenv("AWS_DEFAULT_REGION", ctx.Cli.Region)
 	}
 	os.Setenv("AWS_SESSION_EXPIRATION", creds.ExpireString())
-	//	os.Setenv("AWS_ENABLED_PROFILE", cli.Exec.Profile)
+	//	os.Setenv("AWS_SSO_PROFILE", cli.Exec.Profile)
 	os.Setenv("AWS_ROLE_ARN", creds.RoleArn())
 
 	// ready our command and connect everything up

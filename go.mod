@@ -10,6 +10,7 @@ require (
 	github.com/Songmu/prompter v0.4.0
 	github.com/alecthomas/kong v0.2.15
 	github.com/aws/aws-sdk-go v1.38.40
+	github.com/c-bata/go-prompt v0.2.5 // 0.2.6 is broken
 	github.com/davecgh/go-spew v1.1.1
 	github.com/knadh/koanf v0.16.0
 	github.com/sirupsen/logrus v1.7.0

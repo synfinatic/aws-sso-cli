@@ -56,7 +56,7 @@ type SSOAccount struct {
 }
 
 type SSORole struct {
-	account       *SSOAccount
+	Account       *SSOAccount
 	ARN           string            `koanf:"ARN" yaml:"ARN"`
 	Profile       string            `koanf:"Profile" yaml:"Profile,omitempty"`
 	Tags          map[string]string `koanf:"Tags" yaml:"Tags,omitempty"`
@@ -76,7 +76,7 @@ type KeyringStoreConfig struct {
 func (s *SSOConfig) Refresh() {
 	for _, a := range s.Accounts {
 		for _, r := range a.Roles {
-			r.account = a
+			r.Account = a
 		}
 	}
 }
@@ -139,8 +139,13 @@ func (s *SSOConfig) GetRoles() []*SSORole {
 
 // GetAllTags returns all of the user defined tags and calculated tags for this account
 func (a *SSOAccount) GetAllTags(id int64) map[string]string {
+	accountName := "*Unknown*"
+
+	if a.Name != "" {
+		accountName = strings.ReplaceAll(a.Name, " ", "_")
+	}
 	tags := map[string]string{
-		"AccountName": strings.ReplaceAll(a.Name, " ", "_"),
+		"AccountName": accountName,
 	}
 	if id > 0 {
 		accountId := strconv.FormatInt(id, 10)
@@ -159,7 +164,7 @@ func (a *SSOAccount) GetAllTags(id int64) map[string]string {
 func (r *SSORole) GetAllTags() map[string]string {
 	tags := map[string]string{}
 	// First pull in the account tags
-	for k, v := range r.account.GetAllTags(r.GetAccountId64()) {
+	for k, v := range r.Account.GetAllTags(r.GetAccountId64()) {
 		tags[k] = v
 	}
 
@@ -246,21 +251,12 @@ func (s *SSOConfig) GetAllTags() map[string][]string {
 
 // GetRoleMatches finds all the roles which match all of the given tags
 func (s *SSOConfig) GetRoleMatches(tags map[string]string) []*SSORole {
-	allRoles := s.GetRoles()
 	match := []*SSORole{}
-	for _, role := range allRoles {
-		hasMatch := make(map[string]bool, len(tags))
-		for tk, tv := range tags {
-			for k, v := range role.GetAllTags() {
-				if k == tk && v == tv {
-					hasMatch[tk] = true
-					break
-				}
-			}
-		}
+	for _, role := range s.GetRoles() {
 		isMatch := true
-		for _, v := range hasMatch {
-			if v == false {
+		roleTags := role.GetAllTags()
+		for tk, tv := range tags {
+			if roleTags[tk] != tv {
 				isMatch = false
 				break
 			}
@@ -268,7 +264,6 @@ func (s *SSOConfig) GetRoleMatches(tags map[string]string) []*SSORole {
 		if isMatch {
 			match = append(match, role)
 		}
-
 	}
 	return match
 }
