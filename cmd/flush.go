@@ -21,11 +21,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type ExpireCmd struct {
-	All bool `kong:"optional,name='all',help='Expire ClientData and Token'"`
+type FlushCmd struct {
+	//	All bool `kong:"optional,name='all',help='Delete ClientData and SSO Token'"`
 }
 
-func (cc *ExpireCmd) Run(ctx *RunContext) error {
+func (cc *FlushCmd) Run(ctx *RunContext) error {
 	var err error
 
 	sso := ctx.Config.SSO[ctx.Cli.SSO]
@@ -33,10 +33,11 @@ func (cc *ExpireCmd) Run(ctx *RunContext) error {
 
 	err = ctx.Store.DeleteCreateTokenResponse(awssso.StoreKey())
 	if err != nil {
-		log.WithError(err).Errorf("Unable to delete Token")
+		log.WithError(err).Errorf("Unable to delete TokenResponse")
 	} else {
 		log.Infof("Deleted cached Token for %s", awssso.StoreKey())
 	}
+	/* XXX: Don't think this is actually useful
 	if ctx.Cli.Expire.All {
 		err = ctx.Store.DeleteRegisterClientData(awssso.StoreKey())
 		if err != nil {
@@ -45,5 +46,6 @@ func (cc *ExpireCmd) Run(ctx *RunContext) error {
 			log.Infof("Deleted cached ClientData for %s", awssso.StoreKey())
 		}
 	}
+	*/
 	return nil
 }

@@ -20,21 +20,65 @@ package main
 
 import (
 	"fmt"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type TagsCmd struct {
+	AccountId string `kong:"optional,name='account',short='A',help='Filter regsults based on AWS AccountID',env='AWS_SSO_ACCOUNTID'"`
+	Role      string `kong:"optional,name='role',short='R',help='Filter results based on AWS Role Name',env='AWS_SSO_ROLE'"`
 }
 
 func (cc *TagsCmd) Run(ctx *RunContext) error {
 	sso := ctx.Config.SSO[ctx.Cli.SSO]
 	sso.Refresh()
 
-	for _, r := range sso.GetRoles() {
-		fmt.Printf("%s\n", r.ARN)
-		for k, v := range r.GetAllTags() {
-			fmt.Printf("  %s: %s\n", k, v)
+	allRoles := map[string][]RoleInfo{}
+	err := ctx.Store.GetRoles(&allRoles)
+	if err != nil {
+		log.Fatalf("Unable to load roles from cache: %s", err.Error())
+	}
+
+	if ctx.Cli.Tags.AccountId != "" {
+		for a, _ := range allRoles {
+			if a != ctx.Cli.Tags.AccountId {
+				delete(allRoles, a)
+			}
 		}
-		fmt.Printf("\n")
+	}
+
+	if ctx.Cli.Tags.Role != "" {
+		for account, roles := range allRoles {
+			for _, role := range roles {
+				if role.RoleName == ctx.Cli.Tags.Role {
+					// There can be only one
+					allRoles[account] = []RoleInfo{role}
+					break
+				}
+			}
+
+		}
+	}
+
+	configRoles := sso.GetRoles()
+
+	for account, roles := range allRoles {
+		for _, role := range roles {
+			fmt.Printf("%s\n", role.RoleArn())
+			fmt.Printf("  AccountId: %s\n", account)
+			fmt.Printf("  RoleName: %s\n", role.RoleName)
+			// config level tags
+			for _, crole := range configRoles {
+				if role.RoleArn() == crole.ARN {
+					for k, v := range crole.GetAllTags() {
+						fmt.Printf("  %s: %s\n", k, v)
+					}
+
+					break
+				}
+			}
+			fmt.Printf("\n")
+		}
 	}
 	return nil
 }

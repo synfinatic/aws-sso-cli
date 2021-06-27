@@ -30,12 +30,16 @@ import (
 )
 
 type ExecCmd struct {
-	Fields    []string `kong:"optional,help='Fields to display',enum='Id,AccountId,AccountName,EmailAddress,RoleName,Expires,Profile',env='AWS_SSO_FIELDS'"`
-	Arn       string   `kong:"optional,name='arn',short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN'"`
-	AccountId string   `kong:"optional,name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNTID'"`
-	Role      string   `kong:"optional,name='role',short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE'"`
-	Cmd       string   `kong:"arg,optional,name='command',help='Command to execute',env='SHELL'"`
-	Args      []string `kong:"arg,optional,name='args',help='Associated arguments for the command'"`
+	// AWS Params
+	Region    string `kong:"optional,name='region',help='AWS Region',env='AWS_DEFAULT_REGION'"`
+	Duration  int64  `kong:"optional,name='duration',short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
+	Arn       string `kong:"optional,name='arn',short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN'"`
+	AccountId string `kong:"optional,name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNTID'"`
+	Role      string `kong:"optional,name='role',short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE'"`
+
+	// Exec Params
+	Cmd  string   `kong:"arg,optional,name='command',help='Command to execute',env='SHELL'"`
+	Args []string `kong:"arg,optional,name='args',help='Associated arguments for the command'"`
 }
 
 func (cc *ExecCmd) Run(ctx *RunContext) error {
@@ -70,6 +74,8 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 		c.Complete,
 		prompt.OptionPrefix(">>> "),
 		prompt.OptionSetExitCheckerOnInput(c.ExitChecker),
+		prompt.OptionCompletionOnDown(),
+		prompt.OptionShowCompletionAtStart(),
 	)
 	p.Run()
 	return nil
@@ -97,8 +103,8 @@ func execCmd(ctx *RunContext, awssso *AWSSSO, accountid, role string) error {
 	os.Setenv("AWS_SESSION_TOKEN", creds.SessionToken)
 	os.Setenv("AWS_ACCOUNT_ID", creds.AccountId)
 	os.Setenv("AWS_ROLE_NAME", creds.RoleName)
-	if ctx.Cli.Region != "" {
-		os.Setenv("AWS_DEFAULT_REGION", ctx.Cli.Region)
+	if ctx.Cli.Exec.Region != "" {
+		os.Setenv("AWS_DEFAULT_REGION", ctx.Cli.Exec.Region)
 	}
 	os.Setenv("AWS_SESSION_EXPIRATION", creds.ExpireString())
 	//	os.Setenv("AWS_SSO_PROFILE", cli.Exec.Profile)
