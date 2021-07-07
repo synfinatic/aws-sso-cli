@@ -499,3 +499,27 @@ func (as *AWSSSO) GetRoleCredentials(accountid, role string) (RoleCredentials, e
 	}
 	return ret, nil
 }
+
+// returns all of the available tags from AWS SSO
+func (as *AWSSSO) GetAllTags() *TagsList {
+	tags := NewTagsList()
+	accounts, err := as.GetAccounts()
+	if err != nil {
+		log.Fatalf("Unable to get accounts: %s", err.Error())
+	}
+
+	for _, aInfo := range accounts {
+		roles, err := as.GetRoles(aInfo)
+		if err != nil {
+			log.Fatalf("Unable to get roles: %s", err.Error())
+		}
+
+		for _, role := range roles {
+			tags.Add("RoleName", role.RoleName)
+			tags.Add("AccountId", role.AccountId)
+			tags.Add("AccountName", role.AccountName)
+			tags.Add("EmailAddress", role.EmailAddress)
+		}
+	}
+	return tags
+}
