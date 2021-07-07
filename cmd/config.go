@@ -19,7 +19,6 @@ package main
  */
 
 import (
-	"sort"
 	"strconv"
 	"strings"
 
@@ -204,45 +203,20 @@ func (r *SSORole) GetAccountId64() int64 {
 	return i
 }
 
-// insertSortedString inserts s into ss in a sorted manner
-func insertSortedString(ss []string, s string) []string {
-	i := sort.SearchStrings(ss, s)
-	ss = append(ss, "")
-	copy(ss[i+1:], ss[i:])
-	ss[i] = s
-	return ss
-}
-
-// addKeyValue inserts the v into the slice for the given k
-func addKeyValue(tags *map[string][]string, k, v string) {
-	t := *tags
-	if t[k] == nil {
-		t[k] = []string{}
-	}
-	hasValue := false
-	for _, value := range t[k] {
-		if value == v {
-			hasValue = true
-			break
-		}
-	}
-	if !hasValue {
-		t[k] = insertSortedString(t[k], v)
-	}
-}
-
 // returns all of the available account & role tags for our SSO Provider
-func (s *SSOConfig) GetAllTags() map[string][]string {
-	tags := map[string][]string{}
-	for account, accountInfo := range s.Accounts {
-		if accountInfo.Tags != nil {
-			for k, v := range accountInfo.GetAllTags(account) {
-				addKeyValue(&tags, k, v)
+func (s *SSOConfig) GetAllTags() *TagsList {
+	tags := NewTagsList()
+	for _, accountInfo := range s.Accounts {
+		/*
+			if accountInfo.Tags != nil {
+				for k, v := range accountInfo.GetAllTags(account) {
+					tags.Add(k, v)
+				}
 			}
-		}
+		*/
 		for _, roleInfo := range accountInfo.Roles {
 			for k, v := range roleInfo.GetAllTags() {
-				addKeyValue(&tags, k, v)
+				tags.Add(k, v)
 			}
 		}
 	}
