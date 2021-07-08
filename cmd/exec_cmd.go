@@ -84,7 +84,7 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 func doAuth(ctx *RunContext) *AWSSSO {
 	sso := ctx.Config.SSO[ctx.Cli.SSO]
 	awssso := NewAWSSSO(sso.SSORegion, sso.StartUrl, &ctx.Store)
-	err := awssso.Authenticate(ctx.Cli.PrintUrl, ctx.Cli.Browser)
+	err := awssso.Authenticate(ctx.Config.PrintUrl, ctx.Config.Browser)
 	if err != nil {
 		log.WithError(err).Fatalf("Unable to authenticate")
 	}

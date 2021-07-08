@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kong"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
@@ -57,16 +56,12 @@ const (
 
 type CLI struct {
 	// Common Arguments
-	LogLevel   string `kong:"optional,short='L',name='loglevel',default='info',enum='error,warn,info,debug',help='Logging level [error|warn|info|debug]'"`
-	Lines      bool   `kong:"optional,name='lines',help='Print line number in logs'"`
+	LogLevel   string `kong:"optional,short='L',name='level',default='info',enum='error,warn,info,debug',help='Logging level [error|warn|info|debug]'"`
+	Lines      bool   `kong:"optional,help='Print line number in logs'"`
 	ConfigFile string `kong:"optional,name='config',short='c',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
-	Browser    string `kong:"optional,name='browser',short='b',help='Path to browser to use',env='AWS_SSO_BROWSER'"`
+	Browser    string `kong:"optional,short='b',help='Path to browser to use',env='AWS_SSO_BROWSER'"`
 	PrintUrl   bool   `kong:"optional,name='url',short='u',help='Print URL insetad of open in browser'"`
-	SSO        string `kong:"optional,name='sso',short='S',help='AWS SSO Instance',env='AWS_SSO'"`
-
-	// Store
-	Store     string `kong:"optional,name='store',default='${DEFAULT_STORE}',enum='json,keyring',help='Data secure store'"`
-	JsonStore string `kong:"optional,name='json-store',default='${JSON_STORE_FILE}',help='Path to JSON store file'"`
+	SSO        string `kong:"optional,short='S',help='AWS SSO Instance',env='AWS_SSO'"`
 
 	// Commands
 	Exec    ExecCmd    `kong:"cmd,help='Execute command using specified AWS Role/Profile'"`
@@ -96,8 +91,7 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatalf("Unable to process config file")
 	}
-
-	log.Debugf("%s\n", spew.Sdump(run_ctx.Config))
+	update_config(run_ctx.Config, cli)
 
 	// validate the SSO Provider
 	if run_ctx.Cli.SSO != "" {
@@ -118,19 +112,29 @@ func main() {
 		log.Fatalf("Please specify --sso, $AWS_SSO or set DefaultSSO in the config file")
 	}
 
-	switch run_ctx.Cli.Store {
+	switch run_ctx.Config.SecureStore {
 	case "json":
-		run_ctx.Store, err = OpenJsonStore(GetPath(run_ctx.Cli.JsonStore))
+		run_ctx.Store, err = OpenJsonStore(GetPath(run_ctx.Config.JsonStore.File))
 		if err != nil {
 			log.Fatalf("Unable to open JSON Secure store: %s", err)
 		}
 	default:
-		log.Fatalf("SecureStorage '%s' is not supported", run_ctx.Cli.Store)
+		log.Fatalf("SecureStorage '%s' is not supported", run_ctx.Config.SecureStore)
 	}
 
 	err = ctx.Run(&run_ctx)
 	if err != nil {
 		log.Fatalf("Error running command: %s", err.Error())
+	}
+}
+
+// Some CLI args are for overriding the config.  Do that here.
+func update_config(config *ConfigFile, cli CLI) {
+	if cli.PrintUrl {
+		config.PrintUrl = true
+	}
+	if cli.Browser != "" {
+		config.Browser = cli.Browser
 	}
 }
 

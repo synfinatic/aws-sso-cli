@@ -71,7 +71,7 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 		roles = map[string][]RoleInfo{} // zero out roles if we are doing a --force-update
 		sso := ctx.Config.SSO[ctx.Cli.SSO]
 		awssso := NewAWSSSO(sso.SSORegion, sso.StartUrl, &ctx.Store)
-		err = awssso.Authenticate(ctx.Cli.PrintUrl, ctx.Cli.Browser)
+		err = awssso.Authenticate(ctx.Config.PrintUrl, ctx.Config.Browser)
 		if err != nil {
 			log.WithError(err).Fatalf("Unable to authenticate")
 		}

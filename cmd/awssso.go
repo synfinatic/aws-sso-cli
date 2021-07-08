@@ -112,12 +112,13 @@ func (as *AWSSSO) Authenticate(printUrl bool, browser string) error {
 
 	if !printUrl {
 		if len(browser) == 0 {
-			err = open.Start(auth.VerificationUriComplete)
+			err = open.Run(auth.VerificationUriComplete)
+			browser = "default browser"
 		} else {
-			err = open.StartWith(auth.VerificationUriComplete, browser)
+			err = open.RunWith(auth.VerificationUriComplete, browser)
 		}
 		if err != nil {
-			log.WithError(err).Errorf("Unable to open %s", auth.VerificationUriComplete)
+			log.WithError(err).Fatalf("Unable to open %s with %s", auth.VerificationUriComplete, browser)
 		}
 	} else {
 		fmt.Printf("Please open the following URL in your browser:\n\n%s\n\n",
