@@ -38,6 +38,8 @@ type ConfigFile struct {
 	SecureStore  string                `koanf:"SecureStore" yaml:"SecureStore,omitempty"` // json or keyring
 	JsonStore    JsonStoreConfig       `koanf:"Json" yaml:"Json,omitempty"`
 	KeyringStore KeyringStoreConfig    `koanf:"Keyring" yaml:"Keyring,omitempty"`
+	PrintUrl     bool                  `koanf:"PrintUrl" yaml:"PrintUrl,omitempty"`
+	Browser      string                `koanf:"Browser" yaml:"Browser,omitempty"`
 }
 
 type SSOConfig struct {

@@ -32,7 +32,7 @@ to your shell environment.
 ### Common Flags
 
  * `--help`, `-h` -- Builtin and context sensitive help
- * `--loglevel <level>`, `-L` -- Change default log level: [error|warn|info|debug]
+ * `--level <level>`, `-L` -- Change default log level: [error|warn|info|debug]
  * `--lines` -- Print file number with logs
  * `--config <file>`, `-c` -- Specify alternative config file
  * `--browser <path>`, `-b` -- Override default browser to open AWS SSO URL
@@ -108,10 +108,12 @@ SSOConfig:
 							<Key2>: <Value2>
 					  Duration: 120  # override default duration time in minutes
 
-SecureStore: [json|keychain]
+Browser: <override path to browser>
+PrintUrl: false|true  # print URL instead of opening it in default browser
+
+SecureStore: [json|keychain]  # keychain is only valid on OSX
 Json:
 	File: <Path to JSON secure store file>
-PrintUrl: false|true  # print Url insetad of opening it?
 ```
 
 ## License
