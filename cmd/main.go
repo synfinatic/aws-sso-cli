@@ -159,6 +159,11 @@ func parse_args(cli *CLI) *kong.Context {
 	if cli.Lines {
 		log.SetReportCaller(true)
 	}
+	log.SetFormatter(&log.TextFormatter{
+		DisableLevelTruncation: true,
+		PadLevelText:           true,
+		DisableTimestamp:       true,
+	})
 
 	return ctx
 }
