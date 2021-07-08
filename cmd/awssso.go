@@ -86,7 +86,12 @@ func (as *AWSSSO) Authenticate(printUrl bool, browser string) error {
 	} else if err != nil {
 		log.WithError(err).Errorf("Unable to use cache")
 	} else {
-		log.Errorf("token has expired: %d", as.Token.ExpiresAt)
+		if as.Token.ExpiresAt != 0 {
+			t := time.Unix(as.Token.ExpiresAt, 0)
+			log.Infof("Token expired at: %s", t.Format("Mon Jan 2 15:04:05 -0700 MST 2006"))
+		} else {
+			log.Info("Token has expired.")
+		}
 	}
 
 	// Nope- fall back to our standard process
@@ -119,7 +124,7 @@ func (as *AWSSSO) Authenticate(printUrl bool, browser string) error {
 			auth.VerificationUriComplete)
 	}
 
-	log.Debugf("Waiting for SSO authentication")
+	log.Infof("Waiting for SSO authentication...")
 
 	err = as.CreateToken()
 	if err != nil {
@@ -161,7 +166,7 @@ func (r *RegisterClientData) Expired() bool {
 func (as *AWSSSO) RegisterClient() error {
 	err := as.store.GetRegisterClientData(as.StoreKey(), &as.ClientData)
 	if err == nil && !as.ClientData.Expired() {
-		log.Info("Using RegisterClient cache")
+		log.Debug("Using RegisterClient cache")
 		return nil
 	}
 
@@ -219,7 +224,7 @@ func (as *AWSSSO) StartDeviceAuthorization() error {
 		ExpiresIn:               aws.Int64Value(resp.ExpiresIn),
 		Interval:                aws.Int64Value(resp.Interval),
 	}
-	log.Infof("Created OIDC device code for %s (expires in: %ds)",
+	log.Debugf("Created OIDC device code for %s (expires in: %ds)",
 		as.StartUrl, as.DeviceAuth.ExpiresIn)
 
 	return nil
