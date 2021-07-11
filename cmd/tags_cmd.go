@@ -25,8 +25,9 @@ import (
 )
 
 type TagsCmd struct {
-	AccountId string `kong:"optional,name='account',short='A',help='Filter regsults based on AWS AccountID',env='AWS_SSO_ACCOUNTID'"`
-	Role      string `kong:"optional,name='role',short='R',help='Filter results based on AWS Role Name',env='AWS_SSO_ROLE'"`
+	AccountId   string `kong:"optional,name='account',short='A',help='Filter regsults based on AWS AccountID',env='AWS_SSO_ACCOUNTID'"`
+	Role        string `kong:"optional,name='role',short='R',help='Filter results based on AWS Role Name',env='AWS_SSO_ROLE'"`
+	ForceUpdate bool   `kong:"optional,name='force-update',help='Force account/role cache update'"`
 }
 
 func (cc *TagsCmd) Run(ctx *RunContext) error {
@@ -37,6 +38,9 @@ func (cc *TagsCmd) Run(ctx *RunContext) error {
 	err := ctx.Store.GetRoles(&allRoles)
 	if err != nil {
 		log.Fatalf("Unable to load roles from cache: %s", err.Error())
+	}
+	if ctx.Store.GetRolesExpired() {
+		log.Warn("Role cache may be out of date")
 	}
 
 	if ctx.Cli.Tags.AccountId != "" {

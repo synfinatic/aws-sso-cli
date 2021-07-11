@@ -38,6 +38,7 @@ type SecureStorage interface {
 
 	SaveRoles(map[string][]RoleInfo) error
 	GetRoles(*map[string][]RoleInfo) error
+	GetRolesExpired() bool
 	DeleteRoles() error
 }
 

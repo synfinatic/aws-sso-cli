@@ -66,6 +66,11 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 
 	roles := map[string][]RoleInfo{}
 	err = ctx.Store.GetRoles(&roles)
+	if err == nil {
+		if ctx.Store.GetRolesExpired() {
+			err = fmt.Errorf("Role cache has expired.")
+		}
+	}
 
 	if err != nil || ctx.Cli.List.ForceUpdate {
 		roles = map[string][]RoleInfo{} // zero out roles if we are doing a --force-update

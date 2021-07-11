@@ -133,17 +133,18 @@ func (jc *JsonStore) DeleteCreateTokenResponse(key string) error {
 	return jc.saveCache()
 }
 
-// GetRoles reads the roles from the cache.  Returns error if missing or expired
+// GetRoles reads the roles from the cache.  Returns error if missing
 func (jc *JsonStore) GetRoles(roles *map[string][]RoleInfo) error {
 	if jc.Roles.CreatedAt == 0 {
 		return fmt.Errorf("No Roles available in cache")
 	}
-	if jc.Roles.Expired() {
-		return fmt.Errorf("Roles have expired")
-	}
-
 	*roles = jc.Roles.Roles
 	return nil
+}
+
+// GetRolesExpired returns true if the roles in the cache have expired
+func (jc *JsonStore) GetRolesExpired() bool {
+	return jc.Roles.Expired()
 }
 
 // SaveRoles saves the roles to the cache
