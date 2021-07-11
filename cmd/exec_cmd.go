@@ -20,13 +20,16 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
 
-	"github.com/c-bata/go-prompt"
-	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
+	yaml "gopkg.in/yaml.v3"
+
+	"github.com/Songmu/prompter"
+	"github.com/c-bata/go-prompt"
 )
 
 type ExecCmd struct {
@@ -47,14 +50,17 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 	if ctx.Cli.Exec.Arn != "" {
 		awssso := doAuth(ctx)
 		s := strings.Split(ctx.Cli.Exec.Arn, ":")
+		var accountid, role string
 		if len(s) == 2 {
 			// short account:Role format
-			return execCmd(ctx, awssso, s[0], s[1])
+			accountid = s[0]
+			role = s[1]
+		} else {
+			// long format for arn:aws:iam:XXXXXXXXXX:role/YYYYYYYY
+			accountid = s[3]
+			s = strings.Split(s[4], "/")
+			role = s[1]
 		}
-		// long format for arn:aws:iam:XXXXXXXXXX:role/YYYYYYYY
-		accountid := s[3]
-		s = strings.Split(s[4], "/")
-		role := s[1]
 		return execCmd(ctx, awssso, accountid, role)
 	} else if ctx.Cli.Exec.AccountId != "" || ctx.Cli.Exec.Role != "" {
 		if ctx.Cli.Exec.AccountId == "" || ctx.Cli.Exec.Role == "" {
@@ -67,7 +73,6 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 	// use completer to figure out the role
 	sso := ctx.Config.SSO[ctx.Cli.SSO]
 	sso.Refresh()
-	log.Debugf("sso: %s", spew.Sdump(sso))
 	c := NewTagsCompleter(ctx, sso)
 	p := prompt.New(
 		c.Executor,
@@ -81,6 +86,7 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 	return nil
 }
 
+// Creates an AWSSO object post authentication
 func doAuth(ctx *RunContext) *AWSSSO {
 	sso := ctx.Config.SSO[ctx.Cli.SSO]
 	awssso := NewAWSSSO(sso.SSORegion, sso.StartUrl, &ctx.Store)
@@ -91,6 +97,7 @@ func doAuth(ctx *RunContext) *AWSSSO {
 	return awssso
 }
 
+// Executes Cmd+Args in the context of the AWS Role creds
 func execCmd(ctx *RunContext, awssso *AWSSSO, accountid, role string) error {
 	creds, err := awssso.GetRoleCredentials(accountid, role)
 	if err != nil {
@@ -118,4 +125,46 @@ func execCmd(ctx *RunContext, awssso *AWSSSO, accountid, role string) error {
 
 	// just do it!
 	return cmd.Run()
+}
+
+func updateRoleCache(ctx *RunContext, sso *SSOConfig, awssso *AWSSSO, roles *map[string][]RoleInfo) error {
+	roles = &map[string][]RoleInfo{} // zero out roles if we are doing a --force-update
+
+	accounts, err := awssso.GetAccounts()
+	if err != nil {
+		return fmt.Errorf("Unable to get accounts: %s", err.Error())
+	}
+
+	for _, a := range accounts {
+		account := a.AccountId
+		roleInfo, err := awssso.GetRoles(a)
+		if err != nil {
+			return fmt.Errorf("Unable to get roles for AccountId %s: %s",
+				account, err.Error())
+		}
+
+		rroles := *roles
+		for _, r := range roleInfo {
+			rroles[account] = append(rroles[account], r)
+		}
+	}
+	ctx.Store.SaveRoles(*roles)
+
+	// now update our config.yaml
+	changes, err := sso.UpdateRoles(*roles)
+	if err != nil {
+		return fmt.Errorf("Unable to update our config file: %s", err.Error())
+	}
+	if changes > 0 {
+		p := fmt.Sprintf("Update config file with %d new roles?", changes)
+		if prompter.YN(p, true) {
+			b, _ := yaml.Marshal(ctx.Config)
+			cfile := fmt.Sprintf("%s", ctx.Cli.ConfigFile)
+			err = ioutil.WriteFile(cfile, b, 0644)
+			if err != nil {
+				return fmt.Errorf("Unable to save config: %s", err.Error())
+			}
+		}
+	}
+	return nil
 }
