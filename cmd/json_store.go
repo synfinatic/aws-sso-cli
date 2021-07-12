@@ -113,12 +113,13 @@ func (jc *JsonStore) DeleteRegisterClientData(key string) error {
 	return jc.saveCache()
 }
 
-// CreateTokenResponse
+// SaveCreateTokenResponse stores the token in the json file
 func (jc *JsonStore) SaveCreateTokenResponse(key string, token CreateTokenResponse) error {
 	jc.CreateTokenResponse[key] = token
 	return jc.saveCache()
 }
 
+// GetCreateTokenResponse retrieves the CreateTokenResponse from the json file
 func (jc *JsonStore) GetCreateTokenResponse(key string, token *CreateTokenResponse) error {
 	var ok bool
 	*token, ok = jc.CreateTokenResponse[key]
@@ -128,6 +129,7 @@ func (jc *JsonStore) GetCreateTokenResponse(key string, token *CreateTokenRespon
 	return nil
 }
 
+// DeleteCreateTokenResponse deletes the token from the json file
 func (jc *JsonStore) DeleteCreateTokenResponse(key string) error {
 	jc.CreateTokenResponse[key] = CreateTokenResponse{}
 	return jc.saveCache()

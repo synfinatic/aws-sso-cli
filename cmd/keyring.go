@@ -22,45 +22,83 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"strings"
 	"time"
 
 	"github.com/99designs/keyring"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
 const (
-	KEYRING_NAME                = "AWSSSOCli"
-	KEYRING_ID                  = "aws-sso-cli"
-	REGISTER_CLIENT_DATA_PREFIX = "client-data"
+	KEYRING_NAME                 = "AWSSSOCli"
+	KEYRING_ID                   = "aws-sso-cli"
+	REGISTER_CLIENT_DATA_PREFIX  = "client-data"
+	CREATE_TOKEN_RESPONSE_PREFIX = "token-response"
+	ROLE_INFO_KEY                = "roles"
 )
 
 // Impliments SecureStorage
-type KeyringCache struct {
+type KeyringStore struct {
 	keyring keyring.Keyring
 	config  keyring.Config
 }
 
-// https://github.com/99designs/keyring/blob/master/config.go
-var krConfigDefaults = keyring.Config{
-	ServiceName: KEYRING_NAME, // generic
-	// OSX Keychain
-	KeychainName:                   KEYRING_NAME,
-	KeychainSynchronizable:         false,
-	KeychainAccessibleWhenUnlocked: false,
-	// KeychainPasswordFunc: ???,
-	// Other systems below this line
-	FileDir:                 CONFIG_DIR + "/keys/",
-	FilePasswordFunc:        fileKeyringPassphrasePrompt,
-	LibSecretCollectionName: strings.ToLower(KEYRING_NAME),
-	KWalletAppID:            KEYRING_ID,
-	KWalletFolder:           KEYRING_ID,
-	WinCredPrefix:           KEYRING_ID,
+var NewPassword string = ""
+
+func NewKeyringConfig(name string) *keyring.Config {
+	securePath := path.Join(CONFIG_DIR, "secure")
+
+	c := keyring.Config{
+		ServiceName: KEYRING_NAME, // generic
+		// OSX Keychain
+		KeychainName:                   KEYRING_NAME,
+		KeychainSynchronizable:         false,
+		KeychainAccessibleWhenUnlocked: false,
+		// KeychainPasswordFunc: ???,
+		// Other systems below this line
+		FileDir:                 securePath,
+		FilePasswordFunc:        fileKeyringPassphrasePrompt,
+		LibSecretCollectionName: strings.ToLower(KEYRING_NAME),
+		KWalletAppID:            KEYRING_ID,
+		KWalletFolder:           KEYRING_ID,
+		WinCredPrefix:           KEYRING_ID,
+	}
+	if name != "" {
+		c.AllowedBackends = []keyring.BackendType{keyring.BackendType(name)}
+		rolesFile := GetPath(path.Join(securePath, "roles"))
+
+		if name == "file" {
+			if _, err := os.Stat(rolesFile); os.IsNotExist(err) {
+				// new secure store, so we should prompt user twice for password
+				// if ENV var is not set
+				if password := os.Getenv(ENV_SSO_FILE_PASSWORD); password == "" {
+					pass1, err := fileKeyringPassphrasePrompt("Select password")
+					if err != nil {
+						log.Fatalf("Password error: %s", err.Error())
+					}
+					pass2, err := fileKeyringPassphrasePrompt("Verify password")
+					if err != nil {
+						log.Fatalf("Password error: %s", err.Error())
+					}
+					if pass1 != pass2 {
+						log.Fatalf("Password missmatch")
+					}
+					NewPassword = pass1
+				}
+			}
+		}
+	}
+	return &c
 }
 
 func fileKeyringPassphrasePrompt(prompt string) (string, error) {
 	if password := os.Getenv(ENV_SSO_FILE_PASSWORD); password != "" {
 		return password, nil
+	}
+	if NewPassword != "" {
+		return NewPassword, nil
 	}
 
 	fmt.Fprintf(os.Stderr, "%s: ", prompt)
@@ -72,27 +110,24 @@ func fileKeyringPassphrasePrompt(prompt string) (string, error) {
 	return string(b), nil
 }
 
-func OpenKeyring(cfg *keyring.Config) (*KeyringCache, error) {
-	if cfg == nil {
-		cfg = &krConfigDefaults
-	}
+func OpenKeyring(cfg *keyring.Config) (*KeyringStore, error) {
 	ring, err := keyring.Open(*cfg)
 	if err != nil {
 		return nil, err
 	}
-	kr := KeyringCache{
+	kr := KeyringStore{
 		keyring: ring,
 		config:  *cfg,
 	}
 	return &kr, nil
 }
 
-func (kr *KeyringCache) RegisterClientKey(ssoRegion string) string {
+func (kr *KeyringStore) RegisterClientKey(ssoRegion string) string {
 	return fmt.Sprintf("%s:%s", REGISTER_CLIENT_DATA_PREFIX, ssoRegion)
 }
 
 // Save our RegisterClientData in the key chain
-func (kr *KeyringCache) SaveRegisterClientData(region string, client RegisterClientData) error {
+func (kr *KeyringStore) SaveRegisterClientData(region string, client RegisterClientData) error {
 	jdata, err := json.Marshal(client)
 	if err != nil {
 		return err
@@ -105,7 +140,7 @@ func (kr *KeyringCache) SaveRegisterClientData(region string, client RegisterCli
 }
 
 // Get our RegisterClientData from the key chain
-func (kr *KeyringCache) GetRegisterClientData(region string, client *RegisterClientData) error {
+func (kr *KeyringStore) GetRegisterClientData(region string, client *RegisterClientData) error {
 	data, err := kr.keyring.Get(kr.RegisterClientKey(region))
 	if err != nil {
 		return err
@@ -118,7 +153,7 @@ func (kr *KeyringCache) GetRegisterClientData(region string, client *RegisterCli
 }
 
 // Delete the RegisterClientData from the keychain
-func (kr *KeyringCache) DeleteRegisterClientData(region string) error {
+func (kr *KeyringStore) DeleteRegisterClientData(region string) error {
 	keys, err := kr.keyring.Keys()
 	if err != nil {
 		return err
@@ -138,8 +173,137 @@ func (kr *KeyringCache) DeleteRegisterClientData(region string) error {
 	}
 
 	// Can't just call keyring.Remove() because it's broken, so we'll update the record instead
+	// https://github.com/99designs/keyring/issues/84
 	// return kr.keyring.Remove(key)
 	client := RegisterClientData{}
 	client.ClientSecretExpiresAt = time.Now().Unix()
 	return kr.SaveRegisterClientData(region, client)
+}
+
+func (kr *KeyringStore) CreateTokenResponseKey(key string) string {
+	return fmt.Sprintf("%s:%s", CREATE_TOKEN_RESPONSE_PREFIX, key)
+}
+
+// SaveCreateTokenResponse stores the token in the keyring
+func (kr *KeyringStore) SaveCreateTokenResponse(key string, token CreateTokenResponse) error {
+	jdata, err := json.Marshal(token)
+	if err != nil {
+		return err
+	}
+	err = kr.keyring.Set(keyring.Item{
+		Key:  kr.CreateTokenResponseKey(key),
+		Data: jdata,
+	})
+	return err
+}
+
+// GetCreateTokenResponse retrieves the CreateTokenResponse from the keyring
+func (kr *KeyringStore) GetCreateTokenResponse(key string, token *CreateTokenResponse) error {
+	data, err := kr.keyring.Get(kr.CreateTokenResponseKey(key))
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(data.Data, token)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteCreateTokenResponse deletes the CreateTokenResponse from the keyring
+func (kr *KeyringStore) DeleteCreateTokenResponse(key string) error {
+	keys, err := kr.keyring.Keys()
+	if err != nil {
+		return err
+	}
+
+	// make sure we have this token response store
+	hasKey := false
+	keyValue := kr.CreateTokenResponseKey(key)
+	for _, k := range keys {
+		if k == keyValue {
+			hasKey = true
+			break
+		}
+	}
+	if !hasKey {
+		return fmt.Errorf("Missing CreateTokenResponse for key: %s", key)
+	}
+
+	// Can't just call keyring.Remove because it's broken, so we'll udpate the record instead
+	// https://github.com/99designs/keyring/issues/84
+	// return kr.keyring.Remove(keyValue)
+	tr := CreateTokenResponse{}
+	tr.ExpiresAt = time.Now().Unix()
+	return kr.SaveCreateTokenResponse(key, tr)
+}
+
+// GetRoles reads the roles from the cache.  Returns error if missing
+func (kr *KeyringStore) GetRoles(roles *map[string][]RoleInfo) error {
+	data, err := kr.keyring.Get(ROLE_INFO_KEY)
+	if err != nil {
+		return err
+	}
+	cache := RoleCache{}
+	err = json.Unmarshal(data.Data, &cache)
+	if err != nil {
+		return err
+	}
+	r := *roles
+	for account, roles := range cache.Roles {
+		r[account] = roles
+	}
+	return nil
+}
+
+// GetRolesExpired returns true if the roles in the cache have expired
+func (kr *KeyringStore) GetRolesExpired() bool {
+	data, err := kr.keyring.Get(ROLE_INFO_KEY)
+	if err != nil {
+		return true
+	}
+	cache := RoleCache{}
+	err = json.Unmarshal(data.Data, &cache)
+	return cache.Expired()
+}
+
+// SaveRoles saves the roles to the cache
+func (kr *KeyringStore) SaveRoles(roles map[string][]RoleInfo) error {
+	cache := RoleCache{
+		CreatedAt: time.Now().Unix(),
+		Roles:     roles,
+	}
+	jdata, err := json.Marshal(cache)
+	if err != nil {
+		return err
+	}
+	return kr.keyring.Set(keyring.Item{
+		Key:  ROLE_INFO_KEY,
+		Data: jdata,
+	})
+}
+
+// DeleteRoles removes the roles from the cache
+func (kr *KeyringStore) DeleteRoles() error {
+	keys, err := kr.keyring.Keys()
+	if err != nil {
+		return err
+	}
+
+	// make sure we have this token response store
+	hasKey := false
+	for _, k := range keys {
+		if k == ROLE_INFO_KEY {
+			hasKey = true
+			break
+		}
+	}
+	if !hasKey {
+		return fmt.Errorf("Missing Roles for key: %s", ROLE_INFO_KEY)
+	}
+
+	// Can't just call keyring.Remove because it's broken, so we'll udpate the record instead
+	// https://github.com/99designs/keyring/issues/84
+	// return kr.keyring.Remove(ROLE_INFO_KEY)
+	return kr.SaveRoles(map[string][]RoleInfo{})
 }

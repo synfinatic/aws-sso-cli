@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"strings"
 
+	//	"github.com/99designs/keyring"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -33,13 +34,12 @@ type AWSProfile struct {
 }
 
 type ConfigFile struct {
-	SSO          map[string]*SSOConfig `koanf:"SSOConfig" yaml:"SSOConfig,omitempty"`
-	DefaultSSO   string                `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`   // specify default SSO by key
-	SecureStore  string                `koanf:"SecureStore" yaml:"SecureStore,omitempty"` // json or keyring
-	JsonStore    JsonStoreConfig       `koanf:"Json" yaml:"Json,omitempty"`
-	KeyringStore KeyringStoreConfig    `koanf:"Keyring" yaml:"Keyring,omitempty"`
-	PrintUrl     bool                  `koanf:"PrintUrl" yaml:"PrintUrl,omitempty"`
-	Browser      string                `koanf:"Browser" yaml:"Browser,omitempty"`
+	SSO         map[string]*SSOConfig `koanf:"SSOConfig" yaml:"SSOConfig,omitempty"`
+	DefaultSSO  string                `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`   // specify default SSO by key
+	SecureStore string                `koanf:"SecureStore" yaml:"SecureStore,omitempty"` // json or keyring
+	JsonStore   string                `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
+	PrintUrl    bool                  `koanf:"PrintUrl" yaml:"PrintUrl,omitempty"`
+	Browser     string                `koanf:"Browser" yaml:"Browser,omitempty"`
 }
 
 type SSOConfig struct {
@@ -62,14 +62,6 @@ type SSORole struct {
 	Profile       string            `koanf:"Profile" yaml:"Profile,omitempty"`
 	Tags          map[string]string `koanf:"Tags" yaml:"Tags,omitempty"`
 	DefaultRegion string            `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
-}
-
-type JsonStoreConfig struct {
-	File string `koanf:"File" yaml:"File"` // Filename
-}
-
-type KeyringStoreConfig struct {
-	// ???
 }
 
 // Refresh should be called any time you load the SSOConfig into memory or add a role
