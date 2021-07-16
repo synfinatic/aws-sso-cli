@@ -116,13 +116,13 @@ JsonStore: <path to json file>
 
 SecureStore supports the following backends:
 
- * `json` - Cleartext JSON (insecure and not recommended)
- * `file` - Encrypted local file (OS agnostic and default)
- * `keychain` - macOS/OSX Keychain
+ * `json` - Cleartext JSON file (insecure and not recommended)
+ * `file` - Encrypted local files (OS agnostic and default)
+ * `keychain` - macOS/OSX [Keychain](https://support.apple.com/guide/mac-help/use-keychains-to-store-passwords-mchlf375f392/mac)
  * `kwallet` - [KDE Wallet](https://utils.kde.org/projects/kwalletmanager/)
  * `pass` - [pass](https://www.passwordstore.org)
- * `secret-service` - Freedesktop.org Secret Service
- * `wincred` - Windows credential store
+ * `secret-service` - Freedesktop.org [Secret Service](https://specifications.freedesktop.org/secret-service/latest/re01.html)
+ * `wincred` - Windows [Credential Manager](https://support.microsoft.com/en-us/windows/accessing-credential-manager-1b5c916a-6a16-889f-8581-fc16e8165ac0)
 
 ## License
 

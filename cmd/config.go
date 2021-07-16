@@ -22,7 +22,6 @@ import (
 	"strconv"
 	"strings"
 
-	//	"github.com/99designs/keyring"
 	log "github.com/sirupsen/logrus"
 )
 

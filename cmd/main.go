@@ -51,7 +51,7 @@ const (
 	JSON_STORE_FILE       = CONFIG_DIR + "/store.json"
 	ENV_SSO_FILE_PASSWORD = "AWS_SSO_FILE_PASSPHRASE"
 	ENV_SSO_REGION        = "AWS_SSO_DEFAULT_REGION"
-	DEFAULT_STORE         = "json" // XXX: FIXME
+	DEFAULT_STORE         = "file"
 )
 
 type CLI struct {
