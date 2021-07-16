@@ -91,30 +91,38 @@ but this can be overridden by setting `$AWS_SSO_CONFIG` in your shell or via the
 
 ```
 SSOConfig:
-	<Name of AWS SSO>:  # `Default` defines the automatically selected AWS SSO instance
-		SSORegion: <AWS Region>
-		StartUrl: <URL for AWS SSO Portal>
-		Duration: <minutes>  # Set default duration time
-		Accounts:  # optional block
-			<AccountId>:  # account config is optional
-				Name: <Friendly Name of Account>
-				Tags:  # tags for the account
-					<Key1>: <Value1>
-					<Key2>: <Value2>
-				Roles:
-					- ARN: <ARN of Role>
-				      Tags:  # tags specific for this role
-							<Key1>: <Value1>
-							<Key2>: <Value2>
-					  Duration: 120  # override default duration time in minutes
+    <Name of AWS SSO>:  # `Default` defines the automatically selected AWS SSO instance
+        SSORegion: <AWS Region>
+        StartUrl: <URL for AWS SSO Portal>
+        Duration: <minutes>  # Set default duration time
+        Accounts:  # optional block
+            <AccountId>:  # account config is optional
+                Name: <Friendly Name of Account>
+                Tags:  # tags for the account
+                    <Key1>: <Value1>
+                    <Key2>: <Value2>
+                Roles:
+                    - ARN: <ARN of Role>
+                      Tags:  # tags specific for this role
+                          <Key1>: <Value1>
+                          <Key2>: <Value2>
+                      Duration: 120  # override default duration time in minutes
 
 Browser: <override path to browser>
-PrintUrl: false|true  # print URL instead of opening it in default browser
-
-SecureStore: [json|keychain]  # keychain is only valid on OSX
-Json:
-	File: <Path to JSON secure store file>
+PrintUrl: [false|true]  # print URL instead of opening it in default browser
+SecureStore: [json|file|keychain|kwallet|pass|secret-service|wincred]
+JsonStore: <path to json file>
 ```
+
+SecureStore supports the following backends:
+
+ * `json` - Cleartext JSON (insecure and not recommended)
+ * `file` - Encrypted local file (OS agnostic and default)
+ * `keychain` - macOS/OSX Keychain
+ * `kwallet` - [KDE Wallet](https://utils.kde.org/projects/kwalletmanager/)
+ * `pass` - [pass](https://www.passwordstore.org)
+ * `secret-service` - Freedesktop.org Secret Service
+ * `wincred` - Windows credential store
 
 ## License
 

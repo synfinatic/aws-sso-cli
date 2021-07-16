@@ -114,12 +114,20 @@ func main() {
 
 	switch run_ctx.Config.SecureStore {
 	case "json":
-		run_ctx.Store, err = OpenJsonStore(GetPath(run_ctx.Config.JsonStore.File))
+		cfile := GetPath(JSON_STORE_FILE)
+		if run_ctx.Config.JsonStore != "" {
+			cfile = GetPath(run_ctx.Config.JsonStore)
+		}
+		run_ctx.Store, err = OpenJsonStore(cfile)
 		if err != nil {
-			log.Fatalf("Unable to open JSON Secure store: %s", err)
+			log.WithError(err).Fatalf("Unable to open JsonStore %s", cfile)
 		}
 	default:
-		log.Fatalf("SecureStorage '%s' is not supported", run_ctx.Config.SecureStore)
+		cfg := NewKeyringConfig(run_ctx.Config.SecureStore)
+		run_ctx.Store, err = OpenKeyring(cfg)
+		if err != nil {
+			log.WithError(err).Fatalf("Unable to open SecureStore %s", run_ctx.Config.SecureStore)
+		}
 	}
 
 	err = ctx.Run(&run_ctx)
