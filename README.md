@@ -56,6 +56,10 @@ Flags:
 
 Arguments: `[<command>] [<args> ...]`
 
+Note that if `--arn` or both `--account` and `--role` are specified, than
+you will skip interactive mode and the command will execute immediately.
+
+
 ### list
 
 List will list all of the AWS Roles you can assume with the metadata/tags available
@@ -114,7 +118,7 @@ SecureStore: [json|file|keychain|kwallet|pass|secret-service|wincred]
 JsonStore: <path to json file>
 ```
 
-SecureStore supports the following backends:
+`SecureStore` supports the following backends:
 
  * `json` - Cleartext JSON file (insecure and not recommended)
  * `file` - Encrypted local files (OS agnostic and default)
@@ -123,6 +127,17 @@ SecureStore supports the following backends:
  * `pass` - [pass](https://www.passwordstore.org)
  * `secret-service` - Freedesktop.org [Secret Service](https://specifications.freedesktop.org/secret-service/latest/re01.html)
  * `wincred` - Windows [Credential Manager](https://support.microsoft.com/en-us/windows/accessing-credential-manager-1b5c916a-6a16-889f-8581-fc16e8165ac0)
+
+The `Accounts` block is completely optional!  The only purpose of this block
+is to allow you to add additional tags (key/value pairs) to your accounts/roles
+to make them easier to select.
+
+By default the following key/values are available as tags:
+
+ * AccountId
+ * AccountName 
+ * EmailAddress (root account email)
+ * RoleName
 
 ## License
 
