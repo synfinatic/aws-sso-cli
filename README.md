@@ -7,6 +7,11 @@ https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html)
 wizard with a focus on security and ease of use for organizations with
 many AWS Accounts and/or users with many Roles to assume.
 
+AWS SSO CLI requires your AWS account(s) to be setup with [AWS SSO](
+https://aws.amazon.com/single-sign-on/)!  If your organization is using the
+older SAML integration (typically you will have multiple tiles in OneLogin/Okta)
+then this won't work for you.
+
 ## What does AWS SSO CLI do?
 
 AWS SSO CLI makes it easy to manage your shell environment variables allowing
@@ -20,6 +25,20 @@ via an interactive auto-complete experience with automatic and user-defined
 metadata (tags) and exports the necessary [AWS STS Token credentials](
 https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_use-resources.html#using-temp-creds-sdk-cli)
 to your shell environment.
+
+[![asciicast](https://asciinema.org/a/UOZHKrsUSBXDeP5BS361UcmDU.svg)](https://asciinema.org/a/UOZHKrsUSBXDeP5BS361UcmDU)
+
+## Installation
+
+ * Option 1: [Download binary](https://github.com/synfinatic/aws-sso-cli/releases)
+ * Option 2: Build from source:
+	1. Install [GoLang](https://golang.org) and GNU Make
+	1. Clone this repo
+	1. Run `make` (or `gmake`)
+	1. Your binary will be created in the `dist` directory
+
+In both cases, copy the binary to a reasonable location (such as `/usr/local/bin`) and
+ensure that it is executable (`chmod 755 <path>`).
 
 ## Commands
 
