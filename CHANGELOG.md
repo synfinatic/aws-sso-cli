@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-## [v1.0.1] - 2021-xx-xx
+## [v1.0.1] - 2021-07-18
 
  * Add macOS/M1 support
  * Improve documentation
