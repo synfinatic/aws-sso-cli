@@ -70,6 +70,8 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 		return execCmd(ctx, awssso, ctx.Cli.Exec.AccountId, ctx.Cli.Exec.Role)
 	}
 
+	fmt.Printf("Please use `exit` or `Ctrl-D` to quit.\n")
+
 	// use completer to figure out the role
 	sso := ctx.Config.SSO[ctx.Cli.SSO]
 	sso.Refresh()
@@ -77,7 +79,7 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 	p := prompt.New(
 		c.Executor,
 		c.Complete,
-		prompt.OptionPrefix(">>> "),
+		prompt.OptionPrefix("> "),
 		prompt.OptionSetExitCheckerOnInput(c.ExitChecker),
 		prompt.OptionCompletionOnDown(),
 		prompt.OptionShowCompletionAtStart(),

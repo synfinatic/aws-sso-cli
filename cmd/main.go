@@ -50,7 +50,6 @@ const (
 	CONFIG_FILE           = CONFIG_DIR + "/config.yaml"
 	JSON_STORE_FILE       = CONFIG_DIR + "/store.json"
 	ENV_SSO_FILE_PASSWORD = "AWS_SSO_FILE_PASSPHRASE"
-	ENV_SSO_REGION        = "AWS_SSO_DEFAULT_REGION"
 	DEFAULT_STORE         = "file"
 )
 
@@ -180,7 +179,7 @@ func parse_args(cli *CLI) *kong.Context {
 	return ctx
 }
 
-type VersionCmd struct{}
+type VersionCmd struct{} // takes no arguments
 
 func (cc *VersionCmd) Run(ctx *RunContext) error {
 	delta := ""
@@ -188,7 +187,7 @@ func (cc *VersionCmd) Run(ctx *RunContext) error {
 		delta = fmt.Sprintf(" [%s delta]", Delta)
 		Tag = "Unknown"
 	}
-	fmt.Printf("AWS SSO Version %s -- Copyright 2021 Aaron Turner\n", Version)
+	fmt.Printf("AWS SSO CLI Version %s -- Copyright 2021 Aaron Turner\n", Version)
 	fmt.Printf("%s (%s)%s built at %s\n", CommitID, Tag, delta, Buildinfos)
 	return nil
 }
