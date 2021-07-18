@@ -20,6 +20,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/c-bata/go-prompt"
@@ -67,6 +68,9 @@ func (tc *TagsCompleter) Complete(d prompt.Document) []prompt.Suggest {
 }
 
 func (tc *TagsCompleter) Executor(args string) {
+	if args == "exit" {
+		os.Exit(1)
+	}
 	argsMap := argsToMap(strings.Split(args, " "))
 
 	ssoRoles := tc.roleTags.GetMatchingRoles(argsMap)

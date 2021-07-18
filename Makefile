@@ -9,7 +9,7 @@ endif
 BUILDINFOSDET ?=
 PROGRAM_ARGS ?=
 
-PROJECT_VERSION           := 1.0.0
+PROJECT_VERSION           := 1.0.1
 DOCKER_REPO               := synfinatic
 PROJECT_NAME              := aws-sso
 PROJECT_TAG               := $(shell git describe --tags 2>/dev/null $(git rev-list --tags --max-count=1))
@@ -35,6 +35,7 @@ WINDOWS32_BIN             := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)-windo
 LINUX_BIN                 := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)-linux-amd64
 LINUXARM64_BIN            := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)-linux-arm64
 DARWIN_BIN                := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)-darwin-amd64
+DARWINARM64_BIN           := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)-darwin-arm64
 
 
 
@@ -42,9 +43,9 @@ ALL: $(OUTPUT_NAME) ## Build binary.  Needs to be a supported plaform as defined
 
 include help.mk  # place after ALL target and before all other targets
 
-build-release: windows windows32 linux linux-arm64 darwin ## Build all our release binaries
+.build-release: windows windows32 linux linux-arm64 darwin darwin-arm64
 
-release: clean build-release
+release: clean .build-release ## Build all our release binaries
 	cd dist && shasum -a 256 * | gpg --clear-sign >release.sig
 
 .PHONY: run
@@ -112,13 +113,13 @@ precheck: test test-fmt test-tidy  ## Run all tests that happen in a PR
 
 
 # Build targets for our supported plaforms
-windows: $(WINDOWS_BIN)  ## Build 64bit Windows binary
+windows: $(WINDOWS_BIN)  ## Build 64bit x86 Windows binary
 
 $(WINDOWS_BIN): $(wildcard */*.go) $(DIST_DIR)
 	GOARCH=amd64 GOOS=windows go build -ldflags='$(LDFLAGS)' -o $(WINDOWS_BIN) cmd/*.go
 	@echo "Created: $(WINDOWS_BIN)"
 
-windows32: $(WINDOWS32_BIN)  ## Build 32bit Windows binary
+windows32: $(WINDOWS32_BIN)  ## Build 32bit x86 Windows binary
 
 $(WINDOWS32_BIN): cmd/*.go $(DIST_DIR)
 	GOARCH=386 GOOS=windows go build -ldflags='$(LDFLAGS)' -o $(WINDOWS32_BIN) cmd/*.go
@@ -141,6 +142,12 @@ darwin: $(DARWIN_BIN)  ## Build MacOS/x86_64 binary
 $(DARWIN_BIN): $(wildcard */*.go) $(DIST_DIR)
 	GOARCH=amd64 GOOS=darwin go build -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) cmd/*.go
 	@echo "Created: $(DARWIN_BIN)"
+
+darwin-arm64: $(DARWINARM64_BIN)  ## Build MacOS/ARM64 binary
+
+$(DARWINARM64_BIN): $(wildcard */*.go) $(DIST_DIR)
+	GOARCH=arm64 GOOS=darwin go build -ldflags='$(LDFLAGS)' -o $(DARWINARM64_BIN) cmd/*.go
+	@echo "Created: $(DARWINARM64_BIN)"
 
 workflow.png: workflow.dot
 	dot -oworkflow.png -Tpng workflow.dot

@@ -95,7 +95,15 @@ Arguments: `[<command>] [<args> ...]`
 If `--arn` or both `--account` and `--role` are specified, than
 you will skip interactive mode and the command will execute immediately.
 
-The following environment variables are automatically set:
+The following environment variables are honored by `exec`:
+
+ * `AWS_DEFAULT_REGION` -- Region to use AWS with
+ * `AWS_SSO_DURATION` -- Default number of minutes to request for session lifetime
+ * `AWS_SSO_ROLE_ARN` -- Specify the ARN to assume
+ * `AWS_SSO_ACCOUNTID` -- Specify the AWS AccountID for the role to assume
+ * `AWS_SSO_ROLE` -- Specify the AWS Role name for the role to assume
+
+The following environment variables are automatically set by `exec`:
 
  * `AWS_ACCESS_KEY_ID` -- Authentication identifier required by AWS
  * `AWS_SECRET_ACCESS_KEY` -- Authentication secret required by AWS
@@ -104,6 +112,7 @@ The following environment variables are automatically set:
  * `AWS_ROLE_NAME` -- The name of the IAM role
  * `AWS_ROLE_ARN` -- The full ARN of the IAM role
  * `AWS_SESSION_EXPIRATION`  -- The date and time when the IAM role credentials will expire
+ * `AWS_DEFAULT_REGION` -- Region to use AWS with
 
 ### list
 
@@ -186,6 +195,20 @@ By default the following key/values are available as tags:
  * AccountName
  * EmailAddress (root account email)
  * RoleName
+
+## Environment Varables
+
+The following environment variables are honored by `aws-sso`:
+
+ * `AWS_SSO_FILE_PASSPHRASE` -- Passphrase to use with the `file` SecureStore
+ * `AWS_DEFAULT_REGION` -- Will pass this value to any new shell created by `exec`
+ * `AWS_SSO_CONFIG` -- Specify an alternate path to the `aws-sso` config file
+	(default: `~/.aws-sso/config.yaml`)
+ * `AWS_SSO_BROWSER` -- Override default browser for AWS SSO login
+ * `AWS_SSO` -- Override default AWS SSO instance to use
+
+The `file` SecureStore will use the `AWS_SSO_FILE_PASSPHRASE` environment
+variable for the passphrase if it is set. (Not recommended.)
 
 ## License
 
