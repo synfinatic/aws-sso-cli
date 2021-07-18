@@ -2,10 +2,10 @@
 
 ## About
 
-AWS SSO CLI is a replacement for using the [aws configure sso](
+AWS SSO CLI is a secure replacement for using the [aws configure sso](
 https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html)
 wizard with a focus on security and ease of use for organizations with
-many AWS Accounts and/or users with many Roles to assume.
+many AWS Accounts and/or users with many IAM Roles to assume.
 
 AWS SSO CLI requires your AWS account(s) to be setup with [AWS SSO](
 https://aws.amazon.com/single-sign-on/)!  If your organization is using the
@@ -16,9 +16,9 @@ then this won't work for you.
 
 AWS SSO CLI makes it easy to manage your shell environment variables allowing
 you to access the AWS API using CLI tools.  Unlike the official AWS tooling,
-`aws-sso` does not require defining named profiles in your `~/.aws/config`
-for each and every role you wish to assume which can be difficult to manage
-and use.
+the `aws-sso` command does not require defining named profiles in your
+`~/.aws/config` for each and every role you wish to assume which can be
+difficult to manage and use.
 
 Instead, it focuses on making it easy to select a role via CLI arguments or
 via an interactive auto-complete experience with automatic and user-defined
@@ -27,6 +27,23 @@ https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_use-resourc
 to your shell environment.
 
 [![asciicast](https://asciinema.org/a/UOZHKrsUSBXDeP5BS361UcmDU.svg)](https://asciinema.org/a/UOZHKrsUSBXDeP5BS361UcmDU)
+
+## Security
+
+Unlike the official [AWS cli tooling](https://aws.amazon.com/cli/), _all_
+authentication tokens and credentials used for accessing AWS and your SSO
+provider are encrypted on disk using your choice of secure storage solution.
+
+Credentials encrypted by `aws-sso` and not via the standard AWS CLI tool:
+
+ * AWS SSO ClientID/ClientSecret -- `~/.aws/sso/cache/botocore-client-id-<region>.json`
+ * AWS SSO AccessToken -- `~/.aws/sso/cache/<random>.json`
+ * AWS Profile Access Credentials -- `~/.aws/cli/cache/<random>.json`
+
+As you can see, not only does the standard AWS CLI tool expose the temporary
+AWS access credentials to your IAM roles, but more importantly the SSO
+AccessToken which can be used to fetch IAM credentials for any role you have
+been granted access!
 
 ## Installation
 
@@ -75,9 +92,18 @@ Flags:
 
 Arguments: `[<command>] [<args> ...]`
 
-Note that if `--arn` or both `--account` and `--role` are specified, than
+If `--arn` or both `--account` and `--role` are specified, than
 you will skip interactive mode and the command will execute immediately.
 
+The following environment variables are automatically set:
+
+ * `AWS_ACCESS_KEY_ID` -- Authentication identifier required by AWS
+ * `AWS_SECRET_ACCESS_KEY` -- Authentication secret required by AWS
+ * `AWS_SESSION_TOKEN` -- Authentication secret required by AWS
+ * `AWS_ACCOUNT_ID` -- The AccountID for your IAM role
+ * `AWS_ROLE_NAME` -- The name of the IAM role
+ * `AWS_ROLE_ARN` -- The full ARN of the IAM role
+ * `AWS_SESSION_EXPIRATION`  -- The date and time when the IAM role credentials will expire
 
 ### list
 
@@ -132,10 +158,13 @@ SSOConfig:
                       Duration: 120  # override default duration time in minutes
 
 Browser: <override path to browser>
-PrintUrl: [false|true]  # print URL instead of opening it in default browser
+PrintUrl: [false|true]  # print URL instead of opening it in the browser
 SecureStore: [json|file|keychain|kwallet|pass|secret-service|wincred]
 JsonStore: <path to json file>
 ```
+
+If `Browser` is not set, then your default browser will be used.  Note that
+your browser needs to support Javascript for the AWS SSO user interface.
 
 `SecureStore` supports the following backends:
 
@@ -154,7 +183,7 @@ to make them easier to select.
 By default the following key/values are available as tags:
 
  * AccountId
- * AccountName 
+ * AccountName
  * EmailAddress (root account email)
  * RoleName
 
