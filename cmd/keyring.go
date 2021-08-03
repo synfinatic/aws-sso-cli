@@ -36,7 +36,6 @@ const (
 	KEYRING_ID                   = "aws-sso-cli"
 	REGISTER_CLIENT_DATA_PREFIX  = "client-data"
 	CREATE_TOKEN_RESPONSE_PREFIX = "token-response"
-	ROLE_INFO_KEY                = "roles"
 )
 
 // Impliments SecureStorage
@@ -236,74 +235,4 @@ func (kr *KeyringStore) DeleteCreateTokenResponse(key string) error {
 	tr := CreateTokenResponse{}
 	tr.ExpiresAt = time.Now().Unix()
 	return kr.SaveCreateTokenResponse(key, tr)
-}
-
-// GetRoles reads the roles from the cache.  Returns error if missing
-func (kr *KeyringStore) GetRoles(roles *map[string][]RoleInfo) error {
-	data, err := kr.keyring.Get(ROLE_INFO_KEY)
-	if err != nil {
-		return err
-	}
-	cache := RoleCache{}
-	err = json.Unmarshal(data.Data, &cache)
-	if err != nil {
-		return err
-	}
-	r := *roles
-	for account, roles := range cache.Roles {
-		r[account] = roles
-	}
-	return nil
-}
-
-// GetRolesExpired returns true if the roles in the cache have expired
-func (kr *KeyringStore) GetRolesExpired() bool {
-	data, err := kr.keyring.Get(ROLE_INFO_KEY)
-	if err != nil {
-		return true
-	}
-	cache := RoleCache{}
-	err = json.Unmarshal(data.Data, &cache)
-	return cache.Expired()
-}
-
-// SaveRoles saves the roles to the cache
-func (kr *KeyringStore) SaveRoles(roles map[string][]RoleInfo) error {
-	cache := RoleCache{
-		CreatedAt: time.Now().Unix(),
-		Roles:     roles,
-	}
-	jdata, err := json.Marshal(cache)
-	if err != nil {
-		return err
-	}
-	return kr.keyring.Set(keyring.Item{
-		Key:  ROLE_INFO_KEY,
-		Data: jdata,
-	})
-}
-
-// DeleteRoles removes the roles from the cache
-func (kr *KeyringStore) DeleteRoles() error {
-	keys, err := kr.keyring.Keys()
-	if err != nil {
-		return err
-	}
-
-	// make sure we have this token response store
-	hasKey := false
-	for _, k := range keys {
-		if k == ROLE_INFO_KEY {
-			hasKey = true
-			break
-		}
-	}
-	if !hasKey {
-		return fmt.Errorf("Missing Roles for key: %s", ROLE_INFO_KEY)
-	}
-
-	// Can't just call keyring.Remove because it's broken, so we'll udpate the record instead
-	// https://github.com/99designs/keyring/issues/84
-	// return kr.keyring.Remove(ROLE_INFO_KEY)
-	return kr.SaveRoles(map[string][]RoleInfo{})
 }

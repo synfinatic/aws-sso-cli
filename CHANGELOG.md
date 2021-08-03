@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+ * Move role cache data from SecureStore into json CacheStore #26
+
 ## [v1.0.1] - 2021-07-18
 
  * Add macOS/M1 support

@@ -43,12 +43,14 @@ type RunContext struct {
 	Konf   *koanf.Koanf
 	Config *ConfigFile // whole config file
 	Store  SecureStorage
+	Cache  *CacheStore
 }
 
 const (
 	CONFIG_DIR            = "~/.aws-sso"
 	CONFIG_FILE           = CONFIG_DIR + "/config.yaml"
 	JSON_STORE_FILE       = CONFIG_DIR + "/store.json"
+	INSECURE_CACHE_FILE   = CONFIG_DIR + "/cache.json"
 	ENV_SSO_FILE_PASSWORD = "AWS_SSO_FILE_PASSPHRASE"
 	DEFAULT_STORE         = "file"
 )
@@ -111,15 +113,26 @@ func main() {
 		log.Fatalf("Please specify --sso, $AWS_SSO or set DefaultSSO in the config file")
 	}
 
+	// Load the insecure cache
+	cfile := GetPath(INSECURE_CACHE_FILE)
+	if run_ctx.Config.CacheStore != "" {
+		cfile = GetPath(run_ctx.Config.CacheStore)
+	}
+	run_ctx.Cache, err = OpenCacheStore(cfile)
+	if err != nil {
+		log.WithError(err).Fatalf("Unable to open cache %s", cfile)
+	}
+
+	// Load the secure store data
 	switch run_ctx.Config.SecureStore {
 	case "json":
-		cfile := GetPath(JSON_STORE_FILE)
+		sfile := GetPath(JSON_STORE_FILE)
 		if run_ctx.Config.JsonStore != "" {
-			cfile = GetPath(run_ctx.Config.JsonStore)
+			sfile = GetPath(run_ctx.Config.JsonStore)
 		}
-		run_ctx.Store, err = OpenJsonStore(cfile)
+		run_ctx.Store, err = OpenJsonStore(sfile)
 		if err != nil {
-			log.WithError(err).Fatalf("Unable to open JsonStore %s", cfile)
+			log.WithError(err).Fatalf("Unable to open JsonStore %s", sfile)
 		}
 	default:
 		cfg := NewKeyringConfig(run_ctx.Config.SecureStore)

@@ -65,9 +65,9 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 	}
 
 	roles := map[string][]RoleInfo{}
-	err = ctx.Store.GetRoles(&roles)
+	err = ctx.Cache.GetRoles(&roles)
 	if err == nil {
-		if ctx.Store.GetRolesExpired() {
+		if ctx.Cache.GetRolesExpired() {
 			err = fmt.Errorf("Role cache has expired.")
 		}
 	}
@@ -97,7 +97,7 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 				roles[account] = append(roles[account], r)
 			}
 		}
-		ctx.Store.SaveRoles(roles)
+		ctx.Cache.SaveRoles(roles)
 
 		// now update our config.yaml
 		changes, err := sso.UpdateRoles(roles)
