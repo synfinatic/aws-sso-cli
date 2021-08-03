@@ -70,9 +70,7 @@ func OpenCacheStore(fileName string) (*CacheStore, error) {
 	}
 
 	cacheBytes, err := ioutil.ReadFile(fileName)
-	if err != nil {
-		log.Warnf("Creating new cache file: %s", fileName)
-	} else {
+	if err == nil {
 		json.Unmarshal(cacheBytes, &cache)
 	}
 

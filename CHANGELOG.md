@@ -3,6 +3,7 @@
 ## [Unreleased]
 
  * Move role cache data from SecureStore into json CacheStore #26
+ * `exec` command will abort if a conflicting AWS Env var is set #27
 
 ## [v1.0.1] - 2021-07-18
 

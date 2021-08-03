@@ -46,6 +46,11 @@ type ExecCmd struct {
 }
 
 func (cc *ExecCmd) Run(ctx *RunContext) error {
+	err := checkAwsEnvironment()
+	if err != nil {
+		log.WithError(err).Fatalf("Unable to continue")
+	}
+
 	// Did user specify the ARN or account/role?
 	if ctx.Cli.Exec.Arn != "" {
 		awssso := doAuth(ctx)
@@ -166,6 +171,17 @@ func updateRoleCache(ctx *RunContext, sso *SSOConfig, awssso *AWSSSO, roles *map
 			if err != nil {
 				return fmt.Errorf("Unable to save config: %s", err.Error())
 			}
+		}
+	}
+	return nil
+}
+
+// returns an error if we have existing AWS env vars
+func checkAwsEnvironment() error {
+	checkVars := []string{"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_PROFILE"}
+	for _, envVar := range checkVars {
+		if _, exist := os.LookupEnv(envVar); exist == true {
+			return fmt.Errorf("Conflicting environment variable '%s' is set", envVar)
 		}
 	}
 	return nil
