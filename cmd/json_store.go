@@ -22,8 +22,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
-	"path"
 
 	// "github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
@@ -31,20 +29,18 @@ import (
 
 // Impliments SecureStorage insecurely
 type JsonStore struct {
-	Filename            string
+	filename            string
 	RegisterClient      map[string]RegisterClientData  `json:"RegisterClient,omitempty"`
 	StartDeviceAuth     map[string]StartDeviceAuthData `json:"StartDeviceAuth,omitempty"`
 	CreateTokenResponse map[string]CreateTokenResponse `json:"CreateTokenResponse,omitempty"`
-	Roles               RoleCache                      `json:"Roles,omitempty"`
 }
 
 func OpenJsonStore(fileName string) (*JsonStore, error) {
 	cache := JsonStore{
-		Filename:            fileName,
+		filename:            fileName,
 		RegisterClient:      map[string]RegisterClientData{},
 		StartDeviceAuth:     map[string]StartDeviceAuthData{},
 		CreateTokenResponse: map[string]CreateTokenResponse{},
-		Roles:               RoleCache{},
 	}
 
 	cacheBytes, err := ioutil.ReadFile(fileName)
@@ -57,26 +53,6 @@ func OpenJsonStore(fileName string) (*JsonStore, error) {
 	return &cache, nil
 }
 
-// ensures the given directory exists for the filename
-func ensureDirExists(filename string) error {
-	storeDir := path.Dir(filename)
-	f, err := os.Open(storeDir)
-	if err != nil {
-		err = os.MkdirAll(storeDir, 0700)
-		if err != nil {
-			return fmt.Errorf("Unable to create %s: %s", storeDir, err.Error())
-		}
-	}
-	info, err := f.Stat()
-	if err != nil {
-		return fmt.Errorf("Unable to stat %s: %s", storeDir, err.Error())
-	}
-	if !info.IsDir() {
-		return fmt.Errorf("%s exists and is not a directory!", storeDir)
-	}
-	return nil
-}
-
 // save the cache file, creating the directory if necessary
 func (jc *JsonStore) saveCache() error {
 	log.Debugf("Saving JSON Cache")
@@ -85,12 +61,12 @@ func (jc *JsonStore) saveCache() error {
 		log.WithError(err).Errorf("Unable to marshal json")
 		return err
 	}
-	err = ensureDirExists(jc.Filename)
+	err = ensureDirExists(jc.filename)
 	if err != nil {
 		return err
 	}
 
-	return ioutil.WriteFile(jc.Filename, jbytes, 0600)
+	return ioutil.WriteFile(jc.filename, jbytes, 0600)
 }
 
 // RegisterClientData
@@ -132,31 +108,5 @@ func (jc *JsonStore) GetCreateTokenResponse(key string, token *CreateTokenRespon
 // DeleteCreateTokenResponse deletes the token from the json file
 func (jc *JsonStore) DeleteCreateTokenResponse(key string) error {
 	jc.CreateTokenResponse[key] = CreateTokenResponse{}
-	return jc.saveCache()
-}
-
-// GetRoles reads the roles from the cache.  Returns error if missing
-func (jc *JsonStore) GetRoles(roles *map[string][]RoleInfo) error {
-	if jc.Roles.CreatedAt == 0 {
-		return fmt.Errorf("No Roles available in cache")
-	}
-	*roles = jc.Roles.Roles
-	return nil
-}
-
-// GetRolesExpired returns true if the roles in the cache have expired
-func (jc *JsonStore) GetRolesExpired() bool {
-	return jc.Roles.Expired()
-}
-
-// SaveRoles saves the roles to the cache
-func (jc *JsonStore) SaveRoles(roles map[string][]RoleInfo) error {
-	jc.Roles = RoleInfoCache(roles)
-	return jc.saveCache()
-}
-
-// DeleteRoles removes the roles from the cache
-func (jc *JsonStore) DeleteRoles() error {
-	jc.Roles = RoleCache{}
 	return jc.saveCache()
 }

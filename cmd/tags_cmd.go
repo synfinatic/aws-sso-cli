@@ -35,11 +35,11 @@ func (cc *TagsCmd) Run(ctx *RunContext) error {
 	sso.Refresh()
 
 	allRoles := map[string][]RoleInfo{}
-	err := ctx.Store.GetRoles(&allRoles)
+	err := ctx.Cache.GetRoles(&allRoles)
 	if err != nil {
 		log.Fatalf("Unable to load roles from cache: %s", err.Error())
 	}
-	if ctx.Store.GetRolesExpired() {
+	if ctx.Cache.GetRolesExpired() {
 		log.Warn("Role cache may be out of date")
 	}
 

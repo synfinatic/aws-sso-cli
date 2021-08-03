@@ -150,7 +150,7 @@ func updateRoleCache(ctx *RunContext, sso *SSOConfig, awssso *AWSSSO, roles *map
 			rroles[account] = append(rroles[account], r)
 		}
 	}
-	ctx.Store.SaveRoles(*roles)
+	ctx.Cache.SaveRoles(*roles)
 
 	// now update our config.yaml
 	changes, err := sso.UpdateRoles(*roles)
