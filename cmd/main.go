@@ -69,6 +69,7 @@ type CLI struct {
 	Flush   FlushCmd   `kong:"cmd,help='Force delete of AWS SSO credentials'"`
 	List    ListCmd    `kong:"cmd,help='List all accounts / role (default command)',default='1'"`
 	Tags    TagsCmd    `kong:"cmd,help='List tags'"`
+	Time    TimeCmd    `kong:"cmd,help='Print out much time before STS Token expires'"`
 	Version VersionCmd `kong:"cmd,help='Print version and exit'"`
 }
 
