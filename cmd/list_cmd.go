@@ -49,7 +49,7 @@ var allListFields = map[string]string{
 }
 
 type ListCmd struct {
-	Fields      []string `kong:"optional,arg,enum='Id,AccountId,AccountName,EmailAddress,RoleName,Expires,Profile',help='Fields to display',env='AWS_SSO_FIELDS'"`
+	Fields      []string `kong:"optional,arg,enum='AccountId,AccountName,Arn,EmailAddress,Expires,Id,Profile,RoleName',help='Fields to display',env='AWS_SSO_FIELDS'"`
 	ListFields  bool     `kong:"optional,name='list-fields',short='f',help='List available fields'"`
 	ForceUpdate bool     `kong:"optional,name='force-update',help='Force account/role cache update'"`
 }
@@ -136,6 +136,14 @@ func printRoles(roles map[string][]RoleInfo, fields []string) []RoleInfo {
 	tr := []utils.TableStruct{}
 	idx := 0
 
+	hasArn := false
+	for _, field := range fields {
+		if field == "Arn" {
+			hasArn = true
+			break
+		}
+	}
+
 	// print in AccountId order
 	accounts := []string{}
 	for account, _ := range roles {
@@ -145,6 +153,9 @@ func printRoles(roles map[string][]RoleInfo, fields []string) []RoleInfo {
 
 	for _, account := range accounts {
 		for _, role := range roles[account] {
+			if hasArn {
+				role.Arn = role.RoleArn()
+			}
 			role.Id = idx
 			idx += 1
 			tr = append(tr, role)

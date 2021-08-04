@@ -346,6 +346,7 @@ func (as *AWSSSO) CreateToken() error {
 
 type RoleInfo struct {
 	Id           int    `yaml:"Id" json:"Id" header:"Id"`
+	Arn          string `yaml:"-" json:"-" header:"Arn"`
 	RoleName     string `yaml:"RoleName" json:"RoleName" header:"RoleName"`
 	AccountId    string `yaml:"AccountId" json:"AccountId" header:"AccountId"`
 	AccountName  string `yaml:"AccountName" json:"AccountName" header:"AccountName"`
