@@ -59,12 +59,13 @@ type CLI struct {
 	// Common Arguments
 	LogLevel   string `kong:"optional,short='L',name='level',default='info',enum='error,warn,info,debug',help='Logging level [error|warn|info|debug]'"`
 	Lines      bool   `kong:"optional,help='Print line number in logs'"`
-	ConfigFile string `kong:"optional,name='config',short='c',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
+	ConfigFile string `kong:"optional,name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
 	Browser    string `kong:"optional,short='b',help='Path to browser to use',env='AWS_SSO_BROWSER'"`
 	PrintUrl   bool   `kong:"optional,name='url',short='u',help='Print URL insetad of open in browser'"`
 	SSO        string `kong:"optional,short='S',help='AWS SSO Instance',env='AWS_SSO'"`
 
 	// Commands
+	Console ConsoleCmd `kong:"cmd,help='Open AWS Console using specificed AWS Role/profile'"`
 	Exec    ExecCmd    `kong:"cmd,help='Execute command using specified AWS Role/Profile'"`
 	Flush   FlushCmd   `kong:"cmd,help='Force delete of AWS SSO credentials'"`
 	List    ListCmd    `kong:"cmd,help='List all accounts / role (default command)',default='1'"`

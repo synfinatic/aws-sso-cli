@@ -57,11 +57,12 @@ type SSOAccount struct {
 }
 
 type SSORole struct {
-	Account       *SSOAccount
-	ARN           string            `koanf:"ARN" yaml:"ARN"`
-	Profile       string            `koanf:"Profile" yaml:"Profile,omitempty"`
-	Tags          map[string]string `koanf:"Tags" yaml:"Tags,omitempty"`
-	DefaultRegion string            `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
+	Account        *SSOAccount
+	ARN            string            `koanf:"ARN" yaml:"ARN"`
+	Profile        string            `koanf:"Profile" yaml:"Profile,omitempty"`
+	Tags           map[string]string `koanf:"Tags" yaml:"Tags,omitempty"`
+	DefaultRegion  string            `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
+	DestinationUrl string            `koanf:"DestinationUrl" yaml:"DestinationUrl,omitempty"`
 }
 
 // Refresh should be called any time you load the SSOConfig into memory or add a role

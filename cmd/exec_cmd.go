@@ -80,7 +80,7 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 	// use completer to figure out the role
 	sso := ctx.Config.SSO[ctx.Cli.SSO]
 	sso.Refresh()
-	c := NewTagsCompleter(ctx, sso)
+	c := NewTagsCompleter(ctx, sso, execCmd)
 	p := prompt.New(
 		c.Executor,
 		c.Complete,
