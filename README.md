@@ -59,7 +59,8 @@ ensure that it is executable (`chmod 755 <path>`).
 
 ## Commands
 
- * `exec` -- Exec a command with a selected role
+ * `console` -- Open AWS Console in a browser with the selected role
+ * `exec` -- Exec a command with the selected role
  * `list` -- List all accounts & roles
  * `expire` -- Force expire of AWS SSO credentials
  * `tags` -- List manually created tags for each role
@@ -74,6 +75,23 @@ ensure that it is executable (`chmod 755 <path>`).
  * `--browser <path>`, `-b` -- Override default browser to open AWS SSO URL
  * `--url`, `-u` -- Print URL instead of opening in browser
  * `--sso <name>`, `-S` -- Specify non-default AWS SSO instance to use
+
+### console
+
+Console generates a URL which will grant you access to the AWS Console in your
+web browser.  The URL can be sent directly to the browser (default), printed
+in the terminal or copied into the Copy & Paste buffer of your computer.
+
+Flags:
+
+ * `--clipboard`, `-c` -- Copy URL to clipboard instead of opening it
+ * `--print`, `-p` -- Print URL instead of opening it
+ * `--duration <minutes>`, `-d` -- AWS Session duration in minutes (default 60)
+ * `--arn <arn>` -- ARN of role to assume
+ * `--account <account>` -- AWS AccountID of role to assume
+ * `--role <role>` -- Name of AWS Role to assume (requires `--account`)
+
+Note that the generated URL is good for 15 minutes after it is created.
 
 ### exec
 
@@ -94,14 +112,6 @@ Arguments: `[<command>] [<args> ...]`
 
 If `--arn` or both `--account` and `--role` are specified, than
 you will skip interactive mode and the command will execute immediately.
-
-The following environment variables are honored by `exec`:
-
- * `AWS_DEFAULT_REGION` -- Region to use AWS with
- * `AWS_SSO_DURATION` -- Default number of minutes to request for session lifetime
- * `AWS_SSO_ROLE_ARN` -- Specify the ARN to assume
- * `AWS_SSO_ACCOUNTID` -- Specify the AWS AccountID for the role to assume
- * `AWS_SSO_ROLE` -- Specify the AWS Role name for the role to assume
 
 The following environment variables are automatically set by `exec`:
 
@@ -140,6 +150,16 @@ Flags:
 
  * `--account <account>` -- Filter results by AccountId
  * `--role <role>` -- Filter results by Role Name
+
+### Environment Variables
+
+The following environment variables are honored by `exec` and `console`:
+
+ * `AWS_DEFAULT_REGION` -- Region to use AWS with
+ * `AWS_SSO_DURATION` -- Default number of minutes to request for session lifetime
+ * `AWS_SSO_ROLE_ARN` -- Specify the ARN to assume
+ * `AWS_SSO_ACCOUNTID` -- Specify the AWS AccountID for the role to assume
+ * `AWS_SSO_ROLE` -- Specify the AWS Role name for the role to assume
 
 ## Configuration
 
