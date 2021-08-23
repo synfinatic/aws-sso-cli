@@ -27,6 +27,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type CompleterExec = func(*RunContext, *AWSSSO, string, string) error
+
 type TagsCompleter struct {
 	ctx      *RunContext
 	sso      *SSOConfig
@@ -34,9 +36,10 @@ type TagsCompleter struct {
 	roleTags *RoleTags
 	allTags  *TagsList
 	suggest  []prompt.Suggest
+	exec     CompleterExec
 }
 
-func NewTagsCompleter(ctx *RunContext, sso *SSOConfig) *TagsCompleter {
+func NewTagsCompleter(ctx *RunContext, sso *SSOConfig, exec CompleterExec) *TagsCompleter {
 	awssso := doAuth(ctx)
 	roleTags := NewRoleTags(awssso, sso)
 	allTags := NewTagsList()
@@ -50,6 +53,7 @@ func NewTagsCompleter(ctx *RunContext, sso *SSOConfig) *TagsCompleter {
 		roleTags: roleTags,
 		allTags:  allTags,
 		suggest:  completeTags(roleTags, allTags, []string{}),
+		exec:     exec,
 	}
 }
 
@@ -84,7 +88,7 @@ func (tc *TagsCompleter) Executor(args string) {
 	if err != nil {
 		log.Fatalf("Unable to exec: %s", err.Error())
 	}
-	err = execCmd(tc.ctx, tc.awsSSO, accountid, role)
+	err = tc.exec(tc.ctx, tc.awsSSO, accountid, role)
 	if err != nil {
 		log.Fatalf("Unable to exec: %s", err.Error())
 	}

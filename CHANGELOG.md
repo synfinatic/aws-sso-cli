@@ -6,6 +6,8 @@
  * `exec` command will abort if a conflicting AWS Env var is set #27
  * Add `time` command to report how much time before the current STS token expires #28
  * Add support for printing Arn in `list` #33
+ * Add `console` support to login to AWS Console with specified role #36
+ * `-c` no longer is short flag for `--config`
 
 ## [v1.0.1] - 2021-07-18
 
