@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v1.1.0] - 2021-08-22
+
  * Move role cache data from SecureStore into json CacheStore #26
  * `exec` command will abort if a conflicting AWS Env var is set #27
  * Add `time` command to report how much time before the current STS token expires #28
