@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+ * `console` command now can use ENV vars via --useenv #41
+ * Fix bugs in `console` with invalid CLI parsing
+
 ## [v1.1.0] - 2021-08-22
 
  * Move role cache data from SecureStore into json CacheStore #26
