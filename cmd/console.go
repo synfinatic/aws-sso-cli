@@ -26,8 +26,6 @@ import (
 	"net/url"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/atotto/clipboard"
 	"github.com/c-bata/go-prompt"
 	"github.com/skratchdot/open-golang/open" // default opener
@@ -36,12 +34,16 @@ import (
 const AWS_FEDERATED_URL = "https://signin.aws.amazon.com/federation"
 
 type ConsoleCmd struct {
-	Clipboard bool   `kong:"optional,short='c',help='Copy URL to clipboard instead of opening it'"`
-	Print     bool   `kong:"optional,short='p',help='Print URL instead of opening it'"`
-	Duration  int64  `kong:"optional,short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
-	Arn       string `kong:"optional,short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN'"`
-	AccountId string `kong:"optional,name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNTID'"`
-	Role      string `kong:"optional,short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE'"`
+	Clipboard       bool   `kong:"optional,short='c',help='Copy URL to clipboard instead of opening it'"`
+	Print           bool   `kong:"optional,short='p',help='Print URL instead of opening it'"`
+	Duration        int64  `kong:"optional,short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
+	Arn             string `kong:"optional,short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN'"`
+	AccountId       string `kong:"optional,name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNTID'"`
+	Role            string `kong:"optional,short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE'"`
+	UseEnv          bool   `kong:"optional,short='e',help='Use existing ENV vars to generate URL'"`
+	AccessKeyId     string `kong:"optional,env='AWS_ACCESS_KEY_ID',hidden"`
+	SecretAccessKey string `kong:"optional,env='AWS_SECRET_ACCESS_KEY',hidden"`
+	SessionToken    string `kong:"optional,env='AWS_SESSION_TOKEN',hidden"`
 }
 
 func (cc *ConsoleCmd) Run(ctx *RunContext) error {
@@ -60,12 +62,25 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 			role = s[1]
 		}
 		return openConsole(ctx, awssso, accountid, role)
-	} else if ctx.Cli.Exec.AccountId != "" || ctx.Cli.Exec.Role != "" {
-		if ctx.Cli.Exec.AccountId == "" || ctx.Cli.Exec.Role == "" {
+	} else if ctx.Cli.Console.AccountId != "" || ctx.Cli.Console.Role != "" {
+		if ctx.Cli.Console.AccountId == "" || ctx.Cli.Console.Role == "" {
 			return fmt.Errorf("Please specify both --account and --role")
 		}
 		awssso := doAuth(ctx)
-		return openConsole(ctx, awssso, ctx.Cli.Exec.AccountId, ctx.Cli.Exec.Role)
+		return openConsole(ctx, awssso, ctx.Cli.Console.AccountId, ctx.Cli.Console.Role)
+	} else if ctx.Cli.Console.UseEnv {
+		if ctx.Cli.Console.AccessKeyId == "" {
+			return fmt.Errorf("AWS_ACCESS_KEY_ID is not set")
+		}
+		if ctx.Cli.Console.SecretAccessKey == "" {
+			return fmt.Errorf("AWS_SECRET_ACCESS_KEY is not set")
+		}
+		if ctx.Cli.Console.SessionToken == "" {
+			return fmt.Errorf("AWS_SESSION_TOKEN is not set")
+		}
+		return openConsoleAccessKey(ctx, ctx.Cli.Console.AccessKeyId,
+			ctx.Cli.Console.SecretAccessKey, ctx.Cli.Console.SessionToken,
+			ctx.Cli.Console.Duration)
 	}
 
 	fmt.Printf("Please use `exit` or `Ctrl-D` to quit.\n")
@@ -90,15 +105,21 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 func openConsole(ctx *RunContext, awssso *AWSSSO, accountid, role string) error {
 	creds, err := awssso.GetRoleCredentials(accountid, role)
 	if err != nil {
-		log.WithError(err).Fatalf("Unable to get role credentials for %s", role)
+		return fmt.Errorf("Unable to get role credentials for %s: %s",
+			role, err.Error())
 	}
 
+	return openConsoleAccessKey(ctx, creds.AccessKeyId, creds.SecretAccessKey,
+		creds.SessionToken, ctx.Cli.Console.Duration)
+}
+
+func openConsoleAccessKey(ctx *RunContext, accessKeyId, secretAccessKey, sessionToken string, duration int64) error {
 	signin := SigninTokenUrlParams{
-		SessionDuration: ctx.Cli.Console.Duration * 60,
+		SessionDuration: duration * 60,
 		Session: SessionUrlParams{
-			AccessKeyId:     creds.AccessKeyId,
-			SecretAccessKey: creds.SecretAccessKey,
-			SessionToken:    creds.SessionToken,
+			AccessKeyId:     accessKeyId,
+			SecretAccessKey: secretAccessKey,
+			SessionToken:    sessionToken,
 		},
 	}
 
@@ -141,7 +162,6 @@ func openConsole(ctx *RunContext, awssso *AWSSSO, accountid, role string) error 
 			err = fmt.Errorf("Unable to open %s with %s: %s", url, browser, err.Error())
 		}
 	}
-
 	return err
 }
 
