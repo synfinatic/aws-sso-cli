@@ -20,16 +20,13 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v3"
-
-	"github.com/Songmu/prompter"
 	"github.com/c-bata/go-prompt"
+	log "github.com/sirupsen/logrus"
+	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
 type ExecCmd struct {
@@ -94,9 +91,9 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 }
 
 // Creates an AWSSO object post authentication
-func doAuth(ctx *RunContext) *AWSSSO {
-	sso := ctx.Config.SSO[ctx.Cli.SSO]
-	awssso := NewAWSSSO(sso.SSORegion, sso.StartUrl, &ctx.Store)
+func doAuth(ctx *RunContext) *sso.AWSSSO {
+	s := ctx.Config.SSO[ctx.Cli.SSO]
+	awssso := sso.NewAWSSSO(s.SSORegion, s.StartUrl, &ctx.Store)
 	err := awssso.Authenticate(ctx.Config.PrintUrl, ctx.Config.Browser)
 	if err != nil {
 		log.WithError(err).Fatalf("Unable to authenticate")
@@ -105,7 +102,7 @@ func doAuth(ctx *RunContext) *AWSSSO {
 }
 
 // Executes Cmd+Args in the context of the AWS Role creds
-func execCmd(ctx *RunContext, awssso *AWSSSO, accountid, role string) error {
+func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid, role string) error {
 	creds, err := awssso.GetRoleCredentials(accountid, role)
 	if err != nil {
 		log.WithError(err).Fatalf("Unable to get role credentials for %s", role)
@@ -132,48 +129,6 @@ func execCmd(ctx *RunContext, awssso *AWSSSO, accountid, role string) error {
 
 	// just do it!
 	return cmd.Run()
-}
-
-func updateRoleCache(ctx *RunContext, sso *SSOConfig, awssso *AWSSSO, roles *map[string][]RoleInfo) error {
-	roles = &map[string][]RoleInfo{} // zero out roles if we are doing a --force-update
-
-	accounts, err := awssso.GetAccounts()
-	if err != nil {
-		return fmt.Errorf("Unable to get accounts: %s", err.Error())
-	}
-
-	for _, a := range accounts {
-		account := a.AccountId
-		roleInfo, err := awssso.GetRoles(a)
-		if err != nil {
-			return fmt.Errorf("Unable to get roles for AccountId %s: %s",
-				account, err.Error())
-		}
-
-		rroles := *roles
-		for _, r := range roleInfo {
-			rroles[account] = append(rroles[account], r)
-		}
-	}
-	ctx.Cache.SaveRoles(*roles)
-
-	// now update our config.yaml
-	changes, err := sso.UpdateRoles(*roles)
-	if err != nil {
-		return fmt.Errorf("Unable to update our config file: %s", err.Error())
-	}
-	if changes > 0 {
-		p := fmt.Sprintf("Update config file with %d new roles?", changes)
-		if prompter.YN(p, true) {
-			b, _ := yaml.Marshal(ctx.Config)
-			cfile := fmt.Sprintf("%s", ctx.Cli.ConfigFile)
-			err = ioutil.WriteFile(cfile, b, 0644)
-			if err != nil {
-				return fmt.Errorf("Unable to save config: %s", err.Error())
-			}
-		}
-	}
-	return nil
 }
 
 // returns an error if we have existing AWS env vars

@@ -28,6 +28,7 @@ import (
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
 	log "github.com/sirupsen/logrus"
+	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
 // These variables are defined in the Makefile
@@ -41,9 +42,9 @@ type RunContext struct {
 	Kctx   *kong.Context
 	Cli    *CLI
 	Konf   *koanf.Koanf
-	Config *ConfigFile // whole config file
-	Store  SecureStorage
-	Cache  *CacheStore
+	Config *sso.ConfigFile // whole config file
+	Store  sso.SecureStorage
+	Cache  *sso.Cache
 }
 
 const (
@@ -82,7 +83,7 @@ func main() {
 		Kctx:   ctx,
 		Cli:    &cli,
 		Konf:   koanf.New("."),
-		Config: &ConfigFile{},
+		Config: &sso.ConfigFile{},
 	}
 
 	// Load the config file
@@ -120,7 +121,7 @@ func main() {
 	if run_ctx.Config.CacheStore != "" {
 		cfile = GetPath(run_ctx.Config.CacheStore)
 	}
-	run_ctx.Cache, err = OpenCacheStore(cfile)
+	run_ctx.Cache, err = sso.OpenCache(cfile)
 	if err != nil {
 		log.WithError(err).Fatalf("Unable to open cache %s", cfile)
 	}
@@ -132,7 +133,7 @@ func main() {
 		if run_ctx.Config.JsonStore != "" {
 			sfile = GetPath(run_ctx.Config.JsonStore)
 		}
-		run_ctx.Store, err = OpenJsonStore(sfile)
+		run_ctx.Store, err = sso.OpenJsonStore(sfile)
 		if err != nil {
 			log.WithError(err).Fatalf("Unable to open JsonStore %s", sfile)
 		}
@@ -151,7 +152,7 @@ func main() {
 }
 
 // Some CLI args are for overriding the config.  Do that here.
-func update_config(config *ConfigFile, cli CLI) {
+func update_config(config *sso.ConfigFile, cli CLI) {
 	if cli.PrintUrl {
 		config.PrintUrl = true
 	}

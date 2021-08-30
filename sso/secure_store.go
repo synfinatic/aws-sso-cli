@@ -1,4 +1,4 @@
-package main
+package sso
 
 /*
  * AWS SSO CLI
@@ -17,10 +17,6 @@ package main
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-const (
-	CACHE_TTL = 60 * 60 * 24 // 1 day in seconds
-)
 
 // Define the interface for storing our AWS SSO data
 type SecureStorage interface {

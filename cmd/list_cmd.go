@@ -20,17 +20,15 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"reflect"
 	"sort"
 
-	"github.com/Songmu/prompter"
 	log "github.com/sirupsen/logrus"
+	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/synfinatic/onelogin-aws-role/utils"
-	yaml "gopkg.in/yaml.v3"
 )
 
-// Fields match those in FlatConfig.  Used when user doesn't have the `fields` in
+// Fields match those in AWSRoleFlat.  Used when user doesn't have the `fields` in
 // their YAML config file or provided list on the CLI
 var defaultListFields = []string{
 	"AccountId",
@@ -38,14 +36,18 @@ var defaultListFields = []string{
 	"RoleName",
 }
 
+// keys match AWSRoleFlat header and value is the description
 var allListFields = map[string]string{
-	"Id":           "Column Index",
-	"AccountId":    "AWS AccountID",
-	"AccountName":  "AWS AccountName",
-	"EmailAddress": "Root Email",
-	"RoleName":     "AWS Role",
-	"Expires":      "Creds Expire",
-	"Profile":      "AWS_PROFILE",
+	"Id":            "Column Index",
+	"ARN":           "AWS Role Resource Name",
+	"AccountId":     "AWS AccountID",
+	"AccountName":   "AWS AccountName",
+	"DefaultRegion": "Default AWS Region",
+	"EmailAddress":  "Root Email",
+	"Expires":       "Creds Expire",
+	"Profile":       "AWS_PROFILE",
+	"RoleName":      "AWS Role",
+	"Via":           "Role Chain Via",
 }
 
 type ListCmd struct {
@@ -64,58 +66,26 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 		return nil
 	}
 
-	roles := map[string][]RoleInfo{}
-	err = ctx.Cache.GetRoles(&roles)
-	if err == nil {
-		if ctx.Cache.GetRolesExpired() {
-			err = fmt.Errorf("Role cache has expired.")
-		}
+	if ctx.Cache.Expired() {
+		err = fmt.Errorf("Role cache has expired.")
 	}
 
 	if err != nil || ctx.Cli.List.ForceUpdate {
-		roles = map[string][]RoleInfo{} // zero out roles if we are doing a --force-update
-		sso := ctx.Config.SSO[ctx.Cli.SSO]
-		awssso := NewAWSSSO(sso.SSORegion, sso.StartUrl, &ctx.Store)
+		s := ctx.Config.SSO[ctx.Cli.SSO]
+		awssso := sso.NewAWSSSO(s.SSORegion, s.StartUrl, &ctx.Store)
 		err = awssso.Authenticate(ctx.Config.PrintUrl, ctx.Config.Browser)
 		if err != nil {
 			log.WithError(err).Fatalf("Unable to authenticate")
 		}
 
-		accounts, err := awssso.GetAccounts()
+		err = ctx.Cache.Refresh(awssso, s)
 		if err != nil {
-			log.WithError(err).Fatalf("Unable to get accounts")
+			log.WithError(err).Fatalf("Unable to refresh role cache")
 		}
-
-		for _, a := range accounts {
-			account := a.AccountId
-			roleInfo, err := awssso.GetRoles(a)
-			if err != nil {
-				log.WithError(err).Fatalf("Unable to get roles for AccountId: %s", account)
-			}
-
-			for _, r := range roleInfo {
-				roles[account] = append(roles[account], r)
-			}
-		}
-		ctx.Cache.SaveRoles(roles)
-
-		// now update our config.yaml
-		changes, err := sso.UpdateRoles(roles)
+		err = ctx.Cache.Save()
 		if err != nil {
-			log.WithError(err).Fatalf("Unable to update our config file")
+			log.WithError(err).Warnf("Unable to save cache")
 		}
-		if changes > 0 {
-			p := fmt.Sprintf("Update config file with %d new roles?", changes)
-			if prompter.YN(p, true) {
-				b, _ := yaml.Marshal(ctx.Config)
-				cfile := fmt.Sprintf("%s", ctx.Cli.ConfigFile)
-				err = ioutil.WriteFile(cfile, b, 0644)
-				if err != nil {
-					log.WithError(err).Fatalf("Unable to save config %s", cfile)
-				}
-			}
-		}
-
 	} else {
 		log.Info("Using cache.  Use --force-update to force a cache update.")
 	}
@@ -125,47 +95,33 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 		fields = ctx.Cli.List.Fields
 	}
 
-	printRoles(roles, fields)
+	printRoles(ctx.Cache.Roles, fields)
 
 	return nil
 }
 
 // Print all our roles
-func printRoles(roles map[string][]RoleInfo, fields []string) []RoleInfo {
-	ret := []RoleInfo{}
+func printRoles(roles *sso.Roles, fields []string) {
 	tr := []utils.TableStruct{}
 	idx := 0
 
-	hasArn := false
-	for _, field := range fields {
-		if field == "Arn" {
-			hasArn = true
-			break
-		}
-	}
-
 	// print in AccountId order
-	accounts := []string{}
-	for account, _ := range roles {
+	accounts := []int64{}
+	for account, _ := range roles.Accounts {
 		accounts = append(accounts, account)
 	}
-	sort.Strings(accounts)
+	sort.Slice(accounts, func(i, j int) bool { return accounts[i] < accounts[j] })
 
 	for _, account := range accounts {
-		for _, role := range roles[account] {
-			if hasArn {
-				role.Arn = role.RoleArn()
-			}
+		for _, role := range roles.GetAccountRoles(account) {
 			role.Id = idx
 			idx += 1
 			tr = append(tr, role)
-			ret = append(ret, role)
 		}
 	}
 
 	utils.GenerateTable(tr, fields)
 	fmt.Printf("\n")
-	return ret
 }
 
 // Code to --list-fields
@@ -174,11 +130,13 @@ type ConfigFieldNames struct {
 	Description string `header:"Description"`
 }
 
+// GetHeader is required for GenerateTable()
 func (cfn ConfigFieldNames) GetHeader(fieldName string) (string, error) {
 	v := reflect.ValueOf(cfn)
 	return utils.GetHeaderTag(v, fieldName)
 }
 
+// listAllFields generates a table with all the AWSRoleFlat fields we can print
 func listAllFields() {
 	ts := []utils.TableStruct{}
 	for k, v := range allListFields {

@@ -1,4 +1,4 @@
-package main
+package sso
 
 /*
  * AWS SSO CLI

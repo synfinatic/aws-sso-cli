@@ -28,6 +28,7 @@ import (
 
 	"github.com/99designs/keyring"
 	log "github.com/sirupsen/logrus"
+	"github.com/synfinatic/aws-sso-cli/sso"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -126,7 +127,7 @@ func (kr *KeyringStore) RegisterClientKey(ssoRegion string) string {
 }
 
 // Save our RegisterClientData in the key chain
-func (kr *KeyringStore) SaveRegisterClientData(region string, client RegisterClientData) error {
+func (kr *KeyringStore) SaveRegisterClientData(region string, client sso.RegisterClientData) error {
 	jdata, err := json.Marshal(client)
 	if err != nil {
 		return err
@@ -139,7 +140,7 @@ func (kr *KeyringStore) SaveRegisterClientData(region string, client RegisterCli
 }
 
 // Get our RegisterClientData from the key chain
-func (kr *KeyringStore) GetRegisterClientData(region string, client *RegisterClientData) error {
+func (kr *KeyringStore) GetRegisterClientData(region string, client *sso.RegisterClientData) error {
 	data, err := kr.keyring.Get(kr.RegisterClientKey(region))
 	if err != nil {
 		return err
@@ -174,7 +175,7 @@ func (kr *KeyringStore) DeleteRegisterClientData(region string) error {
 	// Can't just call keyring.Remove() because it's broken, so we'll update the record instead
 	// https://github.com/99designs/keyring/issues/84
 	// return kr.keyring.Remove(key)
-	client := RegisterClientData{}
+	client := sso.RegisterClientData{}
 	client.ClientSecretExpiresAt = time.Now().Unix()
 	return kr.SaveRegisterClientData(region, client)
 }
@@ -184,7 +185,7 @@ func (kr *KeyringStore) CreateTokenResponseKey(key string) string {
 }
 
 // SaveCreateTokenResponse stores the token in the keyring
-func (kr *KeyringStore) SaveCreateTokenResponse(key string, token CreateTokenResponse) error {
+func (kr *KeyringStore) SaveCreateTokenResponse(key string, token sso.CreateTokenResponse) error {
 	jdata, err := json.Marshal(token)
 	if err != nil {
 		return err
@@ -197,7 +198,7 @@ func (kr *KeyringStore) SaveCreateTokenResponse(key string, token CreateTokenRes
 }
 
 // GetCreateTokenResponse retrieves the CreateTokenResponse from the keyring
-func (kr *KeyringStore) GetCreateTokenResponse(key string, token *CreateTokenResponse) error {
+func (kr *KeyringStore) GetCreateTokenResponse(key string, token *sso.CreateTokenResponse) error {
 	data, err := kr.keyring.Get(kr.CreateTokenResponseKey(key))
 	if err != nil {
 		return err
@@ -232,7 +233,7 @@ func (kr *KeyringStore) DeleteCreateTokenResponse(key string) error {
 	// Can't just call keyring.Remove because it's broken, so we'll udpate the record instead
 	// https://github.com/99designs/keyring/issues/84
 	// return kr.keyring.Remove(keyValue)
-	tr := CreateTokenResponse{}
+	tr := sso.CreateTokenResponse{}
 	tr.ExpiresAt = time.Now().Unix()
 	return kr.SaveCreateTokenResponse(key, tr)
 }

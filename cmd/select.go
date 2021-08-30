@@ -21,34 +21,34 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/c-bata/go-prompt"
 	log "github.com/sirupsen/logrus"
+	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
-type CompleterExec = func(*RunContext, *AWSSSO, string, string) error
+type CompleterExec = func(*RunContext, *sso.AWSSSO, string, string) error
 
 type TagsCompleter struct {
 	ctx      *RunContext
-	sso      *SSOConfig
-	awsSSO   *AWSSSO
-	roleTags *RoleTags
-	allTags  *TagsList
+	sso      *sso.SSOConfig
+	awsSSO   *sso.AWSSSO
+	roleTags *sso.RoleTags
+	allTags  *sso.TagsList
 	suggest  []prompt.Suggest
 	exec     CompleterExec
 }
 
-func NewTagsCompleter(ctx *RunContext, sso *SSOConfig, exec CompleterExec) *TagsCompleter {
+func NewTagsCompleter(ctx *RunContext, s *sso.SSOConfig, exec CompleterExec) *TagsCompleter {
 	awssso := doAuth(ctx)
-	roleTags := NewRoleTags(awssso, sso)
-	allTags := NewTagsList()
-	allTags.Merge(sso.GetAllTags())
-	allTags.Merge(awssso.GetAllTags())
+	roleTags := ctx.Cache.Roles.GetRoleTags()
+	allTags := ctx.Cache.Roles.GetAllTags()
 
 	return &TagsCompleter{
 		ctx:      ctx,
-		sso:      sso,
+		sso:      s,
 		awsSSO:   awssso,
 		roleTags: roleTags,
 		allTags:  allTags,
@@ -84,11 +84,12 @@ func (tc *TagsCompleter) Executor(args string) {
 		log.Fatalf("Invalid selection")
 	}
 
-	accountid, role, err := getAccountRole(ssoRoles[0])
+	aId, rName, err := sso.GetRoleParts(ssoRoles[0])
 	if err != nil {
-		log.Fatalf("Unable to exec: %s", err.Error())
+		log.Fatalf("Unable to parse %s: %s", ssoRoles[0], err.Error())
 	}
-	err = tc.exec(tc.ctx, tc.awsSSO, accountid, role)
+	s := strconv.FormatInt(aId, 10)
+	err = tc.exec(tc.ctx, tc.awsSSO, s, rName)
 	if err != nil {
 		log.Fatalf("Unable to exec: %s", err.Error())
 	}
@@ -101,7 +102,7 @@ func (tc *TagsCompleter) ExitChecker(in string, breakline bool) bool {
 }
 
 // return a list of suggestions based on user selected []key:value
-func completeTags(roleTags *RoleTags, allTags *TagsList, args []string) []prompt.Suggest {
+func completeTags(roleTags *sso.RoleTags, allTags *sso.TagsList, args []string) []prompt.Suggest {
 	suggestions := []prompt.Suggest{}
 
 	currentTags := argsToMap(args)
@@ -177,25 +178,4 @@ func argsToMap(args []string) map[string]string {
 		} // may have empty values
 	}
 	return tags
-}
-
-// Converts SSORoles to RoleInfo map
-func SSORolesToRoleInfo(sroles []*SSORole) map[string][]RoleInfo {
-	roles := map[string][]RoleInfo{}
-	for _, r := range sroles {
-		accountId := r.GetAccountId()
-		_, ok := roles[accountId]
-		if !ok {
-			roles[accountId] = []RoleInfo{}
-		}
-		// this is a pretty limited set of fields
-		roles[accountId] = append(roles[accountId], RoleInfo{
-			RoleName:    r.GetRoleName(),
-			AccountId:   accountId,
-			AccountName: r.Account.Name,
-			Profile:     r.Profile,
-		})
-	}
-
-	return roles
 }

@@ -29,6 +29,7 @@ import (
 	"github.com/atotto/clipboard"
 	"github.com/c-bata/go-prompt"
 	"github.com/skratchdot/open-golang/open" // default opener
+	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
 const AWS_FEDERATED_URL = "https://signin.aws.amazon.com/federation"
@@ -102,7 +103,7 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 }
 
 // opens the AWS console or just prints the URL
-func openConsole(ctx *RunContext, awssso *AWSSSO, accountid, role string) error {
+func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid, role string) error {
 	creds, err := awssso.GetRoleCredentials(accountid, role)
 	if err != nil {
 		return fmt.Errorf("Unable to get role credentials for %s: %s",

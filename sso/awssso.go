@@ -1,4 +1,4 @@
-package main
+package sso
 
 /*
  * AWS SSO CLI
@@ -21,14 +21,9 @@ package main
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 	"time"
 
-	/*
-		"github.com/aws/aws-sdk-go/aws/client"
-		"github.com/aws/aws-sdk-go/aws/awserr"
-		"github.com/aws/aws-sdk-go/aws/credentials"
-		"github.com/aws/aws-sdk-go/service/sts"
-	*/
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -424,6 +419,14 @@ type AccountInfo struct {
 func (ai AccountInfo) GetHeader(fieldName string) (string, error) {
 	v := reflect.ValueOf(ai)
 	return utils.GetHeaderTag(v, fieldName)
+}
+
+func (ai AccountInfo) GetAccountId64() int64 {
+	i64, err := strconv.ParseInt(ai.AccountId, 10, 64)
+	if err != nil {
+		log.WithError(err).Fatalf("Invalid AWS AccountID from AWS SSO: %s", ai.AccountId)
+	}
+	return i64
 }
 
 func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {

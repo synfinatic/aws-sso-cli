@@ -22,67 +22,58 @@ import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
 type TagsCmd struct {
-	AccountId   string `kong:"optional,name='account',short='A',help='Filter regsults based on AWS AccountID',env='AWS_SSO_ACCOUNTID'"`
+	AccountId   int64  `kong:"optional,name='account',short='A',default=-1,help='Filter regsults based on AWS AccountID',env='AWS_SSO_ACCOUNTID'"`
 	Role        string `kong:"optional,name='role',short='R',help='Filter results based on AWS Role Name',env='AWS_SSO_ROLE'"`
 	ForceUpdate bool   `kong:"optional,name='force-update',help='Force account/role cache update'"`
 }
 
 func (cc *TagsCmd) Run(ctx *RunContext) error {
-	sso := ctx.Config.SSO[ctx.Cli.SSO]
-	sso.Refresh()
+	if ctx.Cli.Tags.ForceUpdate {
+		s := ctx.Config.SSO[ctx.Cli.SSO]
+		awssso := sso.NewAWSSSO(s.SSORegion, s.StartUrl, &ctx.Store)
+		err := awssso.Authenticate(ctx.Config.PrintUrl, ctx.Config.Browser)
+		if err != nil {
+			log.WithError(err).Fatalf("Unable to authenticate")
+		}
 
-	allRoles := map[string][]RoleInfo{}
-	err := ctx.Cache.GetRoles(&allRoles)
-	if err != nil {
-		log.Fatalf("Unable to load roles from cache: %s", err.Error())
-	}
-	if ctx.Cache.GetRolesExpired() {
+		err = ctx.Cache.Refresh(awssso, s)
+		if err != nil {
+			log.WithError(err).Fatalf("Unable to refresh role cache")
+		}
+		err = ctx.Cache.Save()
+		if err != nil {
+			log.WithError(err).Warnf("Unable to save cache")
+		}
+	} else if ctx.Cache.Expired() {
 		log.Warn("Role cache may be out of date")
 	}
+	roles := []*sso.AWSRoleFlat{}
 
-	if ctx.Cli.Tags.AccountId != "" {
-		for a, _ := range allRoles {
-			if a != ctx.Cli.Tags.AccountId {
-				delete(allRoles, a)
-			}
-		}
-	}
-
-	if ctx.Cli.Tags.Role != "" {
-		for account, roles := range allRoles {
-			for _, role := range roles {
-				if role.RoleName == ctx.Cli.Tags.Role {
-					// There can be only one
-					allRoles[account] = []RoleInfo{role}
-					break
+	// If user has specified an account (or account + role) then limit
+	if ctx.Cli.Tags.AccountId != -1 {
+		for _, fRole := range ctx.Cache.Roles.GetAccountRoles(ctx.Cli.Tags.AccountId) {
+			if ctx.Cli.Tags.Role != "" {
+				roles = append(roles, fRole)
+			} else {
+				if fRole.RoleName == ctx.Cli.Tags.Role {
+					roles = append(roles, fRole)
 				}
 			}
-
 		}
+	} else {
+		roles = ctx.Cache.Roles.GetAllRoles()
 	}
 
-	configRoles := sso.GetRoles()
-
-	for account, roles := range allRoles {
-		for _, role := range roles {
-			fmt.Printf("%s\n", role.RoleArn())
-			fmt.Printf("  AccountId: %s\n", account)
-			fmt.Printf("  RoleName: %s\n", role.RoleName)
-			// config level tags
-			for _, crole := range configRoles {
-				if role.RoleArn() == crole.ARN {
-					for k, v := range crole.GetAllTags() {
-						fmt.Printf("  %s: %s\n", k, v)
-					}
-
-					break
-				}
-			}
-			fmt.Printf("\n")
+	for _, fRole := range roles {
+		fmt.Printf("%s\n  AccountId: %d\n  RoleName: %s\n", fRole.Arn, fRole.AccountId, fRole.RoleName)
+		for k, v := range fRole.Tags {
+			fmt.Printf("  %s: %s\n", k, v)
 		}
+		fmt.Printf("\n")
 	}
 	return nil
 }

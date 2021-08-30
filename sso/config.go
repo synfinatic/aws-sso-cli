@@ -1,4 +1,4 @@
-package main
+package sso
 
 /*
  * AWS SSO CLI
@@ -50,19 +50,19 @@ type SSOConfig struct {
 }
 
 type SSOAccount struct {
-	Name          string            `koanf:"Name" yaml:"Name,omitempty"` // Admin configured Account Name
-	Tags          map[string]string `koanf:"Tags" yaml:"Tags,omitempty" `
-	Roles         []*SSORole        `koanf:"Roles" yaml:"Roles,omitempty"`
-	DefaultRegion string            `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
+	Name          string              `koanf:"Name" yaml:"Name,omitempty"` // Admin configured Account Name
+	Tags          map[string]string   `koanf:"Tags" yaml:"Tags,omitempty" `
+	Roles         map[string]*SSORole `koanf:"Roles" yaml:"Roles,omitempty"`
+	DefaultRegion string              `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
 }
 
 type SSORole struct {
-	Account        *SSOAccount
-	ARN            string            `koanf:"ARN" yaml:"ARN"`
-	Profile        string            `koanf:"Profile" yaml:"Profile,omitempty"`
-	Tags           map[string]string `koanf:"Tags" yaml:"Tags,omitempty"`
-	DefaultRegion  string            `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
-	DestinationUrl string            `koanf:"DestinationUrl" yaml:"DestinationUrl,omitempty"`
+	Account       *SSOAccount
+	ARN           string            `koanf:"ARN" yaml:"ARN"`
+	Profile       string            `koanf:"Profile" yaml:"Profile,omitempty"`
+	Tags          map[string]string `koanf:"Tags" yaml:"Tags,omitempty"`
+	DefaultRegion string            `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
+	Via           string            `koanf:"Via" yaml:"Via,omitempty"`
 }
 
 // Refresh should be called any time you load the SSOConfig into memory or add a role
@@ -84,40 +84,6 @@ func (a *SSOAccount) HasRole(arn string) bool {
 		}
 	}
 	return hasRole
-}
-
-func (s *SSOConfig) UpdateRoles(roles map[string][]RoleInfo) (int64, error) {
-	var changes int64 = 0
-	for account, accountInfo := range roles {
-		accountId, err := strconv.ParseInt(account, 10, 64)
-		if err != nil {
-			return 0, err
-		}
-		if s.Accounts == nil {
-			s.Accounts = map[int64]*SSOAccount{}
-		}
-		_, hasAccount := s.Accounts[accountId]
-		if !hasAccount {
-			s.Accounts[accountId] = &SSOAccount{
-				Name:  accountInfo[0].AccountName,
-				Roles: []*SSORole{},
-			}
-		}
-
-		for _, roleInfo := range accountInfo {
-			if !hasAccount || !s.Accounts[accountId].HasRole(roleInfo.RoleArn()) {
-				changes += 1
-				s.Accounts[accountId].Roles = append(s.Accounts[accountId].Roles, &SSORole{
-					ARN:     roleInfo.RoleArn(),
-					Profile: roleInfo.Profile,
-				})
-			}
-		}
-	}
-	if changes > 0 {
-		s.Refresh()
-	}
-	return changes, nil
 }
 
 // GetRoles returns a list of all the roles for this SSOConfig
