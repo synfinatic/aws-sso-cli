@@ -7,7 +7,6 @@ replace github.com/keybase/go-keychain => github.com/99designs/go-keychain v0.0.
 
 require (
 	github.com/99designs/keyring v1.1.6
-	github.com/Songmu/prompter v0.4.0
 	github.com/alecthomas/kong v0.2.15
 	github.com/atotto/clipboard v0.1.4
 	github.com/aws/aws-sdk-go v1.38.40
@@ -15,7 +14,6 @@ require (
 	github.com/knadh/koanf v0.16.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
-	github.com/synfinatic/onelogin-aws-role v0.1.4
+	github.com/synfinatic/gotable v0.0.1
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 )

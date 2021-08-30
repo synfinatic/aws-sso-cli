@@ -25,7 +25,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
-	"github.com/synfinatic/onelogin-aws-role/utils"
+	"github.com/synfinatic/gotable"
 )
 
 // Fields match those in AWSRoleFlat.  Used when user doesn't have the `fields` in
@@ -102,7 +102,7 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 
 // Print all our roles
 func printRoles(roles *sso.Roles, fields []string) {
-	tr := []utils.TableStruct{}
+	tr := []gotable.TableStruct{}
 	idx := 0
 
 	// print in AccountId order
@@ -116,11 +116,11 @@ func printRoles(roles *sso.Roles, fields []string) {
 		for _, role := range roles.GetAccountRoles(account) {
 			role.Id = idx
 			idx += 1
-			tr = append(tr, role)
+			tr = append(tr, *role)
 		}
 	}
 
-	utils.GenerateTable(tr, fields)
+	gotable.GenerateTable(tr, fields)
 	fmt.Printf("\n")
 }
 
@@ -133,12 +133,12 @@ type ConfigFieldNames struct {
 // GetHeader is required for GenerateTable()
 func (cfn ConfigFieldNames) GetHeader(fieldName string) (string, error) {
 	v := reflect.ValueOf(cfn)
-	return utils.GetHeaderTag(v, fieldName)
+	return gotable.GetHeaderTag(v, fieldName)
 }
 
 // listAllFields generates a table with all the AWSRoleFlat fields we can print
 func listAllFields() {
-	ts := []utils.TableStruct{}
+	ts := []gotable.TableStruct{}
 	for k, v := range allListFields {
 		ts = append(ts, ConfigFieldNames{
 			Field:       k,
@@ -147,6 +147,6 @@ func listAllFields() {
 	}
 
 	fields := []string{"Field", "Description"}
-	utils.GenerateTable(ts, fields)
+	gotable.GenerateTable(ts, fields)
 	fmt.Printf("\n")
 }

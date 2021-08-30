@@ -31,7 +31,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ssooidc"
 	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open" // default opener
-	"github.com/synfinatic/onelogin-aws-role/utils"
+	"github.com/synfinatic/gotable"
 )
 
 type AWSSSO struct {
@@ -355,7 +355,7 @@ type RoleInfo struct {
 
 func (ri RoleInfo) GetHeader(fieldName string) (string, error) {
 	v := reflect.ValueOf(ri)
-	return utils.GetHeaderTag(v, fieldName)
+	return gotable.GetHeaderTag(v, fieldName)
 }
 
 func (ri RoleInfo) RoleArn() string {
@@ -418,7 +418,7 @@ type AccountInfo struct {
 
 func (ai AccountInfo) GetHeader(fieldName string) (string, error) {
 	v := reflect.ValueOf(ai)
-	return utils.GetHeaderTag(v, fieldName)
+	return gotable.GetHeaderTag(v, fieldName)
 }
 
 func (ai AccountInfo) GetAccountId64() int64 {

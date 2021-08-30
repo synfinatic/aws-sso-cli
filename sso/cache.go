@@ -28,7 +28,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/synfinatic/onelogin-aws-role/utils"
+	"github.com/synfinatic/gotable"
 )
 
 const (
@@ -154,7 +154,7 @@ type AWSRoleFlat struct {
 
 func (f AWSRoleFlat) GetHeader(fieldName string) (string, error) {
 	v := reflect.ValueOf(f)
-	return utils.GetHeaderTag(v, fieldName)
+	return gotable.GetHeaderTag(v, fieldName)
 }
 
 // Merges the AWS SSO and our Config file to create our Roles struct
