@@ -48,12 +48,11 @@ type RunContext struct {
 }
 
 const (
-	CONFIG_DIR            = "~/.aws-sso"
-	CONFIG_FILE           = CONFIG_DIR + "/config.yaml"
-	JSON_STORE_FILE       = CONFIG_DIR + "/store.json"
-	INSECURE_CACHE_FILE   = CONFIG_DIR + "/cache.json"
-	ENV_SSO_FILE_PASSWORD = "AWS_SSO_FILE_PASSPHRASE"
-	DEFAULT_STORE         = "file"
+	CONFIG_DIR          = "~/.aws-sso"
+	CONFIG_FILE         = CONFIG_DIR + "/config.yaml"
+	JSON_STORE_FILE     = CONFIG_DIR + "/store.json"
+	INSECURE_CACHE_FILE = CONFIG_DIR + "/cache.json"
+	DEFAULT_STORE       = "file"
 )
 
 type CLI struct {
@@ -87,7 +86,7 @@ func main() {
 	}
 
 	// Load the config file
-	config := GetPath(cli.ConfigFile)
+	config := getHomePath(cli.ConfigFile)
 	if err := run_ctx.Konf.Load(file.Provider(config), yaml.Parser()); err != nil {
 		log.WithError(err).Fatalf("Unable to open config file: %s", config)
 	}
@@ -117,9 +116,9 @@ func main() {
 	}
 
 	// Load the insecure cache
-	cfile := GetPath(INSECURE_CACHE_FILE)
+	cfile := getHomePath(INSECURE_CACHE_FILE)
 	if run_ctx.Config.CacheStore != "" {
-		cfile = GetPath(run_ctx.Config.CacheStore)
+		cfile = getHomePath(run_ctx.Config.CacheStore)
 	}
 	run_ctx.Cache, err = sso.OpenCache(cfile)
 	if err != nil {
@@ -129,17 +128,17 @@ func main() {
 	// Load the secure store data
 	switch run_ctx.Config.SecureStore {
 	case "json":
-		sfile := GetPath(JSON_STORE_FILE)
+		sfile := getHomePath(JSON_STORE_FILE)
 		if run_ctx.Config.JsonStore != "" {
-			sfile = GetPath(run_ctx.Config.JsonStore)
+			sfile = getHomePath(run_ctx.Config.JsonStore)
 		}
 		run_ctx.Store, err = sso.OpenJsonStore(sfile)
 		if err != nil {
 			log.WithError(err).Fatalf("Unable to open JsonStore %s", sfile)
 		}
 	default:
-		cfg := NewKeyringConfig(run_ctx.Config.SecureStore)
-		run_ctx.Store, err = OpenKeyring(cfg)
+		cfg := sso.NewKeyringConfig(run_ctx.Config.SecureStore, CONFIG_DIR)
+		run_ctx.Store, err = sso.OpenKeyring(cfg)
 		if err != nil {
 			log.WithError(err).Fatalf("Unable to open SecureStore %s", run_ctx.Config.SecureStore)
 		}
@@ -208,6 +207,6 @@ func (cc *VersionCmd) Run(ctx *RunContext) error {
 	return nil
 }
 
-func GetPath(path string) string {
+func getHomePath(path string) string {
 	return strings.Replace(path, "~", os.Getenv("HOME"), 1)
 }

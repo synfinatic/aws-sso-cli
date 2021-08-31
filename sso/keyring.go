@@ -1,4 +1,4 @@
-package main
+package sso
 
 /*
  * AWS SSO CLI
@@ -28,7 +28,6 @@ import (
 
 	"github.com/99designs/keyring"
 	log "github.com/sirupsen/logrus"
-	"github.com/synfinatic/aws-sso-cli/sso"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -37,6 +36,7 @@ const (
 	KEYRING_ID                   = "aws-sso-cli"
 	REGISTER_CLIENT_DATA_PREFIX  = "client-data"
 	CREATE_TOKEN_RESPONSE_PREFIX = "token-response"
+	ENV_SSO_FILE_PASSWORD        = "AWS_SSO_FILE_PASSPHRASE"
 )
 
 // Impliments SecureStorage
@@ -47,8 +47,8 @@ type KeyringStore struct {
 
 var NewPassword string = ""
 
-func NewKeyringConfig(name string) *keyring.Config {
-	securePath := path.Join(CONFIG_DIR, "secure")
+func NewKeyringConfig(name, configDir string) *keyring.Config {
+	securePath := path.Join(configDir, "secure")
 
 	c := keyring.Config{
 		ServiceName: KEYRING_NAME, // generic
@@ -67,7 +67,7 @@ func NewKeyringConfig(name string) *keyring.Config {
 	}
 	if name != "" {
 		c.AllowedBackends = []keyring.BackendType{keyring.BackendType(name)}
-		rolesFile := GetPath(path.Join(securePath, "roles"))
+		rolesFile := getHomePath(path.Join(securePath, "roles"))
 
 		if name == "file" {
 			if _, err := os.Stat(rolesFile); os.IsNotExist(err) {
@@ -127,7 +127,7 @@ func (kr *KeyringStore) RegisterClientKey(ssoRegion string) string {
 }
 
 // Save our RegisterClientData in the key chain
-func (kr *KeyringStore) SaveRegisterClientData(region string, client sso.RegisterClientData) error {
+func (kr *KeyringStore) SaveRegisterClientData(region string, client RegisterClientData) error {
 	jdata, err := json.Marshal(client)
 	if err != nil {
 		return err
@@ -140,7 +140,7 @@ func (kr *KeyringStore) SaveRegisterClientData(region string, client sso.Registe
 }
 
 // Get our RegisterClientData from the key chain
-func (kr *KeyringStore) GetRegisterClientData(region string, client *sso.RegisterClientData) error {
+func (kr *KeyringStore) GetRegisterClientData(region string, client *RegisterClientData) error {
 	data, err := kr.keyring.Get(kr.RegisterClientKey(region))
 	if err != nil {
 		return err
@@ -175,7 +175,7 @@ func (kr *KeyringStore) DeleteRegisterClientData(region string) error {
 	// Can't just call keyring.Remove() because it's broken, so we'll update the record instead
 	// https://github.com/99designs/keyring/issues/84
 	// return kr.keyring.Remove(key)
-	client := sso.RegisterClientData{}
+	client := RegisterClientData{}
 	client.ClientSecretExpiresAt = time.Now().Unix()
 	return kr.SaveRegisterClientData(region, client)
 }
@@ -185,7 +185,7 @@ func (kr *KeyringStore) CreateTokenResponseKey(key string) string {
 }
 
 // SaveCreateTokenResponse stores the token in the keyring
-func (kr *KeyringStore) SaveCreateTokenResponse(key string, token sso.CreateTokenResponse) error {
+func (kr *KeyringStore) SaveCreateTokenResponse(key string, token CreateTokenResponse) error {
 	jdata, err := json.Marshal(token)
 	if err != nil {
 		return err
@@ -198,7 +198,7 @@ func (kr *KeyringStore) SaveCreateTokenResponse(key string, token sso.CreateToke
 }
 
 // GetCreateTokenResponse retrieves the CreateTokenResponse from the keyring
-func (kr *KeyringStore) GetCreateTokenResponse(key string, token *sso.CreateTokenResponse) error {
+func (kr *KeyringStore) GetCreateTokenResponse(key string, token *CreateTokenResponse) error {
 	data, err := kr.keyring.Get(kr.CreateTokenResponseKey(key))
 	if err != nil {
 		return err
@@ -233,7 +233,11 @@ func (kr *KeyringStore) DeleteCreateTokenResponse(key string) error {
 	// Can't just call keyring.Remove because it's broken, so we'll udpate the record instead
 	// https://github.com/99designs/keyring/issues/84
 	// return kr.keyring.Remove(keyValue)
-	tr := sso.CreateTokenResponse{}
+	tr := CreateTokenResponse{}
 	tr.ExpiresAt = time.Now().Unix()
 	return kr.SaveCreateTokenResponse(key, tr)
+}
+
+func getHomePath(path string) string {
+	return strings.Replace(path, "~", os.Getenv("HOME"), 1)
 }

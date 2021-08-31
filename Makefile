@@ -63,6 +63,8 @@ clean-go: ## Clean Go cache
 go-get:  ## Get our go modules
 	go get -v all
 
+.prepare: $(DIST_DIR)
+
 .PHONY: build-race
 build-race: .prepare ## Build race detection binary
 	go build -race -ldflags='$(LDFLAGS)' -o $(OUTPUT_NAME) cmd/*.go
