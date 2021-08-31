@@ -472,7 +472,7 @@ func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {
 
 type RoleCredentials struct { // Cache
 	RoleName        string `json:"roleName"`
-	AccountId       string `json:"accountId"`
+	AccountId       int64  `json:"accountId"`
 	AccessKeyId     string `json:"accessKeyId"`
 	SecretAccessKey string `json:"secretAccessKey"`
 	SessionToken    string `json:"sessionToken"`
@@ -488,10 +488,17 @@ func (r *RoleCredentials) ExpireString() string {
 	return time.Unix(r.Expiration/1000, 0).String()
 }
 
-func (as *AWSSSO) GetRoleCredentials(accountid, role string) (RoleCredentials, error) {
+// AccountIdStr returns our AccountId as a string
+func (r *RoleCredentials) AccountIdStr() string {
+	return strconv.FormatInt(r.AccountId, 10)
+}
+
+func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (RoleCredentials, error) {
+	aId := strconv.FormatInt(accountId, 10)
+
 	input := sso.GetRoleCredentialsInput{
 		AccessToken: aws.String(as.Token.AccessToken),
-		AccountId:   aws.String(accountid),
+		AccountId:   aws.String(aId),
 		RoleName:    aws.String(role),
 	}
 	output, err := as.sso.GetRoleCredentials(&input)
@@ -500,7 +507,7 @@ func (as *AWSSSO) GetRoleCredentials(accountid, role string) (RoleCredentials, e
 	}
 
 	ret := RoleCredentials{
-		AccountId:       accountid,
+		AccountId:       accountId,
 		RoleName:        role,
 		AccessKeyId:     aws.StringValue(output.RoleCredentials.AccessKeyId),
 		SecretAccessKey: aws.StringValue(output.RoleCredentials.SecretAccessKey),

@@ -215,15 +215,10 @@ func getHomePath(path string) string {
 }
 
 // Get our RoleCredentials
-func GetRoleCredentials(ctx *RunContext, awssso *sso.AWSSSO, accountid, role string) *sso.RoleCredentials {
+func GetRoleCredentials(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) *sso.RoleCredentials {
 	creds := sso.RoleCredentials{}
 
-	aId, err := strconv.ParseInt(accountid, 10, 64)
-
-	if err != nil {
-		log.Fatalf("Unable to parse accountid %s: %s", accountid, err.Error())
-	}
-	rFlat, err := ctx.Cache.Roles.GetRole(aId, role)
+	rFlat, err := ctx.Cache.Roles.GetRole(accountid, role)
 
 	// must be in cache, not expired and no force refresh
 	if err == nil && !ctx.Cli.Refresh && !rFlat.IsExpired() {
@@ -245,4 +240,31 @@ func GetRoleCredentials(ctx *RunContext, awssso *sso.AWSSSO, accountid, role str
 		}
 	}
 	return &creds
+}
+
+// ParseRoleARN parses an ARN representing a role in long or short format
+func ParseRoleARN(arn string) (int64, string, error) {
+	s := strings.Split(arn, ":")
+	var accountid, role string
+	if len(s) == 2 {
+		// short account:Role format
+		accountid = s[0]
+		role = s[1]
+	} else if len(s) == 5 {
+		// long format for arn:aws:iam:XXXXXXXXXX:role/YYYYYYYY
+		accountid = s[3]
+		s = strings.Split(s[4], "/")
+		role = s[1]
+		if len(s) != 2 {
+			return 0, "", fmt.Errorf("Unable to parse ARN: %s", arn)
+		}
+	} else {
+		return 0, "", fmt.Errorf("Unable to parse ARN: %s", arn)
+	}
+
+	aId, err := strconv.ParseInt(accountid, 10, 64)
+	if err != nil {
+		return 0, "", fmt.Errorf("Unable to parse ARN: %s", arn)
+	}
+	return aId, role, nil
 }

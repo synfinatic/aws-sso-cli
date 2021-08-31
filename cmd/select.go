@@ -21,7 +21,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/c-bata/go-prompt"
@@ -29,7 +28,7 @@ import (
 	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
-type CompleterExec = func(*RunContext, *sso.AWSSSO, string, string) error
+type CompleterExec = func(*RunContext, *sso.AWSSSO, int64, string) error
 
 type TagsCompleter struct {
 	ctx      *RunContext
@@ -88,8 +87,7 @@ func (tc *TagsCompleter) Executor(args string) {
 	if err != nil {
 		log.Fatalf("Unable to parse %s: %s", ssoRoles[0], err.Error())
 	}
-	s := strconv.FormatInt(aId, 10)
-	err = tc.exec(tc.ctx, tc.awsSSO, s, rName)
+	err = tc.exec(tc.ctx, tc.awsSSO, aId, rName)
 	if err != nil {
 		log.Fatalf("Unable to exec: %s", err.Error())
 	}

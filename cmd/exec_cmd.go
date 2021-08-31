@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 
 	"github.com/c-bata/go-prompt"
 	log "github.com/sirupsen/logrus"
@@ -34,7 +33,7 @@ type ExecCmd struct {
 	Region    string `kong:"optional,name='region',help='AWS Region',env='AWS_DEFAULT_REGION'"`
 	Duration  int64  `kong:"optional,name='duration',short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
 	Arn       string `kong:"optional,name='arn',short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN'"`
-	AccountId string `kong:"optional,name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNTID'"`
+	AccountId int64  `kong:"optional,name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNTID'"`
 	Role      string `kong:"optional,name='role',short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE'"`
 
 	// Exec Params
@@ -51,26 +50,15 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 	// Did user specify the ARN or account/role?
 	if ctx.Cli.Exec.Arn != "" {
 		awssso := doAuth(ctx)
-		s := strings.Split(ctx.Cli.Exec.Arn, ":")
-		var accountid, role string
-		if len(s) == 2 {
-			// short account:Role format
-			accountid = s[0]
-			role = s[1]
-		} else if len(s) == 5 {
-			// long format for arn:aws:iam:XXXXXXXXXX:role/YYYYYYYY
-			accountid = s[3]
-			s = strings.Split(s[4], "/")
-			role = s[1]
-			if len(s) != 2 {
-				return fmt.Errorf("Unable to parse ARN: %s", ctx.Cli.Exec.Arn)
-			}
-		} else {
-			return fmt.Errorf("Unable to parse ARN: %s", ctx.Cli.Exec.Arn)
+
+		accountid, role, err := ParseRoleARN(ctx.Cli.Exec.Arn)
+		if err != nil {
+			return err
 		}
+
 		return execCmd(ctx, awssso, accountid, role)
-	} else if ctx.Cli.Exec.AccountId != "" || ctx.Cli.Exec.Role != "" {
-		if ctx.Cli.Exec.AccountId == "" || ctx.Cli.Exec.Role == "" {
+	} else if ctx.Cli.Exec.AccountId != 0 || ctx.Cli.Exec.Role != "" {
+		if ctx.Cli.Exec.AccountId == 0 || ctx.Cli.Exec.Role == "" {
 			return fmt.Errorf("Please specify both --account and --role")
 		}
 		awssso := doAuth(ctx)
@@ -107,7 +95,7 @@ func doAuth(ctx *RunContext) *sso.AWSSSO {
 }
 
 // Executes Cmd+Args in the context of the AWS Role creds
-func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid, role string) error {
+func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) error {
 	credsPtr := GetRoleCredentials(ctx, awssso, accountid, role)
 	creds := *credsPtr
 
@@ -115,7 +103,7 @@ func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid, role string) error 
 	os.Setenv("AWS_ACCESS_KEY_ID", creds.AccessKeyId)
 	os.Setenv("AWS_SECRET_ACCESS_KEY", creds.SecretAccessKey)
 	os.Setenv("AWS_SESSION_TOKEN", creds.SessionToken)
-	os.Setenv("AWS_ACCOUNT_ID", creds.AccountId)
+	os.Setenv("AWS_ACCOUNT_ID", creds.AccountIdStr())
 	os.Setenv("AWS_ROLE_NAME", creds.RoleName)
 	if ctx.Cli.Exec.Region != "" {
 		os.Setenv("AWS_DEFAULT_REGION", ctx.Cli.Exec.Region)
