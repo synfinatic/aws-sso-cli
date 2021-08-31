@@ -21,6 +21,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/alecthomas/kong"
@@ -53,6 +54,7 @@ const (
 	JSON_STORE_FILE     = CONFIG_DIR + "/store.json"
 	INSECURE_CACHE_FILE = CONFIG_DIR + "/cache.json"
 	DEFAULT_STORE       = "file"
+	COPYRIGHT_YEAR      = "2021"
 )
 
 type CLI struct {
@@ -63,6 +65,7 @@ type CLI struct {
 	Browser    string `kong:"optional,short='b',help='Path to browser to use',env='AWS_SSO_BROWSER'"`
 	PrintUrl   bool   `kong:"optional,name='url',short='u',help='Print URL insetad of open in browser'"`
 	SSO        string `kong:"optional,short='S',help='AWS SSO Instance',env='AWS_SSO'"`
+	Refresh    bool   `kong:"optional,short='R',help='Force refresh of STS Token Credentials'"`
 
 	// Commands
 	Console ConsoleCmd `kong:"cmd,help='Open AWS Console using specificed AWS Role/profile'"`
@@ -202,11 +205,44 @@ func (cc *VersionCmd) Run(ctx *RunContext) error {
 		delta = fmt.Sprintf(" [%s delta]", Delta)
 		Tag = "Unknown"
 	}
-	fmt.Printf("AWS SSO CLI Version %s -- Copyright 2021 Aaron Turner\n", Version)
+	fmt.Printf("AWS SSO CLI Version %s -- Copyright %s Aaron Turner\n", Version, COPYRIGHT_YEAR)
 	fmt.Printf("%s (%s)%s built at %s\n", CommitID, Tag, delta, Buildinfos)
 	return nil
 }
 
 func getHomePath(path string) string {
 	return strings.Replace(path, "~", os.Getenv("HOME"), 1)
+}
+
+// Get our RoleCredentials
+func GetRoleCredentials(ctx *RunContext, awssso *sso.AWSSSO, accountid, role string) *sso.RoleCredentials {
+	creds := sso.RoleCredentials{}
+
+	aId, err := strconv.ParseInt(accountid, 10, 64)
+
+	if err != nil {
+		log.Fatalf("Unable to parse accountid %s: %s", accountid, err.Error())
+	}
+	rFlat, err := ctx.Cache.Roles.GetRole(aId, role)
+
+	// must be in cache, not expired and no force refresh
+	if err == nil && !ctx.Cli.Refresh && !rFlat.IsExpired() {
+		// we can use the secure store!
+		err = ctx.Store.GetRoleCredentials(rFlat.Arn, &creds)
+	}
+
+	// If we didn't load our cache query AWS SSO
+	if creds.RoleName == "" {
+		creds, err = awssso.GetRoleCredentials(accountid, role)
+		if err != nil {
+			log.WithError(err).Fatalf("Unable to get role credentials for %s", role)
+		}
+
+		// Cache our creds
+		err = ctx.Store.SaveRoleCredentials(rFlat.Arn, creds)
+		if err != nil {
+			log.WithError(err).Warnf("Unable to cache role credentials in secure store")
+		}
+	}
+	return &creds
 }

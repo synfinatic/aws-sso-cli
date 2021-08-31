@@ -238,6 +238,59 @@ func (kr *KeyringStore) DeleteCreateTokenResponse(key string) error {
 	return kr.SaveCreateTokenResponse(key, tr)
 }
 
+// SaveRoleCredentials stores the token in the arnring
+func (kr *KeyringStore) SaveRoleCredentials(arn string, token RoleCredentials) error {
+	jdata, err := json.Marshal(token)
+	if err != nil {
+		return err
+	}
+	err = kr.keyring.Set(keyring.Item{
+		Key:  arn,
+		Data: jdata,
+	})
+	return err
+}
+
+// GetRoleCredentials retrieves the RoleCredentials from the Keyring
+func (kr *KeyringStore) GetRoleCredentials(arn string, token *RoleCredentials) error {
+	data, err := kr.keyring.Get(arn)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(data.Data, token)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteRoleCredentials deletes the RoleCredentials from the Keyring
+func (kr *KeyringStore) DeleteRoleCredentials(arn string) error {
+	keys, err := kr.keyring.Keys()
+	if err != nil {
+		return err
+	}
+
+	// make sure we have this token response store
+	hasKey := false
+	for _, k := range keys {
+		if k == arn {
+			hasKey = true
+			break
+		}
+	}
+	if !hasKey {
+		return fmt.Errorf("Missing RoleCredentials for arn: %s", arn)
+	}
+
+	// Can't just call Keyring.Remove because it's broken, so we'll udpate the record instead
+	// https://github.com/99designs/Keyring/issues/84
+	// return kr.Keyring.Remove(arnValue)
+	rc := RoleCredentials{}
+	rc.Expiration = 0
+	return kr.SaveRoleCredentials(arn, rc)
+}
+
 func getHomePath(path string) string {
 	return strings.Replace(path, "~", os.Getenv("HOME"), 1)
 }

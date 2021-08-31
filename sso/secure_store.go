@@ -27,4 +27,8 @@ type SecureStorage interface {
 	SaveCreateTokenResponse(string, CreateTokenResponse) error
 	GetCreateTokenResponse(string, *CreateTokenResponse) error
 	DeleteCreateTokenResponse(string) error
+
+	SaveRoleCredentials(string, RoleCredentials) error
+	GetRoleCredentials(string, *RoleCredentials) error
+	DeleteRoleCredentials(string) error
 }

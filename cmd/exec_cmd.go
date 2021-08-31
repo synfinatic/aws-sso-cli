@@ -57,11 +57,16 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 			// short account:Role format
 			accountid = s[0]
 			role = s[1]
-		} else {
+		} else if len(s) == 5 {
 			// long format for arn:aws:iam:XXXXXXXXXX:role/YYYYYYYY
 			accountid = s[3]
 			s = strings.Split(s[4], "/")
 			role = s[1]
+			if len(s) != 2 {
+				return fmt.Errorf("Unable to parse ARN: %s", ctx.Cli.Exec.Arn)
+			}
+		} else {
+			return fmt.Errorf("Unable to parse ARN: %s", ctx.Cli.Exec.Arn)
 		}
 		return execCmd(ctx, awssso, accountid, role)
 	} else if ctx.Cli.Exec.AccountId != "" || ctx.Cli.Exec.Role != "" {
@@ -103,10 +108,8 @@ func doAuth(ctx *RunContext) *sso.AWSSSO {
 
 // Executes Cmd+Args in the context of the AWS Role creds
 func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid, role string) error {
-	creds, err := awssso.GetRoleCredentials(accountid, role)
-	if err != nil {
-		log.WithError(err).Fatalf("Unable to get role credentials for %s", role)
-	}
+	credsPtr := GetRoleCredentials(ctx, awssso, accountid, role)
+	creds := *credsPtr
 
 	// set our ENV & execute the command
 	os.Setenv("AWS_ACCESS_KEY_ID", creds.AccessKeyId)

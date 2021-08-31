@@ -28,7 +28,7 @@ DESCRIPTION               := AWS SSO CLI
 BUILDINFOS                := $(shell date +%FT%T%z)$(BUILDINFOSDET)
 HOSTNAME                  := $(shell hostname)
 LDFLAGS                   := -X "main.Version=$(PROJECT_VERSION)" -X "main.Delta=$(PROJECT_DELTA)" -X "main.Buildinfos=$(BUILDINFOS)" -X "main.Tag=$(PROJECT_TAG)" -X "main.CommitID=$(PROJECT_COMMIT)"
-OUTPUT_NAME               := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)-$(GOOS)-$(GOARCH)  # default for current platform
+OUTPUT_NAME               := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)  # default for current platform
 # supported platforms for `make release`
 WINDOWS_BIN               := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)-windows-amd64.exe
 WINDOWS32_BIN             := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)-windows-386.exe
@@ -117,39 +117,42 @@ precheck: test test-fmt test-tidy  ## Run all tests that happen in a PR
 # Build targets for our supported plaforms
 windows: $(WINDOWS_BIN)  ## Build 64bit x86 Windows binary
 
-$(WINDOWS_BIN): $(wildcard */*.go) $(DIST_DIR)
+$(WINDOWS_BIN): $(wildcard */*.go) .prepare
 	GOARCH=amd64 GOOS=windows go build -ldflags='$(LDFLAGS)' -o $(WINDOWS_BIN) cmd/*.go
 	@echo "Created: $(WINDOWS_BIN)"
 
 windows32: $(WINDOWS32_BIN)  ## Build 32bit x86 Windows binary
 
-$(WINDOWS32_BIN): cmd/*.go $(DIST_DIR)
+$(WINDOWS32_BIN): $(wildcard */*.go) .prepare
 	GOARCH=386 GOOS=windows go build -ldflags='$(LDFLAGS)' -o $(WINDOWS32_BIN) cmd/*.go
 	@echo "Created: $(WINDOWS32_BIN)"
 
 linux: $(LINUX_BIN)  ## Build Linux/x86_64 binary
 
-$(LINUX_BIN): cmd/*.go $(DIST_DIR)
+$(LINUX_BIN): $(wildcard */*.go) .prepare
 	GOARCH=amd64 GOOS=linux go build -ldflags='$(LDFLAGS)' -o $(LINUX_BIN) cmd/*.go
 	@echo "Created: $(LINUX_BIN)"
 
 linux-arm64: $(LINUXARM64_BIN)  ## Build Linux/arm64 binary
 
-$(LINUXARM64_BIN): cmd/*.go $(DIST_DIR)
+$(LINUXARM64_BIN): $(wildcard */*.go) .prepare
 	GOARCH=arm64 GOOS=linux go build -ldflags='$(LDFLAGS)' -o $(LINUXARM64_BIN) cmd/*.go
 	@echo "Created: $(LINUXARM64_BIN)"
 
 darwin: $(DARWIN_BIN)  ## Build MacOS/x86_64 binary
 
-$(DARWIN_BIN): $(wildcard */*.go) $(DIST_DIR)
+$(DARWIN_BIN): $(wildcard */*.go) .prepare
 	GOARCH=amd64 GOOS=darwin go build -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) cmd/*.go
 	@echo "Created: $(DARWIN_BIN)"
 
 darwin-arm64: $(DARWINARM64_BIN)  ## Build MacOS/ARM64 binary
 
-$(DARWINARM64_BIN): $(wildcard */*.go) $(DIST_DIR)
+$(DARWINARM64_BIN): $(wildcard */*.go) .prepare
 	GOARCH=arm64 GOOS=darwin go build -ldflags='$(LDFLAGS)' -o $(DARWINARM64_BIN) cmd/*.go
 	@echo "Created: $(DARWINARM64_BIN)"
+
+$(OUTPUT_NAME): $(wildcard */*.go) .prepare
+	go build -ldflags='$(LDFLAGS)' -o $(OUTPUT_NAME) cmd/*.go
 
 workflow.png: workflow.dot
 	dot -oworkflow.png -Tpng workflow.dot

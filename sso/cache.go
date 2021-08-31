@@ -117,21 +117,21 @@ type Roles struct {
 
 // AWSAccount and AWSRole is how we store the data
 type AWSAccount struct {
-	Alias         string              `json:"Alias"` // from AWS
-	Name          string              `json:"Name"`  // from config
-	EmailAddress  string              `json:"EmailAddress"`
-	Tags          map[string]string   `json:"Tags"`
-	Roles         map[string]*AWSRole `json:"Roles"`
-	DefaultRegion string              `json:"DefaultRegion"`
+	Alias         string              `json:"Alias,omitempty"` // from AWS
+	Name          string              `json:"Name,omitempty"`  // from config
+	EmailAddress  string              `json:"EmailAddress,omitempty"`
+	Tags          map[string]string   `json:"Tags,omitempty"`
+	Roles         map[string]*AWSRole `json:"Roles,omitempty"`
+	DefaultRegion string              `json:"DefaultRegion,omitempty"`
 }
 
 type AWSRole struct {
 	Arn           string            `json:"Arn"`
-	Expires       string            `json:"Expires"` // 2006-01-02 15:04:05 -0700 MST
-	Profile       string            `json:"Profile"`
-	DefaultRegion string            `json:"DefaultRegion"`
-	Tags          map[string]string `json:"Tags"`
-	Via           string            `json:"Via"`
+	DefaultRegion string            `json:"DefaultRegion,omitempty"`
+	Expires       string            `json:"Expires,omitempty"` // 2006-01-02 15:04:05 -0700 MST
+	Profile       string            `json:"Profile,omitempty"`
+	Tags          map[string]string `json:"Tags,omitempty"`
+	Via           string            `json:"Via,omitempty"`
 }
 
 // This is what we always return for a role definition
@@ -141,14 +141,14 @@ type AWSRoleFlat struct {
 	AccountName   string            `json:"AccountName" header:"AccountName"`
 	AccountAlias  string            `json:"AccountAlias" header:"AccountAlias"`
 	EmailAddress  string            `json:"EmailAddress" header:"EmailAddress"`
+	Expires       string            `json:"Expires" header:"Expires"`
 	Arn           string            `json:"Arn" header:"ARN"`
 	RoleName      string            `json:"RoleName" header:"Role"`
-	Expires       string            `json:"Expires" header:"Expires"`
 	Profile       string            `json:"Profile" header:"Profile"`
 	DefaultRegion string            `json:"DefaultRegion" header:"DefaultRegion"`
-	SSORegion     string            `json:"SSORegion"`
-	StartUrl      string            `json:"StartUrl"`
-	Tags          map[string]string `json:"Tags"`
+	SSORegion     string            `json:"SSORegion" header:"SSORegion"`
+	StartUrl      string            `json:"StartUrl" header:"StartUrl"`
+	Tags          map[string]string `json:"Tags"` // not supported by GenerateTable
 	Via           string            `json:"Via" header:"Via"`
 }
 
@@ -188,13 +188,14 @@ func NewRoles(as *AWSSSO, ssoName string, config *SSOConfig) (*Roles, error) {
 		}
 		for _, role := range roles {
 			r.Accounts[accountId].Roles[role.RoleName] = &AWSRole{
-				Arn: MakeRoleARN(accountId, role.RoleName),
+				Arn:  MakeRoleARN(accountId, role.RoleName),
+				Tags: map[string]string{},
 			}
 		}
 	}
 
 	// The load all the Config file stuff.  Normally this is just adding markup, but
-	// for accounts that are not in SSO, we may be creating them as well!
+	// for accounts &roles that are not in SSO, we may be creating them as well!
 	for accountId, account := range config.Accounts {
 		if _, ok := r.Accounts[accountId]; !ok {
 			r.Accounts[accountId] = &AWSAccount{
@@ -205,8 +206,16 @@ func NewRoles(as *AWSSSO, ssoName string, config *SSOConfig) (*Roles, error) {
 		r.Accounts[accountId].DefaultRegion = account.DefaultRegion
 		r.Accounts[accountId].Name = account.Name
 
+		// set our account tags
 		for k, v := range config.Accounts[accountId].Tags {
 			r.Accounts[accountId].Tags[k] = v
+		}
+
+		// set the tags for all the SSO roles
+		for _, role := range r.Accounts[accountId].Roles {
+			for k, v := range config.Accounts[accountId].Tags {
+				role.Tags[k] = v
+			}
 		}
 
 		for roleName, role := range config.Accounts[accountId].Roles {
@@ -222,6 +231,11 @@ func NewRoles(as *AWSSSO, ssoName string, config *SSOConfig) (*Roles, error) {
 			if role.DefaultRegion != "" {
 				r.Accounts[accountId].Roles[roleName].DefaultRegion = role.DefaultRegion
 			}
+			// Copy the account tags to the role
+			for k, v := range config.Accounts[accountId].Tags {
+				r.Accounts[accountId].Roles[roleName].Tags[k] = v
+			}
+			// Insert role specific tags (possible overwrite of account level)
 			for k, v := range role.Tags {
 				r.Accounts[accountId].Roles[roleName].Tags[k] = v
 			}
@@ -307,10 +321,10 @@ func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) 
 				AccountName:   account.Name,
 				AccountAlias:  account.Alias,
 				EmailAddress:  account.EmailAddress,
+				Expires:       role.Expires,
 				Tags:          account.Tags,
 				Arn:           role.Arn,
 				RoleName:      roleName,
-				Expires:       role.Expires,
 				Profile:       role.Profile,
 				DefaultRegion: r.DefaultRegion,
 				SSORegion:     r.SSORegion,

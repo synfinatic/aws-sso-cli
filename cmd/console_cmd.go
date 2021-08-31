@@ -50,17 +50,20 @@ type ConsoleCmd struct {
 func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 	if ctx.Cli.Console.Arn != "" {
 		awssso := doAuth(ctx)
-		s := strings.Split(ctx.Cli.Exec.Arn, ":")
+		s := strings.Split(ctx.Cli.Console.Arn, ":")
 		var accountid, role string
+
 		if len(s) == 2 {
 			// short account:Role format
 			accountid = s[0]
 			role = s[1]
-		} else {
+		} else if len(s) == 5 {
 			// long format for arn:aws:iam:XXXXXXXXXX:role/YYYYYYYY
 			accountid = s[3]
 			s = strings.Split(s[4], "/")
 			role = s[1]
+		} else {
+			return fmt.Errorf("Unable to parse ARN: %s", ctx.Cli.Console.Arn)
 		}
 		return openConsole(ctx, awssso, accountid, role)
 	} else if ctx.Cli.Console.AccountId != "" || ctx.Cli.Console.Role != "" {
@@ -79,9 +82,13 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 		if ctx.Cli.Console.SessionToken == "" {
 			return fmt.Errorf("AWS_SESSION_TOKEN is not set")
 		}
-		return openConsoleAccessKey(ctx, ctx.Cli.Console.AccessKeyId,
-			ctx.Cli.Console.SecretAccessKey, ctx.Cli.Console.SessionToken,
-			ctx.Cli.Console.Duration)
+		creds := sso.RoleCredentials{
+			AccessKeyId:     ctx.Cli.Console.AccessKeyId,
+			SecretAccessKey: ctx.Cli.Console.SecretAccessKey,
+			SessionToken:    ctx.Cli.Console.SessionToken,
+		}
+
+		return openConsoleAccessKey(ctx, &creds, ctx.Cli.Console.Duration)
 	}
 
 	fmt.Printf("Please use `exit` or `Ctrl-D` to quit.\n")
@@ -104,23 +111,18 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 
 // opens the AWS console or just prints the URL
 func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid, role string) error {
-	creds, err := awssso.GetRoleCredentials(accountid, role)
-	if err != nil {
-		return fmt.Errorf("Unable to get role credentials for %s: %s",
-			role, err.Error())
-	}
+	creds := GetRoleCredentials(ctx, awssso, accountid, role)
 
-	return openConsoleAccessKey(ctx, creds.AccessKeyId, creds.SecretAccessKey,
-		creds.SessionToken, ctx.Cli.Console.Duration)
+	return openConsoleAccessKey(ctx, creds, ctx.Cli.Console.Duration)
 }
 
-func openConsoleAccessKey(ctx *RunContext, accessKeyId, secretAccessKey, sessionToken string, duration int64) error {
+func openConsoleAccessKey(ctx *RunContext, creds *sso.RoleCredentials, duration int64) error {
 	signin := SigninTokenUrlParams{
 		SessionDuration: duration * 60,
 		Session: SessionUrlParams{
-			AccessKeyId:     accessKeyId,
-			SecretAccessKey: secretAccessKey,
-			SessionToken:    sessionToken,
+			AccessKeyId:     creds.AccessKeyId,
+			SecretAccessKey: creds.SecretAccessKey,
+			SessionToken:    creds.SessionToken,
 		},
 	}
 
