@@ -150,6 +150,7 @@ type AWSRoleFlat struct {
 	StartUrl      string            `json:"StartUrl" header:"StartUrl"`
 	Tags          map[string]string `json:"Tags"` // not supported by GenerateTable
 	Via           string            `json:"Via" header:"Via"`
+	SelectTags    map[string]string // only used for
 }
 
 func (f AWSRoleFlat) GetHeader(fieldName string) (string, error) {
@@ -212,9 +213,15 @@ func NewRoles(as *AWSSSO, ssoName string, config *SSOConfig) (*Roles, error) {
 		}
 
 		// set the tags for all the SSO roles
-		for _, role := range r.Accounts[accountId].Roles {
-			for k, v := range config.Accounts[accountId].Tags {
-				role.Tags[k] = v
+		for roleName, _ := range r.Accounts[accountId].Roles {
+			aId := strconv.FormatInt(accountId, 10)
+			r.Accounts[accountId].Roles[roleName].Tags["AccountID"] = aId
+			r.Accounts[accountId].Roles[roleName].Tags["AccountName"] = r.Accounts[accountId].Name
+			r.Accounts[accountId].Roles[roleName].Tags["AccountAlias"] = r.Accounts[accountId].Alias
+			r.Accounts[accountId].Roles[roleName].Tags["Email"] = r.Accounts[accountId].EmailAddress
+			r.Accounts[accountId].Roles[roleName].Tags["Role"] = roleName
+			if r.Accounts[accountId].Roles[roleName].DefaultRegion != "" {
+				r.Accounts[accountId].Roles[roleName].Tags["DefaultRegion"] = r.Accounts[accountId].Roles[roleName].DefaultRegion
 			}
 		}
 
@@ -307,6 +314,22 @@ func (r *Roles) GetRoleTags() *RoleTags {
 	fList := r.GetAllRoles()
 	for _, role := range fList {
 		ret[role.Arn] = role.Tags
+	}
+	return &ret
+}
+
+// GetRoleTagsSelect returns all the tags for each role with all the spaces
+// replaced with underscores
+func (r *Roles) GetRoleTagsSelect() *RoleTags {
+	ret := RoleTags{}
+	fList := r.GetAllRoles()
+	for _, role := range fList {
+		ret[role.Arn] = map[string]string{}
+		for k, v := range role.Tags {
+			key := strings.ReplaceAll(k, " ", "_")
+			value := strings.ReplaceAll(v, " ", "_")
+			ret[role.Arn][key] = value
+		}
 	}
 	return &ret
 }
