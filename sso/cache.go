@@ -46,11 +46,16 @@ type Cache struct {
 
 func OpenCache(filename string) (*Cache, error) {
 	cache := Cache{
-		filename: filename,
+		filename:  filename,
+		CreatedAt: 0,
+		History:   []string{},
+		Roles: &Roles{
+			Accounts: map[int64]*AWSAccount{},
+		},
 	}
 	cacheBytes, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return &cache, err
+		return &cache, nil // return empty struct
 	}
 	json.Unmarshal(cacheBytes, &cache)
 	return &cache, nil

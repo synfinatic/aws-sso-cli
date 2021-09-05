@@ -89,9 +89,9 @@ func main() {
 	}
 
 	// Load the config file
-	config := getHomePath(cli.ConfigFile)
-	if err := run_ctx.Konf.Load(file.Provider(config), yaml.Parser()); err != nil {
-		log.WithError(err).Fatalf("Unable to open config file: %s", config)
+	configFile := getHomePath(cli.ConfigFile)
+	if err := run_ctx.Konf.Load(file.Provider(configFile), yaml.Parser()); err != nil {
+		log.WithError(err).Fatalf("Unable to open config file: %s", configFile)
 	}
 	err := run_ctx.Konf.Unmarshal("", run_ctx.Config)
 	if err != nil {
