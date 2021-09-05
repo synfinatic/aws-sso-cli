@@ -16,4 +16,6 @@ require (
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/synfinatic/gotable v0.0.1
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
+        // see: https://github.com/sirupsen/logrus/issues/1275
+        golang.org/x/sys v0.0.0-20210817190340-bfb29a6856f2 // indirect
 )

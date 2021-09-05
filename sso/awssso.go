@@ -480,7 +480,7 @@ type RoleCredentials struct { // Cache
 }
 
 func (r *RoleCredentials) RoleArn() string {
-	return fmt.Sprintf("arn:aws:iam:%s:role/%s", r.AccountId, r.RoleName)
+	return fmt.Sprintf("arn:aws:iam:%d:role/%s", r.AccountId, r.RoleName)
 }
 
 func (r *RoleCredentials) ExpireString() string {
