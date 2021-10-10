@@ -24,11 +24,11 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/atotto/clipboard"
 	"github.com/c-bata/go-prompt"
 	"github.com/skratchdot/open-golang/open" // default opener
+	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
 const AWS_FEDERATED_URL = "https://signin.aws.amazon.com/federation"
@@ -38,7 +38,7 @@ type ConsoleCmd struct {
 	Print           bool   `kong:"optional,short='p',help='Print URL instead of opening it'"`
 	Duration        int64  `kong:"optional,short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
 	Arn             string `kong:"optional,short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN'"`
-	AccountId       string `kong:"optional,name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNTID'"`
+	AccountId       int64  `kong:"optional,name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNTID'"`
 	Role            string `kong:"optional,short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE'"`
 	UseEnv          bool   `kong:"optional,short='e',help='Use existing ENV vars to generate URL'"`
 	AccessKeyId     string `kong:"optional,env='AWS_ACCESS_KEY_ID',hidden"`
@@ -49,21 +49,15 @@ type ConsoleCmd struct {
 func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 	if ctx.Cli.Console.Arn != "" {
 		awssso := doAuth(ctx)
-		s := strings.Split(ctx.Cli.Exec.Arn, ":")
-		var accountid, role string
-		if len(s) == 2 {
-			// short account:Role format
-			accountid = s[0]
-			role = s[1]
-		} else {
-			// long format for arn:aws:iam:XXXXXXXXXX:role/YYYYYYYY
-			accountid = s[3]
-			s = strings.Split(s[4], "/")
-			role = s[1]
+
+		accountid, role, err := ParseRoleARN(ctx.Cli.Console.Arn)
+		if err != nil {
+			return err
 		}
+
 		return openConsole(ctx, awssso, accountid, role)
-	} else if ctx.Cli.Console.AccountId != "" || ctx.Cli.Console.Role != "" {
-		if ctx.Cli.Console.AccountId == "" || ctx.Cli.Console.Role == "" {
+	} else if ctx.Cli.Console.AccountId != 0 || ctx.Cli.Console.Role != "" {
+		if ctx.Cli.Console.AccountId == 0 || ctx.Cli.Console.Role == "" {
 			return fmt.Errorf("Please specify both --account and --role")
 		}
 		awssso := doAuth(ctx)
@@ -78,9 +72,13 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 		if ctx.Cli.Console.SessionToken == "" {
 			return fmt.Errorf("AWS_SESSION_TOKEN is not set")
 		}
-		return openConsoleAccessKey(ctx, ctx.Cli.Console.AccessKeyId,
-			ctx.Cli.Console.SecretAccessKey, ctx.Cli.Console.SessionToken,
-			ctx.Cli.Console.Duration)
+		creds := sso.RoleCredentials{
+			AccessKeyId:     ctx.Cli.Console.AccessKeyId,
+			SecretAccessKey: ctx.Cli.Console.SecretAccessKey,
+			SessionToken:    ctx.Cli.Console.SessionToken,
+		}
+
+		return openConsoleAccessKey(ctx, &creds, ctx.Cli.Console.Duration)
 	}
 
 	fmt.Printf("Please use `exit` or `Ctrl-D` to quit.\n")
@@ -102,24 +100,19 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 }
 
 // opens the AWS console or just prints the URL
-func openConsole(ctx *RunContext, awssso *AWSSSO, accountid, role string) error {
-	creds, err := awssso.GetRoleCredentials(accountid, role)
-	if err != nil {
-		return fmt.Errorf("Unable to get role credentials for %s: %s",
-			role, err.Error())
-	}
+func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) error {
+	creds := GetRoleCredentials(ctx, awssso, accountid, role)
 
-	return openConsoleAccessKey(ctx, creds.AccessKeyId, creds.SecretAccessKey,
-		creds.SessionToken, ctx.Cli.Console.Duration)
+	return openConsoleAccessKey(ctx, creds, ctx.Cli.Console.Duration)
 }
 
-func openConsoleAccessKey(ctx *RunContext, accessKeyId, secretAccessKey, sessionToken string, duration int64) error {
+func openConsoleAccessKey(ctx *RunContext, creds *sso.RoleCredentials, duration int64) error {
 	signin := SigninTokenUrlParams{
 		SessionDuration: duration * 60,
 		Session: SessionUrlParams{
-			AccessKeyId:     accessKeyId,
-			SecretAccessKey: secretAccessKey,
-			SessionToken:    sessionToken,
+			AccessKeyId:     creds.AccessKeyId,
+			SecretAccessKey: creds.SecretAccessKey,
+			SessionToken:    creds.SessionToken,
 		},
 	}
 

@@ -1,4 +1,4 @@
-package main
+package sso
 
 /*
  * AWS SSO CLI
@@ -33,6 +33,7 @@ type JsonStore struct {
 	RegisterClient      map[string]RegisterClientData  `json:"RegisterClient,omitempty"`
 	StartDeviceAuth     map[string]StartDeviceAuthData `json:"StartDeviceAuth,omitempty"`
 	CreateTokenResponse map[string]CreateTokenResponse `json:"CreateTokenResponse,omitempty"`
+	RoleCredentials     map[string]RoleCredentials     `json:"RoleCredentials,omitempty"`
 }
 
 func OpenJsonStore(fileName string) (*JsonStore, error) {
@@ -41,6 +42,7 @@ func OpenJsonStore(fileName string) (*JsonStore, error) {
 		RegisterClient:      map[string]RegisterClientData{},
 		StartDeviceAuth:     map[string]StartDeviceAuthData{},
 		CreateTokenResponse: map[string]CreateTokenResponse{},
+		RoleCredentials:     map[string]RoleCredentials{},
 	}
 
 	cacheBytes, err := ioutil.ReadFile(fileName)
@@ -108,5 +110,27 @@ func (jc *JsonStore) GetCreateTokenResponse(key string, token *CreateTokenRespon
 // DeleteCreateTokenResponse deletes the token from the json file
 func (jc *JsonStore) DeleteCreateTokenResponse(key string) error {
 	jc.CreateTokenResponse[key] = CreateTokenResponse{}
+	return jc.saveCache()
+}
+
+// SaveRoleCredentials stores the token in the json file
+func (jc *JsonStore) SaveRoleCredentials(arn string, token RoleCredentials) error {
+	jc.RoleCredentials[arn] = token
+	return jc.saveCache()
+}
+
+// GetRoleCredentials retrieves the RoleCredentials from the json file
+func (jc *JsonStore) GetRoleCredentials(arn string, token *RoleCredentials) error {
+	var ok bool
+	*token, ok = jc.RoleCredentials[arn]
+	if !ok {
+		return fmt.Errorf("No RoleCredentials for %s", arn)
+	}
+	return nil
+}
+
+// DeleteRoleCredentials deletes the token from the json file
+func (jc *JsonStore) DeleteRoleCredentials(arn string) error {
+	jc.RoleCredentials[arn] = RoleCredentials{}
 	return jc.saveCache()
 }

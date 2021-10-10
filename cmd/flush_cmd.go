@@ -19,6 +19,7 @@ package main
  */
 import (
 	log "github.com/sirupsen/logrus"
+	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
 type FlushCmd struct {
@@ -28,8 +29,8 @@ type FlushCmd struct {
 func (cc *FlushCmd) Run(ctx *RunContext) error {
 	var err error
 
-	sso := ctx.Config.SSO[ctx.Cli.SSO]
-	awssso := NewAWSSSO(sso.SSORegion, sso.StartUrl, &ctx.Store)
+	s := ctx.Config.SSO[ctx.Cli.SSO]
+	awssso := sso.NewAWSSSO(s.SSORegion, s.StartUrl, &ctx.Store)
 
 	err = ctx.Store.DeleteCreateTokenResponse(awssso.StoreKey())
 	if err != nil {

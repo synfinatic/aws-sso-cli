@@ -1,4 +1,4 @@
-package main
+package sso
 
 /*
  * AWS SSO CLI
@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"strings"
 
+	//	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -50,19 +51,19 @@ type SSOConfig struct {
 }
 
 type SSOAccount struct {
-	Name          string            `koanf:"Name" yaml:"Name,omitempty"` // Admin configured Account Name
-	Tags          map[string]string `koanf:"Tags" yaml:"Tags,omitempty" `
-	Roles         []*SSORole        `koanf:"Roles" yaml:"Roles,omitempty"`
-	DefaultRegion string            `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
+	Name          string              `koanf:"Name" yaml:"Name,omitempty"` // Admin configured Account Name
+	Tags          map[string]string   `koanf:"Tags" yaml:"Tags,omitempty" `
+	Roles         map[string]*SSORole `koanf:"Roles" yaml:"Roles,omitempty"`
+	DefaultRegion string              `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
 }
 
 type SSORole struct {
-	Account        *SSOAccount
-	ARN            string            `koanf:"ARN" yaml:"ARN"`
-	Profile        string            `koanf:"Profile" yaml:"Profile,omitempty"`
-	Tags           map[string]string `koanf:"Tags" yaml:"Tags,omitempty"`
-	DefaultRegion  string            `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
-	DestinationUrl string            `koanf:"DestinationUrl" yaml:"DestinationUrl,omitempty"`
+	Account       *SSOAccount
+	ARN           string            `koanf:"ARN" yaml:"ARN"`
+	Profile       string            `koanf:"Profile" yaml:"Profile,omitempty"`
+	Tags          map[string]string `koanf:"Tags" yaml:"Tags,omitempty"`
+	DefaultRegion string            `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
+	Via           string            `koanf:"Via" yaml:"Via,omitempty"`
 }
 
 // Refresh should be called any time you load the SSOConfig into memory or add a role
@@ -84,40 +85,6 @@ func (a *SSOAccount) HasRole(arn string) bool {
 		}
 	}
 	return hasRole
-}
-
-func (s *SSOConfig) UpdateRoles(roles map[string][]RoleInfo) (int64, error) {
-	var changes int64 = 0
-	for account, accountInfo := range roles {
-		accountId, err := strconv.ParseInt(account, 10, 64)
-		if err != nil {
-			return 0, err
-		}
-		if s.Accounts == nil {
-			s.Accounts = map[int64]*SSOAccount{}
-		}
-		_, hasAccount := s.Accounts[accountId]
-		if !hasAccount {
-			s.Accounts[accountId] = &SSOAccount{
-				Name:  accountInfo[0].AccountName,
-				Roles: []*SSORole{},
-			}
-		}
-
-		for _, roleInfo := range accountInfo {
-			if !hasAccount || !s.Accounts[accountId].HasRole(roleInfo.RoleArn()) {
-				changes += 1
-				s.Accounts[accountId].Roles = append(s.Accounts[accountId].Roles, &SSORole{
-					ARN:     roleInfo.RoleArn(),
-					Profile: roleInfo.Profile,
-				})
-			}
-		}
-	}
-	if changes > 0 {
-		s.Refresh()
-	}
-	return changes, nil
 }
 
 // GetRoles returns a list of all the roles for this SSOConfig
@@ -182,16 +149,19 @@ func (r *SSORole) GetRoleName() string {
 	return s[1]
 }
 
-// GetAccountId returns the accountId portion of the ARN
+// GetAccountId returns the accountId portion of the ARN or empty string on error
 func (r *SSORole) GetAccountId() string {
 	s := strings.Split(r.ARN, ":")
+	if len(s) < 4 {
+		log.Errorf("Role.ARN is missing the account field: '%v'\n%v", r.ARN, *r)
+		return ""
+	}
 	return s[3]
 }
 
 // GetAccountId64 returns the accountId portion of the ARN
 func (r *SSORole) GetAccountId64() int64 {
-	s := strings.Split(r.ARN, ":")
-	i, err := strconv.ParseInt(s[3], 10, 64)
+	i, err := strconv.ParseInt(r.GetAccountId(), 10, 64)
 	if err != nil {
 		log.WithError(err).Panicf("Unable to decode account id for %s", r.ARN)
 	}

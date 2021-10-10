@@ -1,4 +1,4 @@
-package main
+package sso
 
 /*
  * AWS SSO CLI
@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strconv"
+	"strings"
 )
 
 // ensures the given directory exists for the filename
@@ -43,4 +45,35 @@ func ensureDirExists(filename string) error {
 		return fmt.Errorf("%s exists and is not a directory!", storeDir)
 	}
 	return nil
+}
+
+// Creates an AWS ARN for a role
+func MakeRoleARN(account int64, name string) string {
+	return fmt.Sprintf("arn:aws:iam:%d:role/%s", account, name)
+}
+
+// GetRoleParts returns the accountId & rolename for an ARN
+func GetRoleParts(arn string) (int64, string, error) {
+	var accountId int64
+	var role string
+	s := strings.Split(arn, ":")
+	if len(s) == 2 {
+		// Short account:role format
+		id, err := strconv.ParseInt(s[0], 10, 64)
+		if err != nil {
+			return 0, "", err
+		}
+		accountId = id
+		role = s[1]
+	} else {
+		id, err := strconv.ParseInt(s[3], 10, 64)
+		if err != nil {
+			return 0, "", err
+		}
+		accountId = id
+		s = strings.Split(s[4], "/")
+		role = s[1]
+	}
+
+	return accountId, role, nil
 }

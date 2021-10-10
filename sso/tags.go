@@ -1,4 +1,4 @@
-package main
+package sso
 
 /*
  * AWS SSO CLI
@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // TagsList provides the necessary struct finding all the possible tag key/values
@@ -33,33 +31,41 @@ func NewTagsList() *TagsList {
 	return &TagsList{}
 }
 
-// Inserts the tag/value does not already exist
+// Inserts the tag/value if it does not already exist in the sorted order
 func (t *TagsList) Add(tag, v string) {
 	tt := *t
-	key := strings.ReplaceAll(tag, " ", "_")
-	value := strings.ReplaceAll(v, " ", "_")
-	if tt[key] == nil {
-		tt[key] = []string{value}
+	if tt[tag] == nil {
+		tt[tag] = []string{v}
 		return // inserted
 	}
 
-	for _, check := range tt[key] {
-		if check == value {
-			return
+	for _, check := range tt[tag] {
+		if check == v {
+			return // already exists
 		}
 	}
 
-	i := sort.SearchStrings(tt[tag], value)
+	i := sort.SearchStrings(tt[tag], v)
 
-	tt[key] = append(tt[key], "")
-	copy(tt[key][i+1:], tt[key][i:])
-	tt[key][i] = value
+	tt[tag] = append(tt[tag], "")
+	copy(tt[tag][i+1:], tt[tag][i:])
+	tt[tag][i] = v
 }
 
 // AddTags inserts a map of tag/values if they do not already exist
 func (t *TagsList) AddTags(tags map[string]string) {
 	for tag, value := range tags {
 		t.Add(tag, value)
+	}
+}
+
+// Returns the list of values for the specified key
+func (t *TagsList) Get(key string) []string {
+	x := *t
+	if v, ok := x[key]; ok {
+		return v
+	} else {
+		return []string{}
 	}
 }
 
@@ -73,74 +79,16 @@ func (t *TagsList) Merge(a *TagsList) {
 }
 
 // RoleTags provides an interface to find roles which match a set of tags
-type RoleTags struct {
-	Tags map[string]map[string]string // ARN => Tag => Value
-}
-
-func NewRoleTags(a *AWSSSO, s *SSOConfig) *RoleTags {
-	r := &RoleTags{
-		Tags: map[string]map[string]string{},
-	}
-	r.addAWSSO(a)
-	r.addSSOConfig(s)
-	return r
-}
-
-func (r *RoleTags) addSSOConfig(s *SSOConfig) {
-	roles := s.GetRoles()
-	for _, role := range roles {
-		// add role level tags
-		for tag, value := range role.Tags {
-			// go-prompt delimates on spaces, so replace with underscore
-			t := strings.ReplaceAll(tag, " ", "_")
-			v := strings.ReplaceAll(value, " ", "_")
-			r.Tags[role.ARN][t] = v
-		}
-
-		// add any account level tags to our role
-		if account, ok := s.Accounts[role.GetAccountId64()]; ok {
-			for tag, value := range account.Tags {
-				t := strings.ReplaceAll(tag, " ", "_")
-				v := strings.ReplaceAll(value, " ", "_")
-				r.Tags[role.ARN][t] = v
-			}
-
-		}
-	}
-}
-
-func (r *RoleTags) addAWSSO(a *AWSSSO) {
-	//	rr := *r
-	accounts, err := a.GetAccounts()
-	if err != nil {
-		log.Fatalf("Unable to get AWS SSO accounts: %s", err.Error())
-	}
-	for _, account := range accounts {
-		roles, err := a.GetRoles(account)
-		if err != nil {
-			log.Fatalf("Unable to get AWS SSO roles: %s", err.Error())
-		}
-		for _, role := range roles {
-			arn := role.RoleArn()
-			if r.Tags[arn] == nil {
-				r.Tags[arn] = map[string]string{}
-			}
-			r.Tags[arn]["RoleName"] = role.RoleName
-			r.Tags[arn]["AccountId"] = role.AccountId
-			r.Tags[arn]["AccountName"] = strings.ReplaceAll(role.AccountName, " ", "_")
-			r.Tags[arn]["EmailAddress"] = role.EmailAddress
-		}
-	}
-}
+type RoleTags map[string]map[string]string // ARN => TagKey => Value
 
 // GetMatchingRoles returns the roles which match all the tags
 func (r *RoleTags) GetMatchingRoles(tags map[string]string) []string {
 	matches := []string{}
 
-	for arn, roleTags := range r.Tags {
+	for arn, rTags := range *r {
 		match := map[string]bool{}
 		for k, v := range tags {
-			if check, ok := roleTags[k]; ok {
+			if check, ok := rTags[k]; ok {
 				if v == check {
 					match[k] = true
 				}
