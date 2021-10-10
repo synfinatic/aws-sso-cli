@@ -27,6 +27,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/gotable"
 )
@@ -155,7 +156,7 @@ type AWSRoleFlat struct {
 	StartUrl      string            `json:"StartUrl" header:"StartUrl"`
 	Tags          map[string]string `json:"Tags"` // not supported by GenerateTable
 	Via           string            `json:"Via" header:"Via"`
-	SelectTags    map[string]string // only used for
+	SelectTags    map[string]string // tags without spaces
 }
 
 func (f AWSRoleFlat) GetHeader(fieldName string) (string, error) {
@@ -289,28 +290,30 @@ func (r *Roles) GetAccountRoles(accountId int64) map[string]*AWSRoleFlat {
 	return ret
 }
 
-// GetAllTags returns all the tags for every role
+// GetAllTags returns all the unique key/tag pairs for every role
 func (r *Roles) GetAllTags() *TagsList {
 	ret := TagsList{}
 	fList := r.GetAllRoles()
+	log.Tracef("GetAllRoles: %s", spew.Sdump(fList))
 	for _, role := range fList {
 		for k, v := range role.Tags {
-			if _, ok := ret[k]; !ok {
-				ret[k] = []string{}
-			}
-			hasValue := false
-			for _, val := range ret[k] {
-				if val == v {
-					hasValue = true
-					break
-				}
-			}
-			if !hasValue {
-				ret[k] = append(ret[k], v)
-			}
+			ret.Add(k, v)
 		}
 	}
 	return &ret
+}
+
+// returns all tags, but with with spaces replaced with underscores
+func (r *Roles) GetAllTagsSelect() *TagsList {
+	tags := r.GetAllTags()
+	fixedTags := NewTagsList()
+	for k, values := range *tags {
+		key := strings.ReplaceAll(k, " ", "_")
+		for _, v := range values {
+			fixedTags.Add(key, strings.ReplaceAll(v, " ", "_"))
+		}
+	}
+	return fixedTags
 }
 
 // GetRoleTags returns all the tags for each role
@@ -318,7 +321,10 @@ func (r *Roles) GetRoleTags() *RoleTags {
 	ret := RoleTags{}
 	fList := r.GetAllRoles()
 	for _, role := range fList {
-		ret[role.Arn] = role.Tags
+		ret[role.Arn] = map[string]string{}
+		for k, v := range role.Tags {
+			ret[role.Arn][k] = v
+		}
 	}
 	return &ret
 }
@@ -344,22 +350,26 @@ func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) 
 	account := r.Accounts[accountId]
 	for thisRoleName, role := range account.Roles {
 		if thisRoleName == roleName {
-			flat := &AWSRoleFlat{
+			flat := AWSRoleFlat{
 				AccountId:     accountId,
 				AccountName:   account.Name,
 				AccountAlias:  account.Alias,
 				EmailAddress:  account.EmailAddress,
 				Expires:       role.Expires,
-				Tags:          account.Tags,
 				Arn:           role.Arn,
 				RoleName:      roleName,
 				Profile:       role.Profile,
 				DefaultRegion: r.DefaultRegion,
 				SSORegion:     r.SSORegion,
 				StartUrl:      r.StartUrl,
+				Tags:          map[string]string{},
 				Via:           role.Via,
 			}
 
+			// copy over account tags
+			for k, v := range account.Tags {
+				flat.Tags[k] = v
+			}
 			// override account values with more specific role values
 			if account.DefaultRegion != "" {
 				flat.DefaultRegion = account.DefaultRegion
@@ -384,7 +394,7 @@ func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) 
 			for k, v := range role.Tags {
 				flat.Tags[k] = v
 			}
-			return flat, nil
+			return &flat, nil
 		}
 	}
 	return &AWSRoleFlat{}, fmt.Errorf("Unable to find role %d:%s", accountId, roleName)
@@ -420,8 +430,10 @@ func (r *Roles) MatchingRoles(tags map[string]string) []*AWSRoleFlat {
 	for _, role := range r.GetAllRoles() {
 		matches := true
 		for k, v := range tags {
-			if roleVal, ok := role.Tags[k]; ok {
-				if roleVal != v {
+			key := strings.ReplaceAll(k, " ", "_")
+			value := strings.ReplaceAll(v, " ", "_")
+			if roleVal, ok := role.Tags[key]; ok {
+				if roleVal != value {
 					matches = false
 				}
 			} else {

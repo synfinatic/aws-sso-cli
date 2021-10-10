@@ -31,33 +31,41 @@ func NewTagsList() *TagsList {
 	return &TagsList{}
 }
 
-// Inserts the tag/value does not already exist
+// Inserts the tag/value if it does not already exist in the sorted order
 func (t *TagsList) Add(tag, v string) {
 	tt := *t
-	key := strings.ReplaceAll(tag, " ", "_")
-	value := strings.ReplaceAll(v, " ", "_")
-	if tt[key] == nil {
-		tt[key] = []string{value}
+	if tt[tag] == nil {
+		tt[tag] = []string{v}
 		return // inserted
 	}
 
-	for _, check := range tt[key] {
-		if check == value {
-			return
+	for _, check := range tt[tag] {
+		if check == v {
+			return // already exists
 		}
 	}
 
-	i := sort.SearchStrings(tt[tag], value)
+	i := sort.SearchStrings(tt[tag], v)
 
-	tt[key] = append(tt[key], "")
-	copy(tt[key][i+1:], tt[key][i:])
-	tt[key][i] = value
+	tt[tag] = append(tt[tag], "")
+	copy(tt[tag][i+1:], tt[tag][i:])
+	tt[tag][i] = v
 }
 
 // AddTags inserts a map of tag/values if they do not already exist
 func (t *TagsList) AddTags(tags map[string]string) {
 	for tag, value := range tags {
 		t.Add(tag, value)
+	}
+}
+
+// Returns the list of values for the specified key
+func (t *TagsList) Get(key string) []string {
+	x := *t
+	if v, ok := x[key]; ok {
+		return v
+	} else {
+		return []string{}
 	}
 }
 
@@ -71,7 +79,7 @@ func (t *TagsList) Merge(a *TagsList) {
 }
 
 // RoleTags provides an interface to find roles which match a set of tags
-type RoleTags map[string]map[string]string // ARN => Tag => Value
+type RoleTags map[string]map[string]string // ARN => TagKey => Value
 
 // GetMatchingRoles returns the roles which match all the tags
 func (r *RoleTags) GetMatchingRoles(tags map[string]string) []string {

@@ -65,9 +65,9 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 		return execCmd(ctx, awssso, ctx.Cli.Exec.AccountId, ctx.Cli.Exec.Role)
 	}
 
+	// Nope, auto-complete mode...
 	fmt.Printf("Please use `exit` or `Ctrl-D` to quit.\n")
 
-	// use completer to figure out the role
 	sso := ctx.Config.SSO[ctx.Cli.SSO]
 	sso.Refresh()
 	c := NewTagsCompleter(ctx, sso, execCmd)
@@ -81,17 +81,6 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 	)
 	p.Run()
 	return nil
-}
-
-// Creates an AWSSO object post authentication
-func doAuth(ctx *RunContext) *sso.AWSSSO {
-	s := ctx.Config.SSO[ctx.Cli.SSO]
-	awssso := sso.NewAWSSSO(s.SSORegion, s.StartUrl, &ctx.Store)
-	err := awssso.Authenticate(ctx.Config.PrintUrl, ctx.Config.Browser)
-	if err != nil {
-		log.WithError(err).Fatalf("Unable to authenticate")
-	}
-	return awssso
 }
 
 // Executes Cmd+Args in the context of the AWS Role creds

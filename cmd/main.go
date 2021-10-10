@@ -59,7 +59,7 @@ const (
 
 type CLI struct {
 	// Common Arguments
-	LogLevel   string `kong:"optional,short='L',name='level',default='info',enum='error,warn,info,debug',help='Logging level [error|warn|info|debug]'"`
+	LogLevel   string `kong:"optional,short='L',name='level',default='info',enum='error,warn,info,debug,trace',help='Logging level [error|warn|info|debug|trace]'"`
 	Lines      bool   `kong:"optional,help='Print line number in logs'"`
 	ConfigFile string `kong:"optional,name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
 	Browser    string `kong:"optional,short='b',help='Path to browser to use',env='AWS_SSO_BROWSER'"`
@@ -175,6 +175,8 @@ func parse_args(cli *CLI) *kong.Context {
 	ctx := kong.Parse(cli, op, vars)
 
 	switch cli.LogLevel {
+	case "trace":
+		log.SetLevel(log.TraceLevel)
 	case "debug":
 		log.SetLevel(log.DebugLevel)
 	case "info":
@@ -267,4 +269,16 @@ func ParseRoleARN(arn string) (int64, string, error) {
 		return 0, "", fmt.Errorf("Unable to parse ARN: %s", arn)
 	}
 	return aId, role, nil
+}
+
+// Creates an AWSSO object post authentication
+func doAuth(ctx *RunContext) *sso.AWSSSO {
+	s := ctx.Config.SSO[ctx.Cli.SSO]
+	awssso := sso.NewAWSSSO(s.SSORegion, s.StartUrl, &ctx.Store)
+	err := awssso.Authenticate(ctx.Config.PrintUrl, ctx.Config.Browser)
+	if err != nil {
+		log.WithError(err).Fatalf("Unable to authenticate")
+	}
+	ctx.Cache.Refresh(awssso, ctx.Config.SSO[ctx.Cli.SSO])
+	return awssso
 }

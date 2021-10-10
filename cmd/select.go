@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/c-bata/go-prompt"
+	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
 )
@@ -42,8 +43,8 @@ type TagsCompleter struct {
 
 func NewTagsCompleter(ctx *RunContext, s *sso.SSOConfig, exec CompleterExec) *TagsCompleter {
 	awssso := doAuth(ctx)
-	roleTags := ctx.Cache.Roles.GetRoleTags()
-	allTags := ctx.Cache.Roles.GetAllTags()
+	roleTags := ctx.Cache.Roles.GetRoleTagsSelect()
+	allTags := ctx.Cache.Roles.GetAllTagsSelect()
 
 	return &TagsCompleter{
 		ctx:      ctx,
@@ -108,38 +109,39 @@ func completeTags(roleTags *sso.RoleTags, allTags *sso.TagsList, args []string) 
 		return suggestions // empty list if we have a single role
 	}
 
-	// roles which match the current tags
 	currentRoles := roleTags.GetMatchingRoles(currentTags)
 	currentCount := len(currentRoles)
-	log.Debugf("currentRoles: %v", currentRoles)
+	log.Tracef("%d currentRoles: %s", currentCount, spew.Sdump(currentRoles))
 
 	uniqueSuggestions := map[string]int{}
 
 	// iterate through all our other tag types...
 	for k, list := range *allTags {
 		if list == nil {
+			log.Tracef("Skipping empty: %s", k)
 			continue // skip empty
 		}
-		if _, ok := currentTags[k]; ok {
+		if v, ok := currentTags[k]; ok {
+			log.Tracef("Skipping previously selected: %s:%s", k, v)
 			continue // skip the tag type we've already selected
 		}
 
 		// scan our tag value choices
 		for _, v := range list {
-			// copy currentTags to selectedTags
-			selectedTags := map[string]string{}
+			// copy currentTags to checkTags
+			checkTags := map[string]string{}
 			for k, v := range currentTags {
-				selectedTags[k] = v
+				checkTags[k] = v
 			}
 
 			// add this new tag/value
-			selectedTags[k] = v
-			log.Debugf("selectedTags: %v", selectedTags)
+			checkTags[k] = v
+			log.Tracef("checkTags: %s", spew.Sdump(checkTags))
 
 			// see if any roles match
-			newRoles := roleTags.GetMatchingRoles(selectedTags)
-			log.Debugf("newRoles: %v", newRoles)
-			roleCount := len(newRoles)
+			checkRoles := roleTags.GetMatchingRoles(checkTags)
+			log.Tracef("%s:%s checkRoles: %s", k, v, spew.Sdump(checkRoles))
+			roleCount := len(checkRoles)
 
 			// if we have any roles, our suggestions
 			if roleCount > 0 && roleCount < currentCount {
@@ -148,7 +150,7 @@ func completeTags(roleTags *sso.RoleTags, allTags *sso.TagsList, args []string) 
 				if roleCount > 1 {
 					descr = fmt.Sprintf("%d roles", roleCount)
 				} else {
-					descr = newRoles[0] // fmt.Sprintf("Select: %s", newRoles[0])
+					descr = checkRoles[0] // fmt.Sprintf("Select: %s", newRoles[0])
 				}
 				if _, ok := uniqueSuggestions[arg]; !ok {
 					uniqueSuggestions[arg] = 1
@@ -157,6 +159,8 @@ func completeTags(roleTags *sso.RoleTags, allTags *sso.TagsList, args []string) 
 						Description: descr,
 					})
 				}
+			} else {
+				log.Tracef("skipping since %s:%s doesn't reduce our possible role count", k, v)
 			}
 		}
 	}

@@ -11,11 +11,13 @@ require (
 	github.com/atotto/clipboard v0.1.4
 	github.com/aws/aws-sdk-go v1.38.40
 	github.com/c-bata/go-prompt v0.2.5 // 0.2.6 is broken
+	github.com/davecgh/go-spew v1.1.1
 	github.com/knadh/koanf v0.16.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/synfinatic/gotable v0.0.1
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
-        // see: https://github.com/sirupsen/logrus/issues/1275
-        golang.org/x/sys v0.0.0-20210817190340-bfb29a6856f2 // indirect
+
+	// see: https://github.com/sirupsen/logrus/issues/1275
+	golang.org/x/sys v0.0.0-20210817190340-bfb29a6856f2 // indirect
 )

@@ -41,6 +41,10 @@ DARWINARM64_BIN           := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)-darwi
 
 ALL: $(OUTPUT_NAME) ## Build binary.  Needs to be a supported plaform as defined above
 
+tags: cmd/*.go sso/*.go
+	@echo Make sure you have Universal Ctags installed: https://github.com/universal-ctags/ctags
+	ctags -R
+
 include help.mk  # place after ALL target and before all other targets
 
 .build-release: windows windows32 linux linux-arm64 darwin darwin-arm64
@@ -49,8 +53,12 @@ release: clean .build-release ## Build all our release binaries
 	cd dist && shasum -a 256 * | gpg --clear-sign >release.sig
 
 .PHONY: run
-run: cmd/*.go  ## build and run cria using $PROGRAM_ARGS
+run: cmd/*.go  sso/*.go ## build and run cria using $PROGRAM_ARGS
 	go run cmd/*.go $(PROGRAM_ARGS)
+
+.PHONY: delve
+delve: cmd/*.go sso/*.go ## debug binary using $PROGRAM_ARGS
+	dlv debug cmd/*.go -- $(PROGRAM_ARGS)
 
 clean-all: clean ## clean _everything_
 
@@ -84,7 +92,7 @@ test-race: ## Run `go test -race` on the code
 .PHONY: vet
 vet: ## Run `go vet` on the code
 	@echo checking code is vetted...
-	go vet $(shell go list ./...)
+	for x in $(shell go list ./...); do echo $$x ; go vet $$x ; done
 
 test: vet unittest ## Run all tests
 

@@ -39,7 +39,7 @@ var defaultListFields = []string{
 // keys match AWSRoleFlat header and value is the description
 var allListFields = map[string]string{
 	"Id":            "Column Index",
-	"ARN":           "AWS Role Resource Name",
+	"Arn":           "AWS Role Resource Name",
 	"AccountId":     "AWS AccountID",
 	"AccountName":   "AWS AccountName",
 	"DefaultRegion": "Default AWS Region",
@@ -72,11 +72,7 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 
 	if err != nil || ctx.Cli.List.ForceUpdate {
 		s := ctx.Config.SSO[ctx.Cli.SSO]
-		awssso := sso.NewAWSSSO(s.SSORegion, s.StartUrl, &ctx.Store)
-		err = awssso.Authenticate(ctx.Config.PrintUrl, ctx.Config.Browser)
-		if err != nil {
-			log.WithError(err).Fatalf("Unable to authenticate")
-		}
+		awssso := doAuth(ctx)
 
 		err = ctx.Cache.Refresh(awssso, s)
 		if err != nil {

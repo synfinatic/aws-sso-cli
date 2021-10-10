@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"strings"
 
+	//	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -148,16 +149,19 @@ func (r *SSORole) GetRoleName() string {
 	return s[1]
 }
 
-// GetAccountId returns the accountId portion of the ARN
+// GetAccountId returns the accountId portion of the ARN or empty string on error
 func (r *SSORole) GetAccountId() string {
 	s := strings.Split(r.ARN, ":")
+	if len(s) < 4 {
+		log.Errorf("Role.ARN is missing the account field: '%v'\n%v", r.ARN, *r)
+		return ""
+	}
 	return s[3]
 }
 
 // GetAccountId64 returns the accountId portion of the ARN
 func (r *SSORole) GetAccountId64() int64 {
-	s := strings.Split(r.ARN, ":")
-	i, err := strconv.ParseInt(s[3], 10, 64)
+	i, err := strconv.ParseInt(r.GetAccountId(), 10, 64)
 	if err != nil {
 		log.WithError(err).Panicf("Unable to decode account id for %s", r.ARN)
 	}
