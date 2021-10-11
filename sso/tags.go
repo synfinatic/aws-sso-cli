@@ -78,6 +78,36 @@ func (t *TagsList) Merge(a *TagsList) {
 	}
 }
 
+// Returns a sorted unique list of tag keys, removing any keys which have already been picked
+func (t *TagsList) UniqueKeys(picked []string) []string {
+	keys := []string{}
+	for key, _ := range *t {
+		seen := false
+		for _, c := range picked {
+			if c == key {
+				seen = true
+				break
+			}
+		}
+		if !seen {
+			keys = append(keys, key)
+		}
+	}
+	sort.Sort(sort.StringSlice(keys))
+	return keys
+}
+
+// Returns a sorted unique list of tag values for the given key
+func (t *TagsList) UniqueValues(key string) []string {
+	x := *t
+	if values, ok := x[key]; ok {
+		sort.Sort(sort.StringSlice(values))
+		return values
+	}
+
+	return []string{}
+}
+
 // RoleTags provides an interface to find roles which match a set of tags
 type RoleTags map[string]map[string]string // ARN => TagKey => Value
 

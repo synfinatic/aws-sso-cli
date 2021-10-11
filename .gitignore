@@ -1,3 +1,4 @@
 dist/ 
 config.yaml*
 store.json
+__debug_bin
