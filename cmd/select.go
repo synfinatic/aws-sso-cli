@@ -24,7 +24,7 @@ import (
 	"strings"
 
 	"github.com/c-bata/go-prompt"
-	"github.com/davecgh/go-spew/spew"
+	//	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
 )
@@ -67,15 +67,15 @@ func (tc *TagsCompleter) Complete(d prompt.Document) []prompt.Suggest {
 
 	argsList := strings.Split(args, " ")
 	suggest := completeTags(tc.roleTags, tc.allTags, argsList)
-	//	return prompt.FilterHasPrefix(suggest, w, true)
-	return prompt.FilterFuzzy(suggest, w, true)
+	return prompt.FilterHasPrefix(suggest, w, true)
+	// return prompt.FilterFuzzy(suggest, w, true)
 }
 
 func (tc *TagsCompleter) Executor(args string) {
 	if args == "exit" {
 		os.Exit(1)
 	}
-	argsMap := argsToMap(strings.Split(args, " "))
+	argsMap, _, _ := argsToMap(strings.Split(args, " "))
 
 	ssoRoles := tc.roleTags.GetMatchingRoles(argsMap)
 	if len(ssoRoles) == 0 {
@@ -104,80 +104,143 @@ func (tc *TagsCompleter) ExitChecker(in string, breakline bool) bool {
 func completeTags(roleTags *sso.RoleTags, allTags *sso.TagsList, args []string) []prompt.Suggest {
 	suggestions := []prompt.Suggest{}
 
-	currentTags := argsToMap(args)
+	currentTags, nextKey, nextValue := argsToMap(args)
 	if roleTags.GetMatchCount(currentTags) == 1 {
 		return suggestions // empty list if we have a single role
 	}
 
-	currentRoles := roleTags.GetMatchingRoles(currentTags)
-	currentCount := len(currentRoles)
-	log.Tracef("%d currentRoles: %s", currentCount, spew.Sdump(currentRoles))
-
-	uniqueSuggestions := map[string]int{}
-
-	// iterate through all our other tag types...
-	for k, list := range *allTags {
-		if list == nil {
-			log.Tracef("Skipping empty: %s", k)
-			continue // skip empty
+	if nextKey == "" {
+		// Find roles which match selection & remaining Tag keys
+		selectedKeys := []string{}
+		for k, _ := range currentTags {
+			selectedKeys = append(selectedKeys, k)
 		}
-		if v, ok := currentTags[k]; ok {
-			log.Tracef("Skipping previously selected: %s:%s", k, v)
-			continue // skip the tag type we've already selected
+		for _, key := range allTags.UniqueKeys(selectedKeys) {
+			suggestions = append(suggestions, prompt.Suggest{
+				Text:        key,
+				Description: fmt.Sprintf("%d choices", len(allTags.UniqueValues(key))),
+			})
 		}
-
-		// scan our tag value choices
-		for _, v := range list {
-			// copy currentTags to checkTags
-			checkTags := map[string]string{}
-			for k, v := range currentTags {
-				checkTags[k] = v
-			}
-
-			// add this new tag/value
-			checkTags[k] = v
-			log.Tracef("checkTags: %s", spew.Sdump(checkTags))
-
-			// see if any roles match
-			checkRoles := roleTags.GetMatchingRoles(checkTags)
-			log.Tracef("%s:%s checkRoles: %s", k, v, spew.Sdump(checkRoles))
-			roleCount := len(checkRoles)
-
-			// if we have any roles, our suggestions
-			if roleCount > 0 && roleCount < currentCount {
-				arg := fmt.Sprintf("%s:%s", k, v)
-				var descr string
-				if roleCount > 1 {
-					descr = fmt.Sprintf("%d roles", roleCount)
-				} else {
-					descr = checkRoles[0] // fmt.Sprintf("Select: %s", newRoles[0])
+	} else if nextValue == "" {
+		// We have a 'nextKey', so search for Tags which match
+		values := (*allTags).UniqueValues(nextKey)
+		if len(values) > 0 {
+			// found exact match for our nextKey
+			for _, value := range values {
+				checkArgs := []string{}
+				for _, v := range args {
+					if v != "" { // don't include the empty
+						checkArgs = append(checkArgs, v)
+					}
 				}
-				if _, ok := uniqueSuggestions[arg]; !ok {
-					uniqueSuggestions[arg] = 1
+				checkArgs = append(checkArgs, value)
+				checkArgs = append(checkArgs, "") // mark value as "complete"
+				argsMap, _, _ := argsToMap(checkArgs)
+				checkRoles := roleTags.GetMatchingRoles(argsMap)
+				roleCnt := len(checkRoles)
+				desc := ""
+				switch roleCnt {
+				case 0:
+					continue
+
+				case 1:
+					desc = checkRoles[0]
+
+				default:
+					desc = fmt.Sprintf("%d roles", roleCnt)
+
+				}
+				suggestions = append(suggestions, prompt.Suggest{
+					Text:        value,
+					Description: desc,
+				})
+			}
+		} else {
+			// no exact match, look for the key
+
+			usedKeys := []string{}
+			for k, _ := range currentTags {
+				usedKeys = append(usedKeys, k)
+			}
+			remainKeys := allTags.UniqueKeys(usedKeys)
+
+			for _, checkKey := range remainKeys {
+				if strings.Contains(strings.ToLower(checkKey), strings.ToLower(nextKey)) {
 					suggestions = append(suggestions, prompt.Suggest{
-						Text:        arg,
-						Description: descr,
+						Text:        checkKey,
+						Description: fmt.Sprintf("%d choices", len(allTags.UniqueValues(checkKey))),
 					})
 				}
-			} else {
-				log.Tracef("skipping since %s:%s doesn't reduce our possible role count", k, v)
+			}
+		}
+	} else {
+		// We have a 'nextValue', so search for Tags which match
+		for _, checkValue := range allTags.UniqueValues(nextKey) {
+			if strings.Contains(strings.ToLower(checkValue), strings.ToLower(nextValue)) {
+				testSet := map[string]string{}
+				for k, v := range currentTags {
+					testSet[k] = v
+				}
+				testSet[nextKey] = checkValue
+				matchedRoles := roleTags.GetMatchingRoles(testSet)
+				matchedCnt := len(matchedRoles)
+				if matchedCnt > 0 {
+					suggestions = append(suggestions, prompt.Suggest{
+						Text:        checkValue,
+						Description: fmt.Sprintf("%d roles", matchedCnt),
+					})
+				}
 			}
 		}
 	}
 	return suggestions
 }
 
-// Converts a list of key:value strings to a map
-func argsToMap(args []string) map[string]string {
+// Converts a list of 'key value' strings to a key/value map and uncompleted key/value pair
+func argsToMap(args []string) (map[string]string, string, string) {
 	tags := map[string]string{}
-	for _, arg := range args {
-		kv := strings.Split(arg, ":")
-		if len(kv) > 2 {
-			key := kv[0]
-			tags[key] = strings.Join(kv[1:], ":")
-		} else if len(kv) == 2 {
-			tags[kv[0]] = kv[1]
-		} // may have empty values
+	retKey := ""
+	retValue := ""
+	cleanArgs := []string{}
+	completeWord := false
+
+	// remove any empty strings
+	for _, a := range args {
+		if a != "" {
+			cleanArgs = append(cleanArgs, a)
+		}
 	}
-	return tags
+
+	if len(cleanArgs) == 0 {
+		return map[string]string{}, "", ""
+	} else if len(cleanArgs) == 1 {
+		return map[string]string{}, cleanArgs[0], ""
+	}
+
+	// our last word is complete
+	if args[len(args)-1] == "" {
+		completeWord = true
+	}
+
+	if len(cleanArgs)%2 == 0 && completeWord {
+		// we have a complete set of key => value pairs
+		for i := 0; i < len(args)-1; i += 2 {
+			tags[cleanArgs[i]] = cleanArgs[i+1]
+		}
+	} else if len(cleanArgs)%2 == 0 {
+		// final word is an incomplete value
+		for i := 0; i < len(cleanArgs)-2; i += 2 {
+			tags[cleanArgs[i]] = cleanArgs[i+1]
+		}
+		retKey = cleanArgs[len(cleanArgs)-2]
+		retValue = cleanArgs[len(cleanArgs)-1]
+	} else {
+		// final word is a (part of a) key
+		retKey = cleanArgs[len(cleanArgs)-1]
+		cleanArgs = cleanArgs[:len(cleanArgs)-1]
+		for i := 0; i < len(cleanArgs)-2; i += 2 {
+			tags[cleanArgs[i]] = cleanArgs[i+1]
+		}
+	}
+	return tags, retKey, retValue
 }
