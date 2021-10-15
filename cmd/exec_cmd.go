@@ -19,9 +19,13 @@ package main
  */
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
+	"strings"
+	"text/template"
 
 	"github.com/c-bata/go-prompt"
 	log "github.com/sirupsen/logrus"
@@ -83,10 +87,65 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 	return nil
 }
 
+const (
+	AwsSsoProfileTemplate = "{{.AccountId}}:{{.RoleName}}"
+)
+
+func emptyString(str string) bool {
+	if str == "" {
+		return true
+	}
+	return false
+}
+func firstItem(items []string) string {
+	for _, v := range items {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
+func accountIdToStr(id int64) string {
+	return strconv.FormatInt(id, 10)
+}
+
 // Executes Cmd+Args in the context of the AWS Role creds
 func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) error {
 	credsPtr := GetRoleCredentials(ctx, awssso, accountid, role)
 	creds := *credsPtr
+	var templ *template.Template
+	var profileFormat string = AwsSsoProfileTemplate
+
+	funcMap := template.FuncMap{
+		"AccountIdStr": accountIdToStr,
+		"EmptyString":  emptyString,
+		"FirstItem":    firstItem,
+		"StringsJoin":  strings.Join,
+	}
+
+	if ctx.Config.ProfileFormat != "" {
+		profileFormat = ctx.Config.ProfileFormat
+	}
+
+	roleInfo, err := ctx.Cache.Roles.GetRole(accountid, role)
+	if err != nil {
+		fmt.Errorf("Unable to find role in cache.  Unable to set AWS_SSO_PROFILE")
+	} else {
+		templ, err = template.New("main").Funcs(funcMap).Parse(profileFormat)
+		if err != nil {
+			fmt.Errorf("Invalid ProfileFormat '%s': %s", ctx.Config.ProfileFormat, err)
+			templ, _ = template.New("main").Funcs(funcMap).Parse(AwsSsoProfileTemplate)
+		}
+	}
+
+	if templ != nil {
+		buf := new(bytes.Buffer)
+		log.Debugf("%v", roleInfo)
+		log.Debugf("%v", templ)
+		templ.Execute(buf, roleInfo)
+		os.Setenv("AWS_SSO_PROFILE", buf.String())
+	}
 
 	// set our ENV & execute the command
 	os.Setenv("AWS_ACCESS_KEY_ID", creds.AccessKeyId)

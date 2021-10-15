@@ -9,6 +9,7 @@
  * Started writing some unit tests
  * Do SSO authentication after role selection to improve performance
     even when we have cached creds
+ * Add support for `AWS_SSO_PROFILE` env var and `ProfileFormat` in config #48
 
 ## [v1.1.0] - 2021-08-22
 

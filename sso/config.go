@@ -34,13 +34,14 @@ type AWSProfile struct {
 }
 
 type ConfigFile struct {
-	SSO         map[string]*SSOConfig `koanf:"SSOConfig" yaml:"SSOConfig,omitempty"`
-	DefaultSSO  string                `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`   // specify default SSO by key
-	SecureStore string                `koanf:"SecureStore" yaml:"SecureStore,omitempty"` // json or keyring
-	CacheStore  string                `koanf:"CacheStore" yaml:"CacheStore,omitempty"`   // insecure json cache
-	JsonStore   string                `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
-	PrintUrl    bool                  `koanf:"PrintUrl" yaml:"PrintUrl,omitempty"`
-	Browser     string                `koanf:"Browser" yaml:"Browser,omitempty"`
+	SSO           map[string]*SSOConfig `koanf:"SSOConfig" yaml:"SSOConfig,omitempty"`
+	DefaultSSO    string                `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`   // specify default SSO by key
+	SecureStore   string                `koanf:"SecureStore" yaml:"SecureStore,omitempty"` // json or keyring
+	CacheStore    string                `koanf:"CacheStore" yaml:"CacheStore,omitempty"`   // insecure json cache
+	JsonStore     string                `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
+	PrintUrl      bool                  `koanf:"PrintUrl" yaml:"PrintUrl,omitempty"`
+	Browser       string                `koanf:"Browser" yaml:"Browser,omitempty"`
+	ProfileFormat string                `koanf:"ProfileFormat" yaml:"ProfileFormat,omitempty"`
 }
 
 type SSOConfig struct {
