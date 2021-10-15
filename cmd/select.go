@@ -94,9 +94,9 @@ func (tc *TagsCompleter) Executor(args string) {
 
 		ssoRoles := tc.roleTags.GetMatchingRoles(argsMap)
 		if len(ssoRoles) == 0 {
-			log.Fatalf("No matching roles")
+			log.Fatalf("Invalid selection: No matching roles.")
 		} else if len(ssoRoles) > 1 {
-			log.Fatalf("Invalid selection: %v", ssoRoles)
+			log.Fatalf("Invalid selection: Too many roles match selected values.")
 		}
 		roleArn = ssoRoles[0]
 	}

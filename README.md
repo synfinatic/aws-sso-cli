@@ -45,17 +45,25 @@ AWS access credentials to your IAM roles, but more importantly the SSO
 AccessToken which can be used to fetch IAM credentials for any role you have
 been granted access!
 
+### What is not encrypted?
+
+ * Contents of user defined `~/.aws-sso/config.yaml`
+ * Meta data associated with the AWS Roles fetched via AWS SSO in `/.aws-sso/cache.json`
+	* Email address of account
+	* AWS Account Alias
+	* AWS Role ARN
+
 ## Installation
 
  * Option 1: [Download binary](https://github.com/synfinatic/aws-sso-cli/releases)
  * Option 2: Build from source:
 	1. Install [GoLang](https://golang.org) and GNU Make
 	1. Clone this repo
-	1. Run `make` (or `gmake`)
+	1. Run `make` (or `gmake` for GNU Make)
 	1. Your binary will be created in the `dist` directory
 
 In both cases, copy the binary to a reasonable location (such as `/usr/local/bin`) and
-ensure that it is executable (`chmod 755 <path>`).
+ensure that it is executable (`chmod 755 <path>`) and owned by root (`chown root <path>`).
 
 ## Commands
 
@@ -123,6 +131,7 @@ The following environment variables are automatically set by `exec`:
  * `AWS_ROLE_ARN` -- The full ARN of the IAM role
  * `AWS_SESSION_EXPIRATION`  -- The date and time when the IAM role credentials will expire
  * `AWS_DEFAULT_REGION` -- Region to use AWS with
+ * `AWS_SSO_PROFILE` -- User customizable varible using a template
 
 ### list
 
@@ -172,7 +181,7 @@ SSOConfig:
     <Name of AWS SSO>:  # `Default` defines the automatically selected AWS SSO instance
         SSORegion: <AWS Region>
         StartUrl: <URL for AWS SSO Portal>
-        Duration: <minutes>  # Set default duration time
+        Duration: <minutes>  # Set default duration time of AWS credentials
         Accounts:  # optional block
             <AccountId>:  # account config is optional
                 Name: <Friendly Name of Account>
@@ -190,6 +199,7 @@ Browser: <override path to browser>
 PrintUrl: [false|true]  # print URL instead of opening it in the browser
 SecureStore: [json|file|keychain|kwallet|pass|secret-service|wincred]
 JsonStore: <path to json file>
+ProfileFormat: <template>
 ```
 
 If `Browser` is not set, then your default browser will be used.  Note that
@@ -215,6 +225,44 @@ By default the following key/values are available as tags:
  * AccountName
  * EmailAddress (root account email)
  * RoleName
+
+### ProfileFormat
+
+AWS SSO CLI can set an environment variable named `AWS_SSO_PROFILE` with
+any value you can express using a [Go Template](https://pkg.go.dev/text/template)
+which can be useful for modifying your shell prompt and integrate with your own
+tooling.
+
+The following variables are accessible from the `AWSRoleFlat` struct:
+
+ * `Id` -- Unique integer defined by AWS SSO CLI for this role
+ * `AccountId` -- AWS Account ID (int64)
+ * `AccountAlias` -- AWS Account Alias defined in AWS
+ * `AccountName` -- AWS Account Name defined in AWS or overridden in AWS SSO's config
+ * `EmailAddress` -- Root account email address associated with the account in AWS
+ * `Expires` -- When your API credentials expire (string)
+ * `Arn` -- AWS ARN for this role
+ * `RoleName` -- The role name
+ * `Profile` -- Manually configured AWS_SSO_PROFILE value for this role
+ * `DefaultRegion` -- The manually configured default region for this role
+ * `SSORegion` -- The AWS Region where AWS SSO is enabled in your account
+ * `StartUrl` -- The AWS SSO start URL for your account
+ * `Tags` -- Map of additional custom key/value pairs
+<!--
+issue: #38
+ * `Via` -- Role AWS SSO CLI will assume before assuming this role
+-->
+
+The following functions are available in your template:
+
+ * `AccountIdStr(x)` -- Converts an AWS Account ID to a string
+ * `EmptyString(x)` -- Returns true/false if the value `x` is an empty string
+ * `FirstItem([]x)` -- Returns the first item in a list that is not an empty string
+ * `StringsJoin([]x, y) -- Joins the items in `x` with the string `y`
+
+**Note:** Unlike most values stored in the `config.yaml`, because `ProfileFormat`
+values often start with a `{` you will need to quote the value for it to be valid
+YAML.
 
 ## Environment Varables
 
