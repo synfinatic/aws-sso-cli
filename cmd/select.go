@@ -21,6 +21,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/c-bata/go-prompt"
@@ -54,6 +55,8 @@ func NewTagsCompleter(ctx *RunContext, s *sso.SSOConfig, exec CompleterExec) *Ta
 	}
 }
 
+var CompleteSpaceReplace *regexp.Regexp = regexp.MustCompile(`\s+`)
+
 func (tc *TagsCompleter) Complete(d prompt.Document) []prompt.Suggest {
 	if d.TextBeforeCursor() == "" {
 		return prompt.FilterHasPrefix(tc.suggest, d.GetWordBeforeCursor(), true)
@@ -62,28 +65,45 @@ func (tc *TagsCompleter) Complete(d prompt.Document) []prompt.Suggest {
 	args := d.TextBeforeCursor()
 	w := d.GetWordBeforeCursor()
 
-	argsList := strings.Split(args, " ")
+	// remove any extra spaces
+	cleanArgs := CompleteSpaceReplace.ReplaceAllString(args, " ")
+	argsList := strings.Split(cleanArgs, " ")
 	suggest := completeTags(tc.roleTags, tc.allTags, argsList)
 	return prompt.FilterHasPrefix(suggest, w, true)
 	// return prompt.FilterFuzzy(suggest, w, true)
 }
 
+// https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_iam-quotas.html
+var isRoleARN *regexp.Regexp = regexp.MustCompile(`^arn:aws:iam:\d+:role/[a-zA-Z0-9\+=,\.@_-]+$`)
+var NoSpaceAtEnd *regexp.Regexp = regexp.MustCompile(`\s+$`)
+
 func (tc *TagsCompleter) Executor(args string) {
+	args = NoSpaceAtEnd.ReplaceAllString(args, "")
 	if args == "exit" {
 		os.Exit(1)
 	}
-	argsMap, _, _ := argsToMap(strings.Split(args, " "))
 
-	ssoRoles := tc.roleTags.GetMatchingRoles(argsMap)
-	if len(ssoRoles) == 0 {
-		log.Fatalf("No matching roles")
-	} else if len(ssoRoles) > 1 {
-		log.Fatalf("Invalid selection")
+	var roleArn string
+	argsList := strings.Split(args, " ")
+	if isRoleARN.MatchString(argsList[len(argsList)-1]) {
+		// last word is our ARN, no need to filter
+		roleArn = argsList[len(argsList)-1]
+	} else {
+		// Use the filter map
+		argsMap, _, _ := argsToMap(strings.Split(args, " "))
+
+		ssoRoles := tc.roleTags.GetMatchingRoles(argsMap)
+		if len(ssoRoles) == 0 {
+			log.Fatalf("No matching roles")
+		} else if len(ssoRoles) > 1 {
+			log.Fatalf("Invalid selection: %v", ssoRoles)
+		}
+		roleArn = ssoRoles[0]
 	}
 
-	aId, rName, err := sso.GetRoleParts(ssoRoles[0])
+	aId, rName, err := sso.GetRoleParts(roleArn)
 	if err != nil {
-		log.Fatalf("Unable to parse %s: %s", ssoRoles[0], err.Error())
+		log.Fatalf("Unable to parse %s: %s", roleArn, err.Error())
 	}
 	awsSSO := doAuth(tc.ctx)
 	err = tc.exec(tc.ctx, awsSSO, aId, rName)
