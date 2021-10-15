@@ -1,0 +1,173 @@
+GetMatchingRoles:
+  Success:
+    Query:
+      Role: SomeRole
+      AccountName: Production
+    Result:
+      - arn:aws:iam::111111:role/SomeRole
+    RoleTags:
+      arn:aws:iam::111111:role/SomeRole:
+        Role: SomeRole
+        AccountName: Production
+        DontCare: WhoKnows
+      arn:aws:iam::111111:role/NotThisRole:
+        Role: NotThisRole
+        AccountName: Production
+        DontCare: WhoKnows
+  SuccessTwo:
+    Query:
+      AccountName: Production
+    Result:
+      - arn:aws:iam::111111:role/SomeRole
+      - arn:aws:iam::111111:role/NotThisRole
+    RoleTags:
+      arn:aws:iam::111111:role/SomeRole:
+        Role: SomeRole
+        AccountName: Production
+        DontCare: WhoKnows
+      arn:aws:iam::111111:role/NotThisRole:
+        Role: NotThisRole
+        AccountName: Production
+        DontCare: WhoKnows
+  NoMatch:
+    Query:
+      Role: SomeRole
+      AccountName: Testing
+    Result: []
+    RoleTags:
+      arn:aws:iam::111111:role/SomeRole:
+        Role: SomeRole
+        AccountName: Production
+        DontCare: WhoKnows
+      arn:aws:iam::111111:role/NotThisRole:
+        Role: NotThisRole
+        AccountName: Production
+        DontCare: WhoKnows
+
+UsefulTags:
+  SimpleTest:
+    Query:
+      AccountName: Production
+    Result:
+      - DontCare
+      - Interesting
+      - Role
+    RoleTags:
+      arn:aws:iam::111111:role/SomeRole:
+        Role: SomeRole
+        AccountName: Production
+        DontCare: WhoKnows
+      arn:aws:iam::111111:role/NotThisRole:
+        Role: NotThisRole
+        AccountName: Production
+        Interesting: WhoKnows
+      arn:aws:iam::111111:role/IgnoreThis:
+        Role: IgnoreThis
+        AccountName: Production
+        Interesting: WhoKnows
+      arn:aws:iam::22222:role/SomeRole:
+        Role: SomeRole
+        AccountName: Lab
+        DontCare: WhoKnows
+
+GetPossibleUniqueRoles:
+  Success:
+    Query:
+      Role: SomeRole
+    QueryKey: AccountName
+    QueryValues:
+      - Production
+      - NoMatch
+    Result:
+      - arn:aws:iam::111111:role/SomeRole
+      - arn:aws:iam::222222:role/SomeRole
+    RoleTags:
+      arn:aws:iam::111111:role/SomeRole:
+        Role: SomeRole
+        AccountName: Production
+        DontCare: WhoKnows
+      arn:aws:iam::222222:role/SomeRole:
+        Role: SomeRole
+        AccountName: Production
+        DontCare: WhoKnows
+      arn:aws:iam::111111:role/NotThisRole:
+        Role: NotThisRole
+        AccountName: Production
+        DontCare: WhoKnows
+  SuccessTwo:
+    Query: {}
+    QueryKey: AccountName
+    QueryValues:
+      - Production
+      - NoMatch
+    Result:
+      - arn:aws:iam::111111:role/SomeRole
+      - arn:aws:iam::111111:role/NotThisRole
+    RoleTags:
+      arn:aws:iam::111111:role/SomeRole:
+        Role: SomeRole
+        AccountName: Production
+        DontCare: WhoKnows
+      arn:aws:iam::111111:role/NotThisRole:
+        Role: NotThisRole
+        AccountName: Production
+        DontCare: WhoKnows
+  NoMatch:
+    Query:
+      Role: SomeRole
+      AccountName: Testing
+    QueryKey:
+    QueryValues: []
+    Result: []
+    RoleTags:
+      arn:aws:iam::111111:role/SomeRole:
+        Role: SomeRole
+        AccountName: Production
+        DontCare: WhoKnows
+      arn:aws:iam::111111:role/NotThisRole:
+        Role: NotThisRole
+        AccountName: Production
+        DontCare: WhoKnows
+
+GetMatchCount:
+  Success:
+    Query:
+      Role: SomeRole
+      AccountName: Production
+    Result: 1
+    RoleTags:
+      arn:aws:iam::111111:role/SomeRole:
+        Role: SomeRole
+        AccountName: Production
+        DontCare: WhoKnows
+      arn:aws:iam::111111:role/NotThisRole:
+        Role: NotThisRole
+        AccountName: Production
+        DontCare: WhoKnows
+  SuccessTwo:
+    Query:
+      AccountName: Production
+    Result: 2
+    RoleTags:
+      arn:aws:iam::111111:role/SomeRole:
+        Role: SomeRole
+        AccountName: Production
+        DontCare: WhoKnows
+      arn:aws:iam::111111:role/NotThisRole:
+        Role: NotThisRole
+        AccountName: Production
+        DontCare: WhoKnows
+  NoMatch:
+    Query:
+      Role: SomeRole
+      AccountName: Testing
+    Result: 0
+    RoleTags:
+      arn:aws:iam::111111:role/SomeRole:
+        Role: SomeRole
+        AccountName: Production
+        DontCare: WhoKnows
+      arn:aws:iam::111111:role/NotThisRole:
+        Role: NotThisRole
+        AccountName: Production
+        DontCare: WhoKnows

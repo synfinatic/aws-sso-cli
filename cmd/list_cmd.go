@@ -34,6 +34,7 @@ var defaultListFields = []string{
 	"AccountId",
 	"AccountName",
 	"RoleName",
+	"Expires",
 }
 
 // keys match AWSRoleFlat header and value is the description
@@ -67,7 +68,8 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 	}
 
 	if ctx.Cache.Expired() {
-		err = fmt.Errorf("Role cache has expired.")
+		err = fmt.Errorf("Role cache has expired.  Refreshing...")
+		log.Infof("%s", err.Error())
 	}
 
 	if err != nil || ctx.Cli.List.ForceUpdate {
