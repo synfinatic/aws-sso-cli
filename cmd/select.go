@@ -34,7 +34,6 @@ type CompleterExec = func(*RunContext, *sso.AWSSSO, int64, string) error
 type TagsCompleter struct {
 	ctx      *RunContext
 	sso      *sso.SSOConfig
-	awsSSO   *sso.AWSSSO
 	roleTags *sso.RoleTags
 	allTags  *sso.TagsList
 	suggest  []prompt.Suggest
@@ -42,14 +41,12 @@ type TagsCompleter struct {
 }
 
 func NewTagsCompleter(ctx *RunContext, s *sso.SSOConfig, exec CompleterExec) *TagsCompleter {
-	awssso := doAuth(ctx)
 	roleTags := ctx.Cache.Roles.GetRoleTagsSelect()
 	allTags := ctx.Cache.Roles.GetAllTagsSelect()
 
 	return &TagsCompleter{
 		ctx:      ctx,
 		sso:      s,
-		awsSSO:   awssso,
 		roleTags: roleTags,
 		allTags:  allTags,
 		suggest:  completeTags(roleTags, allTags, []string{}),
@@ -88,7 +85,8 @@ func (tc *TagsCompleter) Executor(args string) {
 	if err != nil {
 		log.Fatalf("Unable to parse %s: %s", ssoRoles[0], err.Error())
 	}
-	err = tc.exec(tc.ctx, tc.awsSSO, aId, rName)
+	awsSSO := doAuth(tc.ctx)
+	err = tc.exec(tc.ctx, awsSSO, aId, rName)
 	if err != nil {
 		log.Fatalf("Unable to exec: %s", err.Error())
 	}
@@ -111,14 +109,36 @@ func completeTags(roleTags *sso.RoleTags, allTags *sso.TagsList, args []string) 
 
 	if nextKey == "" {
 		// Find roles which match selection & remaining Tag keys
+		currentRoles := roleTags.GetMatchingRoles(currentTags)
+
 		selectedKeys := []string{}
 		for k, _ := range currentTags {
 			selectedKeys = append(selectedKeys, k)
 		}
+
+		returnedRoles := map[string]bool{}
+
 		for _, key := range allTags.UniqueKeys(selectedKeys) {
+			uniqueRoles := roleTags.GetPossibleUniqueRoles(currentTags, key, (*allTags)[key])
+			if len(args) > 0 && len(uniqueRoles) == len(currentRoles) {
+				// skip keys which can't reduce our options
+				for _, role := range uniqueRoles {
+					if _, ok := returnedRoles[role]; ok {
+						// don't return the same role multiple times
+						continue
+					}
+					suggestions = append(suggestions, prompt.Suggest{
+						Text:        role,
+						Description: "",
+					})
+					returnedRoles[role] = true
+				}
+				continue
+			}
 			suggestions = append(suggestions, prompt.Suggest{
-				Text:        key,
-				Description: fmt.Sprintf("%d choices", len(allTags.UniqueValues(key))),
+				Text: key,
+				Description: fmt.Sprintf("%d roles/%d choices", len(uniqueRoles),
+					len(allTags.UniqueValues(key))),
 			})
 		}
 	} else if nextValue == "" {

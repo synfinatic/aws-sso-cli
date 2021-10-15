@@ -4,6 +4,11 @@
 
  * `console` command now can use ENV vars via --useenv #41
  * Fix bugs in `console` with invalid CLI parsing
+ * Tag keys and values are now separate choices #49
+ * Auto-complete options are now sorted
+ * Started writing some unit tests
+ * Do SSO authentication after role selection to improve performance
+    even when we have cached creds
 
 ## [v1.1.0] - 2021-08-22
 

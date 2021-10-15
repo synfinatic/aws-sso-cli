@@ -85,7 +85,7 @@ func (as *AWSSSO) Authenticate(printUrl bool, browser string) error {
 			t := time.Unix(as.Token.ExpiresAt, 0)
 			log.Infof("Token expired at: %s", t.Format("Mon Jan 2 15:04:05 -0700 MST 2006"))
 		} else {
-			log.Info("Token has expired.")
+			log.Info("Token has expired.  Refreshing...")
 		}
 	}
 

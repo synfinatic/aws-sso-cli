@@ -131,6 +131,68 @@ func (r *RoleTags) GetMatchingRoles(tags map[string]string) []string {
 	return matches
 }
 
+// GetPossibleMatches is like GetMatchingRoles, but takes another key
+// and a list of values and it returns the unique set of all roles which
+// match the base tags and all the possible combnations of key/values
+func (r *RoleTags) GetPossibleUniqueRoles(tags map[string]string, key string, values []string) []string {
+	allRoles := []string{} // roles before removing duplicates
+	for _, val := range values {
+		// build our list of tags to look for matches with
+		checkTags := map[string]string{}
+		for k, v := range tags {
+			checkTags[k] = v
+		}
+
+		// add this specific key/value pair
+		checkTags[key] = val
+
+		// add all the matches to our list
+		allRoles = append(allRoles, r.GetMatchingRoles(checkTags)...)
+	}
+	// remove duplicates
+	roles := []string{}
+	dedup := map[string]bool{}
+	for _, role := range allRoles {
+		if _, ok := dedup[role]; !ok {
+			roles = append(roles, role)
+			dedup[role] = true
+		}
+	}
+	return roles
+}
+
+// UsefulTags takes a map of tag key/value pairs and returns a list
+// of tag keys which result in additional filtering
+func (r *RoleTags) UsefulTags(tags map[string]string) []string {
+	roles := r.GetMatchingRoles(tags)
+	uniqueTags := map[string]map[string]int{}
+	for _, role := range roles {
+		for k, v := range (*r)[role] {
+			if _, ok := uniqueTags[k]; !ok {
+				uniqueTags[k] = map[string]int{}
+				uniqueTags[k][v] = 1
+			} else {
+				uniqueTags[k][v] += 1
+			}
+		}
+	}
+
+	tagKeys := []string{}
+	tagMatches := map[string]bool{}
+	currentRoleCnt := len(roles)
+	for k, tags := range uniqueTags {
+		for _, cnt := range tags {
+			if cnt < currentRoleCnt {
+				if _, ok := tagMatches[k]; !ok {
+					tagKeys = append(tagKeys, k)
+					tagMatches[k] = true
+				}
+			}
+		}
+	}
+	return tagKeys
+}
+
 func (r *RoleTags) GetMatchCount(tags map[string]string) int {
 	return len(r.GetMatchingRoles(tags))
 }
