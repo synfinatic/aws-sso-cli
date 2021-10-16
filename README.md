@@ -67,11 +67,12 @@ ensure that it is executable (`chmod 755 <path>`) and owned by root (`chown root
 
 ## Commands
 
+ * `cache` -- Force refresh of AWS SSO role information
  * `console` -- Open AWS Console in a browser with the selected role
  * `exec` -- Exec a command with the selected role
  * `list` -- List all accounts & roles
  * `expire` -- Force expire of AWS SSO credentials
- * `refresh` -- Force refresh of AWS SSO role information
+ * `renew` -- Renew current AWS SSO credentials
  * `tags` -- List manually created tags for each role
  * `version` -- Print the version of aws-sso
 
@@ -134,6 +135,14 @@ The following environment variables are automatically set by `exec`:
  * `AWS_DEFAULT_REGION` -- Region to use AWS with
  * `AWS_SSO_PROFILE` -- User customizable varible using a template
 
+### cache
+
+AWS SSO CLI caches information about your AWS Accounts, Roles and Tags for better
+perfomance.  By default it will refresh this information after 24 hours, but you
+can force this data to be refreshed immediately.
+
+Cache data is also automatically updated anytime the `config.yaml` file is modified.
+
 ### list
 
 List will list all of the AWS Roles you can assume with the metadata/tags available
@@ -151,13 +160,13 @@ Arguments: `[<field> ...]`
 Flush any cached AWS SSO credentials.  By default, it only deletes the temorary
 Client Token which represents your AWS SSO session for the specified AWS SSO portal.
 
-### refresh
+### renew
 
-AWS SSO CLI caches information about your AWS Accounts, Roles and Tags for better
-perfomance.  By default it will refresh this information after 24 hours, but you
-can force this data to be refreshed immediately.
+Generate a series of `export VARIABLE=VALUE` lines suitable for sourcing into your
+shell.  Allows obtaining new AWS credentials when your current session has expired without
+starting a new shell.
 
-Cache data is also automatically updated anytime the `config.yaml` file is modified.
+Suggested use (bash): `eval $(aws-sso renew)`
 
 ### tags
 

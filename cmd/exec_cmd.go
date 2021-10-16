@@ -75,8 +75,8 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 	sso := ctx.Config.SSO[ctx.Cli.SSO]
 	if err = ctx.Cache.Expired(sso); err != nil {
 		log.Warnf(err.Error())
-		r := &RefreshCmd{}
-		if err = r.Run(ctx); err != nil {
+		c := &CacheCmd{}
+		if err = c.Run(ctx); err != nil {
 			return err
 		}
 	}
@@ -119,8 +119,36 @@ func accountIdToStr(id int64) string {
 
 // Executes Cmd+Args in the context of the AWS Role creds
 func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) error {
+
+	// ready our command and connect everything up
+	cmd := exec.Command(ctx.Cli.Exec.Cmd, ctx.Cli.Exec.Args...)
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	cmd.Stdin = os.Stdin
+
+	for k, v := range execShellEnvs(ctx, awssso, accountid, role) {
+		os.Setenv(k, v)
+	}
+	// just do it!
+	return cmd.Run()
+}
+
+func execShellEnvs(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) map[string]string {
 	credsPtr := GetRoleCredentials(ctx, awssso, accountid, role)
 	creds := *credsPtr
+
+	shellVars := map[string]string{
+		"AWS_ACCESS_KEY_ID":      creds.AccessKeyId,
+		"AWS_SECRET_ACCESS_KEY":  creds.SecretAccessKey,
+		"AWS_SESSION_TOKEN":      creds.SessionToken,
+		"AWS_ACCOUNT_ID":         creds.AccountIdStr(),
+		"AWS_ROLE_NAME":          creds.RoleName,
+		"AWS_SESSION_EXPIRATION": creds.ExpireString(),
+	}
+	if ctx.Cli.Exec.Region != "" {
+		shellVars["AWS_DEFAULT_REGION"] = ctx.Cli.Exec.Region
+	}
+
 	var profileFormat string = AwsSsoProfileTemplate
 
 	funcMap := template.FuncMap{
@@ -150,30 +178,10 @@ func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) 
 		log.Debugf("%v", roleInfo)
 		log.Debugf("%v", templ)
 		templ.Execute(buf, roleInfo)
-		os.Setenv("AWS_SSO_PROFILE", buf.String())
+		shellVars["AWS_SSO_PROFILE"] = buf.String()
 	}
 
-	// set our other ENV vars
-	os.Setenv("AWS_ACCESS_KEY_ID", creds.AccessKeyId)
-	os.Setenv("AWS_SECRET_ACCESS_KEY", creds.SecretAccessKey)
-	os.Setenv("AWS_SESSION_TOKEN", creds.SessionToken)
-	os.Setenv("AWS_ACCOUNT_ID", creds.AccountIdStr())
-	os.Setenv("AWS_ROLE_NAME", creds.RoleName)
-	if ctx.Cli.Exec.Region != "" {
-		os.Setenv("AWS_DEFAULT_REGION", ctx.Cli.Exec.Region)
-	}
-	os.Setenv("AWS_SESSION_EXPIRATION", creds.ExpireString())
-	//	os.Setenv("AWS_SSO_PROFILE", cli.Exec.Profile)
-	os.Setenv("AWS_ROLE_ARN", creds.RoleArn())
-
-	// ready our command and connect everything up
-	cmd := exec.Command(ctx.Cli.Exec.Cmd, ctx.Cli.Exec.Args...)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	cmd.Stdin = os.Stdin
-
-	// just do it!
-	return cmd.Run()
+	return shellVars
 }
 
 // returns an error if we have existing AWS env vars

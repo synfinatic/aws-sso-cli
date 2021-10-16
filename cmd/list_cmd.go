@@ -67,8 +67,8 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 	}
 
 	if err = ctx.Cache.Expired(ctx.Config.GetDefaultSSO()); err != nil {
-		r := &RefreshCmd{}
-		if err = r.Run(ctx); err != nil {
+		c := &CacheCmd{}
+		if err = c.Run(ctx); err != nil {
 			log.WithError(err).Errorf("Unable to refresh local cache")
 		}
 	}
