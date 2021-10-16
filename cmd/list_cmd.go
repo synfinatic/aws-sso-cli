@@ -52,9 +52,8 @@ var allListFields = map[string]string{
 }
 
 type ListCmd struct {
-	Fields      []string `kong:"optional,arg,enum='AccountId,AccountName,Arn,EmailAddress,Expires,Id,Profile,RoleName',help='Fields to display',env='AWS_SSO_FIELDS'"`
-	ListFields  bool     `kong:"optional,name='list-fields',short='f',help='List available fields'"`
-	ForceUpdate bool     `kong:"optional,name='force-update',help='Force account/role cache update'"`
+	Fields     []string `kong:"optional,arg,enum='AccountId,AccountName,Arn,EmailAddress,Expires,Id,Profile,RoleName',help='Fields to display',env='AWS_SSO_FIELDS'"`
+	ListFields bool     `kong:"optional,name='list-fields',short='f',help='List available fields'"`
 }
 
 // what should this actually do?
@@ -67,17 +66,10 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 		return nil
 	}
 
-	refresh := false
-	if ctx.Cli.List.ForceUpdate {
-		refresh = true
-	} else if err = ctx.Cache.Expired(ctx.Config.GetDefaultSSO()); err != nil {
-		log.Warn(err.Error())
-		refresh = true
-	}
-
-	if refresh {
-		if err = RefreshCache(ctx); err != nil {
-			return err
+	if err = ctx.Cache.Expired(ctx.Config.GetDefaultSSO()); err != nil {
+		r := &RefreshCmd{}
+		if err = r.Run(ctx); err != nil {
+			log.WithError(err).Errorf("Unable to refresh local cache")
 		}
 	}
 

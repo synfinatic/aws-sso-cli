@@ -11,6 +11,9 @@
     even when we have cached creds
  * Add support for `AWS_SSO_PROFILE` env var and `ProfileFormat` in config #48
  * Auto-detect when local cache it out of date and refresh #59
+ * Add support for `refresh` command to force refresh AWS SSO data 
+ * Rename `--refresh` flag to be `--sts-refresh`
+ * Remove `--force-refresh` flag from `list` command
 
 ## [v1.1.0] - 2021-08-22
 

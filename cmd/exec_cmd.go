@@ -75,7 +75,8 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 	sso := ctx.Config.SSO[ctx.Cli.SSO]
 	if err = ctx.Cache.Expired(sso); err != nil {
 		log.Warnf(err.Error())
-		if err = RefreshCache(ctx); err != nil {
+		r := &RefreshCmd{}
+		if err = r.Run(ctx); err != nil {
 			return err
 		}
 	}
