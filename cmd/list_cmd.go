@@ -67,25 +67,18 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 		return nil
 	}
 
-	if ctx.Cache.Expired() {
-		err = fmt.Errorf("Role cache has expired.  Refreshing...")
-		log.Infof("%s", err.Error())
+	refresh := false
+	if ctx.Cli.List.ForceUpdate {
+		refresh = true
+	} else if err = ctx.Cache.Expired(ctx.Config.GetDefaultSSO()); err != nil {
+		log.Warn(err.Error())
+		refresh = true
 	}
 
-	if err != nil || ctx.Cli.List.ForceUpdate {
-		s := ctx.Config.SSO[ctx.Cli.SSO]
-		awssso := doAuth(ctx)
-
-		err = ctx.Cache.Refresh(awssso, s)
-		if err != nil {
-			log.WithError(err).Fatalf("Unable to refresh role cache")
+	if refresh {
+		if err = RefreshCache(ctx); err != nil {
+			return err
 		}
-		err = ctx.Cache.Save()
-		if err != nil {
-			log.WithError(err).Warnf("Unable to save cache")
-		}
-	} else {
-		log.Info("Using cache.  Use --force-update to force a cache update.")
 	}
 
 	fields := defaultListFields

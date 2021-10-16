@@ -19,6 +19,7 @@ package sso
  */
 
 import (
+	"os"
 	"strconv"
 	"strings"
 
@@ -49,6 +50,7 @@ type SSOConfig struct {
 	StartUrl      string                `koanf:"StartUrl" yaml:"StartUrl"`
 	Accounts      map[int64]*SSOAccount `koanf:"Accounts" yaml:"Accounts,omitempty"`
 	DefaultRegion string                `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
+	configFile    string                // populated by Refresh()
 }
 
 type SSOAccount struct {
@@ -67,16 +69,55 @@ type SSORole struct {
 	Via           string            `koanf:"Via" yaml:"Via,omitempty"`
 }
 
+// DefaultSSO returns the Default SSO or failing that the first one it finds
+func (cf *ConfigFile) GetDefaultSSO() *SSOConfig {
+	if s, ok := cf.SSO[cf.DefaultSSO]; ok {
+		return s
+	}
+
+	if s, ok := cf.SSO["Default"]; ok {
+		return s
+	}
+	var s *SSOConfig
+	for _, v := range cf.SSO {
+		s = v
+	}
+	return s
+}
+
 // Refresh should be called any time you load the SSOConfig into memory or add a role
 // to update the Role -> Account references
-func (s *SSOConfig) Refresh() {
+func (s *SSOConfig) Refresh(configFile string) {
 	for _, a := range s.Accounts {
 		for _, r := range a.Roles {
 			r.Account = a
 		}
 	}
+	// update our createdAt.  Sadly we need to put it here and not in ConfigFile
+	s.configFile = configFile
 }
 
+// ConfigFile returns the path to the config file
+func (s *SSOConfig) ConfigFile() string {
+	return s.configFile
+}
+
+// CreatedAt returns the Unix epoch seconds that this config file was created at
+func (s *SSOConfig) CreatedAt() int64 {
+	f, err := os.Open(s.configFile)
+	if err != nil {
+		log.WithError(err).Fatalf("Unable to open %s", s.configFile)
+	}
+	defer f.Close()
+
+	info, err := f.Stat()
+	if err != nil {
+		log.WithError(err).Fatalf("Unable to Stat() %s", s.configFile)
+	}
+	return info.ModTime().Unix()
+}
+
+// HasRole returns true/false if the given Account has the provided arn
 func (a *SSOAccount) HasRole(arn string) bool {
 	hasRole := false
 	for _, role := range a.Roles {

@@ -48,8 +48,8 @@ func (cc *TagsCmd) Run(ctx *RunContext) error {
 		if err != nil {
 			log.WithError(err).Warnf("Unable to save cache")
 		}
-	} else if ctx.Cache.Expired() {
-		log.Warn("Role cache may be out of date")
+	} else if err := ctx.Cache.Expired(ctx.Config.GetDefaultSSO()); err != nil {
+		log.Warn(err.Error())
 	}
 	roles := []*sso.AWSRoleFlat{}
 
