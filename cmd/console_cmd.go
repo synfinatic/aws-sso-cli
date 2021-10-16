@@ -85,7 +85,7 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 
 	// use completer to figure out the role
 	sso := ctx.Config.SSO[ctx.Cli.SSO]
-	sso.Refresh()
+	sso.Refresh(ctx.Cli.ConfigFile)
 	c := NewTagsCompleter(ctx, sso, openConsole)
 	p := prompt.New(
 		c.Executor,

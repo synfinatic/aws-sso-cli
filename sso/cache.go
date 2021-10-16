@@ -39,17 +39,19 @@ const (
 
 // Our Cachefile
 type Cache struct {
-	filename  string
-	CreatedAt int64    `json:"CreatedAt"`
-	History   []string `json:"History,omitempty"`
-	Roles     *Roles   `json:"Roles,omitempty"`
+	filename        string
+	CreatedAt       int64    `json:"CreatedAt"`       // this cache.json
+	ConfigCreatedAt int64    `json:"ConfigCreatedAt"` // track config.yaml
+	History         []string `json:"History,omitempty"`
+	Roles           *Roles   `json:"Roles,omitempty"`
 }
 
 func OpenCache(filename string) (*Cache, error) {
 	cache := Cache{
-		filename:  filename,
-		CreatedAt: 0,
-		History:   []string{},
+		filename:        filename,
+		CreatedAt:       0,
+		ConfigCreatedAt: 0,
+		History:         []string{},
 		Roles: &Roles{
 			Accounts: map[int64]*AWSAccount{},
 		},
@@ -62,12 +64,18 @@ func OpenCache(filename string) (*Cache, error) {
 	return &cache, nil
 }
 
-// Expired returns if our Roles cache data is too old
-func (c *Cache) Expired() bool {
+// Expired returns if our Roles cache data is too old.
+// If configFile is a valid file, we check the lastModificationTime of that file
+// vs. the ConfigCreatedAt to determine if the cache needs to be updated
+func (c *Cache) Expired(s *SSOConfig) error {
 	if c.CreatedAt+CACHE_TTL < time.Now().Unix() {
-		return true
+		return fmt.Errorf("Local cache is out of date; TTL has been exceeded.")
 	}
-	return false
+
+	if s.CreatedAt() > c.ConfigCreatedAt {
+		return fmt.Errorf("Local cache is out of date; config.yaml modified.")
+	}
+	return nil
 }
 
 // Save saves our cache to the current file
@@ -107,6 +115,7 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig) error {
 	}
 	c.Roles = r
 	c.CreatedAt = time.Now().Unix()
+	c.ConfigCreatedAt = config.CreatedAt()
 	return nil
 }
 

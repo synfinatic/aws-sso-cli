@@ -89,14 +89,17 @@ func main() {
 	}
 
 	// Load the config file
-	configFile := getHomePath(cli.ConfigFile)
-	if err := run_ctx.Konf.Load(file.Provider(configFile), yaml.Parser()); err != nil {
-		log.WithError(err).Fatalf("Unable to open config file: %s", configFile)
+	cli.ConfigFile = getHomePath(cli.ConfigFile)
+	if err := run_ctx.Konf.Load(file.Provider(cli.ConfigFile), yaml.Parser()); err != nil {
+		log.WithError(err).Fatalf("Unable to open config file: %s", cli.ConfigFile)
 	}
+
 	err := run_ctx.Konf.Unmarshal("", run_ctx.Config)
 	if err != nil {
 		log.WithError(err).Fatalf("Unable to process config file")
 	}
+
+	// Update our structs
 	update_config(run_ctx.Config, cli)
 
 	// validate the SSO Provider
@@ -155,6 +158,7 @@ func main() {
 
 // Some CLI args are for overriding the config.  Do that here.
 func update_config(config *sso.ConfigFile, cli CLI) {
+	config.GetDefaultSSO().Refresh(getHomePath(cli.ConfigFile))
 	if cli.PrintUrl {
 		config.PrintUrl = true
 	}
@@ -271,14 +275,37 @@ func ParseRoleARN(arn string) (int64, string, error) {
 	return aId, role, nil
 }
 
-// Creates an AWSSO object post authentication
+var AwsSSO *sso.AWSSSO // global
+
+// Creates a singleton AWSSO object post authentication
 func doAuth(ctx *RunContext) *sso.AWSSSO {
+	if AwsSSO != nil {
+		return AwsSSO
+	}
 	s := ctx.Config.SSO[ctx.Cli.SSO]
-	awssso := sso.NewAWSSSO(s.SSORegion, s.StartUrl, &ctx.Store)
-	err := awssso.Authenticate(ctx.Config.PrintUrl, ctx.Config.Browser)
+	AwsSSO := sso.NewAWSSSO(s.SSORegion, s.StartUrl, &ctx.Store)
+	err := AwsSSO.Authenticate(ctx.Config.PrintUrl, ctx.Config.Browser)
 	if err != nil {
 		log.WithError(err).Fatalf("Unable to authenticate")
 	}
-	ctx.Cache.Refresh(awssso, ctx.Config.SSO[ctx.Cli.SSO])
-	return awssso
+	ctx.Cache.Refresh(AwsSSO, ctx.Config.SSO[ctx.Cli.SSO])
+	return AwsSSO
+}
+
+// RefreshCache refreshes our local cache
+func RefreshCache(ctx *RunContext) error {
+	log.Info("Refreshing local cache...")
+
+	awssso := doAuth(ctx)
+	err := ctx.Cache.Refresh(awssso, ctx.Config.SSO[ctx.Cli.SSO])
+	if err != nil {
+		return fmt.Errorf("Unable to refresh role cache: %s", err.Error())
+	}
+	err = ctx.Cache.Save()
+	if err != nil {
+		return fmt.Errorf("Unable to save role cache: %s", err.Error())
+	}
+
+	log.Info("Cache has been refreshed.")
+	return nil
 }

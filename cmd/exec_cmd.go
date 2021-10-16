@@ -73,7 +73,13 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 	fmt.Printf("Please use `exit` or `Ctrl-D` to quit.\n")
 
 	sso := ctx.Config.SSO[ctx.Cli.SSO]
-	sso.Refresh()
+	if err = ctx.Cache.Expired(sso); err != nil {
+		log.Warnf(err.Error())
+		if err = RefreshCache(ctx); err != nil {
+			return err
+		}
+	}
+	sso.Refresh(ctx.Cli.ConfigFile)
 	c := NewTagsCompleter(ctx, sso, execCmd)
 	p := prompt.New(
 		c.Executor,
@@ -114,7 +120,6 @@ func accountIdToStr(id int64) string {
 func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) error {
 	credsPtr := GetRoleCredentials(ctx, awssso, accountid, role)
 	creds := *credsPtr
-	var templ *template.Template
 	var profileFormat string = AwsSsoProfileTemplate
 
 	funcMap := template.FuncMap{
@@ -128,18 +133,18 @@ func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) 
 		profileFormat = ctx.Config.ProfileFormat
 	}
 
-	roleInfo, err := ctx.Cache.Roles.GetRole(accountid, role)
-	if err != nil {
-		fmt.Errorf("Unable to find role in cache.  Unable to set AWS_SSO_PROFILE")
+	// Set the AWS_SSO_PROFILE env var using our template
+	var templ *template.Template
+	if roleInfo, err := ctx.Cache.Roles.GetRole(accountid, role); err != nil {
+		// this error should never happen
+		log.Errorf("Unable to find role in cache.  Unable to set AWS_SSO_PROFILE")
 	} else {
 		templ, err = template.New("main").Funcs(funcMap).Parse(profileFormat)
 		if err != nil {
-			fmt.Errorf("Invalid ProfileFormat '%s': %s", ctx.Config.ProfileFormat, err)
+			log.Errorf("Invalid ProfileFormat '%s': %s -- using default", ctx.Config.ProfileFormat, err)
 			templ, _ = template.New("main").Funcs(funcMap).Parse(AwsSsoProfileTemplate)
 		}
-	}
 
-	if templ != nil {
 		buf := new(bytes.Buffer)
 		log.Debugf("%v", roleInfo)
 		log.Debugf("%v", templ)
@@ -147,7 +152,7 @@ func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) 
 		os.Setenv("AWS_SSO_PROFILE", buf.String())
 	}
 
-	// set our ENV & execute the command
+	// set our other ENV vars
 	os.Setenv("AWS_ACCESS_KEY_ID", creds.AccessKeyId)
 	os.Setenv("AWS_SECRET_ACCESS_KEY", creds.SecretAccessKey)
 	os.Setenv("AWS_SESSION_TOKEN", creds.SessionToken)

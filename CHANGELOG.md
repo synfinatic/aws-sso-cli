@@ -10,6 +10,7 @@
  * Do SSO authentication after role selection to improve performance
     even when we have cached creds
  * Add support for `AWS_SSO_PROFILE` env var and `ProfileFormat` in config #48
+ * Auto-detect when local cache it out of date and refresh #59
 
 ## [v1.1.0] - 2021-08-22
 
