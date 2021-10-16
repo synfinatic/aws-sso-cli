@@ -71,6 +71,7 @@ ensure that it is executable (`chmod 755 <path>`) and owned by root (`chown root
  * `exec` -- Exec a command with the selected role
  * `list` -- List all accounts & roles
  * `expire` -- Force expire of AWS SSO credentials
+ * `refresh` -- Force refresh of AWS SSO role information
  * `tags` -- List manually created tags for each role
  * `version` -- Print the version of aws-sso
 
@@ -142,7 +143,6 @@ printed by specifying the field names as arguments.
 Flags:
 
  * `--list-fields` -- List the available fields to print
- * `--force-update` -- Force updating of the cache of roles available via AWS SSO
 
 Arguments: `[<field> ...]`
 
@@ -150,6 +150,14 @@ Arguments: `[<field> ...]`
 
 Flush any cached AWS SSO credentials.  By default, it only deletes the temorary
 Client Token which represents your AWS SSO session for the specified AWS SSO portal.
+
+### refresh
+
+AWS SSO CLI caches information about your AWS Accounts, Roles and Tags for better
+perfomance.  By default it will refresh this information after 24 hours, but you
+can force this data to be refreshed immediately.
+
+Cache data is also automatically updated anytime the `config.yaml` file is modified.
 
 ### tags
 

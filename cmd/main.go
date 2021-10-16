@@ -65,13 +65,14 @@ type CLI struct {
 	Browser    string `kong:"optional,short='b',help='Path to browser to use',env='AWS_SSO_BROWSER'"`
 	PrintUrl   bool   `kong:"optional,name='url',short='u',help='Print URL insetad of open in browser'"`
 	SSO        string `kong:"optional,short='S',help='AWS SSO Instance',env='AWS_SSO'"`
-	Refresh    bool   `kong:"optional,short='R',help='Force refresh of STS Token Credentials'"`
+	STSRefresh bool   `kong:"optional,short='R',help='Force refresh of STS Token Credentials'"`
 
 	// Commands
 	Console ConsoleCmd `kong:"cmd,help='Open AWS Console using specificed AWS Role/profile'"`
 	Exec    ExecCmd    `kong:"cmd,help='Execute command using specified AWS Role/Profile'"`
 	Flush   FlushCmd   `kong:"cmd,help='Force delete of AWS SSO credentials'"`
 	List    ListCmd    `kong:"cmd,help='List all accounts / role (default command)',default='1'"`
+	Refresh RefreshCmd `kong:"cmd,help='Force refresh of AWS SSO role info and config.yaml'"`
 	Tags    TagsCmd    `kong:"cmd,help='List tags'"`
 	Time    TimeCmd    `kong:"cmd,help='Print out much time before STS Token expires'"`
 	Version VersionCmd `kong:"cmd,help='Print version and exit'"`
@@ -227,7 +228,7 @@ func GetRoleCredentials(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, ro
 	rFlat, err := ctx.Cache.Roles.GetRole(accountid, role)
 
 	// must be in cache, not expired and no force refresh
-	if err == nil && !ctx.Cli.Refresh && !rFlat.IsExpired() {
+	if err == nil && !ctx.Cli.STSRefresh && !rFlat.IsExpired() {
 		// we can use the secure store!
 		err = ctx.Store.GetRoleCredentials(rFlat.Arn, &creds)
 	}
@@ -290,22 +291,4 @@ func doAuth(ctx *RunContext) *sso.AWSSSO {
 	}
 	ctx.Cache.Refresh(AwsSSO, ctx.Config.SSO[ctx.Cli.SSO])
 	return AwsSSO
-}
-
-// RefreshCache refreshes our local cache
-func RefreshCache(ctx *RunContext) error {
-	log.Info("Refreshing local cache...")
-
-	awssso := doAuth(ctx)
-	err := ctx.Cache.Refresh(awssso, ctx.Config.SSO[ctx.Cli.SSO])
-	if err != nil {
-		return fmt.Errorf("Unable to refresh role cache: %s", err.Error())
-	}
-	err = ctx.Cache.Save()
-	if err != nil {
-		return fmt.Errorf("Unable to save role cache: %s", err.Error())
-	}
-
-	log.Info("Cache has been refreshed.")
-	return nil
 }
