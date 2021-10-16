@@ -20,25 +20,36 @@ package main
 
 import (
 	"fmt"
-
-	log "github.com/sirupsen/logrus"
+	"os"
+	"strconv"
+	"strings"
 )
 
-type RefreshCmd struct{}
+type RenewCmd struct{}
 
-func (cc *RefreshCmd) Run(ctx *RunContext) error {
-	log.Info("Refreshing local cache...")
+func (cc *RenewCmd) Run(ctx *RunContext) error {
+	accountid := os.Getenv("AWS_ACCOUNT_ID")
+	role := os.Getenv("AWS_ROLE_NAME")
+
+	if accountid == "" {
+		return fmt.Errorf("Unable to refresh: AWS_ACCOUNT_ID is not set")
+	}
+	if role == "" {
+		return fmt.Errorf("Unable to refresh: AWS_ROLE_NAME is not set")
+	}
+
+	aid, err := strconv.ParseInt(accountid, 10, 64)
+	if err != nil {
+		return fmt.Errorf("Unable to parse AWS_ACCOUNT_ID = %s: %s", accountid, err.Error())
+	}
 
 	awssso := doAuth(ctx)
-	err := ctx.Cache.Refresh(awssso, ctx.Config.SSO[ctx.Cli.SSO])
-	if err != nil {
-		return fmt.Errorf("Unable to refresh role cache: %s", err.Error())
+	for k, v := range execShellEnvs(ctx, awssso, aid, role) {
+		if strings.Contains(v, " ") {
+			fmt.Printf("export %s=\"%s\"\n", k, v)
+		} else {
+			fmt.Printf("export %s=%s\n", k, v)
+		}
 	}
-	err = ctx.Cache.Save()
-	if err != nil {
-		return fmt.Errorf("Unable to save role cache: %s", err.Error())
-	}
-
-	log.Info("Cache has been refreshed.")
 	return nil
 }

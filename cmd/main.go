@@ -68,11 +68,12 @@ type CLI struct {
 	STSRefresh bool   `kong:"optional,short='R',help='Force refresh of STS Token Credentials'"`
 
 	// Commands
+	Cache   CacheCmd   `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
 	Console ConsoleCmd `kong:"cmd,help='Open AWS Console using specificed AWS Role/profile'"`
 	Exec    ExecCmd    `kong:"cmd,help='Execute command using specified AWS Role/Profile'"`
 	Flush   FlushCmd   `kong:"cmd,help='Force delete of AWS SSO credentials'"`
 	List    ListCmd    `kong:"cmd,help='List all accounts / role (default command)',default='1'"`
-	Refresh RefreshCmd `kong:"cmd,help='Force refresh of AWS SSO role info and config.yaml'"`
+	Renew   RenewCmd   `kong:"cmd,help='Print renewed AWS credentials for your shell'"`
 	Tags    TagsCmd    `kong:"cmd,help='List tags'"`
 	Time    TimeCmd    `kong:"cmd,help='Print out much time before STS Token expires'"`
 	Version VersionCmd `kong:"cmd,help='Print version and exit'"`
