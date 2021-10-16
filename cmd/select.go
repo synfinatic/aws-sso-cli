@@ -155,11 +155,13 @@ func completeTags(roleTags *sso.RoleTags, allTags *sso.TagsList, args []string) 
 				}
 				continue
 			}
-			suggestions = append(suggestions, prompt.Suggest{
-				Text: key,
-				Description: fmt.Sprintf("%d roles/%d choices", len(uniqueRoles),
-					len(allTags.UniqueValues(key))),
-			})
+			if len(uniqueRoles) > 0 {
+				suggestions = append(suggestions, prompt.Suggest{
+					Text: key,
+					Description: fmt.Sprintf("%d roles/%d choices", len(uniqueRoles),
+						len(allTags.UniqueValues(key))),
+				})
+			}
 		}
 	} else if nextValue == "" {
 		// We have a 'nextKey', so search for Tags which match
@@ -269,7 +271,7 @@ func argsToMap(args []string) (map[string]string, string, string) {
 		}
 	} else if len(cleanArgs)%2 == 0 {
 		// final word is an incomplete value
-		for i := 0; i < len(cleanArgs)-2; i += 2 {
+		for i := 0; i <= len(cleanArgs)-2; i += 2 {
 			tags[cleanArgs[i]] = cleanArgs[i+1]
 		}
 		retKey = cleanArgs[len(cleanArgs)-2]
