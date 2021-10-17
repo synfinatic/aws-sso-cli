@@ -111,6 +111,14 @@ func (t *TagsList) UniqueValues(key string) []string {
 // RoleTags provides an interface to find roles which match a set of tags
 type RoleTags map[string]map[string]string // ARN => TagKey => Value
 
+func (r *RoleTags) GetRoleTags(role string) map[string]string {
+	rtags := *r
+	if v, ok := rtags[role]; ok {
+		return v
+	}
+	return map[string]string{}
+}
+
 // GetMatchingRoles returns the roles which match all the tags
 func (r *RoleTags) GetMatchingRoles(tags map[string]string) []string {
 	matches := []string{}

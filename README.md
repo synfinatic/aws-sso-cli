@@ -217,6 +217,7 @@ PrintUrl: [false|true]  # print URL instead of opening it in the browser
 SecureStore: [json|file|keychain|kwallet|pass|secret-service|wincred]
 JsonStore: <path to json file>
 ProfileFormat: <template>
+AccountPrimaryTag: <list of role tags>
 ```
 
 If `Browser` is not set, then your default browser will be used.  Note that
@@ -280,6 +281,20 @@ The following functions are available in your template:
 **Note:** Unlike most values stored in the `config.yaml`, because `ProfileFormat`
 values often start with a `{` you will need to quote the value for it to be valid
 YAML.
+
+### AccountPrimaryTag
+
+When selecting a role, if you first select by role name (via the `Role` tag) you will
+be presented with a list of matching ARNs to select. The `AccountPrimaryTag` automatically
+includes another tag name and value as the description to aid in role selection.  By default
+the following tags are searched (first match is used):
+
+ * AccountName
+ * AccountAlias
+ * Email
+
+Set `AccountPrimaryTag` to an empty list to disable this feature.
+
 
 ## Environment Varables
 
