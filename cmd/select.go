@@ -50,7 +50,7 @@ func NewTagsCompleter(ctx *RunContext, s *sso.SSOConfig, exec CompleterExec) *Ta
 		sso:      s,
 		roleTags: roleTags,
 		allTags:  allTags,
-		suggest:  completeTags(roleTags, allTags, []string{}),
+		suggest:  completeTags(roleTags, allTags, ctx.Config.AccountPrimaryTag, []string{}),
 		exec:     exec,
 	}
 }
@@ -68,7 +68,7 @@ func (tc *TagsCompleter) Complete(d prompt.Document) []prompt.Suggest {
 	// remove any extra spaces
 	cleanArgs := CompleteSpaceReplace.ReplaceAllString(args, " ")
 	argsList := strings.Split(cleanArgs, " ")
-	suggest := completeTags(tc.roleTags, tc.allTags, argsList)
+	suggest := completeTags(tc.roleTags, tc.allTags, tc.ctx.Config.AccountPrimaryTag, argsList)
 	return prompt.FilterHasPrefix(suggest, w, true)
 	// return prompt.FilterFuzzy(suggest, w, true)
 }
@@ -119,7 +119,7 @@ func (tc *TagsCompleter) ExitChecker(in string, breakline bool) bool {
 }
 
 // return a list of suggestions based on user selected []key:value
-func completeTags(roleTags *sso.RoleTags, allTags *sso.TagsList, args []string) []prompt.Suggest {
+func completeTags(roleTags *sso.RoleTags, allTags *sso.TagsList, accountPrimaryTags []string, args []string) []prompt.Suggest {
 	suggestions := []prompt.Suggest{}
 
 	currentTags, nextKey, nextValue := argsToMap(args)
@@ -147,9 +147,26 @@ func completeTags(roleTags *sso.RoleTags, allTags *sso.TagsList, args []string) 
 						// don't return the same role multiple times
 						continue
 					}
+
+					var description string
+					for _, tag := range accountPrimaryTags {
+						// don't re-use a tag that was alraedy specified by the user
+						for _, v := range args {
+							if v == tag {
+								continue
+							}
+						}
+						if val, ok := roleTags.GetRoleTags(role)[tag]; ok {
+							if val == "" { // ignore empty values
+								continue
+							}
+							description = fmt.Sprintf("%s:%s", tag, val)
+							break
+						}
+					}
 					suggestions = append(suggestions, prompt.Suggest{
 						Text:        role,
-						Description: "",
+						Description: description,
 					})
 					returnedRoles[role] = true
 				}

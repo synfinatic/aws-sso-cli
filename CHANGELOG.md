@@ -15,6 +15,7 @@
  * Add support for `renew` command to refresh AWS credentials in a shell #63
  * Rename `--refresh` flag to be `--sts-refresh`
  * Remove `--force-refresh` flag from `list` command
+ * Add role metadata when selecting roles #66
 
 ## [v1.1.0] - 2021-08-22
 

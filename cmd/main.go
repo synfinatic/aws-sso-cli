@@ -102,7 +102,7 @@ func main() {
 	}
 
 	// Update our structs
-	update_config(run_ctx.Config, cli)
+	updateConfig(run_ctx.Config, cli)
 
 	// validate the SSO Provider
 	if run_ctx.Cli.SSO != "" {
@@ -158,14 +158,24 @@ func main() {
 	}
 }
 
+var DefaultAccountPrimaryTags []string = []string{
+	"AccountName",
+	"AccountAlias",
+	"Email",
+}
+
 // Some CLI args are for overriding the config.  Do that here.
-func update_config(config *sso.ConfigFile, cli CLI) {
+func updateConfig(config *sso.ConfigFile, cli CLI) {
 	config.GetDefaultSSO().Refresh(getHomePath(cli.ConfigFile))
 	if cli.PrintUrl {
 		config.PrintUrl = true
 	}
 	if cli.Browser != "" {
 		config.Browser = cli.Browser
+	}
+
+	if len(config.AccountPrimaryTag) == 0 {
+		config.AccountPrimaryTag = append(config.AccountPrimaryTag, DefaultAccountPrimaryTags...)
 	}
 }
 
