@@ -171,3 +171,47 @@ GetMatchCount:
         Role: NotThisRole
         AccountName: Production
         DontCare: WhoKnows
+
+GetRoleTags:
+  First:
+    Query: arn:aws:iam::111111:role/SomeRole
+    Result:
+      Role: SomeRole
+      AccountName: Production
+      DontCare: WhoKnows
+    RoleTags:
+      arn:aws:iam::111111:role/SomeRole:
+        Role: SomeRole
+        AccountName: Production
+        DontCare: WhoKnows
+      arn:aws:iam::111111:role/NotThisRole:
+        Role: NotThisRole
+        AccountName: Production
+        DontCare: WhoKnows
+  Second:
+    Query: arn:aws:iam::111111:role/NotThisRole
+    Result:
+      Role: NotThisRole
+      AccountName: Production
+      DontCare: WhoKnows
+    RoleTags:
+      arn:aws:iam::111111:role/SomeRole:
+        Role: SomeRole
+        AccountName: Production
+        DontCare: WhoKnows
+      arn:aws:iam::111111:role/NotThisRole:
+        Role: NotThisRole
+        AccountName: Production
+        DontCare: WhoKnows
+  Third:
+    Query: arn:aws:iam::2222:role/NotThisRole
+    Result: {}
+    RoleTags:
+      arn:aws:iam::111111:role/SomeRole:
+        Role: SomeRole
+        AccountName: Production
+        DontCare: WhoKnows
+      arn:aws:iam::111111:role/NotThisRole:
+        Role: NotThisRole
+        AccountName: Production
+        DontCare: WhoKnows

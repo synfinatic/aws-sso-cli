@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type TagsTestSuite struct {
+type RoleTagsTestSuite struct {
 	suite.Suite
 	File TestRoleFile
 }
@@ -20,6 +20,7 @@ type TestRoleFile struct {
 	UsefulTags             *map[string]TestEntry               `yaml:"UsefulTags"`
 	GetPossibleUniqueRoles *map[string]TestPossibleUniqueEntry `yaml:"GetPossibleUniqueRoles"`
 	GetMatchCount          *map[string]TestIntEntry            `yaml:"GetMatchCount"`
+	GetRoleTags            *map[string]TestRolesEntry          `yaml:"GetRoleTags"`
 }
 
 type TestEntry struct {
@@ -42,19 +43,25 @@ type TestIntEntry struct {
 	RoleTags *RoleTags          `yaml:"RoleTags"`
 }
 
+type TestRolesEntry struct {
+	Query    string             `yaml:"Query"`
+	Result   *map[string]string `yaml:"Result"`
+	RoleTags *RoleTags          `yaml:"RoleTags"`
+}
+
 const (
-	TEST_TAGS_FILE = "./testdata/tags.yaml"
+	TEST_ROLE_TAGS_FILE = "./testdata/role_tags.yaml"
 )
 
-func TestTagsTestSuite(t *testing.T) {
-	info, err := os.Stat(TEST_TAGS_FILE)
+func TestRoleTagsTestSuite(t *testing.T) {
+	info, err := os.Stat(TEST_ROLE_TAGS_FILE)
 	if err != nil {
-		log.WithError(err).Fatalf("os.Stat %s", TEST_TAGS_FILE)
+		log.WithError(err).Fatalf("os.Stat %s", TEST_ROLE_TAGS_FILE)
 	}
 
-	file, err := os.Open(TEST_TAGS_FILE)
+	file, err := os.Open(TEST_ROLE_TAGS_FILE)
 	if err != nil {
-		log.WithError(err).Fatalf("os.Open %s", TEST_TAGS_FILE)
+		log.WithError(err).Fatalf("os.Open %s", TEST_ROLE_TAGS_FILE)
 	}
 
 	defer file.Close()
@@ -62,19 +69,19 @@ func TestTagsTestSuite(t *testing.T) {
 	buf := make([]byte, info.Size())
 	_, err = file.Read(buf)
 	if err != nil {
-		log.WithError(err).Fatalf("Error reading %d bytes from %s", info.Size(), TEST_TAGS_FILE)
+		log.WithError(err).Fatalf("Error reading %d bytes from %s", info.Size(), TEST_ROLE_TAGS_FILE)
 	}
 
-	s := &TagsTestSuite{}
+	s := &RoleTagsTestSuite{}
 	err = yaml.Unmarshal(buf, &s.File)
 	if err != nil {
-		log.WithError(err).Fatalf("Failed parsing %s", TEST_TAGS_FILE)
+		log.WithError(err).Fatalf("Failed parsing %s", TEST_ROLE_TAGS_FILE)
 	}
 
 	suite.Run(t, s)
 }
 
-func (suite *TagsTestSuite) TestGetMatchingRoles() {
+func (suite *RoleTagsTestSuite) TestGetMatchingRoles() {
 	t := suite.T()
 
 	f := (*suite).File
@@ -84,7 +91,7 @@ func (suite *TagsTestSuite) TestGetMatchingRoles() {
 	}
 }
 
-func (suite *TagsTestSuite) TestUsefulTags() {
+func (suite *RoleTagsTestSuite) TestUsefulTags() {
 	t := suite.T()
 
 	f := (*suite).File
@@ -94,7 +101,7 @@ func (suite *TagsTestSuite) TestUsefulTags() {
 	}
 }
 
-func (suite *TagsTestSuite) TestGetPossibleUniqueRoles() {
+func (suite *RoleTagsTestSuite) TestGetPossibleUniqueRoles() {
 	t := suite.T()
 
 	f := (*suite).File
@@ -104,7 +111,7 @@ func (suite *TagsTestSuite) TestGetPossibleUniqueRoles() {
 	}
 }
 
-func (suite *TagsTestSuite) TestGetMatchCount() {
+func (suite *RoleTagsTestSuite) TestGetMatchCount() {
 	t := suite.T()
 
 	f := (*suite).File
@@ -113,4 +120,13 @@ func (suite *TagsTestSuite) TestGetMatchCount() {
 		assert.Equal(t, test.Result, ret, testName)
 	}
 
+}
+
+func (suite *RoleTagsTestSuite) TestGetRoleTags() {
+	t := suite.T()
+	f := (*suite).File
+	for testName, test := range *f.GetRoleTags {
+		ret := test.RoleTags.GetRoleTags(test.Query)
+		assert.Equal(t, *test.Result, ret, testName)
+	}
 }
