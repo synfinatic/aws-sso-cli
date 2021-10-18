@@ -1,0 +1,81 @@
+package sso
+
+/*
+ * AWS SSO CLI
+ * Copyright (c) 2021 Aaron Turner  <synfinatic at gmail dot com>
+ *
+ * This program is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or with the authors permission any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+)
+
+type UtilsTestSuite struct {
+	suite.Suite
+}
+
+func TestUtilsSuite(t *testing.T) {
+	s := &UtilsTestSuite{}
+	suite.Run(t, s)
+
+}
+
+func (suite *UtilsTestSuite) TestEnsureDirExists() {
+	t := suite.T()
+
+	assert.Nil(t, ensureDirExists("./testdata/role_tags.yaml"))
+	assert.NotNil(t, ensureDirExists("./does_not_exist_dir/foo.yaml"))
+}
+
+func (suite *UtilsTestSuite) TestMakeRoleARN() {
+	t := suite.T()
+
+	assert.Equal(t, "arn:aws:iam:11111:role/Foo", MakeRoleARN(11111, "Foo"))
+	assert.Equal(t, "arn:aws:iam:711111:role/Foo", MakeRoleARN(711111, "Foo"))
+	assert.Equal(t, "arn:aws:iam:0:role/", MakeRoleARN(0, ""))
+}
+
+func (suite *UtilsTestSuite) TestGetRoleParts() {
+	t := suite.T()
+
+	a, r, err := GetRoleParts("arn:aws:iam:11111:role/Foo")
+	assert.Equal(t, int64(11111), a)
+	assert.Equal(t, "Foo", r)
+	assert.Nil(t, err)
+
+	a, r, err = GetRoleParts("")
+	assert.NotNil(t, err)
+
+	a, r, err = GetRoleParts("arnFoo")
+	assert.NotNil(t, err)
+
+	a, r, err = GetRoleParts("arn:aws:iam:a:role/Foo")
+	assert.NotNil(t, err)
+
+	a, r, err = GetRoleParts("arn:aws:iam:11111:role")
+	assert.NotNil(t, err)
+
+	a, r, err = GetRoleParts("aws:iam:11111:role/Foo")
+	assert.NotNil(t, err)
+
+	a, r, err = GetRoleParts("invalid:arn:aws:iam:11111:role/Foo")
+	assert.NotNil(t, err)
+
+	a, r, err = GetRoleParts("arn:aws:iam:11111:role/Foo/Bar")
+	assert.NotNil(t, err)
+}
