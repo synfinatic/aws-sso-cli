@@ -30,6 +30,7 @@ import (
 // used by JsonStore and InsecureStore
 func ensureDirExists(filename string) error {
 	storeDir := path.Dir(filename)
+	fmt.Printf("storeDir: %s", storeDir)
 	f, err := os.Open(storeDir)
 	if err != nil {
 		err = os.MkdirAll(storeDir, 0700)
@@ -65,14 +66,19 @@ func GetRoleParts(arn string) (int64, string, error) {
 		}
 		accountId = id
 		role = s[1]
-	} else {
+	} else if len(s) == 5 {
 		id, err := strconv.ParseInt(s[3], 10, 64)
 		if err != nil {
 			return 0, "", err
 		}
 		accountId = id
 		s = strings.Split(s[4], "/")
+		if len(s) != 2 {
+			return 0, "", fmt.Errorf("Invalid ARN: %s", arn)
+		}
 		role = s[1]
+	} else {
+		return 0, "", fmt.Errorf("Invalid ARN: %s", arn)
 	}
 
 	return accountId, role, nil
