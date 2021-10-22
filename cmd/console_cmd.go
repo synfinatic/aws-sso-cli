@@ -84,8 +84,11 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 	fmt.Printf("Please use `exit` or `Ctrl-D` to quit.\n")
 
 	// use completer to figure out the role
-	sso := ctx.Config.SSO[ctx.Cli.SSO]
-	sso.Refresh(ctx.Cli.ConfigFile)
+	sso, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
+	if err != nil {
+		return err
+	}
+	sso.Refresh(ctx.Settings)
 	c := NewTagsCompleter(ctx, sso, openConsole)
 	p := prompt.New(
 		c.Executor,
@@ -132,13 +135,13 @@ func openConsoleAccessKey(ctx *RunContext, creds *sso.RoleCredentials, duration 
 	}
 
 	login := LoginUrlParams{
-		Issuer:      "https://proofpoint.com",
+		Issuer:      "https://github.com/synfinatic/aws-sso-cli", // FIXME
 		Destination: "https://console.aws.amazon.com",
 		SigninToken: loginResponse.SigninToken,
 	}
 	url := login.GetUrl()
 
-	browser := ctx.Config.Browser
+	browser := ctx.Settings.Browser
 	if ctx.Cli.Console.Clipboard {
 		err = clipboard.WriteAll(url)
 	} else if ctx.Cli.Console.Print {

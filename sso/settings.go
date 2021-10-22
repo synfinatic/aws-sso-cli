@@ -19,26 +19,32 @@ package sso
  */
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
 
+	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/file"
 	//	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 )
 
-type AWSProfile struct {
-	Alias     string `koanf:"Alias" yaml:"Alias,omitempty"`         // Friendly name
-	Role      string `koanf:"Role" yaml:"Role,omitempty"`           // AWS Role Name
-	Region    string `koanf:"Region" yaml:"Region,omitempty"`       // AWS Default Region
-	AccountId string `koanf:"AccountId" yaml:"AccountId,omitempty"` // AWS AccountId
-}
+const (
+	AWS_SESSION_EXPIRATION_FORMAT = "2006-01-02 15:04:05 -0700 MST"
+	CACHE_TTL                     = 60 * 60 * 24 // 1 day in seconds
+)
 
-type ConfigFile struct {
+type Settings struct {
+	configFile        string                // name of this file
+	cacheFile         string                // name of cache file; always passed in via CLI args
+	Cache             *Cache                // our cache data
 	SSO               map[string]*SSOConfig `koanf:"SSOConfig" yaml:"SSOConfig,omitempty"`
 	DefaultSSO        string                `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`   // specify default SSO by key
 	SecureStore       string                `koanf:"SecureStore" yaml:"SecureStore,omitempty"` // json or keyring
-	CacheStore        string                `koanf:"CacheStore" yaml:"CacheStore,omitempty"`   // insecure json cache
 	JsonStore         string                `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
 	PrintUrl          bool                  `koanf:"PrintUrl" yaml:"PrintUrl,omitempty"`
 	Browser           string                `koanf:"Browser" yaml:"Browser,omitempty"`
@@ -47,14 +53,15 @@ type ConfigFile struct {
 }
 
 type SSOConfig struct {
+	settings      *Settings             // pointer back up
 	SSORegion     string                `koanf:"SSORegion" yaml:"SSORegion"`
 	StartUrl      string                `koanf:"StartUrl" yaml:"StartUrl"`
 	Accounts      map[int64]*SSOAccount `koanf:"Accounts" yaml:"Accounts,omitempty"`
 	DefaultRegion string                `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
-	configFile    string                // populated by Refresh()
 }
 
 type SSOAccount struct {
+	config        *SSOConfig          // pointer back up
 	Name          string              `koanf:"Name" yaml:"Name,omitempty"` // Admin configured Account Name
 	Tags          map[string]string   `koanf:"Tags" yaml:"Tags,omitempty" `
 	Roles         map[string]*SSORole `koanf:"Roles" yaml:"Roles,omitempty"`
@@ -62,7 +69,7 @@ type SSOAccount struct {
 }
 
 type SSORole struct {
-	Account       *SSOAccount
+	account       *SSOAccount       // pointer back up
 	ARN           string            `koanf:"ARN" yaml:"ARN"`
 	Profile       string            `koanf:"Profile" yaml:"Profile,omitempty"`
 	Tags          map[string]string `koanf:"Tags" yaml:"Tags,omitempty"`
@@ -70,41 +77,86 @@ type SSORole struct {
 	Via           string            `koanf:"Via" yaml:"Via,omitempty"`
 }
 
-// DefaultSSO returns the Default SSO or failing that the first one it finds
-func (cf *ConfigFile) GetDefaultSSO() *SSOConfig {
-	if s, ok := cf.SSO[cf.DefaultSSO]; ok {
-		return s
-	}
-
-	if s, ok := cf.SSO["Default"]; ok {
-		return s
-	}
-	var s *SSOConfig
-	for _, v := range cf.SSO {
-		s = v
-	}
-	return s
+// Our Cachefile.  Sub-structs defined in sso/cache.go
+type Cache struct {
+	settings        *Settings // pointer back up
+	CreatedAt       int64     `json:"CreatedAt"`       // this cache.json
+	ConfigCreatedAt int64     `json:"ConfigCreatedAt"` // track config.yaml
+	History         []string  `json:"History,omitempty"`
+	Roles           *Roles    `json:"Roles,omitempty"`
 }
 
-// Refresh should be called any time you load the SSOConfig into memory or add a role
-// to update the Role -> Account references
-func (s *SSOConfig) Refresh(configFile string) {
-	for _, a := range s.Accounts {
-		for _, r := range a.Roles {
-			r.Account = a
+type SettingsDefaults struct {
+	PrintUrl bool
+	Browser  string
+	SSOName  string
+}
+
+var DEFAULT_ACCOUNT_PRIMARY_TAGS []string = []string{
+	"AccountName",
+	"AccountAlias",
+	"Email",
+}
+
+func LoadSettings(configFile, cacheFile string, defaults SettingsDefaults) (*Settings, error) {
+	konf := koanf.New(".")
+	s := &Settings{
+		configFile: configFile,
+		cacheFile:  cacheFile,
+	}
+	if err := konf.Load(file.Provider(configFile), yaml.Parser()); err != nil {
+		return s, fmt.Errorf("Unable to open config file %s: %s", configFile, err.Error())
+	}
+
+	if err := konf.Unmarshal("", s); err != nil {
+		return s, fmt.Errorf("Unable to process config file: %s", err.Error())
+	}
+
+	if defaults.PrintUrl {
+		s.PrintUrl = true
+	}
+	if defaults.Browser != "" {
+		s.Browser = defaults.Browser
+	}
+
+	if len(s.AccountPrimaryTag) == 0 {
+		s.AccountPrimaryTag = append(s.AccountPrimaryTag, DEFAULT_ACCOUNT_PRIMARY_TAGS...)
+	}
+
+	if defaults.SSOName != "" {
+		if _, ok := s.SSO[defaults.SSOName]; !ok {
+			names := []string{}
+			for sso, _ := range s.SSO {
+				names = append(names, sso)
+			}
+			return s, fmt.Errorf("Invalid SSO name '%s'. Valid options: %s", defaults.SSOName,
+				strings.Join(names, ", "))
 		}
+	} else if len(s.SSO) == 1 {
+		// get the first & only key
+		for name, _ := range s.SSO {
+			s.DefaultSSO = name
+		}
+	} else {
+		return s, fmt.Errorf("Please specify --soo, $AWS_SSO or set DefaultSSO in the config file")
 	}
-	// update our createdAt.  Sadly we need to put it here and not in ConfigFile
-	s.configFile = configFile
+
+	s.SSO[s.DefaultSSO].Refresh(s)
+
+	// load the cache
+	var err error
+	if s.Cache, err = s.OpenCache(); err != nil {
+		return s, err
+	}
+
+	return s, nil
 }
 
-// ConfigFile returns the path to the config file
-func (s *SSOConfig) ConfigFile() string {
+func (s *Settings) ConfigFile() string {
 	return s.configFile
 }
 
-// CreatedAt returns the Unix epoch seconds that this config file was created at
-func (s *SSOConfig) CreatedAt() int64 {
+func (s *Settings) CreatedAt() int64 {
 	f, err := os.Open(s.configFile)
 	if err != nil {
 		log.WithError(err).Fatalf("Unable to open %s", s.configFile)
@@ -116,6 +168,66 @@ func (s *SSOConfig) CreatedAt() int64 {
 		log.WithError(err).Fatalf("Unable to Stat() %s", s.configFile)
 	}
 	return info.ModTime().Unix()
+
+}
+
+func (s *Settings) OpenCache() (*Cache, error) {
+	cache := Cache{
+		settings:        s,
+		CreatedAt:       0,
+		ConfigCreatedAt: 0,
+		History:         []string{},
+		Roles: &Roles{
+			Accounts: map[int64]*AWSAccount{},
+		},
+	}
+	if s.cacheFile != "" {
+		cacheBytes, err := ioutil.ReadFile(s.cacheFile)
+		if err != nil {
+			log.WithError(err).Errorf("Unable to open CacheStore: %s", s.cacheFile)
+			return &cache, nil // return empty struct
+		}
+		json.Unmarshal(cacheBytes, &cache)
+	}
+	return &cache, nil
+}
+
+// GetSelectedSSO returns a valid SSOConfig based on user intput, configured
+// value or our hardcoded 'Default' if it exists.
+func (s *Settings) GetSelectedSSO(name string) (*SSOConfig, error) {
+	if c, ok := s.SSO[name]; ok {
+		return c, nil
+	}
+
+	if c, ok := s.SSO[s.DefaultSSO]; ok {
+		return c, nil
+	}
+
+	if c, ok := s.SSO["Default"]; ok {
+		return c, nil
+	}
+	return &SSOConfig{}, fmt.Errorf("No available SSOConfig Provider")
+}
+
+// Refresh should be called any time you load the SSOConfig into memory or add a role
+// to update the Role -> Account references
+func (c *SSOConfig) Refresh(s *Settings) {
+	for _, a := range c.Accounts {
+		for _, r := range a.Roles {
+			r.SetParentAccount(a)
+		}
+	}
+	c.settings = s
+}
+
+// ConfigFile returns the path to the config file
+func (c *SSOConfig) ConfigFile() string {
+	return c.settings.ConfigFile()
+}
+
+// CreatedAt returns the Unix epoch seconds that this config file was created at
+func (c *SSOConfig) CreatedAt() int64 {
+	return c.settings.CreatedAt()
 }
 
 // HasRole returns true/false if the given Account has the provided arn
@@ -139,6 +251,10 @@ func (s *SSOConfig) GetRoles() []*SSORole {
 		}
 	}
 	return roles
+}
+
+func (r *SSORole) SetParentAccount(a *SSOAccount) {
+	r.account = a
 }
 
 // GetAllTags returns all of the user defined tags and calculated tags for this account
@@ -168,7 +284,7 @@ func (a *SSOAccount) GetAllTags(id int64) map[string]string {
 func (r *SSORole) GetAllTags() map[string]string {
 	tags := map[string]string{}
 	// First pull in the account tags
-	for k, v := range r.Account.GetAllTags(r.GetAccountId64()) {
+	for k, v := range r.account.GetAllTags(r.GetAccountId64()) {
 		tags[k] = v
 	}
 

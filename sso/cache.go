@@ -32,38 +32,6 @@ import (
 	"github.com/synfinatic/gotable"
 )
 
-const (
-	AWS_SESSION_EXPIRATION_FORMAT = "2006-01-02 15:04:05 -0700 MST"
-	CACHE_TTL                     = 60 * 60 * 24 // 1 day in seconds
-)
-
-// Our Cachefile
-type Cache struct {
-	filename        string
-	CreatedAt       int64    `json:"CreatedAt"`       // this cache.json
-	ConfigCreatedAt int64    `json:"ConfigCreatedAt"` // track config.yaml
-	History         []string `json:"History,omitempty"`
-	Roles           *Roles   `json:"Roles,omitempty"`
-}
-
-func OpenCache(filename string) (*Cache, error) {
-	cache := Cache{
-		filename:        filename,
-		CreatedAt:       0,
-		ConfigCreatedAt: 0,
-		History:         []string{},
-		Roles: &Roles{
-			Accounts: map[int64]*AWSAccount{},
-		},
-	}
-	cacheBytes, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return &cache, nil // return empty struct
-	}
-	json.Unmarshal(cacheBytes, &cache)
-	return &cache, nil
-}
-
 // Expired returns if our Roles cache data is too old.
 // If configFile is a valid file, we check the lastModificationTime of that file
 // vs. the ConfigCreatedAt to determine if the cache needs to be updated
@@ -78,23 +46,21 @@ func (c *Cache) Expired(s *SSOConfig) error {
 	return nil
 }
 
+func (c *Cache) CacheFile() string {
+	return c.settings.cacheFile
+}
+
 // Save saves our cache to the current file
 func (c *Cache) Save() error {
 	jbytes, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
 		return err
 	}
-	err = ensureDirExists(c.filename)
+	err = ensureDirExists(c.CacheFile())
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(c.filename, jbytes, 0600)
-}
-
-// SaveToFile saves our cache to the specified file
-func (c *Cache) SaveToFile(filename string) error {
-	c.filename = filename
-	return c.Save()
+	return ioutil.WriteFile(c.CacheFile(), jbytes, 0600)
 }
 
 // adds a role to the History list up to the max number of entries
