@@ -66,7 +66,11 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 		return nil
 	}
 
-	if err = ctx.Cache.Expired(ctx.Config.GetDefaultSSO()); err != nil {
+	s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
+	if err != nil {
+		return err
+	}
+	if err = ctx.Settings.Cache.Expired(s); err != nil {
 		c := &CacheCmd{}
 		if err = c.Run(ctx); err != nil {
 			log.WithError(err).Errorf("Unable to refresh local cache")
@@ -78,7 +82,7 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 		fields = ctx.Cli.List.Fields
 	}
 
-	printRoles(ctx.Cache.Roles, fields)
+	printRoles(ctx.Settings.Cache.Roles, fields)
 
 	return nil
 }

@@ -1,4 +1,4 @@
-package main
+package utils
 
 /*
  * AWS SSO CLI
@@ -19,30 +19,10 @@ package main
  */
 
 import (
-	"fmt"
-
-	log "github.com/sirupsen/logrus"
+	"os"
+	"strings"
 )
 
-type CacheCmd struct{}
-
-func (cc *CacheCmd) Run(ctx *RunContext) error {
-	log.Info("Refreshing local cache...")
-
-	awssso := doAuth(ctx)
-	s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
-	if err != nil {
-		log.Fatalf("%s", err.Error())
-	}
-	err = ctx.Settings.Cache.Refresh(awssso, s)
-	if err != nil {
-		return fmt.Errorf("Unable to refresh role cache: %s", err.Error())
-	}
-	err = ctx.Settings.Cache.Save()
-	if err != nil {
-		return fmt.Errorf("Unable to save role cache: %s", err.Error())
-	}
-
-	log.Info("Cache has been refreshed.")
-	return nil
+func GetHomePath(path string) string {
+	return strings.Replace(path, "~", os.Getenv("HOME"), 1)
 }

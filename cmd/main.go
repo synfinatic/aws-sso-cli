@@ -20,16 +20,13 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
 	"github.com/alecthomas/kong"
-	"github.com/knadh/koanf"
-	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/file"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
+	"github.com/synfinatic/aws-sso-cli/utils"
 )
 
 // These variables are defined in the Makefile
@@ -40,12 +37,10 @@ var CommitID = "unknown"
 var Delta = ""
 
 type RunContext struct {
-	Kctx   *kong.Context
-	Cli    *CLI
-	Konf   *koanf.Koanf
-	Config *sso.ConfigFile // whole config file
-	Store  sso.SecureStorage
-	Cache  *sso.Cache
+	Kctx     *kong.Context
+	Cli      *CLI
+	Settings *sso.Settings // unified config & cache
+	Store    sso.SecureStorage
 }
 
 const (
@@ -62,6 +57,7 @@ type CLI struct {
 	LogLevel   string `kong:"optional,short='L',name='level',default='info',enum='error,warn,info,debug,trace',help='Logging level [error|warn|info|debug|trace]'"`
 	Lines      bool   `kong:"optional,help='Print line number in logs'"`
 	ConfigFile string `kong:"optional,name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
+	CacheFile  string `kong:"optional,name='cache',default='${INSECURE_CACHE_FILE}',help='Insecure cache file',env='AWS_SSO_CACHE'"`
 	Browser    string `kong:"optional,short='b',help='Path to browser to use',env='AWS_SSO_BROWSER'"`
 	PrintUrl   bool   `kong:"optional,name='url',short='u',help='Print URL insetad of open in browser'"`
 	SSO        string `kong:"optional,short='S',help='AWS SSO Instance',env='AWS_SSO'"`
@@ -82,73 +78,42 @@ type CLI struct {
 func main() {
 	cli := CLI{}
 	ctx := parse_args(&cli)
+	var err error
 
 	run_ctx := RunContext{
-		Kctx:   ctx,
-		Cli:    &cli,
-		Konf:   koanf.New("."),
-		Config: &sso.ConfigFile{},
+		Kctx: ctx,
+		Cli:  &cli,
 	}
 
 	// Load the config file
-	cli.ConfigFile = getHomePath(cli.ConfigFile)
-	if err := run_ctx.Konf.Load(file.Provider(cli.ConfigFile), yaml.Parser()); err != nil {
-		log.WithError(err).Fatalf("Unable to open config file: %s", cli.ConfigFile)
-	}
+	cli.ConfigFile = utils.GetHomePath(cli.ConfigFile)
+	cli.CacheFile = utils.GetHomePath(cli.CacheFile)
 
-	err := run_ctx.Konf.Unmarshal("", run_ctx.Config)
-	if err != nil {
-		log.WithError(err).Fatalf("Unable to process config file")
+	defaultSettings := sso.SettingsDefaults{
+		PrintUrl: cli.PrintUrl,
+		Browser:  cli.Browser,
+		SSOName:  cli.SSO,
 	}
-
-	// Update our structs
-	updateConfig(run_ctx.Config, cli)
-
-	// validate the SSO Provider
-	if run_ctx.Cli.SSO != "" {
-		var ok bool
-		_, ok = run_ctx.Config.SSO[run_ctx.Cli.SSO]
-		if !ok {
-			names := []string{}
-			for sso, _ := range run_ctx.Config.SSO {
-				names = append(names, sso)
-			}
-			log.Fatalf("Invalid SSO name: %s.  Valid options: %s", run_ctx.Cli.SSO, strings.Join(names, ", "))
-		}
-	} else if len(run_ctx.Config.SSO) == 1 {
-		for name, _ := range run_ctx.Config.SSO {
-			run_ctx.Cli.SSO = name
-		}
-	} else {
-		log.Fatalf("Please specify --sso, $AWS_SSO or set DefaultSSO in the config file")
-	}
-
-	// Load the insecure cache
-	cfile := getHomePath(INSECURE_CACHE_FILE)
-	if run_ctx.Config.CacheStore != "" {
-		cfile = getHomePath(run_ctx.Config.CacheStore)
-	}
-	run_ctx.Cache, err = sso.OpenCache(cfile)
-	if err != nil {
-		log.WithError(err).Fatalf("Unable to open cache %s", cfile)
+	if run_ctx.Settings, err = sso.LoadSettings(cli.ConfigFile, cli.CacheFile, defaultSettings); err != nil {
+		log.Fatalf("%s", err.Error())
 	}
 
 	// Load the secure store data
-	switch run_ctx.Config.SecureStore {
+	switch run_ctx.Settings.SecureStore {
 	case "json":
-		sfile := getHomePath(JSON_STORE_FILE)
-		if run_ctx.Config.JsonStore != "" {
-			sfile = getHomePath(run_ctx.Config.JsonStore)
+		sfile := utils.GetHomePath(JSON_STORE_FILE)
+		if run_ctx.Settings.JsonStore != "" {
+			sfile = utils.GetHomePath(run_ctx.Settings.JsonStore)
 		}
 		run_ctx.Store, err = sso.OpenJsonStore(sfile)
 		if err != nil {
 			log.WithError(err).Fatalf("Unable to open JsonStore %s", sfile)
 		}
 	default:
-		cfg := sso.NewKeyringConfig(run_ctx.Config.SecureStore, CONFIG_DIR)
+		cfg := sso.NewKeyringConfig(run_ctx.Settings.SecureStore, CONFIG_DIR)
 		run_ctx.Store, err = sso.OpenKeyring(cfg)
 		if err != nil {
-			log.WithError(err).Fatalf("Unable to open SecureStore %s", run_ctx.Config.SecureStore)
+			log.WithError(err).Fatalf("Unable to open SecureStore %s", run_ctx.Settings.SecureStore)
 		}
 	}
 
@@ -158,35 +123,15 @@ func main() {
 	}
 }
 
-var DefaultAccountPrimaryTags []string = []string{
-	"AccountName",
-	"AccountAlias",
-	"Email",
-}
-
-// Some CLI args are for overriding the config.  Do that here.
-func updateConfig(config *sso.ConfigFile, cli CLI) {
-	config.GetDefaultSSO().Refresh(getHomePath(cli.ConfigFile))
-	if cli.PrintUrl {
-		config.PrintUrl = true
-	}
-	if cli.Browser != "" {
-		config.Browser = cli.Browser
-	}
-
-	if len(config.AccountPrimaryTag) == 0 {
-		config.AccountPrimaryTag = append(config.AccountPrimaryTag, DefaultAccountPrimaryTags...)
-	}
-}
-
 func parse_args(cli *CLI) *kong.Context {
 	op := kong.Description("Securely manage temporary AWS API Credentials issued via AWS SSO")
 	// need to pass in the variables for defaults
 	vars := kong.Vars{
-		"CONFIG_DIR":      CONFIG_DIR,
-		"CONFIG_FILE":     CONFIG_FILE,
-		"DEFAULT_STORE":   DEFAULT_STORE,
-		"JSON_STORE_FILE": JSON_STORE_FILE,
+		"CONFIG_DIR":          CONFIG_DIR,
+		"CONFIG_FILE":         CONFIG_FILE,
+		"DEFAULT_STORE":       DEFAULT_STORE,
+		"INSECURE_CACHE_FILE": INSECURE_CACHE_FILE,
+		"JSON_STORE_FILE":     JSON_STORE_FILE,
 	}
 	ctx := kong.Parse(cli, op, vars)
 
@@ -228,15 +173,11 @@ func (cc *VersionCmd) Run(ctx *RunContext) error {
 	return nil
 }
 
-func getHomePath(path string) string {
-	return strings.Replace(path, "~", os.Getenv("HOME"), 1)
-}
-
 // Get our RoleCredentials
 func GetRoleCredentials(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) *sso.RoleCredentials {
 	creds := sso.RoleCredentials{}
 
-	rFlat, err := ctx.Cache.Roles.GetRole(accountid, role)
+	rFlat, err := ctx.Settings.Cache.Roles.GetRole(accountid, role)
 
 	// must be in cache, not expired and no force refresh
 	if err == nil && !ctx.Cli.STSRefresh && !rFlat.IsExpired() {
@@ -294,12 +235,15 @@ func doAuth(ctx *RunContext) *sso.AWSSSO {
 	if AwsSSO != nil {
 		return AwsSSO
 	}
-	s := ctx.Config.SSO[ctx.Cli.SSO]
+	s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
+	if err != nil {
+		log.Fatalf("%s", err.Error())
+	}
 	AwsSSO := sso.NewAWSSSO(s.SSORegion, s.StartUrl, &ctx.Store)
-	err := AwsSSO.Authenticate(ctx.Config.PrintUrl, ctx.Config.Browser)
+	err = AwsSSO.Authenticate(ctx.Settings.PrintUrl, ctx.Settings.Browser)
 	if err != nil {
 		log.WithError(err).Fatalf("Unable to authenticate")
 	}
-	ctx.Cache.Refresh(AwsSSO, ctx.Config.SSO[ctx.Cli.SSO])
+	ctx.Settings.Cache.Refresh(AwsSSO, s)
 	return AwsSSO
 }

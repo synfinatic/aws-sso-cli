@@ -32,30 +32,38 @@ type TagsCmd struct {
 }
 
 func (cc *TagsCmd) Run(ctx *RunContext) error {
+	set := ctx.Settings
 	if ctx.Cli.Tags.ForceUpdate {
-		s := ctx.Config.SSO[ctx.Cli.SSO]
+		s := set.SSO[ctx.Cli.SSO]
 		awssso := sso.NewAWSSSO(s.SSORegion, s.StartUrl, &ctx.Store)
-		err := awssso.Authenticate(ctx.Config.PrintUrl, ctx.Config.Browser)
+		err := awssso.Authenticate(ctx.Settings.PrintUrl, ctx.Settings.Browser)
 		if err != nil {
 			log.WithError(err).Fatalf("Unable to authenticate")
 		}
 
-		err = ctx.Cache.Refresh(awssso, s)
+		err = set.Cache.Refresh(awssso, s)
 		if err != nil {
 			log.WithError(err).Fatalf("Unable to refresh role cache")
 		}
-		err = ctx.Cache.Save()
+		err = set.Cache.Save()
 		if err != nil {
 			log.WithError(err).Warnf("Unable to save cache")
 		}
-	} else if err := ctx.Cache.Expired(ctx.Config.GetDefaultSSO()); err != nil {
-		log.Warn(err.Error())
+	} else {
+		s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
+		if err != nil {
+			return err
+		}
+
+		if err := set.Cache.Expired(s); err != nil {
+			log.Warn(err.Error())
+		}
 	}
 	roles := []*sso.AWSRoleFlat{}
 
 	// If user has specified an account (or account + role) then limit
 	if ctx.Cli.Tags.AccountId != -1 {
-		for _, fRole := range ctx.Cache.Roles.GetAccountRoles(ctx.Cli.Tags.AccountId) {
+		for _, fRole := range set.Cache.Roles.GetAccountRoles(ctx.Cli.Tags.AccountId) {
 			if ctx.Cli.Tags.Role != "" {
 				roles = append(roles, fRole)
 			} else {
@@ -65,7 +73,7 @@ func (cc *TagsCmd) Run(ctx *RunContext) error {
 			}
 		}
 	} else {
-		roles = ctx.Cache.Roles.GetAllRoles()
+		roles = set.Cache.Roles.GetAllRoles()
 	}
 
 	for _, fRole := range roles {

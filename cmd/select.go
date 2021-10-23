@@ -42,15 +42,16 @@ type TagsCompleter struct {
 }
 
 func NewTagsCompleter(ctx *RunContext, s *sso.SSOConfig, exec CompleterExec) *TagsCompleter {
-	roleTags := ctx.Cache.Roles.GetRoleTagsSelect()
-	allTags := ctx.Cache.Roles.GetAllTagsSelect()
+	set := ctx.Settings
+	roleTags := set.Cache.Roles.GetRoleTagsSelect()
+	allTags := set.Cache.Roles.GetAllTagsSelect()
 
 	return &TagsCompleter{
 		ctx:      ctx,
 		sso:      s,
 		roleTags: roleTags,
 		allTags:  allTags,
-		suggest:  completeTags(roleTags, allTags, ctx.Config.AccountPrimaryTag, []string{}),
+		suggest:  completeTags(roleTags, allTags, set.AccountPrimaryTag, []string{}),
 		exec:     exec,
 	}
 }
@@ -68,9 +69,8 @@ func (tc *TagsCompleter) Complete(d prompt.Document) []prompt.Suggest {
 	// remove any extra spaces
 	cleanArgs := CompleteSpaceReplace.ReplaceAllString(args, " ")
 	argsList := strings.Split(cleanArgs, " ")
-	suggest := completeTags(tc.roleTags, tc.allTags, tc.ctx.Config.AccountPrimaryTag, argsList)
+	suggest := completeTags(tc.roleTags, tc.allTags, tc.ctx.Settings.AccountPrimaryTag, argsList)
 	return prompt.FilterHasPrefix(suggest, w, true)
-	// return prompt.FilterFuzzy(suggest, w, true)
 }
 
 // https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_iam-quotas.html

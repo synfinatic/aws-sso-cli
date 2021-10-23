@@ -30,7 +30,6 @@ import (
 // used by JsonStore and InsecureStore
 func ensureDirExists(filename string) error {
 	storeDir := path.Dir(filename)
-	fmt.Printf("storeDir: %s", storeDir)
 	f, err := os.Open(storeDir)
 	if err != nil {
 		err = os.MkdirAll(storeDir, 0700)

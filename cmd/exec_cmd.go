@@ -70,17 +70,21 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 	}
 
 	// Nope, auto-complete mode...
-	fmt.Printf("Please use `exit` or `Ctrl-D` to quit.\n")
-
-	sso := ctx.Config.SSO[ctx.Cli.SSO]
-	if err = ctx.Cache.Expired(sso); err != nil {
+	sso, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
+	if err != nil {
+		return err
+	}
+	if err = ctx.Settings.Cache.Expired(sso); err != nil {
 		log.Warnf(err.Error())
 		c := &CacheCmd{}
 		if err = c.Run(ctx); err != nil {
 			return err
 		}
 	}
-	sso.Refresh(ctx.Cli.ConfigFile)
+
+	sso.Refresh(ctx.Settings)
+	fmt.Printf("Please use `exit` or `Ctrl-D` to quit.\n")
+
 	c := NewTagsCompleter(ctx, sso, execCmd)
 	p := prompt.New(
 		c.Executor,
@@ -158,19 +162,19 @@ func execShellEnvs(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role st
 		"StringsJoin":  strings.Join,
 	}
 
-	if ctx.Config.ProfileFormat != "" {
-		profileFormat = ctx.Config.ProfileFormat
+	if ctx.Settings.ProfileFormat != "" {
+		profileFormat = ctx.Settings.ProfileFormat
 	}
 
 	// Set the AWS_SSO_PROFILE env var using our template
 	var templ *template.Template
-	if roleInfo, err := ctx.Cache.Roles.GetRole(accountid, role); err != nil {
+	if roleInfo, err := ctx.Settings.Cache.Roles.GetRole(accountid, role); err != nil {
 		// this error should never happen
 		log.Errorf("Unable to find role in cache.  Unable to set AWS_SSO_PROFILE")
 	} else {
 		templ, err = template.New("main").Funcs(funcMap).Parse(profileFormat)
 		if err != nil {
-			log.Errorf("Invalid ProfileFormat '%s': %s -- using default", ctx.Config.ProfileFormat, err)
+			log.Errorf("Invalid ProfileFormat '%s': %s -- using default", ctx.Settings.ProfileFormat, err)
 			templ, _ = template.New("main").Funcs(funcMap).Parse(AwsSsoProfileTemplate)
 		}
 
