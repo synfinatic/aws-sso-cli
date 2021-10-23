@@ -19,6 +19,7 @@ package sso
  */
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,7 +33,6 @@ type UtilsTestSuite struct {
 func TestUtilsSuite(t *testing.T) {
 	s := &UtilsTestSuite{}
 	suite.Run(t, s)
-
 }
 
 func (suite *UtilsTestSuite) TestEnsureDirExists() {
@@ -40,6 +40,7 @@ func (suite *UtilsTestSuite) TestEnsureDirExists() {
 
 	assert.Nil(t, ensureDirExists("./testdata/role_tags.yaml"))
 	assert.NotNil(t, ensureDirExists("./does_not_exist_dir/foo.yaml"))
+	defer os.Remove("./does_not_exist_dir")
 }
 
 func (suite *UtilsTestSuite) TestMakeRoleARN() {
