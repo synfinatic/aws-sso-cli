@@ -20,6 +20,7 @@ package sso
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -81,6 +82,9 @@ func (r *RoleTags) GetPossibleUniqueRoles(tags map[string]string, key string, va
 			dedup[role] = true
 		}
 	}
+
+	sort.Strings(roles)
+
 	return roles
 }
 
