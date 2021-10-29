@@ -109,6 +109,7 @@ func main() {
 		if err != nil {
 			log.WithError(err).Fatalf("Unable to open JsonStore %s", sfile)
 		}
+		log.Warnf("Using insecure json file for SecureStore: %s", sfile)
 	default:
 		cfg := sso.NewKeyringConfig(run_ctx.Settings.SecureStore, CONFIG_DIR)
 		run_ctx.Store, err = sso.OpenKeyring(cfg)
