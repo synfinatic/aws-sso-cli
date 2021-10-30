@@ -26,7 +26,13 @@ metadata (tags) and exports the necessary [AWS STS Token credentials](
 https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_use-resources.html#using-temp-creds-sdk-cli)
 to your shell environment.
 
-[![asciicast](https://asciinema.org/a/UOZHKrsUSBXDeP5BS361UcmDU.svg)](https://asciinema.org/a/UOZHKrsUSBXDeP5BS361UcmDU)
+## Demo
+
+Here's a quick demo showing how to select a role to assume in interactive mode.
+Of course, you can specify the role on the command line and the `exec` command
+can run arbitrary commands with the selected role, not just start a new shell.
+
+[![asciicast](https://asciinema.org/a/445604.svg)](https://asciinema.org/a/445604)
 
 ## Security
 
@@ -70,10 +76,11 @@ ensure that it is executable (`chmod 755 <path>`) and owned by root (`chown root
  * `cache` -- Force refresh of AWS SSO role information
  * `console` -- Open AWS Console in a browser with the selected role
  * `exec` -- Exec a command with the selected role
+ * `flush` -- Force delete of cached AWS SSO credentials
  * `list` -- List all accounts & roles
- * `expire` -- Force expire of AWS SSO credentials
  * `renew` -- Renew current AWS SSO credentials
  * `tags` -- List manually created tags for each role
+ * `time` -- Print how much time remains for currently selected role
  * `version` -- Print the version of aws-sso
 
 ### Common Flags

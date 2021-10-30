@@ -1,6 +1,6 @@
 # AWS SSO CLI Changelog
 
-## [Unreleased]
+## [v1.2.0] - 2021-10-29
 
  * `console` command now can use ENV vars via --use-env #41
  * Fix bugs in `console` with invalid CLI parsing
