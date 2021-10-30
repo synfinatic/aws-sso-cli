@@ -17,8 +17,8 @@ then this won't work for you.
 AWS SSO CLI makes it easy to manage your shell environment variables allowing
 you to access the AWS API using CLI tools.  Unlike the official AWS tooling,
 the `aws-sso` command does not require defining named profiles in your
-`~/.aws/config` for each and every role you wish to assume which can be
-difficult to manage and use.
+`~/.aws/config` (or anywhere else for that matter) for each and every role you 
+wish to assume and use.
 
 Instead, it focuses on making it easy to select a role via CLI arguments or
 via an interactive auto-complete experience with automatic and user-defined
@@ -28,9 +28,8 @@ to your shell environment.
 
 ## Demo
 
-Here's a quick demo showing how to select a role to assume in interactive mode.
-Of course, you can specify the role on the command line and the `exec` command
-can run arbitrary commands with the selected role, not just start a new shell.
+Here's a quick demo showing how to select a role to assume in interactive mode
+and then run commands in that context (by default it starts a new shell).
 
 [![asciicast](https://asciinema.org/a/445604.svg)](https://asciinema.org/a/445604)
 
@@ -39,6 +38,8 @@ can run arbitrary commands with the selected role, not just start a new shell.
 Unlike the official [AWS cli tooling](https://aws.amazon.com/cli/), _all_
 authentication tokens and credentials used for accessing AWS and your SSO
 provider are encrypted on disk using your choice of secure storage solution.
+All encryption is handled by the [99designs/keyring](https://github.com/99designs/keyring)
+library.
 
 Credentials encrypted by `aws-sso` and not via the standard AWS CLI tool:
 
@@ -70,6 +71,9 @@ been granted access!
 
 In both cases, copy the binary to a reasonable location (such as `/usr/local/bin`) and
 ensure that it is executable (`chmod 755 <path>`) and owned by root (`chown root <path>`).
+
+Note that the release binaries are not signed at this time so MacOS and Windows systems
+may generate warnings.
 
 ## Commands
 
@@ -200,56 +204,66 @@ By default, `aws-sso` stores it's configuration file in `~/.aws-sso/config.yaml`
 but this can be overridden by setting `$AWS_SSO_CONFIG` in your shell or via the
 `--config` flag.
 
-```
+```yaml
 SSOConfig:
-    <Name of AWS SSO>:  # `Default` defines the automatically selected AWS SSO instance
+    <Name of AWS SSO>:  # `Default` is the AWS SSO instance with highest priority
         SSORegion: <AWS Region>
         StartUrl: <URL for AWS SSO Portal>
         Duration: <minutes>  # Set default duration time of AWS credentials
-        Accounts:  # optional block
-            <AccountId>:  # account config is optional
+        Accounts:  # optional block for specifying tags & overrides
+            <AccountId>:
                 Name: <Friendly Name of Account>
-                Tags:  # tags for the account
+                Tags:  # tags for all roles in the account
                     <Key1>: <Value1>
                     <Key2>: <Value2>
                 Roles:
-                    - ARN: <ARN of Role>
-                      Tags:  # tags specific for this role
+                    <Role Name>:
+                       Tags:  # tags specific for this role (will override account level tags)
                           <Key1>: <Value1>
                           <Key2>: <Value2>
-                      Duration: 120  # override default duration time in minutes
+                       Duration: 120  # override default duration time in minutes
 
 Browser: <override path to browser>
 PrintUrl: [false|true]  # print URL instead of opening it in the browser
 SecureStore: [json|file|keychain|kwallet|pass|secret-service|wincred]
-JsonStore: <path to json file>
+JsonStore: <optional path to json file>
 ProfileFormat: <template>
 AccountPrimaryTag: <list of role tags>
 ```
 
+If you only have a single AWS SSO instance, then it doesn't really matter what you call it,
+but if you have two or more, than `Default` is automatically selected unless you manually
+specify it on the CLI (`--sso`) or via the `AWS_SSO` environment variable.
+
+### Accounts
+
+The `Accounts` block is completely optional!  The only purpose of this block
+is to allow you to add additional tags (key/value pairs) to your accounts/roles
+to make them easier to select.
+
+By default the following key/values are available as tags to your roles:
+
+ * AccountId
+ * AccountName
+ * EmailAddress (root account email)
+ * RoleName
+
+### Browser 
+
 If `Browser` is not set, then your default browser will be used.  Note that
 your browser needs to support Javascript for the AWS SSO user interface.
 
+### SecureStore / JsonStore
+
 `SecureStore` supports the following backends:
 
- * `json` - Cleartext JSON file (insecure and not recommended)
+ * `json` - Cleartext JSON file (insecure and not recommended)  Location can be overridden with `JsonStore`
  * `file` - Encrypted local files (OS agnostic and default)
  * `keychain` - macOS/OSX [Keychain](https://support.apple.com/guide/mac-help/use-keychains-to-store-passwords-mchlf375f392/mac)
  * `kwallet` - [KDE Wallet](https://utils.kde.org/projects/kwalletmanager/)
  * `pass` - [pass](https://www.passwordstore.org)
  * `secret-service` - Freedesktop.org [Secret Service](https://specifications.freedesktop.org/secret-service/latest/re01.html)
  * `wincred` - Windows [Credential Manager](https://support.microsoft.com/en-us/windows/accessing-credential-manager-1b5c916a-6a16-889f-8581-fc16e8165ac0)
-
-The `Accounts` block is completely optional!  The only purpose of this block
-is to allow you to add additional tags (key/value pairs) to your accounts/roles
-to make them easier to select.
-
-By default the following key/values are available as tags:
-
- * AccountId
- * AccountName
- * EmailAddress (root account email)
- * RoleName
 
 ### ProfileFormat
 
