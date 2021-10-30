@@ -29,7 +29,10 @@ type FlushCmd struct {
 func (cc *FlushCmd) Run(ctx *RunContext) error {
 	var err error
 
-	s := ctx.Settings.SSO[ctx.Cli.SSO]
+	s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
+	if err != nil {
+		return err
+	}
 	awssso := sso.NewAWSSSO(s.SSORegion, s.StartUrl, &ctx.Store)
 
 	err = ctx.Store.DeleteCreateTokenResponse(awssso.StoreKey())
