@@ -9,7 +9,7 @@ endif
 BUILDINFOSDET ?=
 PROGRAM_ARGS ?=
 
-PROJECT_VERSION           := 1.2.0
+PROJECT_VERSION           := 1.2.1
 DOCKER_REPO               := synfinatic
 PROJECT_NAME              := aws-sso
 PROJECT_TAG               := $(shell git describe --tags 2>/dev/null $(git rev-list --tags --max-count=1))
@@ -29,6 +29,7 @@ BUILDINFOS                := $(shell date +%FT%T%z)$(BUILDINFOSDET)
 HOSTNAME                  := $(shell hostname)
 LDFLAGS                   := -X "main.Version=$(PROJECT_VERSION)" -X "main.Delta=$(PROJECT_DELTA)" -X "main.Buildinfos=$(BUILDINFOS)" -X "main.Tag=$(PROJECT_TAG)" -X "main.CommitID=$(PROJECT_COMMIT)"
 OUTPUT_NAME               := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)  # default for current platform
+
 # supported platforms for `make release`
 WINDOWS_BIN               := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)-windows-amd64.exe
 WINDOWS32_BIN             := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)-windows-386.exe
@@ -37,11 +38,11 @@ LINUXARM64_BIN            := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)-linux
 DARWIN_BIN                := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)-darwin-amd64
 DARWINARM64_BIN           := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)-darwin-arm64
 
+ALL: $(wildcard */*.go) .prepare ## Build binary for this platform
+	go build -ldflags='$(LDFLAGS)' -o $(DIST_DIR)$(PROJECT_NAME) cmd/*.go
+	@echo "Created: $(DIST_DIR)$(PROJECT_NAME)"
 
-
-ALL: $(OUTPUT_NAME) ## Build binary.  Needs to be a supported plaform as defined above
-
-tags: cmd/*.go sso/*.go
+tags: cmd/*.go sso/*.go  ## Create tags file for vim, etc
 	@echo Make sure you have Universal Ctags installed: https://github.com/universal-ctags/ctags
 	ctags -R
 
@@ -53,7 +54,7 @@ release: clean .build-release ## Build all our release binaries
 	cd dist && shasum -a 256 * | gpg --clear-sign >release.sig
 
 .PHONY: run
-run: cmd/*.go  sso/*.go ## build and run cria using $PROGRAM_ARGS
+run: cmd/*.go  sso/*.go ## build and run using $PROGRAM_ARGS
 	go run cmd/*.go $(PROGRAM_ARGS)
 
 .PHONY: delve

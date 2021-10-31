@@ -47,11 +47,14 @@ type Settings struct {
 	DefaultSSO        string                `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`   // specify default SSO by key
 	SecureStore       string                `koanf:"SecureStore" yaml:"SecureStore,omitempty"` // json or keyring
 	JsonStore         string                `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
-	PrintUrl          bool                  `koanf:"PrintUrl" yaml:"PrintUrl,omitempty"`
+	UrlAction         string                `koanf:"UrlAction" yaml:"UrlAction,omitempty"`
 	Browser           string                `koanf:"Browser" yaml:"Browser,omitempty"`
 	ProfileFormat     string                `koanf:"ProfileFormat" yaml:"ProfileFormat,omitempty"`
 	AccountPrimaryTag []string              `koanf:"AccountPrimaryTag" yaml:"AccountPrimaryTag"`
-	PromptColors      PromptColors          `koanf:"PromptColors" yaml:"PromptColors"` // go-prompt colors
+	PromptColors      PromptColors          `koanf:"PromptColors" yaml:"PromptColors,omitempty"` // go-prompt colors
+	LogLevel          string                `koanf:"LogLevel" yaml:"LogLevel,omitempty"`
+	LogLines          bool                  `koanf:"LogLines" yaml:"LogLines,omitempty"`
+	ssoName           string                // SSO name passed in via CLI
 }
 
 type SSOConfig struct {
@@ -88,19 +91,22 @@ type Cache struct {
 	Roles           *Roles    `json:"Roles,omitempty"`
 }
 
-type SettingsDefaults struct {
-	PrintUrl bool
-	Browser  string
-	SSOName  string
-}
-
 var DEFAULT_ACCOUNT_PRIMARY_TAGS []string = []string{
 	"AccountName",
 	"AccountAlias",
 	"Email",
 }
 
-func LoadSettings(configFile, cacheFile string, defaults SettingsDefaults) (*Settings, error) {
+type OverrideSettings struct {
+	Browser    string
+	DefaultSSO string
+	LogLevel   string
+	LogLines   bool
+	UrlAction  string
+}
+
+// Loads our settings from config, cache and CLI args
+func LoadSettings(configFile, cacheFile string, defaults map[string]interface{}, override OverrideSettings) (*Settings, error) {
 	konf := koanf.New(".")
 	s := &Settings{
 		configFile: configFile,
@@ -109,7 +115,7 @@ func LoadSettings(configFile, cacheFile string, defaults SettingsDefaults) (*Set
 
 	// default values.  Can be overridden using:
 	// https://pkg.go.dev/github.com/c-bata/go-prompt?utm_source=godoc#Color
-	konf.Load(confmap.Provider(DEFAULT_COLOR_CONFIG, "."), nil)
+	konf.Load(confmap.Provider(defaults, "."), nil)
 
 	if err := konf.Load(file.Provider(configFile), yaml.Parser()); err != nil {
 		return s, fmt.Errorf("Unable to open config file %s: %s", configFile, err.Error())
@@ -119,33 +125,63 @@ func LoadSettings(configFile, cacheFile string, defaults SettingsDefaults) (*Set
 		return s, fmt.Errorf("Unable to process config file: %s", err.Error())
 	}
 
-	if defaults.PrintUrl {
-		s.PrintUrl = true
-	}
-	if defaults.Browser != "" {
-		s.Browser = defaults.Browser
-	}
-
 	if len(s.AccountPrimaryTag) == 0 {
 		s.AccountPrimaryTag = append(s.AccountPrimaryTag, DEFAULT_ACCOUNT_PRIMARY_TAGS...)
 	}
 
-	if defaults.SSOName != "" {
-		if _, ok := s.SSO[defaults.SSOName]; !ok {
-			names := []string{}
-			for sso, _ := range s.SSO {
-				names = append(names, sso)
-			}
-			return s, fmt.Errorf("Invalid SSO name '%s'. Valid options: %s", defaults.SSOName,
-				strings.Join(names, ", "))
-		}
+	// Setup Logging
+	if override.LogLevel != "" {
+		s.LogLevel = override.LogLevel
+	}
+	switch s.LogLevel {
+	case "trace":
+		log.SetLevel(log.TraceLevel)
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+	case "info":
+		log.SetLevel(log.InfoLevel)
+	case "warn":
+		log.SetLevel(log.WarnLevel)
+	case "error":
+		log.SetLevel(log.ErrorLevel)
+	}
+	if override.LogLines {
+		s.LogLines = true
+	}
+	if s.LogLines {
+		log.SetReportCaller(true)
+	}
+
+	// Other overrides from CLI
+	if override.Browser != "" {
+		s.Browser = override.Browser
+	}
+	if override.DefaultSSO != "" {
+		s.DefaultSSO = override.DefaultSSO
+	}
+	if override.UrlAction != "" {
+		s.UrlAction = override.UrlAction
+	}
+
+	// Select our SSO Provider
+	if len(s.SSO) == 0 {
+		return s, fmt.Errorf("No AWS SSO providers have been configured.")
 	} else if len(s.SSO) == 1 {
-		// get the first & only key
+		// If we have only one SSO configured, always use that
 		for name, _ := range s.SSO {
 			s.DefaultSSO = name
 		}
+	} else if _, ok := s.SSO[s.DefaultSSO]; !ok {
+		// more than one provider? use that
+		names := []string{}
+		for sso, _ := range s.SSO {
+			names = append(names, sso)
+		}
+		return s, fmt.Errorf("Invalid SSO name '%s'. Valid options: %s", s.DefaultSSO,
+			strings.Join(names, ", "))
 	} else {
-		return s, fmt.Errorf("Please specify --soo, $AWS_SSO or set DefaultSSO in the config file")
+		// couldn't find a valid provider
+		return s, fmt.Errorf("Please specify --sso, $AWS_SSO or set DefaultSSO in the config file")
 	}
 
 	s.SSO[s.DefaultSSO].Refresh(s)

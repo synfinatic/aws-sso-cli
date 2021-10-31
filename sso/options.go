@@ -45,25 +45,6 @@ type PromptColors struct {
 	SuggestionTextColor          string
 }
 
-var DEFAULT_COLOR_CONFIG map[string]interface{} = map[string]interface{}{
-	"PromptColors.DescriptionBGColor":           "Turquoise",
-	"PromptColors.DescriptionTextColor":         "Black",
-	"PromptColors.InputBGColor":                 "DefaultColor",
-	"PromptColors.InputTextColor":               "DefaultColor",
-	"PromptColors.PrefixBackgroundColor":        "DefaultColor",
-	"PromptColors.PrefixTextColor":              "Blue",
-	"PromptColors.PreviewSuggestionBGColor":     "DefaultColor",
-	"PromptColors.PreviewSuggestionTextColor":   "Green",
-	"PromptColors.ScrollbarBGColor":             "Cyan",
-	"PromptColors.ScrollbarThumbColor":          "DarkGray",
-	"PromptColors.SelectedDescriptionBGColor":   "Cyan",
-	"PromptColors.SelectedDescriptionTextColor": "White",
-	"PromptColors.SelectedSuggestionBGColor":    "Turquoise",
-	"PromptColors.SelectedSuggestionTextColor":  "Black",
-	"PromptColors.SuggestionBGColor":            "Cyan",
-	"PromptColors.SuggestionTextColor":          "White",
-}
-
 type ColorOptionFunction func(prompt.Color) prompt.Option
 
 var PROMPT_COLOR_FUNCS map[string]ColorOptionFunction = map[string]ColorOptionFunction{

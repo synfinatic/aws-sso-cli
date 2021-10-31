@@ -36,7 +36,7 @@ func (cc *TagsCmd) Run(ctx *RunContext) error {
 	if ctx.Cli.Tags.ForceUpdate {
 		s := set.SSO[ctx.Cli.SSO]
 		awssso := sso.NewAWSSSO(s.SSORegion, s.StartUrl, &ctx.Store)
-		err := awssso.Authenticate(ctx.Settings.PrintUrl, ctx.Settings.Browser)
+		err := awssso.Authenticate(ctx.Settings.UrlAction, ctx.Settings.Browser)
 		if err != nil {
 			log.WithError(err).Fatalf("Unable to authenticate")
 		}
