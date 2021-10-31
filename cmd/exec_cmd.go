@@ -30,6 +30,7 @@ import (
 	"github.com/c-bata/go-prompt"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
+	"github.com/synfinatic/aws-sso-cli/utils"
 )
 
 type ExecCmd struct {
@@ -55,7 +56,7 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 	if ctx.Cli.Exec.Arn != "" {
 		awssso := doAuth(ctx)
 
-		accountid, role, err := ParseRoleARN(ctx.Cli.Exec.Arn)
+		accountid, role, err := utils.ParseRoleARN(ctx.Cli.Exec.Arn)
 		if err != nil {
 			return err
 		}

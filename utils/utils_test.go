@@ -19,6 +19,7 @@ package utils
  */
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -70,4 +71,12 @@ func (suite *UtilsTestSuite) TestMakeRoleARN() {
 	assert.Equal(t, "arn:aws:iam:11111:role/Foo", MakeRoleARN(11111, "Foo"))
 	assert.Equal(t, "arn:aws:iam:711111:role/Foo", MakeRoleARN(711111, "Foo"))
 	assert.Equal(t, "arn:aws:iam:0:role/", MakeRoleARN(0, ""))
+}
+
+func (suite *UtilsTestSuite) TestEnsureDirExists() {
+	t := suite.T()
+
+	assert.Nil(t, EnsureDirExists("./testdata/role_tags.yaml"))
+	assert.NotNil(t, EnsureDirExists("./does_not_exist_dir/foo.yaml"))
+	defer os.Remove("./does_not_exist_dir")
 }

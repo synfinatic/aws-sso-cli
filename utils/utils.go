@@ -21,6 +21,7 @@ package utils
 import (
 	"fmt"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 
@@ -92,4 +93,25 @@ func ParseRoleARN(arn string) (int64, string, error) {
 // Creates an AWS ARN for a role
 func MakeRoleARN(account int64, name string) string {
 	return fmt.Sprintf("arn:aws:iam:%d:role/%s", account, name)
+}
+
+// ensures the given directory exists for the filename
+// used by JsonStore and InsecureStore
+func EnsureDirExists(filename string) error {
+	storeDir := path.Dir(filename)
+	f, err := os.Open(storeDir)
+	if err != nil {
+		err = os.MkdirAll(storeDir, 0700)
+		if err != nil {
+			return fmt.Errorf("Unable to create %s: %s", storeDir, err.Error())
+		}
+	}
+	info, err := f.Stat()
+	if err != nil {
+		return fmt.Errorf("Unable to stat %s: %s", storeDir, err.Error())
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("%s exists and is not a directory!", storeDir)
+	}
+	return nil
 }
