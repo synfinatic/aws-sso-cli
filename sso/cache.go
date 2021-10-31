@@ -29,6 +29,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
+	"github.com/synfinatic/aws-sso-cli/utils"
 	"github.com/synfinatic/gotable"
 )
 
@@ -179,7 +180,7 @@ func NewRoles(as *AWSSSO, ssoName string, config *SSOConfig) (*Roles, error) {
 		}
 		for _, role := range roles {
 			r.Accounts[accountId].Roles[role.RoleName] = &AWSRole{
-				Arn:  MakeRoleARN(accountId, role.RoleName),
+				Arn:  utils.MakeRoleARN(accountId, role.RoleName),
 				Tags: map[string]string{},
 			}
 		}
@@ -221,7 +222,7 @@ func NewRoles(as *AWSSSO, ssoName string, config *SSOConfig) (*Roles, error) {
 					Tags: map[string]string{},
 				}
 			}
-			r.Accounts[accountId].Roles[roleName].Arn = MakeRoleARN(accountId, roleName)
+			r.Accounts[accountId].Roles[roleName].Arn = utils.MakeRoleARN(accountId, roleName)
 			r.Accounts[accountId].Roles[roleName].Profile = role.Profile
 			r.Accounts[accountId].Roles[roleName].Via = role.Via
 			r.Accounts[accountId].Roles[roleName].DefaultRegion = r.Accounts[accountId].DefaultRegion
@@ -390,17 +391,17 @@ func (r *Roles) GetRoleChain(accountId int64, roleName string) []*AWSRoleFlat {
 
 	f, err := r.GetRole(accountId, roleName)
 	if err != nil {
-		log.WithError(err).Fatalf("Unable to get role: %s", MakeRoleARN(accountId, roleName))
+		log.WithError(err).Fatalf("Unable to get role: %s", utils.MakeRoleARN(accountId, roleName))
 	}
 	ret = append(ret, f)
 	for f.Via != "" {
-		aId, rName, err := GetRoleParts(f.Via)
+		aId, rName, err := utils.ParseRoleARN(f.Via)
 		if err != nil {
 			log.WithError(err).Fatalf("Unable to parse '%s'", f.Via)
 		}
 		f, err = r.GetRole(aId, rName)
 		if err != nil {
-			log.WithError(err).Fatalf("Unable to get role: %s", MakeRoleARN(aId, rName))
+			log.WithError(err).Fatalf("Unable to get role: %s", utils.MakeRoleARN(aId, rName))
 		}
 		ret = append([]*AWSRoleFlat{f}, ret...) // prepend
 	}

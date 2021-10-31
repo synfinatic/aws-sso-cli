@@ -21,6 +21,7 @@ package utils
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/atotto/clipboard"
@@ -59,4 +60,36 @@ func HandleUrl(action, browser, url, pre, post string) error {
 	}
 
 	return err
+}
+
+// ParseRoleARN parses an ARN representing a role in long or short format
+func ParseRoleARN(arn string) (int64, string, error) {
+	s := strings.Split(arn, ":")
+	var accountid, role string
+	if len(s) == 2 {
+		// short account:Role format
+		accountid = s[0]
+		role = s[1]
+	} else if len(s) == 5 {
+		// long format for arn:aws:iam:XXXXXXXXXX:role/YYYYYYYY
+		accountid = s[3]
+		s = strings.Split(s[4], "/")
+		if len(s) != 2 {
+			return 0, "", fmt.Errorf("Unable to parse ARN: %s", arn)
+		}
+		role = s[1]
+	} else {
+		return 0, "", fmt.Errorf("Unable to parse ARN: %s", arn)
+	}
+
+	aId, err := strconv.ParseInt(accountid, 10, 64)
+	if err != nil {
+		return 0, "", fmt.Errorf("Unable to parse ARN: %s", arn)
+	}
+	return aId, role, nil
+}
+
+// Creates an AWS ARN for a role
+func MakeRoleARN(account int64, name string) string {
+	return fmt.Sprintf("arn:aws:iam:%d:role/%s", account, name)
 }

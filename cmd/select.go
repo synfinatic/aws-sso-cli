@@ -28,6 +28,7 @@ import (
 	//	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
+	"github.com/synfinatic/aws-sso-cli/utils"
 )
 
 type CompleterExec = func(*RunContext, *sso.AWSSSO, int64, string, string) error
@@ -101,7 +102,7 @@ func (tc *TagsCompleter) Executor(args string) {
 		roleArn = ssoRoles[0]
 	}
 
-	aId, rName, err := sso.GetRoleParts(roleArn)
+	aId, rName, err := utils.ParseRoleARN(roleArn)
 	if err != nil {
 		log.Fatalf("Unable to parse %s: %s", roleArn, err.Error())
 	}
