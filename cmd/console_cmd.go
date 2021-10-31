@@ -89,15 +89,17 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 		return err
 	}
 	sso.Refresh(ctx.Settings)
-	c := NewTagsCompleter(ctx, sso, openConsole)
+
+	c := NewTagsCompleter(ctx, sso, execCmd)
+	opts := ctx.Settings.DefaultOptions(c.ExitChecker)
+	opts = append(opts, ctx.Settings.GetColorOptions()...)
+
 	p := prompt.New(
 		c.Executor,
 		c.Complete,
-		prompt.OptionPrefix("> "),
-		prompt.OptionSetExitCheckerOnInput(c.ExitChecker),
-		prompt.OptionCompletionOnDown(),
-		prompt.OptionShowCompletionAtStart(),
+		opts...,
 	)
+
 	p.Run()
 	return nil
 }

@@ -229,6 +229,8 @@ SecureStore: [json|file|keychain|kwallet|pass|secret-service|wincred]
 JsonStore: <optional path to json file>
 ProfileFormat: <template>
 AccountPrimaryTag: <list of role tags>
+PromptColors:
+	<Option>: <Color>
 ```
 
 If you only have a single AWS SSO instance, then it doesn't really matter what you call it,
@@ -315,6 +317,56 @@ the following tags are searched (first match is used):
  * Email
 
 Set `AccountPrimaryTag` to an empty list to disable this feature.
+
+
+### PromptColors
+
+`PromptColors` takes a map of prompt options and color options allowing you to have
+complete control of how AWS SSO CLI looks.  You only need to specify the options you wish
+to override, but do not include the `PromptColors` if you have no options.  More information
+about the meaning and use of the options below, [refer to the go-prompt docs](
+https://pkg.go.dev/github.com/c-bata/go-prompt#Option).
+
+Valid options:
+
+ * `DescriptionBGColor`
+ * `DescriptionTextColor`
+ * `InputBGColor` 
+ * `InputTextColor`
+ * `PrefixBackgroundColor`
+ * `PrefixTextColor`
+ * `PreviewSuggestionBGColor`
+ * `PreviewSuggestionTextColor`
+ * `ScrollbarBGColor`
+ * `ScrollbarThumbColor`
+ * `SelectedDescriptionBGColor`
+ * `SelectedDescriptionTextColor`
+ * `SelectedSuggestionBGColor`
+ * `SelectedSuggestionTextColor`
+ * `SuggestionBGColor`
+ * `SuggestionTextColor`
+
+Valid low intensity colors:
+
+ * "Black"
+ * "DarkRed"
+ * "DarkGreen"
+ * "Brown"
+ * "DarkBlue"
+ * "Purple"
+ * "Cyan"
+ * "LightGrey"
+
+Valid high intensity colors:
+
+ * "DarkGrey"
+ * "Red"
+ * "Green"
+ * "Yellow"
+ * "Blue"
+ * "Fuchsia"
+ * "Turquoise"
+ * "White"
 
 
 ## Environment Varables
