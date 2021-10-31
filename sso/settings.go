@@ -28,6 +28,7 @@ import (
 
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/file"
 	//	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
@@ -50,6 +51,7 @@ type Settings struct {
 	Browser           string                `koanf:"Browser" yaml:"Browser,omitempty"`
 	ProfileFormat     string                `koanf:"ProfileFormat" yaml:"ProfileFormat,omitempty"`
 	AccountPrimaryTag []string              `koanf:"AccountPrimaryTag" yaml:"AccountPrimaryTag"`
+	PromptColors      PromptColors          `koanf:"PromptColors" yaml:"PromptColors"` // go-prompt colors
 }
 
 type SSOConfig struct {
@@ -104,6 +106,11 @@ func LoadSettings(configFile, cacheFile string, defaults SettingsDefaults) (*Set
 		configFile: configFile,
 		cacheFile:  cacheFile,
 	}
+
+	// default values.  Can be overridden using:
+	// https://pkg.go.dev/github.com/c-bata/go-prompt?utm_source=godoc#Color
+	konf.Load(confmap.Provider(DEFAULT_COLOR_CONFIG, "."), nil)
+
 	if err := konf.Load(file.Provider(configFile), yaml.Parser()); err != nil {
 		return s, fmt.Errorf("Unable to open config file %s: %s", configFile, err.Error())
 	}

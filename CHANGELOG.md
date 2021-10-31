@@ -1,5 +1,9 @@
 # AWS SSO CLI Changelog
 
+## [Unreleased]
+
+ * Add customizable color support #79
+
 ## [v1.2.0] - 2021-10-29
 
  * `console` command now can use ENV vars via --use-env #41
