@@ -30,7 +30,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sso"
 	"github.com/aws/aws-sdk-go/service/ssooidc"
 	log "github.com/sirupsen/logrus"
-	"github.com/skratchdot/open-golang/open" // default opener
+	"github.com/synfinatic/aws-sso-cli/utils"
 	"github.com/synfinatic/gotable"
 )
 
@@ -71,7 +71,7 @@ func (as *AWSSSO) StoreKey() string {
 	return fmt.Sprintf("%s|%s", as.SsoRegion, as.StartUrl)
 }
 
-func (as *AWSSSO) Authenticate(printUrl bool, browser string) error {
+func (as *AWSSSO) Authenticate(urlAction, browser string) error {
 	// see if we have valid cached data
 	token := CreateTokenResponse{}
 	err := as.store.GetCreateTokenResponse(as.StoreKey(), &token)
@@ -105,20 +105,8 @@ func (as *AWSSSO) Authenticate(printUrl bool, browser string) error {
 		return fmt.Errorf("Unable to get DeviceAuthInfo: %s", err.Error())
 	}
 
-	if !printUrl {
-		if len(browser) == 0 {
-			err = open.Run(auth.VerificationUriComplete)
-			browser = "default browser"
-		} else {
-			err = open.RunWith(auth.VerificationUriComplete, browser)
-		}
-		if err != nil {
-			log.WithError(err).Fatalf("Unable to open %s with %s", auth.VerificationUriComplete, browser)
-		}
-	} else {
-		fmt.Printf("Please open the following URL in your browser:\n\n%s\n\n",
-			auth.VerificationUriComplete)
-	}
+	utils.HandleUrl(urlAction, browser, auth.VerificationUriComplete,
+		"Please open the following URL in your browser:\n\n", "\n\n")
 
 	log.Infof("Waiting for SSO authentication...")
 
@@ -230,16 +218,6 @@ type DeviceAuthInfo struct {
 	VerificationUri         string
 	VerificationUriComplete string
 	UserCode                string
-}
-
-func (da *DeviceAuthInfo) OpenBrowser() error {
-	log.Infof("Opening the SSO authorization page in your default browser (use Ctrl-C to abort)\n%s\n",
-		da.VerificationUriComplete)
-
-	if err := open.Run(da.VerificationUriComplete); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (as *AWSSSO) GetDeviceAuthInfo() (DeviceAuthInfo, error) {

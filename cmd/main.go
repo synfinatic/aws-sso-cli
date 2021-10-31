@@ -52,14 +52,37 @@ const (
 	COPYRIGHT_YEAR      = "2021"
 )
 
+var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
+	"PromptColors.DescriptionBGColor":           "Turquoise",
+	"PromptColors.DescriptionTextColor":         "Black",
+	"PromptColors.InputBGColor":                 "DefaultColor",
+	"PromptColors.InputTextColor":               "DefaultColor",
+	"PromptColors.PrefixBackgroundColor":        "DefaultColor",
+	"PromptColors.PrefixTextColor":              "Blue",
+	"PromptColors.PreviewSuggestionBGColor":     "DefaultColor",
+	"PromptColors.PreviewSuggestionTextColor":   "Green",
+	"PromptColors.ScrollbarBGColor":             "Cyan",
+	"PromptColors.ScrollbarThumbColor":          "DarkGray",
+	"PromptColors.SelectedDescriptionBGColor":   "Cyan",
+	"PromptColors.SelectedDescriptionTextColor": "White",
+	"PromptColors.SelectedSuggestionBGColor":    "Turquoise",
+	"PromptColors.SelectedSuggestionTextColor":  "Black",
+	"PromptColors.SuggestionBGColor":            "Cyan",
+	"PromptColors.SuggestionTextColor":          "White",
+	"UrlAction":                                 "open",
+	"DefaultSSO":                                "Default",
+	"LogLevel":                                  "info",
+	"LogLines":                                  false,
+}
+
 type CLI struct {
 	// Common Arguments
-	LogLevel   string `kong:"optional,short='L',name='level',default='info',enum='error,warn,info,debug,trace',help='Logging level [error|warn|info|debug|trace]'"`
-	Lines      bool   `kong:"optional,help='Print line number in logs'"`
-	ConfigFile string `kong:"optional,name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
+	Browser    string `kong:"optional,short='b',help='Path to browser to open URLs with',env='AWS_SSO_BROWSER'"`
 	CacheFile  string `kong:"optional,name='cache',default='${INSECURE_CACHE_FILE}',help='Insecure cache file',env='AWS_SSO_CACHE'"`
-	Browser    string `kong:"optional,short='b',help='Path to browser to use',env='AWS_SSO_BROWSER'"`
-	PrintUrl   bool   `kong:"optional,name='url',short='u',help='Print URL insetad of open in browser'"`
+	ConfigFile string `kong:"optional,name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
+	Lines      bool   `kong:"optional,help='Print line number in logs'"`
+	LogLevel   string `kong:"optional,short='L',name='level',enum='error,warn,info,debug,trace,',help='Logging level [error|warn|info|debug|trace]'"`
+	UrlAction  string `kong:"optional,short='u',enum='open,print,clip,',help='How to handle URLs [open|print|clip]'"`
 	SSO        string `kong:"optional,short='S',help='AWS SSO Instance',env='AWS_SSO'"`
 	STSRefresh bool   `kong:"optional,short='R',help='Force refresh of STS Token Credentials'"`
 
@@ -77,7 +100,7 @@ type CLI struct {
 
 func main() {
 	cli := CLI{}
-	ctx := parse_args(&cli)
+	ctx, override := parseArgs(&cli)
 	var err error
 
 	run_ctx := RunContext{
@@ -89,12 +112,7 @@ func main() {
 	cli.ConfigFile = utils.GetHomePath(cli.ConfigFile)
 	cli.CacheFile = utils.GetHomePath(cli.CacheFile)
 
-	defaultSettings := sso.SettingsDefaults{
-		PrintUrl: cli.PrintUrl,
-		Browser:  cli.Browser,
-		SSOName:  cli.SSO,
-	}
-	if run_ctx.Settings, err = sso.LoadSettings(cli.ConfigFile, cli.CacheFile, defaultSettings); err != nil {
+	if run_ctx.Settings, err = sso.LoadSettings(cli.ConfigFile, cli.CacheFile, DEFAULT_CONFIG, override); err != nil {
 		log.Fatalf("%s", err.Error())
 	}
 
@@ -124,7 +142,8 @@ func main() {
 	}
 }
 
-func parse_args(cli *CLI) *kong.Context {
+// parseArgs parses our CLI arguments
+func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 	op := kong.Description("Securely manage temporary AWS API Credentials issued via AWS SSO")
 	// need to pass in the variables for defaults
 	vars := kong.Vars{
@@ -136,29 +155,31 @@ func parse_args(cli *CLI) *kong.Context {
 	}
 	ctx := kong.Parse(cli, op, vars)
 
-	switch cli.LogLevel {
-	case "trace":
-		log.SetLevel(log.TraceLevel)
-	case "debug":
-		log.SetLevel(log.DebugLevel)
-	case "info":
-		log.SetLevel(log.InfoLevel)
-	case "warn":
-		log.SetLevel(log.WarnLevel)
-	case "error":
-		log.SetLevel(log.ErrorLevel)
+	override := sso.OverrideSettings{}
+
+	if cli.UrlAction != "" {
+		override.UrlAction = cli.UrlAction
+	}
+	if cli.Browser != "" {
+		override.Browser = cli.Browser
+	}
+	if cli.SSO != "" {
+		override.DefaultSSO = cli.SSO
+	}
+	if cli.LogLevel != "" {
+		override.LogLevel = cli.LogLevel
+	}
+	if cli.Lines {
+		override.LogLines = true
 	}
 
-	if cli.Lines {
-		log.SetReportCaller(true)
-	}
 	log.SetFormatter(&log.TextFormatter{
 		DisableLevelTruncation: true,
 		PadLevelText:           true,
 		DisableTimestamp:       true,
 	})
 
-	return ctx
+	return ctx, override
 }
 
 type VersionCmd struct{} // takes no arguments
@@ -241,7 +262,7 @@ func doAuth(ctx *RunContext) *sso.AWSSSO {
 		log.Fatalf("%s", err.Error())
 	}
 	AwsSSO := sso.NewAWSSSO(s.SSORegion, s.StartUrl, &ctx.Store)
-	err = AwsSSO.Authenticate(ctx.Settings.PrintUrl, ctx.Settings.Browser)
+	err = AwsSSO.Authenticate(ctx.Settings.UrlAction, ctx.Settings.Browser)
 	if err != nil {
 		log.WithError(err).Fatalf("Unable to authenticate")
 	}

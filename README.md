@@ -17,7 +17,7 @@ then this won't work for you.
 AWS SSO CLI makes it easy to manage your shell environment variables allowing
 you to access the AWS API using CLI tools.  Unlike the official AWS tooling,
 the `aws-sso` command does not require defining named profiles in your
-`~/.aws/config` (or anywhere else for that matter) for each and every role you 
+`~/.aws/config` (or anywhere else for that matter) for each and every role you
 wish to assume and use.
 
 Instead, it focuses on making it easy to select a role via CLI arguments or
@@ -94,7 +94,7 @@ may generate warnings.
  * `--lines` -- Print file number with logs
  * `--config <file>`, `-c` -- Specify alternative config file
  * `--browser <path>`, `-b` -- Override default browser to open AWS SSO URL
- * `--url`, `-u` -- Print URL instead of opening in browser
+ * `--url-action`, `-u` -- Print, open or put URLs in clipboard
  * `--sso <name>`, `-S` -- Specify non-default AWS SSO instance to use
 
 ### console
@@ -105,14 +105,15 @@ in the terminal or copied into the Copy & Paste buffer of your computer.
 
 Flags:
 
- * `--clipboard`, `-c` -- Copy URL to clipboard instead of opening it
- * `--print`, `-p` -- Print URL instead of opening it
  * `--duration <minutes>`, `-d` -- AWS Session duration in minutes (default 60)
  * `--arn <arn>` -- ARN of role to assume
  * `--account <account>` -- AWS AccountID of role to assume
  * `--role <role>` -- Name of AWS Role to assume (requires `--account`)
 
-Note that the generated URL is good for 15 minutes after it is created.
+The generated URL is good for 15 minutes after it is created.
+
+The common flag `--url-action` is used both for AWS SSO authentication as well as
+what to do with the resulting URL from the `console` command.
 
 ### exec
 
@@ -206,10 +207,9 @@ but this can be overridden by setting `$AWS_SSO_CONFIG` in your shell or via the
 
 ```yaml
 SSOConfig:
-    <Name of AWS SSO>:  # `Default` is the AWS SSO instance with highest priority
+    <Name of AWS SSO>:
         SSORegion: <AWS Region>
         StartUrl: <URL for AWS SSO Portal>
-        Duration: <minutes>  # Set default duration time of AWS credentials
         Accounts:  # optional block for specifying tags & overrides
             <AccountId>:
                 Name: <Friendly Name of Account>
@@ -221,21 +221,19 @@ SSOConfig:
                        Tags:  # tags specific for this role (will override account level tags)
                           <Key1>: <Value1>
                           <Key2>: <Value2>
-                       Duration: 120  # override default duration time in minutes
 
-Browser: <override path to browser>
-PrintUrl: [false|true]  # print URL instead of opening it in the browser
+Browser: <path to web browser>
+DefaultSSO: <name of AWS SSO>
+LogLevel: [error|warn|info|debug|trace]
+LogLines: [true|false]
+UrlAction: [print|open|clip]
 SecureStore: [json|file|keychain|kwallet|pass|secret-service|wincred]
-JsonStore: <optional path to json file>
+JsonStore: <path to json file>
 ProfileFormat: <template>
 AccountPrimaryTag: <list of role tags>
 PromptColors:
 	<Option>: <Color>
 ```
-
-If you only have a single AWS SSO instance, then it doesn't really matter what you call it,
-but if you have two or more, than `Default` is automatically selected unless you manually
-specify it on the CLI (`--sso`) or via the `AWS_SSO` environment variable.
 
 ### Accounts
 
@@ -250,10 +248,35 @@ By default the following key/values are available as tags to your roles:
  * EmailAddress (root account email)
  * RoleName
 
-### Browser 
+### Browser / UrlAction
+
+`UrlAction` gives you control over how AWS SSO and AWS Console URLs are opened in a browser:
+
+ * `print` -- Prints the URL in your terminal
+ * `open` -- Opens the URL in your default browser or the browser you specified via `--browser` or `Browser`
+ * `clip` -- Copies the URL to your clipboard
 
 If `Browser` is not set, then your default browser will be used.  Note that
 your browser needs to support Javascript for the AWS SSO user interface.
+
+### DefaultSSO
+
+If you only have a single AWS SSO instance, then it doesn't really matter what you call it,
+but if you have two or more, than `Default` is automatically selected unless you manually
+specify it here, on the CLI (`--sso`), or via the `AWS_SSO` environment variable.
+
+### LogLevel / LogLines
+
+By default, the `LogLevel` is 'warn'.  You can override it here or via `--log-level` with one
+of the following values:
+
+ * error
+ * warn
+ * info
+ * debug
+ * trace
+
+`LogLines` includes the file name/line and module name with each log for advanced debugging.
 
 ### SecureStore / JsonStore
 
@@ -318,7 +341,6 @@ the following tags are searched (first match is used):
 
 Set `AccountPrimaryTag` to an empty list to disable this feature.
 
-
 ### PromptColors
 
 `PromptColors` takes a map of prompt options and color options allowing you to have
@@ -331,7 +353,7 @@ Valid options:
 
  * `DescriptionBGColor`
  * `DescriptionTextColor`
- * `InputBGColor` 
+ * `InputBGColor`
  * `InputTextColor`
  * `PrefixBackgroundColor`
  * `PrefixTextColor`

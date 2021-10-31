@@ -25,25 +25,22 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/atotto/clipboard"
 	"github.com/c-bata/go-prompt"
-	"github.com/skratchdot/open-golang/open" // default opener
 	"github.com/synfinatic/aws-sso-cli/sso"
+	"github.com/synfinatic/aws-sso-cli/utils"
 )
 
 const AWS_FEDERATED_URL = "https://signin.aws.amazon.com/federation"
 
 type ConsoleCmd struct {
-	Clipboard       bool   `kong:"optional,short='c',help='Copy URL to clipboard instead of opening it'"`
-	Print           bool   `kong:"optional,short='p',help='Print URL instead of opening it'"`
-	Duration        int64  `kong:"optional,short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
-	Arn             string `kong:"optional,short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN'"`
-	AccountId       int64  `kong:"optional,name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNTID'"`
-	Role            string `kong:"optional,short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE'"`
-	UseEnv          bool   `kong:"optional,short='e',help='Use existing ENV vars to generate URL'"`
 	AccessKeyId     string `kong:"optional,env='AWS_ACCESS_KEY_ID',hidden"`
+	AccountId       int64  `kong:"optional,name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNTID'"`
+	Arn             string `kong:"optional,short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN'"`
+	Duration        int64  `kong:"optional,short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
+	Role            string `kong:"optional,short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE'"`
 	SecretAccessKey string `kong:"optional,env='AWS_SECRET_ACCESS_KEY',hidden"`
 	SessionToken    string `kong:"optional,env='AWS_SESSION_TOKEN',hidden"`
+	UseEnv          bool   `kong:"optional,short='e',help='Use existing ENV vars to generate URL'"`
 }
 
 func (cc *ConsoleCmd) Run(ctx *RunContext) error {
@@ -143,23 +140,9 @@ func openConsoleAccessKey(ctx *RunContext, creds *sso.RoleCredentials, duration 
 	}
 	url := login.GetUrl()
 
-	browser := ctx.Settings.Browser
-	if ctx.Cli.Console.Clipboard {
-		err = clipboard.WriteAll(url)
-	} else if ctx.Cli.Console.Print {
-		fmt.Printf("Please open the following URL in your browser:\n\n%s\n\n",
-			url)
-	} else {
-		if len(browser) == 0 {
-			err = open.Run(url)
-			browser = "default browser"
-		} else {
-			err = open.RunWith(url, browser)
-		}
-		if err != nil {
-			err = fmt.Errorf("Unable to open %s with %s: %s", url, browser, err.Error())
-		}
-	}
+	err = utils.HandleUrl(ctx.Cli.UrlAction, ctx.Cli.Browser, url,
+		"Please open the following URL in your browser:\n\n", "\n\n")
+
 	return err
 }
 

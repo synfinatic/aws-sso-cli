@@ -3,6 +3,15 @@
 ## [Unreleased]
 
  * Add customizable color support #79
+ * Simplify options for handling URLs and refactor internals #82
+ * Rework how defaults are handled/settings loaded
+ * Remove references to `duration` in config which don't do anything
+ * Add additional config file options:
+	- UrlAction
+	- LogLevel
+	- LogLines
+	- DefaultSSO
+ * Replace `--print-url` with `--url-action` #81
 
 ## [v1.2.0] - 2021-10-29
 
