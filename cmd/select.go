@@ -30,7 +30,7 @@ import (
 	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
-type CompleterExec = func(*RunContext, *sso.AWSSSO, int64, string) error
+type CompleterExec = func(*RunContext, *sso.AWSSSO, int64, string, string) error
 
 type TagsCompleter struct {
 	ctx      *RunContext
@@ -105,8 +105,9 @@ func (tc *TagsCompleter) Executor(args string) {
 	if err != nil {
 		log.Fatalf("Unable to parse %s: %s", roleArn, err.Error())
 	}
+	region := tc.ctx.Settings.GetDefaultRegion(aId, rName)
 	awsSSO := doAuth(tc.ctx)
-	err = tc.exec(tc.ctx, awsSSO, aId, rName)
+	err = tc.exec(tc.ctx, awsSSO, aId, rName, region)
 	if err != nil {
 		log.Fatalf("Unable to exec: %s", err.Error())
 	}

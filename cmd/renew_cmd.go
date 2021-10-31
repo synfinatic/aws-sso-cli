@@ -42,9 +42,10 @@ func (cc *RenewCmd) Run(ctx *RunContext) error {
 	if err != nil {
 		return fmt.Errorf("Unable to parse AWS_ACCOUNT_ID = %s: %s", accountid, err.Error())
 	}
+	region := ctx.Settings.GetDefaultRegion(aid, role)
 
 	awssso := doAuth(ctx)
-	for k, v := range execShellEnvs(ctx, awssso, aid, role) {
+	for k, v := range execShellEnvs(ctx, awssso, aid, role, region) {
 		if strings.Contains(v, " ") {
 			fmt.Printf("export %s=\"%s\"\n", k, v)
 		} else {

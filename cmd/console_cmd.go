@@ -24,6 +24,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"strconv"
 
 	"github.com/c-bata/go-prompt"
 	"github.com/synfinatic/aws-sso-cli/sso"
@@ -33,6 +35,7 @@ import (
 const AWS_FEDERATED_URL = "https://signin.aws.amazon.com/federation"
 
 type ConsoleCmd struct {
+	Region          string `kong:"optional,name='region',help='AWS Region',env='AWS_DEFAULT_REGION'"`
 	AccessKeyId     string `kong:"optional,env='AWS_ACCESS_KEY_ID',hidden"`
 	AccountId       int64  `kong:"optional,name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNTID'"`
 	Arn             string `kong:"optional,short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN'"`
@@ -52,13 +55,21 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 			return err
 		}
 
-		return openConsole(ctx, awssso, accountid, role)
+		region := ctx.Settings.GetDefaultRegion(accountid, role)
+		if ctx.Cli.Console.Region != "" {
+			region = ctx.Cli.Console.Region
+		}
+		return openConsole(ctx, awssso, accountid, role, region)
 	} else if ctx.Cli.Console.AccountId != 0 || ctx.Cli.Console.Role != "" {
 		if ctx.Cli.Console.AccountId == 0 || ctx.Cli.Console.Role == "" {
 			return fmt.Errorf("Please specify both --account and --role")
 		}
 		awssso := doAuth(ctx)
-		return openConsole(ctx, awssso, ctx.Cli.Console.AccountId, ctx.Cli.Console.Role)
+		region := ctx.Settings.GetDefaultRegion(ctx.Cli.Console.AccountId, ctx.Cli.Console.Role)
+		if ctx.Cli.Console.Region != "" {
+			region = ctx.Cli.Console.Region
+		}
+		return openConsole(ctx, awssso, ctx.Cli.Console.AccountId, ctx.Cli.Console.Role, region)
 	} else if ctx.Cli.Console.UseEnv {
 		if ctx.Cli.Console.AccessKeyId == "" {
 			return fmt.Errorf("AWS_ACCESS_KEY_ID is not set")
@@ -74,8 +85,15 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 			SecretAccessKey: ctx.Cli.Console.SecretAccessKey,
 			SessionToken:    ctx.Cli.Console.SessionToken,
 		}
-
-		return openConsoleAccessKey(ctx, &creds, ctx.Cli.Console.Duration)
+		accountid, err := strconv.ParseInt(os.Getenv("AWS_ACCOUNT_ID"), 10, 64)
+		if err != nil {
+			return fmt.Errorf("Unable to parse AWS_ACCOUNT_ID: %s", os.Getenv("AWS_ACCOUNT_ID"))
+		}
+		region := ctx.Settings.GetDefaultRegion(accountid, os.Getenv("AWS_ROLE_NAME"))
+		if ctx.Cli.Console.Region != "" {
+			region = ctx.Cli.Console.Region
+		}
+		return openConsoleAccessKey(ctx, &creds, ctx.Cli.Console.Duration, region)
 	}
 
 	fmt.Printf("Please use `exit` or `Ctrl-D` to quit.\n")
@@ -87,7 +105,7 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 	}
 	sso.Refresh(ctx.Settings)
 
-	c := NewTagsCompleter(ctx, sso, execCmd)
+	c := NewTagsCompleter(ctx, sso, openConsole)
 	opts := ctx.Settings.DefaultOptions(c.ExitChecker)
 	opts = append(opts, ctx.Settings.GetColorOptions()...)
 
@@ -102,13 +120,13 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 }
 
 // opens the AWS console or just prints the URL
-func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) error {
+func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, region string) error {
 	creds := GetRoleCredentials(ctx, awssso, accountid, role)
 
-	return openConsoleAccessKey(ctx, creds, ctx.Cli.Console.Duration)
+	return openConsoleAccessKey(ctx, creds, ctx.Cli.Console.Duration, region)
 }
 
-func openConsoleAccessKey(ctx *RunContext, creds *sso.RoleCredentials, duration int64) error {
+func openConsoleAccessKey(ctx *RunContext, creds *sso.RoleCredentials, duration int64, region string) error {
 	signin := SigninTokenUrlParams{
 		SessionDuration: duration * 60,
 		Session: SessionUrlParams{
@@ -135,7 +153,7 @@ func openConsoleAccessKey(ctx *RunContext, creds *sso.RoleCredentials, duration 
 
 	login := LoginUrlParams{
 		Issuer:      "https://github.com/synfinatic/aws-sso-cli", // FIXME
-		Destination: "https://console.aws.amazon.com",
+		Destination: fmt.Sprintf("https://console.aws.amazon.com/console/home?region=%s", region),
 		SigninToken: loginResponse.SigninToken,
 	}
 	url := login.GetUrl()

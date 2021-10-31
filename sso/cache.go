@@ -32,6 +32,15 @@ import (
 	"github.com/synfinatic/gotable"
 )
 
+// Our Cachefile.  Sub-structs defined in sso/cache.go
+type Cache struct {
+	settings        *Settings // pointer back up
+	CreatedAt       int64     `json:"CreatedAt"`       // this cache.json
+	ConfigCreatedAt int64     `json:"ConfigCreatedAt"` // track config.yaml
+	History         []string  `json:"History,omitempty"`
+	Roles           *Roles    `json:"Roles,omitempty"`
+}
+
 // Expired returns if our Roles cache data is too old.
 // If configFile is a valid file, we check the lastModificationTime of that file
 // vs. the ConfigCreatedAt to determine if the cache needs to be updated

@@ -73,6 +73,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"DefaultSSO":                                "Default",
 	"LogLevel":                                  "info",
 	"LogLines":                                  false,
+	"DefaultRegion":                             "us-east-1",
 }
 
 type CLI struct {
