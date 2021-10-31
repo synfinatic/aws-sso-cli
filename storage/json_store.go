@@ -1,4 +1,4 @@
-package sso
+package storage
 
 /*
  * AWS SSO CLI
@@ -25,6 +25,7 @@ import (
 
 	// "github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
+	"github.com/synfinatic/aws-sso-cli/utils"
 )
 
 // Impliments SecureStorage insecurely
@@ -63,7 +64,7 @@ func (jc *JsonStore) saveCache() error {
 		log.WithError(err).Errorf("Unable to marshal json")
 		return err
 	}
-	err = ensureDirExists(jc.filename)
+	err = utils.EnsureDirExists(jc.filename)
 	if err != nil {
 		return err
 	}

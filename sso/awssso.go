@@ -30,6 +30,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sso"
 	"github.com/aws/aws-sdk-go/service/ssooidc"
 	log "github.com/sirupsen/logrus"
+	"github.com/synfinatic/aws-sso-cli/storage"
 	"github.com/synfinatic/aws-sso-cli/utils"
 	"github.com/synfinatic/gotable"
 )
@@ -37,19 +38,19 @@ import (
 type AWSSSO struct {
 	sso        sso.SSO
 	ssooidc    ssooidc.SSOOIDC
-	store      SecureStorage
-	ClientName string                `json:"ClientName"`
-	ClientType string                `json:"ClientType"`
-	SsoRegion  string                `json:"ssoRegion"`
-	StartUrl   string                `json:"startUrl"`
-	ClientData RegisterClientData    `json:"RegisterClient"`
-	DeviceAuth StartDeviceAuthData   `json:"StartDeviceAuth"`
-	Token      CreateTokenResponse   `json:"TokenResponse"`
-	Accounts   []AccountInfo         `json:"Accounts"`
-	Roles      map[string][]RoleInfo `json:"Roles"`
+	store      storage.SecureStorage
+	ClientName string                      `json:"ClientName"`
+	ClientType string                      `json:"ClientType"`
+	SsoRegion  string                      `json:"ssoRegion"`
+	StartUrl   string                      `json:"startUrl"`
+	ClientData storage.RegisterClientData  `json:"RegisterClient"`
+	DeviceAuth storage.StartDeviceAuthData `json:"StartDeviceAuth"`
+	Token      storage.CreateTokenResponse `json:"TokenResponse"`
+	Accounts   []AccountInfo               `json:"Accounts"`
+	Roles      map[string][]RoleInfo       `json:"Roles"`
 }
 
-func NewAWSSSO(ssoRegion, startUrl string, store *SecureStorage) *AWSSSO {
+func NewAWSSSO(ssoRegion, startUrl string, store *storage.SecureStorage) *AWSSSO {
 	mySession := session.Must(session.NewSession())
 	oidcSession := ssooidc.New(mySession, aws.NewConfig().WithRegion(ssoRegion))
 	ssoSession := sso.New(mySession, aws.NewConfig().WithRegion(ssoRegion))
@@ -73,7 +74,7 @@ func (as *AWSSSO) StoreKey() string {
 
 func (as *AWSSSO) Authenticate(urlAction, browser string) error {
 	// see if we have valid cached data
-	token := CreateTokenResponse{}
+	token := storage.CreateTokenResponse{}
 	err := as.store.GetCreateTokenResponse(as.StoreKey(), &token)
 	if err == nil && !token.Expired() {
 		as.Token = token
@@ -128,24 +129,6 @@ const (
 	RETRY_INTERVAL = 5
 )
 
-// this struct should be cached for long term if possible
-type RegisterClientData struct {
-	AuthorizationEndpoint string `json:"authorizationEndpoint,omitempty"`
-	ClientId              string `json:"clientId"`
-	ClientIdIssuedAt      int64  `json:"clientIdIssuedAt"`
-	ClientSecret          string `json:"clientSecret"`
-	ClientSecretExpiresAt int64  `json:"clientSecretExpiresAt"`
-	TokenEndpoint         string `json:"tokenEndpoint,omitempty"`
-}
-
-func (r *RegisterClientData) Expired() bool {
-	// XXX: I think an hour buffer here is fine?
-	if r.ClientSecretExpiresAt > time.Now().Add(time.Hour).Unix() {
-		return false
-	}
-	return true
-}
-
 // Does the needful to talk to AWS or read our cache to get the RegisterClientData
 func (as *AWSSSO) RegisterClient() error {
 	err := as.store.GetRegisterClientData(as.StoreKey(), &as.ClientData)
@@ -164,7 +147,7 @@ func (as *AWSSSO) RegisterClient() error {
 		return err
 	}
 
-	as.ClientData = RegisterClientData{
+	as.ClientData = storage.RegisterClientData{
 		// AuthorizationEndpoint: *resp.AuthorizationEndpoint,
 		ClientId:              aws.StringValue(resp.ClientId),
 		ClientSecret:          aws.StringValue(resp.ClientSecret),
@@ -179,15 +162,6 @@ func (as *AWSSSO) RegisterClient() error {
 	return nil
 }
 
-type StartDeviceAuthData struct {
-	DeviceCode              string `json:"deviceCode"`
-	UserCode                string `json:"userCode"`
-	VerificationUri         string `json:"verificationUri"`
-	VerificationUriComplete string `json:"verificationUriComplete"`
-	ExpiresIn               int64  `json:"expiresIn"`
-	Interval                int64  `json:"interval"`
-}
-
 // Makes the call to AWS to initiate the OIDC auth to the SSO provider.
 func (as *AWSSSO) StartDeviceAuthorization() error {
 	input := ssooidc.StartDeviceAuthorizationInput{
@@ -200,7 +174,7 @@ func (as *AWSSSO) StartDeviceAuthorization() error {
 		return err
 	}
 
-	as.DeviceAuth = StartDeviceAuthData{
+	as.DeviceAuth = storage.StartDeviceAuthData{
 		DeviceCode:              aws.StringValue(resp.DeviceCode),
 		UserCode:                aws.StringValue(resp.UserCode),
 		VerificationUri:         aws.StringValue(resp.VerificationUri),
@@ -231,23 +205,6 @@ func (as *AWSSSO) GetDeviceAuthInfo() (DeviceAuthInfo, error) {
 		UserCode:                as.DeviceAuth.UserCode,
 	}
 	return info, nil
-}
-
-type CreateTokenResponse struct {
-	AccessToken  string `json:"accessToken"` // should be cached to issue new creds
-	ExpiresIn    int64  `json:"expiresIn"`   // number of seconds it expires in (from AWS)
-	ExpiresAt    int64  `json:"expiresAt"`   // Unix time when it expires
-	IdToken      string `json:"IdToken"`
-	RefreshToken string `json:"RefreshToken"`
-	TokenType    string `json:"tokenType"`
-}
-
-func (t *CreateTokenResponse) Expired() bool {
-	// XXX: I think an minute buffer here is fine?
-	if t.ExpiresAt > time.Now().Add(time.Minute).Unix() {
-		return false
-	}
-	return true
 }
 
 // Blocks until we have a token
@@ -301,7 +258,7 @@ func (as *AWSSSO) CreateToken() error {
 	}
 
 	secs, _ := time.ParseDuration(fmt.Sprintf("%ds", *resp.ExpiresIn))
-	as.Token = CreateTokenResponse{
+	as.Token = storage.CreateTokenResponse{
 		AccessToken:  aws.StringValue(resp.AccessToken),
 		ExpiresIn:    aws.Int64Value(resp.ExpiresIn),
 		ExpiresAt:    time.Now().Add(secs).Unix(),
@@ -448,30 +405,7 @@ func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {
 
 }
 
-type RoleCredentials struct { // Cache
-	RoleName        string `json:"roleName"`
-	AccountId       int64  `json:"accountId"`
-	AccessKeyId     string `json:"accessKeyId"`
-	SecretAccessKey string `json:"secretAccessKey"`
-	SessionToken    string `json:"sessionToken"`
-	Expiration      int64  `json:"expiration"` // not in seconds!
-}
-
-func (r *RoleCredentials) RoleArn() string {
-	return fmt.Sprintf("arn:aws:iam:%d:role/%s", r.AccountId, r.RoleName)
-}
-
-func (r *RoleCredentials) ExpireString() string {
-	// apparently Expiration is in ms???
-	return time.Unix(r.Expiration/1000, 0).String()
-}
-
-// AccountIdStr returns our AccountId as a string
-func (r *RoleCredentials) AccountIdStr() string {
-	return strconv.FormatInt(r.AccountId, 10)
-}
-
-func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (RoleCredentials, error) {
+func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.RoleCredentials, error) {
 	aId := strconv.FormatInt(accountId, 10)
 
 	input := sso.GetRoleCredentialsInput{
@@ -481,10 +415,10 @@ func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (RoleCredenti
 	}
 	output, err := as.sso.GetRoleCredentials(&input)
 	if err != nil {
-		return RoleCredentials{}, err
+		return storage.RoleCredentials{}, err
 	}
 
-	ret := RoleCredentials{
+	ret := storage.RoleCredentials{
 		AccountId:       accountId,
 		RoleName:        role,
 		AccessKeyId:     aws.StringValue(output.RoleCredentials.AccessKeyId),

@@ -20,12 +20,11 @@ package main
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/alecthomas/kong"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
+	"github.com/synfinatic/aws-sso-cli/storage"
 	"github.com/synfinatic/aws-sso-cli/utils"
 )
 
@@ -40,7 +39,7 @@ type RunContext struct {
 	Kctx     *kong.Context
 	Cli      *CLI
 	Settings *sso.Settings // unified config & cache
-	Store    sso.SecureStorage
+	Store    storage.SecureStorage
 }
 
 const (
@@ -124,14 +123,14 @@ func main() {
 		if run_ctx.Settings.JsonStore != "" {
 			sfile = utils.GetHomePath(run_ctx.Settings.JsonStore)
 		}
-		run_ctx.Store, err = sso.OpenJsonStore(sfile)
+		run_ctx.Store, err = storage.OpenJsonStore(sfile)
 		if err != nil {
 			log.WithError(err).Fatalf("Unable to open JsonStore %s", sfile)
 		}
 		log.Warnf("Using insecure json file for SecureStore: %s", sfile)
 	default:
-		cfg := sso.NewKeyringConfig(run_ctx.Settings.SecureStore, CONFIG_DIR)
-		run_ctx.Store, err = sso.OpenKeyring(cfg)
+		cfg := storage.NewKeyringConfig(run_ctx.Settings.SecureStore, CONFIG_DIR)
+		run_ctx.Store, err = storage.OpenKeyring(cfg)
 		if err != nil {
 			log.WithError(err).Fatalf("Unable to open SecureStore %s", run_ctx.Settings.SecureStore)
 		}
@@ -197,8 +196,8 @@ func (cc *VersionCmd) Run(ctx *RunContext) error {
 }
 
 // Get our RoleCredentials
-func GetRoleCredentials(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) *sso.RoleCredentials {
-	creds := sso.RoleCredentials{}
+func GetRoleCredentials(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) *storage.RoleCredentials {
+	creds := storage.RoleCredentials{}
 
 	rFlat, err := ctx.Settings.Cache.Roles.GetRole(accountid, role)
 
@@ -222,33 +221,6 @@ func GetRoleCredentials(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, ro
 		}
 	}
 	return &creds
-}
-
-// ParseRoleARN parses an ARN representing a role in long or short format
-func ParseRoleARN(arn string) (int64, string, error) {
-	s := strings.Split(arn, ":")
-	var accountid, role string
-	if len(s) == 2 {
-		// short account:Role format
-		accountid = s[0]
-		role = s[1]
-	} else if len(s) == 5 {
-		// long format for arn:aws:iam:XXXXXXXXXX:role/YYYYYYYY
-		accountid = s[3]
-		s = strings.Split(s[4], "/")
-		role = s[1]
-		if len(s) != 2 {
-			return 0, "", fmt.Errorf("Unable to parse ARN: %s", arn)
-		}
-	} else {
-		return 0, "", fmt.Errorf("Unable to parse ARN: %s", arn)
-	}
-
-	aId, err := strconv.ParseInt(accountid, 10, 64)
-	if err != nil {
-		return 0, "", fmt.Errorf("Unable to parse ARN: %s", arn)
-	}
-	return aId, role, nil
 }
 
 var AwsSSO *sso.AWSSSO // global

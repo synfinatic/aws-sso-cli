@@ -29,6 +29,7 @@ import (
 
 	"github.com/c-bata/go-prompt"
 	"github.com/synfinatic/aws-sso-cli/sso"
+	"github.com/synfinatic/aws-sso-cli/storage"
 	"github.com/synfinatic/aws-sso-cli/utils"
 )
 
@@ -50,7 +51,7 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 	if ctx.Cli.Console.Arn != "" {
 		awssso := doAuth(ctx)
 
-		accountid, role, err := ParseRoleARN(ctx.Cli.Console.Arn)
+		accountid, role, err := utils.ParseRoleARN(ctx.Cli.Console.Arn)
 		if err != nil {
 			return err
 		}
@@ -80,7 +81,7 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 		if ctx.Cli.Console.SessionToken == "" {
 			return fmt.Errorf("AWS_SESSION_TOKEN is not set")
 		}
-		creds := sso.RoleCredentials{
+		creds := storage.RoleCredentials{
 			AccessKeyId:     ctx.Cli.Console.AccessKeyId,
 			SecretAccessKey: ctx.Cli.Console.SecretAccessKey,
 			SessionToken:    ctx.Cli.Console.SessionToken,
@@ -126,7 +127,7 @@ func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, reg
 	return openConsoleAccessKey(ctx, creds, ctx.Cli.Console.Duration, region)
 }
 
-func openConsoleAccessKey(ctx *RunContext, creds *sso.RoleCredentials, duration int64, region string) error {
+func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials, duration int64, region string) error {
 	signin := SigninTokenUrlParams{
 		SessionDuration: duration * 60,
 		Session: SessionUrlParams{

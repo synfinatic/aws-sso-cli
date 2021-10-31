@@ -66,7 +66,7 @@ func (c *Cache) Save() error {
 	if err != nil {
 		return err
 	}
-	err = ensureDirExists(c.CacheFile())
+	err = utils.EnsureDirExists(c.CacheFile())
 	if err != nil {
 		return err
 	}
