@@ -95,7 +95,9 @@ may generate warnings.
  * `--config <file>`, `-c` -- Specify alternative config file
  * `--browser <path>`, `-b` -- Override default browser to open AWS SSO URL
  * `--url-action`, `-u` -- Print, open or put URLs in clipboard
+ * `--region <region>, `-r` -- Specify the AWS_DEFAULT_REGION to use
  * `--sso <name>`, `-S` -- Specify non-default AWS SSO instance to use
+ * `--sts-refresh`, `-R` -- Force refresh of STS Token Credentials
 
 ### console
 
@@ -213,14 +215,16 @@ SSOConfig:
         Accounts:  # optional block for specifying tags & overrides
             <AccountId>:
                 Name: <Friendly Name of Account>
+                DefaultRegion: <AWS_DEFAULT_REGION>
                 Tags:  # tags for all roles in the account
                     <Key1>: <Value1>
                     <Key2>: <Value2>
                 Roles:
                     <Role Name>:
-                       Tags:  # tags specific for this role (will override account level tags)
-                          <Key1>: <Value1>
-                          <Key2>: <Value2>
+                        DefaultRegion: <AWS_DEFAULT_REGION>
+                        Tags:  # tags specific for this role (will override account level tags)
+                            <Key1>: <Value1>
+                            <Key2>: <Value2>
 
 Browser: <path to web browser>
 DefaultSSO: <name of AWS SSO>

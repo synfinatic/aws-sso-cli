@@ -60,13 +60,16 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 			return err
 		}
 
-		return execCmd(ctx, awssso, accountid, role)
+		region := ctx.Settings.GetDefaultRegion(accountid, role)
+		return execCmd(ctx, awssso, accountid, role, region)
 	} else if ctx.Cli.Exec.AccountId != 0 || ctx.Cli.Exec.Role != "" {
 		if ctx.Cli.Exec.AccountId == 0 || ctx.Cli.Exec.Role == "" {
 			return fmt.Errorf("Please specify both --account and --role")
 		}
 		awssso := doAuth(ctx)
-		return execCmd(ctx, awssso, ctx.Cli.Exec.AccountId, ctx.Cli.Exec.Role)
+
+		region := ctx.Settings.GetDefaultRegion(ctx.Cli.Exec.AccountId, ctx.Cli.Exec.Role)
+		return execCmd(ctx, awssso, ctx.Cli.Exec.AccountId, ctx.Cli.Exec.Role, region)
 	}
 
 	// Nope, auto-complete mode...
@@ -122,7 +125,7 @@ func accountIdToStr(id int64) string {
 }
 
 // Executes Cmd+Args in the context of the AWS Role creds
-func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) error {
+func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, region string) error {
 
 	// ready our command and connect everything up
 	cmd := exec.Command(ctx.Cli.Exec.Cmd, ctx.Cli.Exec.Args...)
@@ -130,14 +133,15 @@ func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) 
 	cmd.Stdout = os.Stdout
 	cmd.Stdin = os.Stdin
 
-	for k, v := range execShellEnvs(ctx, awssso, accountid, role) {
+	for k, v := range execShellEnvs(ctx, awssso, accountid, role, region) {
+		log.Debugf("Setting %s = %s", k, v)
 		os.Setenv(k, v)
 	}
 	// just do it!
 	return cmd.Run()
 }
 
-func execShellEnvs(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) map[string]string {
+func execShellEnvs(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, region string) map[string]string {
 	credsPtr := GetRoleCredentials(ctx, awssso, accountid, role)
 	creds := *credsPtr
 
@@ -151,6 +155,8 @@ func execShellEnvs(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role st
 	}
 	if ctx.Cli.Exec.Region != "" {
 		shellVars["AWS_DEFAULT_REGION"] = ctx.Cli.Exec.Region
+	} else if region != "" {
+		shellVars["AWS_DEFAULT_REGION"] = region
 	}
 
 	var profileFormat string = AwsSsoProfileTemplate

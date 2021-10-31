@@ -26,11 +26,11 @@ import (
 	"strconv"
 	"strings"
 
+	//	"github.com/davecgh/go-spew/spew"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/file"
-	//	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -46,6 +46,7 @@ type Settings struct {
 	SSO               map[string]*SSOConfig `koanf:"SSOConfig" yaml:"SSOConfig,omitempty"`
 	DefaultSSO        string                `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`   // specify default SSO by key
 	SecureStore       string                `koanf:"SecureStore" yaml:"SecureStore,omitempty"` // json or keyring
+	DefaultRegion     string                `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
 	JsonStore         string                `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
 	UrlAction         string                `koanf:"UrlAction" yaml:"UrlAction,omitempty"`
 	Browser           string                `koanf:"Browser" yaml:"Browser,omitempty"`
@@ -82,13 +83,20 @@ type SSORole struct {
 	Via           string            `koanf:"Via" yaml:"Via,omitempty"`
 }
 
-// Our Cachefile.  Sub-structs defined in sso/cache.go
-type Cache struct {
-	settings        *Settings // pointer back up
-	CreatedAt       int64     `json:"CreatedAt"`       // this cache.json
-	ConfigCreatedAt int64     `json:"ConfigCreatedAt"` // track config.yaml
-	History         []string  `json:"History,omitempty"`
-	Roles           *Roles    `json:"Roles,omitempty"`
+// GetDefaultRegion returns the user defined AWS_DEFAULT_REGION for the specified role
+func (s *Settings) GetDefaultRegion(accountId int64, roleName string) string {
+	roleFlat, err := s.Cache.Roles.GetRole(accountId, roleName)
+	if err != nil {
+		if s.SSO[s.DefaultSSO].DefaultRegion != "" {
+			return s.SSO[s.DefaultSSO].DefaultRegion
+		} else {
+			return s.DefaultRegion
+		}
+	}
+	if roleFlat.DefaultRegion != "" {
+		return roleFlat.DefaultRegion
+	}
+	return s.DefaultRegion
 }
 
 var DEFAULT_ACCOUNT_PRIMARY_TAGS []string = []string{

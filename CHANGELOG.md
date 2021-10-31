@@ -12,6 +12,8 @@
 	- LogLines
 	- DefaultSSO
  * Replace `--print-url` with `--url-action` #81
+ * Add support for `DefaultRegion` in config file  #30
+ * `console` command now supports `--region`
 
 ## [v1.2.0] - 2021-10-29
 

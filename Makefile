@@ -9,7 +9,7 @@ endif
 BUILDINFOSDET ?=
 PROGRAM_ARGS ?=
 
-PROJECT_VERSION           := 1.2.1
+PROJECT_VERSION           := 1.2.1-beta
 DOCKER_REPO               := synfinatic
 PROJECT_NAME              := aws-sso
 PROJECT_TAG               := $(shell git describe --tags 2>/dev/null $(git rev-list --tags --max-count=1))
