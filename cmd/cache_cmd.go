@@ -38,7 +38,7 @@ func (cc *CacheCmd) Run(ctx *RunContext) error {
 	if err != nil {
 		return fmt.Errorf("Unable to refresh role cache: %s", err.Error())
 	}
-	err = ctx.Settings.Cache.Save()
+	err = ctx.Settings.Cache.Save(true)
 	if err != nil {
 		return fmt.Errorf("Unable to save role cache: %s", err.Error())
 	}

@@ -14,6 +14,10 @@
  * Replace `--print-url` with `--url-action` #81
  * Add support for `DefaultRegion` in config file  #30
  * `console` command now supports `--region`
+ * `list` command now reports expired and has constant sorting of roles #71
+ * Fix bug where STS token creds were cached, but not reused.
+ * `list -f` now sorts fields
+ * Use cache for tracking when STS tokens expire
 
 ## [v1.2.0] - 2021-10-29
 

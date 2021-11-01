@@ -81,9 +81,22 @@ func (r *RoleCredentials) RoleArn() string {
 	return fmt.Sprintf("arn:aws:iam:%d:role/%s", r.AccountId, r.RoleName)
 }
 
+// Return seconds since unix epoch when we expire
+func (r *RoleCredentials) ExpireEpoch() int64 {
+	return r.Expiration / 1000
+}
+
 func (r *RoleCredentials) ExpireString() string {
 	// apparently Expiration is in ms???
 	return time.Unix(r.Expiration/1000, 0).String()
+}
+
+func (r *RoleCredentials) IsExpired() bool {
+	now := time.Now().Add(time.Minute).Unix()
+	if r.Expiration/1000 > now {
+		return false
+	}
+	return true
 }
 
 // AccountIdStr returns our AccountId as a string

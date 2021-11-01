@@ -21,8 +21,8 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
-	"time"
+
+	"github.com/synfinatic/aws-sso-cli/utils"
 )
 
 type TimeCmd struct{}
@@ -33,18 +33,14 @@ func (cc *TimeCmd) Run(ctx *RunContext) error {
 		return nil // no output if nothing is set
 	}
 
-	t, err := time.Parse("2006-01-02 15:04:05 -0700 MST", expires)
+	t, err := utils.ParseTimeString(expires)
 	if err != nil {
-		return fmt.Errorf("Unable to parse AWS_SESSION_EXPIRATION: %s", err.Error())
+		return err
 	}
-
-	d := time.Until(t)
-	if d <= 0 {
-		fmt.Printf("EXPIRED")
-		return nil
+	exp, err := utils.TimeRemain(t, false)
+	if err != nil {
+		return err
 	}
-
-	// Just return the number of MMm or HHhMMm
-	fmt.Printf("%s", strings.Replace(d.Round(time.Minute).String(), "0s", "", 1))
+	fmt.Printf("%s", exp)
 	return nil
 }

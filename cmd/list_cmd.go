@@ -24,7 +24,7 @@ import (
 	"sort"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/synfinatic/aws-sso-cli/sso"
+	"github.com/synfinatic/aws-sso-cli/utils"
 	"github.com/synfinatic/gotable"
 )
 
@@ -34,7 +34,7 @@ var defaultListFields = []string{
 	"AccountId",
 	"AccountName",
 	"RoleName",
-	"Expires",
+	"ExpiresStr",
 }
 
 // keys match AWSRoleFlat header and value is the description
@@ -42,17 +42,17 @@ var allListFields = map[string]string{
 	"Id":            "Column Index",
 	"Arn":           "AWS Role Resource Name",
 	"AccountId":     "AWS AccountID",
-	"AccountName":   "AWS AccountName",
+	"AccountName":   "AWS Account Name",
 	"DefaultRegion": "Default AWS Region",
-	"EmailAddress":  "Root Email",
-	"Expires":       "Creds Expire",
-	"Profile":       "AWS_PROFILE",
-	"RoleName":      "AWS Role",
-	"Via":           "Role Chain Via",
+	"EmailAddress":  "Root email for AWS account",
+	"ExpiresStr":    "Time until STS creds expire",
+	//	"Profile":       "AWS_PROFILE",
+	"RoleName": "AWS Role",
+	//	"Via":           "Role Chain Via",
 }
 
 type ListCmd struct {
-	Fields     []string `kong:"optional,arg,enum='AccountId,AccountName,Arn,EmailAddress,Expires,Id,Profile,RoleName',help='Fields to display',env='AWS_SSO_FIELDS'"`
+	Fields     []string `kong:"optional,arg,help='Fields to display',env='AWS_SSO_FIELDS'"`
 	ListFields bool     `kong:"optional,name='list-fields',short='f',help='List available fields'"`
 }
 
@@ -82,13 +82,14 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 		fields = ctx.Cli.List.Fields
 	}
 
-	printRoles(ctx.Settings.Cache.Roles, fields)
+	printRoles(ctx, fields)
 
 	return nil
 }
 
 // Print all our roles
-func printRoles(roles *sso.Roles, fields []string) {
+func printRoles(ctx *RunContext, fields []string) {
+	roles := ctx.Settings.Cache.Roles
 	tr := []gotable.TableStruct{}
 	idx := 0
 
@@ -100,10 +101,23 @@ func printRoles(roles *sso.Roles, fields []string) {
 	sort.Slice(accounts, func(i, j int) bool { return accounts[i] < accounts[j] })
 
 	for _, account := range accounts {
-		for _, role := range roles.GetAccountRoles(account) {
-			role.Id = idx
+		// print roles in order
+		roleNames := []string{}
+		for _, roleFlat := range roles.GetAccountRoles(account) {
+			roleNames = append(roleNames, roleFlat.RoleName)
+		}
+		sort.Strings(roleNames)
+
+		for _, roleName := range roleNames {
+			roleFlat, _ := roles.GetRole(account, roleName)
+			if !roleFlat.IsExpired() {
+				if exp, err := utils.TimeRemain(roleFlat.Expires, true); err == nil {
+					roleFlat.ExpiresStr = exp
+				}
+			}
+			roleFlat.Id = idx
 			idx += 1
-			tr = append(tr, *role)
+			tr = append(tr, *roleFlat)
 		}
 	}
 
@@ -125,11 +139,16 @@ func (cfn ConfigFieldNames) GetHeader(fieldName string) (string, error) {
 
 // listAllFields generates a table with all the AWSRoleFlat fields we can print
 func listAllFields() {
+	names := []string{}
+	for k, _ := range allListFields {
+		names = append(names, k)
+	}
+	sort.Strings(names)
 	ts := []gotable.TableStruct{}
-	for k, v := range allListFields {
+	for _, k := range names {
 		ts = append(ts, ConfigFieldNames{
 			Field:       k,
-			Description: v,
+			Description: allListFields[k],
 		})
 	}
 

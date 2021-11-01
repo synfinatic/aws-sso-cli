@@ -61,7 +61,10 @@ func (c *Cache) CacheFile() string {
 }
 
 // Save saves our cache to the current file
-func (c *Cache) Save() error {
+func (c *Cache) Save(updateTime bool) error {
+	if updateTime {
+		c.CreatedAt = time.Now().Unix()
+	}
 	jbytes, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
 		return err
@@ -85,21 +88,46 @@ func (c *Cache) AddHistory(item string, max int) {
 // Refresh updates our cached Roles based on AWS SSO & our Config
 // but does not save this data!
 func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig) error {
-	r, err := NewRoles(sso, c.Roles.SSOName, config)
+	r, err := c.NewRoles(sso, config)
 	if err != nil {
 		return err
 	}
 	c.Roles = r
-	c.CreatedAt = time.Now().Unix()
 	c.ConfigCreatedAt = config.CreatedAt()
 	return nil
+}
+
+// Update the Expires time in the cache.  expires is Unix epoch time in sec
+func (c *Cache) SetRoleExpires(arn string, expires int64) error {
+	accountId, roleName, err := utils.ParseRoleARN(arn)
+	if err != nil {
+		return err
+	}
+
+	c.Roles.Accounts[accountId].Roles[roleName].Expires = expires
+	return c.Save(false)
+}
+
+func (c *Cache) MarkRolesExpired() error {
+	for accountId, _ := range c.Roles.Accounts {
+		for _, role := range c.Roles.Accounts[accountId].Roles {
+			(*role).Expires = 0
+		}
+	}
+	return c.Save(false)
+}
+
+func (c *Cache) GetRole(arn string) (*AWSRoleFlat, error) {
+	accountId, roleName, err := utils.ParseRoleARN(arn)
+	if err != nil {
+		return &AWSRoleFlat{}, err
+	}
+	return c.Roles.GetRole(accountId, roleName)
 }
 
 // main struct holding all our Roles discovered via AWS SSO and
 // via the config.yaml
 type Roles struct {
-	// sso           *AWSSSO
-	SSOName       string                `json:"SSOName"`
 	Accounts      map[int64]*AWSAccount `json:"Accounts"`
 	SSORegion     string                `json:"SSORegion"`
 	StartUrl      string                `json:"StartUrl"`
@@ -119,7 +147,7 @@ type AWSAccount struct {
 type AWSRole struct {
 	Arn           string            `json:"Arn"`
 	DefaultRegion string            `json:"DefaultRegion,omitempty"`
-	Expires       string            `json:"Expires,omitempty"` // 2006-01-02 15:04:05 -0700 MST
+	Expires       int64             `json:"Expires,omitempty"` // Seconds since Unix Epoch
 	Profile       string            `json:"Profile,omitempty"`
 	Tags          map[string]string `json:"Tags,omitempty"`
 	Via           string            `json:"Via,omitempty"`
@@ -132,7 +160,8 @@ type AWSRoleFlat struct {
 	AccountName   string            `json:"AccountName" header:"AccountName"`
 	AccountAlias  string            `json:"AccountAlias" header:"AccountAlias"`
 	EmailAddress  string            `json:"EmailAddress" header:"EmailAddress"`
-	Expires       string            `json:"Expires" header:"Expires"`
+	Expires       int64             `json:"Expires"`            // used in cache
+	ExpiresStr    string            `json:"-" header:"Expires"` // used by `list` command
 	Arn           string            `json:"Arn" header:"ARN"`
 	RoleName      string            `json:"RoleName" header:"Role"`
 	Profile       string            `json:"Profile" header:"Profile"`
@@ -150,10 +179,8 @@ func (f AWSRoleFlat) GetHeader(fieldName string) (string, error) {
 }
 
 // Merges the AWS SSO and our Config file to create our Roles struct
-func NewRoles(as *AWSSSO, ssoName string, config *SSOConfig) (*Roles, error) {
+func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 	r := Roles{
-		// sso:           as,
-		SSOName:       ssoName,
 		SSORegion:     config.SSORegion,
 		StartUrl:      config.StartUrl,
 		DefaultRegion: config.DefaultRegion,
@@ -182,6 +209,14 @@ func NewRoles(as *AWSSSO, ssoName string, config *SSOConfig) (*Roles, error) {
 			r.Accounts[accountId].Roles[role.RoleName] = &AWSRole{
 				Arn:  utils.MakeRoleARN(accountId, role.RoleName),
 				Tags: map[string]string{},
+			}
+			// need to copy over the Expires field from our current cache
+			if _, ok := c.Roles.Accounts[accountId]; ok {
+				if _, ok := c.Roles.Accounts[accountId].Roles[role.RoleName]; ok {
+					if expires := c.Roles.Accounts[accountId].Roles[role.RoleName].Expires; expires > 0 {
+						r.Accounts[accountId].Roles[role.RoleName].Expires = expires
+					}
+				}
 			}
 		}
 	}
@@ -437,15 +472,10 @@ func (r *Roles) MatchingRoles(tags map[string]string) []*AWSRoleFlat {
 
 // IsExpired returns if this role has expired or has no creds available
 func (r *AWSRoleFlat) IsExpired() bool {
-	if r.Expires == "" {
+	if r.Expires == 0 {
 		return true
 	}
-	expires, err := time.Parse(AWS_SESSION_EXPIRATION_FORMAT, r.Expires)
-	if err != nil {
-		log.WithError(err).Errorf("Unable to parse expires '%s'", r.Expires)
-		return true
-	}
-	d := time.Until(expires)
+	d := time.Until(time.Unix(r.Expires, 0))
 	if d <= 0 {
 		return true
 	}
@@ -454,16 +484,5 @@ func (r *AWSRoleFlat) IsExpired() bool {
 
 // ExpiresIn returns how long until this role expires as a string
 func (r *AWSRoleFlat) ExpiresIn() (string, error) {
-	if r.Expires == "" {
-		return "Expired", nil
-	}
-	expires, err := time.Parse(AWS_SESSION_EXPIRATION_FORMAT, r.Expires)
-	if err != nil {
-		return "", fmt.Errorf("Unable to parse expires '%s': %s", r.Expires, err.Error())
-	}
-	d := time.Until(expires)
-	if d <= 0 {
-		return "Expired", nil
-	}
-	return fmt.Sprintf("%s", strings.Replace(d.Round(time.Minute).String(), "0s", "", 1)), nil
+	return utils.TimeRemain(r.Expires, false)
 }

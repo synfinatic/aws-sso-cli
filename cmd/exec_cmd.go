@@ -28,6 +28,7 @@ import (
 	"text/template"
 
 	"github.com/c-bata/go-prompt"
+	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/synfinatic/aws-sso-cli/utils"
@@ -186,8 +187,8 @@ func execShellEnvs(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, r
 		}
 
 		buf := new(bytes.Buffer)
-		log.Debugf("%v", roleInfo)
-		log.Debugf("%v", templ)
+		log.Tracef("RoleInfo: %s", spew.Sdump(roleInfo))
+		log.Tracef("Template: %s", spew.Sdump(templ))
 		templ.Execute(buf, roleInfo)
 		shellVars["AWS_SSO_PROFILE"] = buf.String()
 	}
