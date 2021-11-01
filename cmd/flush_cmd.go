@@ -22,9 +22,7 @@ import (
 	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
-type FlushCmd struct {
-	//	All bool `kong:"optional,name='all',help='Delete ClientData and SSO Token'"`
-}
+type FlushCmd struct{}
 
 func (cc *FlushCmd) Run(ctx *RunContext) error {
 	var err error
@@ -35,21 +33,14 @@ func (cc *FlushCmd) Run(ctx *RunContext) error {
 	}
 	awssso := sso.NewAWSSSO(s.SSORegion, s.StartUrl, &ctx.Store)
 
+	// Deleting the token response invalidates all our STS tokens
 	err = ctx.Store.DeleteCreateTokenResponse(awssso.StoreKey())
 	if err != nil {
 		log.WithError(err).Errorf("Unable to delete TokenResponse")
 	} else {
 		log.Infof("Deleted cached Token for %s", awssso.StoreKey())
 	}
-	/* XXX: Don't think this is actually useful
-	if ctx.Cli.Expire.All {
-		err = ctx.Store.DeleteRegisterClientData(awssso.StoreKey())
-		if err != nil {
-			log.WithError(err).Errorf("Unable to delete ClientData")
-		} else {
-			log.Infof("Deleted cached ClientData for %s", awssso.StoreKey())
-		}
-	}
-	*/
-	return nil
+
+	// Inform the cache the roles are expired
+	return ctx.Settings.Cache.MarkRolesExpired()
 }

@@ -80,13 +80,13 @@ func (as *AWSSSO) Authenticate(urlAction, browser string) error {
 		as.Token = token
 		return nil
 	} else if err != nil {
-		log.WithError(err).Errorf("Unable to use cache")
+		log.WithError(err).Errorf("Unable read SSO token from cache")
 	} else {
 		if as.Token.ExpiresAt != 0 {
 			t := time.Unix(as.Token.ExpiresAt, 0)
-			log.Infof("Token expired at: %s", t.Format("Mon Jan 2 15:04:05 -0700 MST 2006"))
+			log.Infof("Cached SSO token expired at: %s.  Reauthenticating...\n", t.Format("Mon Jan 2 15:04:05 -0700 MST 2006"))
 		} else {
-			log.Info("Token has expired.  Refreshing...")
+			log.Infof("Cached SSO token has expired.  Reauthenticating...\n")
 		}
 	}
 
@@ -106,8 +106,11 @@ func (as *AWSSSO) Authenticate(urlAction, browser string) error {
 		return fmt.Errorf("Unable to get DeviceAuthInfo: %s", err.Error())
 	}
 
-	utils.HandleUrl(urlAction, browser, auth.VerificationUriComplete,
+	err = utils.HandleUrl(urlAction, browser, auth.VerificationUriComplete,
 		"Please open the following URL in your browser:\n\n", "\n\n")
+	if err != nil {
+		return err
+	}
 
 	log.Infof("Waiting for SSO authentication...")
 
@@ -131,6 +134,7 @@ const (
 
 // Does the needful to talk to AWS or read our cache to get the RegisterClientData
 func (as *AWSSSO) RegisterClient() error {
+	log.Tracef("RegisterClient()")
 	err := as.store.GetRegisterClientData(as.StoreKey(), &as.ClientData)
 	if err == nil && !as.ClientData.Expired() {
 		log.Debug("Using RegisterClient cache")
@@ -164,6 +168,7 @@ func (as *AWSSSO) RegisterClient() error {
 
 // Makes the call to AWS to initiate the OIDC auth to the SSO provider.
 func (as *AWSSSO) StartDeviceAuthorization() error {
+	log.Tracef("StartDeviceAuthorization()")
 	input := ssooidc.StartDeviceAuthorizationInput{
 		StartUrl:     aws.String(as.StartUrl),
 		ClientId:     aws.String(as.ClientData.ClientId),
@@ -195,6 +200,7 @@ type DeviceAuthInfo struct {
 }
 
 func (as *AWSSSO) GetDeviceAuthInfo() (DeviceAuthInfo, error) {
+	log.Tracef("GetDeviceAuthInfo()")
 	if as.DeviceAuth.VerificationUri == "" {
 		return DeviceAuthInfo{}, fmt.Errorf("No valid verification url is available")
 	}
@@ -209,6 +215,7 @@ func (as *AWSSSO) GetDeviceAuthInfo() (DeviceAuthInfo, error) {
 
 // Blocks until we have a token
 func (as *AWSSSO) CreateToken() error {
+	log.Tracef("CreateToken()")
 	err := as.store.GetCreateTokenResponse(as.StoreKey(), &as.Token)
 	if err == nil && !as.Token.Expired() {
 		log.Info("Using CreateToken cache")

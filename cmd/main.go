@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/alecthomas/kong"
+	//	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/synfinatic/aws-sso-cli/storage"
@@ -195,30 +196,46 @@ func (cc *VersionCmd) Run(ctx *RunContext) error {
 	return nil
 }
 
-// Get our RoleCredentials
+// Get our RoleCredentials from the secure store or from AWS SSO
 func GetRoleCredentials(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) *storage.RoleCredentials {
 	creds := storage.RoleCredentials{}
 
-	rFlat, err := ctx.Settings.Cache.Roles.GetRole(accountid, role)
-
-	// must be in cache, not expired and no force refresh
-	if err == nil && !ctx.Cli.STSRefresh && !rFlat.IsExpired() {
-		// we can use the secure store!
-		err = ctx.Store.GetRoleCredentials(rFlat.Arn, &creds)
+	// First look for our creds in the secure store, if we're not forcing a refresh
+	arn := utils.MakeRoleARN(accountid, role)
+	if !ctx.Cli.STSRefresh {
+		if roleFlat, err := ctx.Settings.Cache.GetRole(arn); err == nil {
+			if !roleFlat.IsExpired() {
+				if err := ctx.Store.GetRoleCredentials(arn, &creds); err == nil {
+					if !creds.IsExpired() {
+						log.Debugf("Retrieved role credentials from the SecureStore")
+						return &creds
+					}
+				}
+			}
+		}
+	} else {
+		log.Infof("Forcing STS refresh for %s", arn)
 	}
 
-	// If we didn't load our cache query AWS SSO
-	if creds.RoleName == "" {
-		creds, err = awssso.GetRoleCredentials(accountid, role)
-		if err != nil {
-			log.WithError(err).Fatalf("Unable to get role credentials for %s", role)
-		}
+	log.Debugf("Fetching STS token from AWS SSO")
 
-		// Cache our creds
-		err = ctx.Store.SaveRoleCredentials(rFlat.Arn, creds)
-		if err != nil {
-			log.WithError(err).Warnf("Unable to cache role credentials in secure store")
-		}
+	// If we didn't use our secure store ask AWS SSO
+	var err error
+	creds, err = awssso.GetRoleCredentials(accountid, role)
+	if err != nil {
+		log.WithError(err).Fatalf("Unable to get role credentials for %s", role)
+	}
+
+	log.Debugf("Retrieved role credentials from AWS SSO")
+
+	// Cache our creds
+	if err := ctx.Store.SaveRoleCredentials(arn, creds); err != nil {
+		log.WithError(err).Warnf("Unable to cache role credentials in secure store")
+	}
+
+	// Update the cache
+	if err := ctx.Settings.Cache.SetRoleExpires(arn, creds.ExpireEpoch()); err != nil {
+		log.WithError(err).Warnf("Unable to update cache")
 	}
 	return &creds
 }

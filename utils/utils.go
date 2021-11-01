@@ -24,9 +24,10 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/atotto/clipboard"
-	log "github.com/sirupsen/logrus"
+	//	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open" // default opener
 )
 
@@ -41,6 +42,8 @@ func HandleUrl(action, browser, url, pre, post string) error {
 		err = clipboard.WriteAll(url)
 		if err == nil {
 			fmt.Printf("Please open URL copied to clipboard.\n")
+		} else {
+			err = fmt.Errorf("Unable to copy %s to clipboard: %s", url, err.Error())
 		}
 	case "print":
 		fmt.Printf("%s%s%s", pre, url, post)
@@ -54,7 +57,7 @@ func HandleUrl(action, browser, url, pre, post string) error {
 		if err != nil {
 			err = fmt.Errorf("Unable to open %s with %s: %s", url, browser, err.Error())
 		} else {
-			log.Infof("Opening URL in %s", browser)
+			fmt.Printf("Opening %s in %s\n", url, browser)
 		}
 	default:
 		err = fmt.Errorf("Unknown --url-action option: %s", action)
@@ -114,4 +117,32 @@ func EnsureDirExists(filename string) error {
 		return fmt.Errorf("%s exists and is not a directory!", storeDir)
 	}
 	return nil
+}
+
+func ParseTimeString(t string) (int64, error) {
+	i, err := time.Parse("2006-01-02 15:04:05 -0700 MST", t)
+	if err != nil {
+		return 0, fmt.Errorf("Unable to parse %s: %s", t, err.Error())
+	}
+	return i.Unix(), nil
+}
+
+// Returns the MMm or HHhMMm
+func TimeRemain(expires int64, space bool) (string, error) {
+	d := time.Until(time.Unix(expires, 0))
+	if d <= 0 {
+		return "Expired", nil
+	}
+
+	s := strings.Replace(d.Round(time.Minute).String(), "0s", "", 1)
+	if space {
+		if strings.Contains(s, "h") {
+			s = strings.Replace(s, "h", "h ", 1)
+		} else {
+			s = fmt.Sprintf("   %s", s)
+		}
+	}
+
+	// Just return the number of MMm or HHhMMm
+	return s, nil
 }

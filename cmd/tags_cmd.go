@@ -45,7 +45,7 @@ func (cc *TagsCmd) Run(ctx *RunContext) error {
 		if err != nil {
 			log.WithError(err).Fatalf("Unable to refresh role cache")
 		}
-		err = set.Cache.Save()
+		err = set.Cache.Save(true)
 		if err != nil {
 			log.WithError(err).Warnf("Unable to save cache")
 		}

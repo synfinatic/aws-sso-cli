@@ -159,10 +159,8 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials, durat
 	}
 	url := login.GetUrl()
 
-	err = utils.HandleUrl(ctx.Cli.UrlAction, ctx.Cli.Browser, url,
+	return utils.HandleUrl(ctx.Cli.UrlAction, ctx.Cli.Browser, url,
 		"Please open the following URL in your browser:\n\n", "\n\n")
-
-	return err
 }
 
 type LoginResponse struct {
