@@ -413,7 +413,7 @@ func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {
 }
 
 func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.RoleCredentials, error) {
-	aId := strconv.FormatInt(accountId, 10)
+	aId := fmt.Sprintf("%012d", accountId)
 
 	input := sso.GetRoleCredentialsInput{
 		AccessToken: aws.String(as.Token.AccessToken),
