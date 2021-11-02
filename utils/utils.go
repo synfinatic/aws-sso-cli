@@ -23,6 +23,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -41,7 +42,7 @@ func GetHomePath(path string) string {
 		}
 		home = home2
 	}
-	return strings.Replace(path, "~", home, 1)
+	return filepath.Clean(strings.Replace(path, "~", home, 1))
 }
 
 func HandleUrl(action, browser, url, pre, post string) error {
