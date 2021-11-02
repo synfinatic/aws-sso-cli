@@ -68,9 +68,9 @@ func (suite *UtilsTestSuite) TestParseRoleARN() {
 func (suite *UtilsTestSuite) TestMakeRoleARN() {
 	t := suite.T()
 
-	assert.Equal(t, "arn:aws:iam:11111:role/Foo", MakeRoleARN(11111, "Foo"))
-	assert.Equal(t, "arn:aws:iam:711111:role/Foo", MakeRoleARN(711111, "Foo"))
-	assert.Equal(t, "arn:aws:iam:0:role/", MakeRoleARN(0, ""))
+	assert.Equal(t, "arn:aws:iam:000000011111:role/Foo", MakeRoleARN(11111, "Foo"))
+	assert.Equal(t, "arn:aws:iam:000000711111:role/Foo", MakeRoleARN(711111, "Foo"))
+	assert.Equal(t, "arn:aws:iam:000000000000:role/", MakeRoleARN(0, ""))
 }
 
 func (suite *UtilsTestSuite) TestEnsureDirExists() {
