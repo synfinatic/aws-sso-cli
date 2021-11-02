@@ -20,6 +20,7 @@ package utils
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"strconv"
@@ -32,7 +33,15 @@ import (
 )
 
 func GetHomePath(path string) string {
-	return strings.Replace(path, "~", os.Getenv("HOME"), 1)
+	home, present := os.LookupEnv("HOME")
+	if !present {
+		home2, err := os.UserHomeDir()
+		if err != nil {
+			log.Fatal(err)
+		}
+		home = home2
+	}
+	return strings.Replace(path, "~", home, 1)
 }
 
 func HandleUrl(action, browser, url, pre, post string) error {
