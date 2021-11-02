@@ -18,6 +18,7 @@
  * Fix bug where STS token creds were cached, but not reused.
  * `list -f` now sorts fields
  * Use cache for tracking when STS tokens expire
+ * `exec` command now ignores arguments intended for the command being run #93
 
 ## [v1.2.0] - 2021-10-29
 
