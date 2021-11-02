@@ -19,6 +19,7 @@
  * `list -f` now sorts fields
  * Use cache for tracking when STS tokens expire
  * `exec` command now ignores arguments intended for the command being run #93
+ * Remove `-R` as a short version of `--sts-refresh` to avoid collision with exec role #92
 
 ## [v1.2.0] - 2021-10-29
 
