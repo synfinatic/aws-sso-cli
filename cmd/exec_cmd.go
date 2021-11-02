@@ -44,7 +44,7 @@ type ExecCmd struct {
 
 	// Exec Params
 	Cmd  string   `kong:"arg,optional,name='command',help='Command to execute',env='SHELL'"`
-	Args []string `kong:"arg,optional,name='args',help='Associated arguments for the command'"`
+	Args []string `kong:"arg,optional,passthrough,name='args',help='Associated arguments for the command'"`
 }
 
 func (cc *ExecCmd) Run(ctx *RunContext) error {
