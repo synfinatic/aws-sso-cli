@@ -90,14 +90,14 @@ may generate warnings.
 ### Common Flags
 
  * `--help`, `-h` -- Builtin and context sensitive help
- * `--level <level>`, `-L` -- Change default log level: [error|warn|info|debug]
+ * `--level <level>`, `-L` -- Change default log level: [error|warn|info|debug|trace]
  * `--lines` -- Print file number with logs
  * `--config <file>`, `-c` -- Specify alternative config file
  * `--browser <path>`, `-b` -- Override default browser to open AWS SSO URL
  * `--url-action`, `-u` -- Print, open or put URLs in clipboard
  * `--region <region>, `-r` -- Specify the AWS_DEFAULT_REGION to use
  * `--sso <name>`, `-S` -- Specify non-default AWS SSO instance to use
- * `--sts-refresh`, `-R` -- Force refresh of STS Token Credentials
+ * `--sts-refresh` -- Force refresh of STS Token Credentials
 
 ### console
 
@@ -171,8 +171,12 @@ Arguments: `[<field> ...]`
 
 ### flush
 
-Flush any cached AWS SSO credentials.  By default, it only deletes the temorary
-Client Token which represents your AWS SSO session for the specified AWS SSO portal.
+Flush any cached AWS SSO/STS credentials.  By default, it only flushes the SSO
+credentials used to issue new STS tokens.
+
+Flags:
+
+ * `--all` -- Also delete any non-expired AWS STS credentials from secure store
 
 ### renew
 
@@ -236,7 +240,7 @@ JsonStore: <path to json file>
 ProfileFormat: <template>
 AccountPrimaryTag: <list of role tags>
 PromptColors:
-	<Option>: <Color>
+    <Option>: <Color>
 ```
 
 ### Accounts
