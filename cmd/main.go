@@ -85,7 +85,7 @@ type CLI struct {
 	LogLevel   string `kong:"optional,short='L',name='level',enum='error,warn,info,debug,trace,',help='Logging level [error|warn|info|debug|trace]'"`
 	UrlAction  string `kong:"optional,short='u',enum='open,print,clip,',help='How to handle URLs [open|print|clip]'"`
 	SSO        string `kong:"optional,short='S',help='AWS SSO Instance',env='AWS_SSO'"`
-	STSRefresh bool   `kong:"optional,short='R',help='Force refresh of STS Token Credentials'"`
+	STSRefresh bool   `kong:"optional,help='Force refresh of STS Token Credentials'"`
 
 	// Commands
 	Cache   CacheCmd   `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
