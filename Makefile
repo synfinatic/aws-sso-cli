@@ -63,7 +63,7 @@ uninstall:  ## Uninstall binary from $INSTALL_PREFIX
 	rm /usr/local/bin/$(PROJECT_NAME)
 
 
-HOMEBREW := /usr/local/Homebrew/Library/Taps/synfinatic/homebrew-aws-sso-cli/Formula/aws-sso-cli.rb
+HOMEBREW := aws-sso-cli.rb
 
 homebrew: $(HOMEBREW)  ## Build homebrew tap file
 
