@@ -20,6 +20,7 @@ package utils
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -52,25 +53,25 @@ func (suite *UtilsTestSuite) TestParseRoleARN() {
 	a, r, err = ParseRoleARN("arn:aws:iam:a:role/Foo")
 	assert.NotNil(t, err)
 
-	a, r, err = ParseRoleARN("arn:aws:iam:11111:role")
+	a, r, err = ParseRoleARN("arn:aws:iam:000000011111:role")
 	assert.NotNil(t, err)
 
-	a, r, err = ParseRoleARN("aws:iam:11111:role/Foo")
+	a, r, err = ParseRoleARN("aws:iam:000000011111:role/Foo")
 	assert.NotNil(t, err)
 
-	a, r, err = ParseRoleARN("invalid:arn:aws:iam:11111:role/Foo")
+	a, r, err = ParseRoleARN("invalid:arn:aws:iam:000000011111:role/Foo")
 	assert.NotNil(t, err)
 
-	a, r, err = ParseRoleARN("arn:aws:iam:11111:role/Foo/Bar")
+	a, r, err = ParseRoleARN("arn:aws:iam:000000011111:role/Foo/Bar")
 	assert.NotNil(t, err)
 }
 
 func (suite *UtilsTestSuite) TestMakeRoleARN() {
 	t := suite.T()
 
-	assert.Equal(t, "arn:aws:iam:11111:role/Foo", MakeRoleARN(11111, "Foo"))
-	assert.Equal(t, "arn:aws:iam:711111:role/Foo", MakeRoleARN(711111, "Foo"))
-	assert.Equal(t, "arn:aws:iam:0:role/", MakeRoleARN(0, ""))
+	assert.Equal(t, "arn:aws:iam:000000011111:role/Foo", MakeRoleARN(11111, "Foo"))
+	assert.Equal(t, "arn:aws:iam:000000711111:role/Foo", MakeRoleARN(711111, "Foo"))
+	assert.Equal(t, "arn:aws:iam:000000000000:role/", MakeRoleARN(0, ""))
 }
 
 func (suite *UtilsTestSuite) TestEnsureDirExists() {
@@ -79,4 +80,17 @@ func (suite *UtilsTestSuite) TestEnsureDirExists() {
 	assert.Nil(t, EnsureDirExists("./testdata/role_tags.yaml"))
 	assert.NotNil(t, EnsureDirExists("./does_not_exist_dir/foo.yaml"))
 	defer os.Remove("./does_not_exist_dir")
+}
+
+func (suite *UtilsTestSuite) TestGetHomePath() {
+	t := suite.T()
+
+	assert.Equal(t, "/", GetHomePath("/"))
+	assert.Equal(t, ".", GetHomePath("."))
+	assert.Equal(t, "/foo/bar", GetHomePath("/foo/bar"))
+	assert.Equal(t, "/foo/bar", GetHomePath("/foo////bar"))
+	assert.Equal(t, "/bar", GetHomePath("/foo/../bar"))
+	home, _ := os.UserHomeDir()
+	x := filepath.Join(home, "foo/bar")
+	assert.Equal(t, x, GetHomePath("~/foo/bar"))
 }

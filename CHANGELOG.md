@@ -20,6 +20,7 @@
  * Use cache for tracking when STS tokens expire
  * `exec` command now ignores arguments intended for the command being run #93
  * Remove `-R` as a short version of `--sts-refresh` to avoid collision with exec role #92
+ * Fix finding $HOME directory on Windows and make GetHomePath() cross platform #100
 
 ## [v1.2.0] - 2021-10-29
 
