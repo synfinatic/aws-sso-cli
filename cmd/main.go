@@ -91,7 +91,7 @@ type CLI struct {
 	Cache   CacheCmd   `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
 	Console ConsoleCmd `kong:"cmd,help='Open AWS Console using specificed AWS Role/profile'"`
 	Exec    ExecCmd    `kong:"cmd,help='Execute command using specified AWS Role/Profile'"`
-	Flush   FlushCmd   `kong:"cmd,help='Force delete of AWS SSO credentials'"`
+	Flush   FlushCmd   `kong:"cmd,help='Flush AWS SSO/STS credentials from cache'"`
 	List    ListCmd    `kong:"cmd,help='List all accounts / role (default command)',default='1'"`
 	Renew   RenewCmd   `kong:"cmd,help='Print renewed AWS credentials for your shell'"`
 	Tags    TagsCmd    `kong:"cmd,help='List tags'"`

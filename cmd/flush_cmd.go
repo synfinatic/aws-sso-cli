@@ -22,7 +22,9 @@ import (
 	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
-type FlushCmd struct{}
+type FlushCmd struct {
+	All bool `kong:"optional,name='all',help='Also flush individual STS tokens'"`
+}
 
 func (cc *FlushCmd) Run(ctx *RunContext) error {
 	var err error
@@ -41,6 +43,18 @@ func (cc *FlushCmd) Run(ctx *RunContext) error {
 		log.Infof("Deleted cached Token for %s", awssso.StoreKey())
 	}
 
+	if ctx.Cli.Flush.All {
+		for _, role := range ctx.Settings.Cache.Roles.GetAllRoles() {
+			if !role.IsExpired() {
+				if err = ctx.Store.DeleteRoleCredentials(role.Arn); err != nil {
+					log.WithError(err).Errorf("Unable to delete STS token for %s", role.Arn)
+				}
+			}
+		}
+		err = nil
+		err = ctx.Settings.Cache.MarkRolesExpired()
+	}
+
 	// Inform the cache the roles are expired
-	return ctx.Settings.Cache.MarkRolesExpired()
+	return err
 }
