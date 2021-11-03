@@ -23,6 +23,7 @@
  * Fix finding $HOME directory on Windows and make GetHomePath() cross platform #100
  * Fix issue with AWS AccountID's with leading zeros.  #96
  * Optionally delete STS credentials from secure store cache #104
+ * Add support for Brew #52
 
 ## [v1.2.0] - 2021-10-29
 
