@@ -56,21 +56,22 @@ been granted access!
 
  * Contents of user defined `~/.aws-sso/config.yaml`
  * Meta data associated with the AWS Roles fetched via AWS SSO in `/.aws-sso/cache.json`
-	* Email address of account
-	* AWS Account Alias
-	* AWS Role ARN
+    * Email address of account
+    * AWS Account Alias
+    * AWS Role ARN
 
 ## Installation
 
  * Option 1: [Download binary](https://github.com/synfinatic/aws-sso-cli/releases)
+    1. Copy to appropriate location and `chmod 755`
  * Option 2: Build from source:
-	1. Install [GoLang](https://golang.org) and GNU Make
-	1. Clone this repo
-	1. Run `make` (or `gmake` for GNU Make)
-	1. Your binary will be created in the `dist` directory
-
-In both cases, copy the binary to a reasonable location (such as `/usr/local/bin`) and
-ensure that it is executable (`chmod 755 <path>`) and owned by root (`chown root <path>`).
+    1. Install [GoLang](https://golang.org) and GNU Make
+    1. Clone this repo
+    1. Run `make` (or `gmake` for GNU Make)
+    1. Your binary will be created in the `dist` directory
+    1. Run `make install` to install in /usr/local/bin
+ * Option 3: Install via [Homebrew](https://brew.sh)
+    1. Run `brew install synfinatic/aws-sso-cli/aws-sso-cli`
 
 Note that the release binaries are not signed at this time so MacOS and Windows systems
 may generate warnings.
