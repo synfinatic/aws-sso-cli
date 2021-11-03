@@ -22,19 +22,35 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/atotto/clipboard"
-	//	log "github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open" // default opener
 )
 
+// GetHomePath returns the absolute path of the provided path with the first ~
+// replaced with the location of the users home directory and the path rewritten
+// for the host operating system
 func GetHomePath(path string) string {
-	return strings.Replace(path, "~", os.Getenv("HOME"), 1)
+	// easiest to just manually replace our separator rather than relying on filepath.Join()
+	sep := fmt.Sprintf("%c", os.PathSeparator)
+	p := strings.ReplaceAll(path, "/", sep)
+	if strings.HasPrefix(p, "~") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			log.WithError(err).Fatalf("Unable to GetHomePath(%s)", path)
+		}
+
+		p = strings.Replace(p, "~", home, 1)
+	}
+	return filepath.Clean(p)
 }
 
+// Prints, opens or copies to clipboard the given URL
 func HandleUrl(action, browser, url, pre, post string) error {
 	var err error
 	switch action {
