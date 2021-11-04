@@ -291,13 +291,13 @@ of the following values:
 
 `SecureStore` supports the following backends:
 
- * `json` - Cleartext JSON file (insecure and not recommended)  Location can be overridden with `JsonStore`
  * `file` - Encrypted local files (OS agnostic and default)
- * `keychain` - macOS/OSX [Keychain](https://support.apple.com/guide/mac-help/use-keychains-to-store-passwords-mchlf375f392/mac)
+ * `keychain` - macOS [Keychain](https://support.apple.com/guide/mac-help/use-keychains-to-store-passwords-mchlf375f392/mac)
  * `kwallet` - [KDE Wallet](https://utils.kde.org/projects/kwalletmanager/)
  * `pass` - [pass](https://www.passwordstore.org)
  * `secret-service` - Freedesktop.org [Secret Service](https://specifications.freedesktop.org/secret-service/latest/re01.html)
  * `wincred` - Windows [Credential Manager](https://support.microsoft.com/en-us/windows/accessing-credential-manager-1b5c916a-6a16-889f-8581-fc16e8165ac0)
+ * `json` - Cleartext JSON file (very insecure and not recommended).  Location can be overridden with `JsonStore`
 
 ### ProfileFormat
 
@@ -331,7 +331,7 @@ The following functions are available in your template:
  * `AccountIdStr(x)` -- Converts an AWS Account ID to a string
  * `EmptyString(x)` -- Returns true/false if the value `x` is an empty string
  * `FirstItem([]x)` -- Returns the first item in a list that is not an empty string
- * `StringsJoin([]x, y) -- Joins the items in `x` with the string `y`
+ * `StringsJoin([]x, y)` -- Joins the items in `x` with the string `y`
 
 **Note:** Unlike most values stored in the `config.yaml`, because `ProfileFormat`
 values often start with a `{` you will need to quote the value for it to be valid
@@ -379,25 +379,25 @@ Valid options:
 
 Valid low intensity colors:
 
- * "Black"
- * "DarkRed"
- * "DarkGreen"
- * "Brown"
- * "DarkBlue"
- * "Purple"
- * "Cyan"
- * "LightGrey"
+ * Black
+ * DarkRed
+ * DarkGreen
+ * Brown
+ * DarkBlue
+ * Purple
+ * Cyan
+ * LightGrey
 
 Valid high intensity colors:
 
- * "DarkGrey"
- * "Red"
- * "Green"
- * "Yellow"
- * "Blue"
- * "Fuchsia"
- * "Turquoise"
- * "White"
+ * DarkGrey
+ * Red
+ * Green
+ * Yellow
+ * Blue
+ * Fuchsia
+ * Turquoise
+ * White
 
 
 ## Environment Varables
