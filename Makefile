@@ -86,6 +86,13 @@ $(HOMEBREW):  homebrew/template.rb  ## no-help
 		echo "*** Error downloading $(DOWNLOAD_URL) ***" ; \
 	fi
 
+.PHONY: package
+package:  ## Build deb/rpm packages
+	docker build -t aws-sso-cli-builder:latest .
+	docker run --rm \
+		-v $$(pwd)/dist:/root/dist \
+		-e VERSION=$(PROJECT_VERSION) aws-sso-cli-builder:latest
+
 tags: cmd/*.go sso/*.go  ## Create tags file for vim, etc
 	@echo Make sure you have Universal Ctags installed: https://github.com/universal-ctags/ctags
 	ctags -R
@@ -94,7 +101,7 @@ include help.mk  # place after ALL target and before all other targets
 
 .build-release: windows windows32 linux linux-arm64 darwin darwin-arm64
 
-release: clean .build-release homebrew ## Build all our release binaries
+release: clean .build-release package ## Build all our release binaries
 	cd dist && shasum -a 256 * | gpg --clear-sign >release.sig.txt
 
 .PHONY: run

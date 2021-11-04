@@ -64,17 +64,19 @@ been granted access!
 
  * Option 1: [Download binary](https://github.com/synfinatic/aws-sso-cli/releases)
     1. Copy to appropriate location and `chmod 755`
- * Option 2: Build from source:
+ * Option 2: [Download RPM or DEB package](https://github.com/synfinatic/aws-sso-cli/releases)
+    1. Use your package manager to install (Linux only)
+ * Option 3: Install via [Homebrew](https://brew.sh)
+    1. Run `brew install synfinatic/aws-sso-cli/aws-sso-cli`
+ * Option 4: Build from source:
     1. Install [GoLang](https://golang.org) and GNU Make
     1. Clone this repo
     1. Run `make` (or `gmake` for GNU Make)
     1. Your binary will be created in the `dist` directory
     1. Run `make install` to install in /usr/local/bin
- * Option 3: Install via [Homebrew](https://brew.sh)
-    1. Run `brew install synfinatic/aws-sso-cli/aws-sso-cli`
 
-Note that the release binaries are not signed at this time so MacOS and Windows systems
-may generate warnings.
+Note that the release binaries are not officially signed at this time so MacOS
+and Windows systems may generate warnings.
 
 ## Commands
 
@@ -231,12 +233,13 @@ SSOConfig:
                             <Key1>: <Value1>
                             <Key2>: <Value2>
 
+# See description below for these options
 Browser: <path to web browser>
 DefaultSSO: <name of AWS SSO>
 LogLevel: [error|warn|info|debug|trace]
 LogLines: [true|false]
 UrlAction: [print|open|clip]
-SecureStore: [json|file|keychain|kwallet|pass|secret-service|wincred]
+SecureStore: [file|keychain|kwallet|pass|secret-service|wincred|json]
 JsonStore: <path to json file>
 ProfileFormat: <template>
 AccountPrimaryTag: <list of role tags>
