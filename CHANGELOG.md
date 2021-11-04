@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v1.2.1] - 2021-11-03
+
  * Add customizable color support #79
  * Simplify options for handling URLs and refactor internals #82
  * Rework how defaults are handled/settings loaded
@@ -20,6 +22,10 @@
  * Use cache for tracking when STS tokens expire
  * `exec` command now ignores arguments intended for the command being run #93
  * Remove `-R` as a short version of `--sts-refresh` to avoid collision with exec role #92
+ * Fix finding $HOME directory on Windows and make GetHomePath() cross platform #100
+ * Fix issue with AWS AccountID's with leading zeros.  #96
+ * Optionally delete STS credentials from secure store cache #104
+ * Add support for Brew #52
 
 ## [v1.2.0] - 2021-10-29
 
@@ -59,3 +65,9 @@
 ## [v1.0.0] - 2021-07-15
 
 Initial release
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.2.1...main
+[v1.2.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.2.1
+[v1.2.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.2.0
+[v1.1.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.1.0
+[v1.0.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.0.1
+[v1.0.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.0.0

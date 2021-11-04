@@ -56,24 +56,27 @@ been granted access!
 
  * Contents of user defined `~/.aws-sso/config.yaml`
  * Meta data associated with the AWS Roles fetched via AWS SSO in `/.aws-sso/cache.json`
-	* Email address of account
-	* AWS Account Alias
-	* AWS Role ARN
+    * Email address of account
+    * AWS Account Alias
+    * AWS Role ARN
 
 ## Installation
 
  * Option 1: [Download binary](https://github.com/synfinatic/aws-sso-cli/releases)
- * Option 2: Build from source:
-	1. Install [GoLang](https://golang.org) and GNU Make
-	1. Clone this repo
-	1. Run `make` (or `gmake` for GNU Make)
-	1. Your binary will be created in the `dist` directory
+    1. Copy to appropriate location and `chmod 755`
+ * Option 2: [Download RPM or DEB package](https://github.com/synfinatic/aws-sso-cli/releases)
+    1. Use your package manager to install (Linux only)
+ * Option 3: Install via [Homebrew](https://brew.sh)
+    1. Run `brew install synfinatic/aws-sso-cli/aws-sso-cli`
+ * Option 4: Build from source:
+    1. Install [GoLang](https://golang.org) and GNU Make
+    1. Clone this repo
+    1. Run `make` (or `gmake` for GNU Make)
+    1. Your binary will be created in the `dist` directory
+    1. Run `make install` to install in /usr/local/bin
 
-In both cases, copy the binary to a reasonable location (such as `/usr/local/bin`) and
-ensure that it is executable (`chmod 755 <path>`) and owned by root (`chown root <path>`).
-
-Note that the release binaries are not signed at this time so MacOS and Windows systems
-may generate warnings.
+Note that the release binaries are not officially signed at this time so MacOS
+and Windows systems may generate warnings.
 
 ## Commands
 
@@ -90,14 +93,14 @@ may generate warnings.
 ### Common Flags
 
  * `--help`, `-h` -- Builtin and context sensitive help
- * `--level <level>`, `-L` -- Change default log level: [error|warn|info|debug]
+ * `--level <level>`, `-L` -- Change default log level: [error|warn|info|debug|trace]
  * `--lines` -- Print file number with logs
  * `--config <file>`, `-c` -- Specify alternative config file
  * `--browser <path>`, `-b` -- Override default browser to open AWS SSO URL
  * `--url-action`, `-u` -- Print, open or put URLs in clipboard
  * `--region <region>, `-r` -- Specify the AWS_DEFAULT_REGION to use
  * `--sso <name>`, `-S` -- Specify non-default AWS SSO instance to use
- * `--sts-refresh`, `-R` -- Force refresh of STS Token Credentials
+ * `--sts-refresh` -- Force refresh of STS Token Credentials
 
 ### console
 
@@ -171,8 +174,12 @@ Arguments: `[<field> ...]`
 
 ### flush
 
-Flush any cached AWS SSO credentials.  By default, it only deletes the temorary
-Client Token which represents your AWS SSO session for the specified AWS SSO portal.
+Flush any cached AWS SSO/STS credentials.  By default, it only flushes the SSO
+credentials used to issue new STS tokens.
+
+Flags:
+
+ * `--all` -- Also delete any non-expired AWS STS credentials from secure store
 
 ### renew
 
@@ -226,17 +233,18 @@ SSOConfig:
                             <Key1>: <Value1>
                             <Key2>: <Value2>
 
+# See description below for these options
 Browser: <path to web browser>
 DefaultSSO: <name of AWS SSO>
 LogLevel: [error|warn|info|debug|trace]
 LogLines: [true|false]
 UrlAction: [print|open|clip]
-SecureStore: [json|file|keychain|kwallet|pass|secret-service|wincred]
+SecureStore: [file|keychain|kwallet|pass|secret-service|wincred|json]
 JsonStore: <path to json file>
 ProfileFormat: <template>
 AccountPrimaryTag: <list of role tags>
 PromptColors:
-	<Option>: <Color>
+    <Option>: <Color>
 ```
 
 ### Accounts
@@ -286,13 +294,13 @@ of the following values:
 
 `SecureStore` supports the following backends:
 
- * `json` - Cleartext JSON file (insecure and not recommended)  Location can be overridden with `JsonStore`
  * `file` - Encrypted local files (OS agnostic and default)
- * `keychain` - macOS/OSX [Keychain](https://support.apple.com/guide/mac-help/use-keychains-to-store-passwords-mchlf375f392/mac)
+ * `keychain` - macOS [Keychain](https://support.apple.com/guide/mac-help/use-keychains-to-store-passwords-mchlf375f392/mac)
  * `kwallet` - [KDE Wallet](https://utils.kde.org/projects/kwalletmanager/)
  * `pass` - [pass](https://www.passwordstore.org)
  * `secret-service` - Freedesktop.org [Secret Service](https://specifications.freedesktop.org/secret-service/latest/re01.html)
  * `wincred` - Windows [Credential Manager](https://support.microsoft.com/en-us/windows/accessing-credential-manager-1b5c916a-6a16-889f-8581-fc16e8165ac0)
+ * `json` - Cleartext JSON file (very insecure and not recommended).  Location can be overridden with `JsonStore`
 
 ### ProfileFormat
 
@@ -326,7 +334,7 @@ The following functions are available in your template:
  * `AccountIdStr(x)` -- Converts an AWS Account ID to a string
  * `EmptyString(x)` -- Returns true/false if the value `x` is an empty string
  * `FirstItem([]x)` -- Returns the first item in a list that is not an empty string
- * `StringsJoin([]x, y) -- Joins the items in `x` with the string `y`
+ * `StringsJoin([]x, y)` -- Joins the items in `x` with the string `y`
 
 **Note:** Unlike most values stored in the `config.yaml`, because `ProfileFormat`
 values often start with a `{` you will need to quote the value for it to be valid
@@ -374,25 +382,25 @@ Valid options:
 
 Valid low intensity colors:
 
- * "Black"
- * "DarkRed"
- * "DarkGreen"
- * "Brown"
- * "DarkBlue"
- * "Purple"
- * "Cyan"
- * "LightGrey"
+ * Black
+ * DarkRed
+ * DarkGreen
+ * Brown
+ * DarkBlue
+ * Purple
+ * Cyan
+ * LightGrey
 
 Valid high intensity colors:
 
- * "DarkGrey"
- * "Red"
- * "Green"
- * "Yellow"
- * "Blue"
- * "Fuchsia"
- * "Turquoise"
- * "White"
+ * DarkGrey
+ * Red
+ * Green
+ * Yellow
+ * Blue
+ * Fuchsia
+ * Turquoise
+ * White
 
 
 ## Environment Varables

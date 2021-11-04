@@ -6,21 +6,30 @@ GOARCH             := amd64
 else
 GOARCH             := $(ARCH)  # no idea if this works for other platforms....
 endif
+
+ifneq ($(BREW_INSTALL),1)
+PROJECT_TAG               := $(shell git describe --tags 2>/dev/null $(git rev-list --tags --max-count=1))
+PROJECT_COMMIT            := $(shell git rev-parse HEAD || echo "")
+PROJECT_DELTA             := $(shell DELTA_LINES=$$(git diff | wc -l); if [ $${DELTA_LINES} -ne 0 ]; then echo $${DELTA_LINES} ; else echo "''" ; fi)
+else
+PROJECT_TAG               := Homebrew
+
+endif
+
 BUILDINFOSDET ?=
 PROGRAM_ARGS ?=
-
-PROJECT_VERSION           := 1.2.1-beta
+PROJECT_VERSION           := 1.2.1
 DOCKER_REPO               := synfinatic
 PROJECT_NAME              := aws-sso
-PROJECT_TAG               := $(shell git describe --tags 2>/dev/null $(git rev-list --tags --max-count=1))
 ifeq ($(PROJECT_TAG),)
 PROJECT_TAG               := NO-TAG
 endif
-PROJECT_COMMIT            := $(shell git rev-parse HEAD)
 ifeq ($(PROJECT_COMMIT),)
 PROJECT_COMMIT            := NO-CommitID
 endif
-PROJECT_DELTA             := $(shell DELTA_LINES=$$(git diff | wc -l); if [ $${DELTA_LINES} -ne 0 ]; then echo $${DELTA_LINES} ; else echo "''" ; fi)
+ifeq ($(PROJECT_DELTA),)
+PROJECT_DELTA             :=
+endif
 VERSION_PKG               := $(shell echo $(PROJECT_VERSION) | sed 's/^v//g')
 LICENSE                   := GPLv3
 URL                       := https://github.com/$(DOCKER_REPO)/$(PROJECT_NAME)
@@ -38,9 +47,51 @@ LINUXARM64_BIN            := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)-linux
 DARWIN_BIN                := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)-darwin-amd64
 DARWINARM64_BIN           := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)-darwin-arm64
 
-ALL: $(wildcard */*.go) .prepare ## Build binary for this platform
+ALL: $(DIST_DIR)$(PROJECT_NAME) ## Build binary for this platform
+
+$(DIST_DIR)$(PROJECT_NAME):	$(wildcard */*.go) .prepare
 	go build -ldflags='$(LDFLAGS)' -o $(DIST_DIR)$(PROJECT_NAME) cmd/*.go
 	@echo "Created: $(DIST_DIR)$(PROJECT_NAME)"
+
+INSTALL_PREFIX ?= /usr/local
+
+install: $(DIST_DIR)$(PROJECT_NAME)  ## install binary in $INSTALL_PREFIX
+	install -d $(INSTALL_PREFIX)/bin
+	install -c $(DIST_DIR)$(PROJECT_NAME) $(INSTALL_PREFIX)/bin
+
+uninstall:  ## Uninstall binary from $INSTALL_PREFIX
+	rm /usr/local/bin/$(PROJECT_NAME)
+
+
+HOMEBREW := ./homebrew/Formula/aws-sso-cli.rb
+
+homebrew: $(HOMEBREW)  ## Build homebrew tap file
+
+#DOWNLOAD_URL := https://synfin.net/misc/aws-sso-cli.$(PROJECT_VERSION).tar.gz
+DOWNLOAD_URL ?= https://github.com/synfinatic/aws-sso-cli/archive/refs/tags/v$(PROJECT_VERSION).tar.gz
+
+.PHONY: $(HOMEBREW)
+$(HOMEBREW):  homebrew/template.rb  ## no-help
+	TEMPFILE=$$(mktemp) && wget -q -O $${TEMPFILE} $(DOWNLOAD_URL) ; \
+	if test -s $${TEMPFILE}; then \
+		export SHA=$$(cat $${TEMPFILE} | sha256sum | sed -e 's|  -||') && rm $${TEMPFILE} && \
+		m4 -D __SHA256__=$${SHA} \
+		   -D __VERSION__=$(PROJECT_VERSION) \
+		   -D __COMMIT__=$(PROJECT_COMMIT) \
+		   -D __URL__=$(DOWNLOAD_URL) \
+		   homebrew/template.rb | tee $(HOMEBREW) && \
+		   echo "***** Please review above and test! ******" && \
+		   echo "File written to: $(HOMEBREW)  Please commit in git submodule!" ; \
+	else \
+		echo "*** Error downloading $(DOWNLOAD_URL) ***" ; \
+	fi
+
+.PHONY: package
+package:  ## Build deb/rpm packages
+	docker build -t aws-sso-cli-builder:latest .
+	docker run --rm \
+		-v $$(pwd)/dist:/root/dist \
+		-e VERSION=$(PROJECT_VERSION) aws-sso-cli-builder:latest
 
 tags: cmd/*.go sso/*.go  ## Create tags file for vim, etc
 	@echo Make sure you have Universal Ctags installed: https://github.com/universal-ctags/ctags
@@ -50,8 +101,8 @@ include help.mk  # place after ALL target and before all other targets
 
 .build-release: windows windows32 linux linux-arm64 darwin darwin-arm64
 
-release: clean .build-release ## Build all our release binaries
-	cd dist && shasum -a 256 * | gpg --clear-sign >release.sig
+release: clean .build-release package ## Build all our release binaries
+	cd dist && shasum -a 256 * | gpg --clear-sign >release.sig.txt
 
 .PHONY: run
 run: cmd/*.go  sso/*.go ## build and run using $PROGRAM_ARGS
@@ -64,7 +115,7 @@ delve: cmd/*.go sso/*.go ## debug binary using $PROGRAM_ARGS
 clean-all: clean ## clean _everything_
 
 clean: ## Remove all binaries in dist
-	rm -f dist/*
+	rm -rf dist/*
 
 clean-go: ## Clean Go cache
 	go clean -i -r -cache -modcache
@@ -120,7 +171,7 @@ test-tidy:  ## Test to make sure go.mod is tidy
 	    exit -1 ; \
 	fi
 
-precheck: test test-fmt test-tidy  ## Run all tests that happen in a PR 
+precheck: test test-fmt test-tidy  ## Run all tests that happen in a PR
 
 
 # Build targets for our supported plaforms
@@ -165,3 +216,4 @@ $(OUTPUT_NAME): $(wildcard */*.go) .prepare
 
 workflow.png: workflow.dot
 	dot -oworkflow.png -Tpng workflow.dot
+
