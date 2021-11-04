@@ -63,7 +63,7 @@ uninstall:  ## Uninstall binary from $INSTALL_PREFIX
 	rm /usr/local/bin/$(PROJECT_NAME)
 
 
-HOMEBREW := aws-sso-cli.rb
+HOMEBREW := ./homebrew/Formula/aws-sso-cli.rb
 
 homebrew: $(HOMEBREW)  ## Build homebrew tap file
 
@@ -71,7 +71,7 @@ homebrew: $(HOMEBREW)  ## Build homebrew tap file
 DOWNLOAD_URL ?= https://github.com/synfinatic/aws-sso-cli/archive/refs/tags/v$(PROJECT_VERSION).tar.gz
 
 .PHONY: $(HOMEBREW)
-$(HOMEBREW):  brew/homebrew.rb ## no-help
+$(HOMEBREW):  homebrew/template.rb  ## no-help
 	TEMPFILE=$$(mktemp) && wget -q -O $${TEMPFILE} $(DOWNLOAD_URL) ; \
 	if test -s $${TEMPFILE}; then \
 		export SHA=$$(cat $${TEMPFILE} | sha256sum | sed -e 's|  -||') && rm $${TEMPFILE} && \
@@ -79,9 +79,9 @@ $(HOMEBREW):  brew/homebrew.rb ## no-help
 		   -D __VERSION__=$(PROJECT_VERSION) \
 		   -D __COMMIT__=$(PROJECT_COMMIT) \
 		   -D __URL__=$(DOWNLOAD_URL) \
-		   brew/homebrew.rb | tee $(HOMEBREW) && \
+		   homebrew/template.rb | tee $(HOMEBREW) && \
 		   echo "***** Please review above and test! ******" && \
-		   echo "File written to: $(HOMEBREW)" ; \
+		   echo "File written to: $(HOMEBREW)  Please commit in git submodule!" ; \
 	else \
 		echo "*** Error downloading $(DOWNLOAD_URL) ***" ; \
 	fi
