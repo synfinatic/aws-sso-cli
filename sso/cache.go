@@ -77,11 +77,46 @@ func (c *Cache) Save(updateTime bool) error {
 }
 
 // adds a role to the History list up to the max number of entries
+// and then removes the History tag from any roles that aren't in our list
 func (c *Cache) AddHistory(item string, max int) {
-	c.History = append([]string{item}, c.History...) // push on top
-	for len(c.History) > max {
-		// remove the oldest entry
-		c.History = c.History[:len(c.History)-1]
+	// first make sure it's not already in the list because we don't want duplicates
+	duplicate := false
+	for _, h := range c.History {
+		if h == item {
+			duplicate = true
+			break
+		}
+	}
+
+	if !duplicate {
+		c.History = append([]string{item}, c.History...) // push on top
+		for len(c.History) > max {
+			// remove the oldest entry
+			c.History = c.History[:len(c.History)-1]
+		}
+		aId, roleName, _ := utils.ParseRoleARN(item)
+
+		if a, ok := c.Roles.Accounts[aId]; ok {
+			if r, ok := a.Roles[roleName]; ok {
+				r.Tags["History"] = fmt.Sprintf("%s:%s", a.Alias, roleName)
+			}
+		}
+	}
+
+	// remove any history tags not in our list
+	roles := c.Roles.MatchingRolesWithTagKey("History")
+	for _, role := range roles {
+		exists := false
+		for _, history := range c.History {
+			if history == (*role).Arn {
+				exists = true
+				break
+			}
+		}
+		if !exists {
+			aId, roleName, _ := utils.ParseRoleARN(role.Arn)
+			delete(c.Roles.Accounts[aId].Roles[roleName].Tags, "History")
+		}
 	}
 }
 
@@ -210,11 +245,14 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 				Arn:  utils.MakeRoleARN(accountId, role.RoleName),
 				Tags: map[string]string{},
 			}
-			// need to copy over the Expires field from our current cache
+			// need to copy over the Expires & History fields from our current cache
 			if _, ok := c.Roles.Accounts[accountId]; ok {
 				if _, ok := c.Roles.Accounts[accountId].Roles[role.RoleName]; ok {
 					if expires := c.Roles.Accounts[accountId].Roles[role.RoleName].Expires; expires > 0 {
 						r.Accounts[accountId].Roles[role.RoleName].Expires = expires
+					}
+					if v, ok := c.Roles.Accounts[accountId].Roles[role.RoleName].Tags["History"]; ok {
+						r.Accounts[accountId].Roles[role.RoleName].Tags["History"] = v
 					}
 				}
 			}
@@ -238,7 +276,7 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 			r.Accounts[accountId].Tags[k] = v
 		}
 
-		// set the tags for all the SSO roles
+		// set the AWS SSO tags for all the SSO roles
 		for roleName, _ := range r.Accounts[accountId].Roles {
 			aId := strconv.FormatInt(accountId, 10)
 			r.Accounts[accountId].Roles[roleName].Tags["AccountID"] = aId
@@ -251,6 +289,7 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 			}
 		}
 
+		// set the tags from the config file
 		for roleName, role := range config.Accounts[accountId].Roles {
 			if _, ok := r.Accounts[accountId].Roles[roleName]; !ok {
 				r.Accounts[accountId].Roles[roleName] = &AWSRole{
@@ -276,6 +315,35 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 	}
 
 	return &r, nil
+}
+
+// returns all tags, but with with spaces replaced with underscores
+func (c *Cache) GetAllTagsSelect() *TagsList {
+	tags := c.Roles.GetAllTags()
+	fixedTags := NewTagsList()
+	for k, values := range *tags {
+		key := strings.ReplaceAll(k, " ", "_")
+		for _, v := range values {
+			fixedTags.Add(key, strings.ReplaceAll(v, " ", "_"))
+		}
+	}
+	return fixedTags
+}
+
+// GetRoleTagsSelect returns all the tags for each role with all the spaces
+// replaced with underscores
+func (c *Cache) GetRoleTagsSelect() *RoleTags {
+	ret := RoleTags{}
+	fList := c.Roles.GetAllRoles()
+	for _, role := range fList {
+		ret[role.Arn] = map[string]string{}
+		for k, v := range role.Tags {
+			key := strings.ReplaceAll(k, " ", "_")
+			value := strings.ReplaceAll(v, " ", "_")
+			ret[role.Arn][key] = value
+		}
+	}
+	return &ret
 }
 
 // AccountIds returns all the configured AWS SSO AccountIds
@@ -323,19 +391,6 @@ func (r *Roles) GetAllTags() *TagsList {
 	return &ret
 }
 
-// returns all tags, but with with spaces replaced with underscores
-func (r *Roles) GetAllTagsSelect() *TagsList {
-	tags := r.GetAllTags()
-	fixedTags := NewTagsList()
-	for k, values := range *tags {
-		key := strings.ReplaceAll(k, " ", "_")
-		for _, v := range values {
-			fixedTags.Add(key, strings.ReplaceAll(v, " ", "_"))
-		}
-	}
-	return fixedTags
-}
-
 // GetRoleTags returns all the tags for each role
 func (r *Roles) GetRoleTags() *RoleTags {
 	ret := RoleTags{}
@@ -344,22 +399,6 @@ func (r *Roles) GetRoleTags() *RoleTags {
 		ret[role.Arn] = map[string]string{}
 		for k, v := range role.Tags {
 			ret[role.Arn][k] = v
-		}
-	}
-	return &ret
-}
-
-// GetRoleTagsSelect returns all the tags for each role with all the spaces
-// replaced with underscores
-func (r *Roles) GetRoleTagsSelect() *RoleTags {
-	ret := RoleTags{}
-	fList := r.GetAllRoles()
-	for _, role := range fList {
-		ret[role.Arn] = map[string]string{}
-		for k, v := range role.Tags {
-			key := strings.ReplaceAll(k, " ", "_")
-			value := strings.ReplaceAll(v, " ", "_")
-			ret[role.Arn][key] = value
 		}
 	}
 	return &ret
@@ -465,6 +504,20 @@ func (r *Roles) MatchingRoles(tags map[string]string) []*AWSRoleFlat {
 		}
 		if matches {
 			ret = append(ret, role)
+		}
+	}
+	return ret
+}
+
+// MatchingRolesWithTagKey returns the roles that have the tag key
+func (r *Roles) MatchingRolesWithTagKey(key string) []*AWSRoleFlat {
+	ret := []*AWSRoleFlat{}
+	for _, role := range r.GetAllRoles() {
+		for k, _ := range role.Tags {
+			if k == key {
+				ret = append(ret, role)
+				break
+			}
 		}
 	}
 	return ret

@@ -122,6 +122,9 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 
 // opens the AWS console or just prints the URL
 func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, region string) error {
+	ctx.Settings.Cache.AddHistory(utils.MakeRoleARN(accountid, role), ctx.Settings.HistoryLimit)
+	ctx.Settings.Cache.Save(false)
+
 	creds := GetRoleCredentials(ctx, awssso, accountid, role)
 
 	return openConsoleAccessKey(ctx, creds, ctx.Cli.Console.Duration, region)
