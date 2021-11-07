@@ -27,7 +27,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
+	//	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/utils"
 	"github.com/synfinatic/gotable"
@@ -40,6 +40,27 @@ type Cache struct {
 	ConfigCreatedAt int64     `json:"ConfigCreatedAt"` // track config.yaml
 	History         []string  `json:"History,omitempty"`
 	Roles           *Roles    `json:"Roles,omitempty"`
+}
+
+func OpenCache(f string, s *Settings) (*Cache, error) {
+	cache := Cache{
+		settings:        s,
+		CreatedAt:       0,
+		ConfigCreatedAt: 0,
+		History:         []string{},
+		Roles: &Roles{
+			Accounts: map[int64]*AWSAccount{},
+		},
+	}
+	if f != "" {
+		cacheBytes, err := ioutil.ReadFile(f)
+		if err != nil {
+			log.WithError(err).Errorf("Unable to open CacheStore: %s", f)
+			return &cache, nil // return empty struct
+		}
+		json.Unmarshal(cacheBytes, &cache)
+	}
+	return &cache, nil
 }
 
 // Expired returns if our Roles cache data is too old.
@@ -205,7 +226,7 @@ type AWSRoleFlat struct {
 	StartUrl      string            `json:"StartUrl" header:"StartUrl"`
 	Tags          map[string]string `json:"Tags"` // not supported by GenerateTable
 	Via           string            `json:"Via" header:"Via"`
-	SelectTags    map[string]string // tags without spaces
+	// SelectTags    map[string]string // tags without spaces
 }
 
 func (f AWSRoleFlat) GetHeader(fieldName string) (string, error) {
@@ -382,7 +403,6 @@ func (r *Roles) GetAccountRoles(accountId int64) map[string]*AWSRoleFlat {
 func (r *Roles) GetAllTags() *TagsList {
 	ret := TagsList{}
 	fList := r.GetAllRoles()
-	log.Tracef("GetAllRoles: %s", spew.Sdump(fList))
 	for _, role := range fList {
 		for k, v := range role.Tags {
 			ret.Add(k, v)
@@ -489,10 +509,8 @@ func (r *Roles) MatchingRoles(tags map[string]string) []*AWSRoleFlat {
 	for _, role := range r.GetAllRoles() {
 		matches := true
 		for k, v := range tags {
-			key := strings.ReplaceAll(k, " ", "_")
-			value := strings.ReplaceAll(v, " ", "_")
-			if roleVal, ok := role.Tags[key]; ok {
-				if roleVal != value {
+			if roleVal, ok := role.Tags[k]; ok {
+				if roleVal != v {
 					matches = false
 				}
 			} else {

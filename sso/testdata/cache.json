@@ -1,0 +1,245 @@
+{
+  "CreatedAt": 1635913188,
+  "ConfigCreatedAt": 1635710861,
+  "Roles": {
+    "Accounts": {
+      "258234615182": {
+        "Alias": "OurCompany Control Tower Playground",
+        "Name": "OurCompany Control Tower Playground",
+        "EmailAddress": "control-tower-dev-aws@ourcompany.com",
+        "Tags": {
+          "Type": "Main Account"
+        },
+        "Roles": {
+          "AWSAdministratorAccess": {
+            "Arn": "arn:aws:iam:258234615182:role/AWSAdministratorAccess",
+            "Tags": {
+              "AccountAlias": "OurCompany Control Tower Playground",
+              "AccountID": "258234615182",
+              "AccountName": "OurCompany Control Tower Playground",
+              "Email": "control-tower-dev-aws@ourcompany.com",
+              "Foo": "Bar",
+              "Role": "AWSAdministratorAccess",
+              "Test": "value",
+              "Type": "Main Account"
+            }
+          },
+          "AWSOrganizationsFullAccess": {
+            "Arn": "arn:aws:iam:258234615182:role/AWSOrganizationsFullAccess",
+            "Tags": {
+              "AccountAlias": "OurCompany Control Tower Playground",
+              "AccountID": "258234615182",
+              "AccountName": "OurCompany Control Tower Playground",
+              "Email": "control-tower-dev-aws@ourcompany.com",
+              "Role": "AWSOrganizationsFullAccess"
+            }
+          },
+          "AWSPowerUserAccess": {
+            "Arn": "arn:aws:iam:258234615182:role/AWSPowerUserAccess",
+            "Tags": {
+              "AccountAlias": "OurCompany Control Tower Playground",
+              "AccountID": "258234615182",
+              "AccountName": "OurCompany Control Tower Playground",
+              "Email": "control-tower-dev-aws@ourcompany.com",
+              "Role": "AWSPowerUserAccess"
+            }
+          },
+          "AWSReadOnlyAccess": {
+            "Arn": "arn:aws:iam:258234615182:role/AWSReadOnlyAccess",
+            "Tags": {
+              "AccountAlias": "OurCompany Control Tower Playground",
+              "AccountID": "258234615182",
+              "AccountName": "OurCompany Control Tower Playground",
+              "Email": "control-tower-dev-aws@ourcompany.com",
+              "Role": "AWSReadOnlyAccess"
+            }
+          },
+          "AWSServiceCatalogEndUserAccess": {
+            "Arn": "arn:aws:iam:258234615182:role/AWSServiceCatalogEndUserAccess",
+            "Tags": {
+              "AccountAlias": "OurCompany Control Tower Playground",
+              "AccountID": "258234615182",
+              "AccountName": "OurCompany Control Tower Playground",
+              "Email": "control-tower-dev-aws@ourcompany.com",
+              "Role": "AWSServiceCatalogEndUserAccess"
+            }
+          },
+          "DoNothingRole": {
+            "Arn": "arn:aws:iam:258234615182:role/DoNothingRole",
+            "Tags": {
+              "AccountAlias": "OurCompany Control Tower Playground",
+              "AccountID": "258234615182",
+              "AccountName": "OurCompany Control Tower Playground",
+              "Email": "control-tower-dev-aws@ourcompany.com",
+              "Role": "DoNothingRole"
+            }
+          },
+          "SSO-ProductionDevelopersRO": {
+            "Arn": "arn:aws:iam:258234615182:role/SSO-ProductionDevelopersRO",
+            "Tags": {
+              "AccountAlias": "OurCompany Control Tower Playground",
+              "AccountID": "258234615182",
+              "AccountName": "OurCompany Control Tower Playground",
+              "Email": "control-tower-dev-aws@ourcompany.com",
+              "Role": "SSO-ProductionDevelopersRO"
+            }
+          }
+        }
+      },
+      "833365043586": {
+        "Alias": "Log archive",
+        "Name": "Log archive",
+        "EmailAddress": "control-tower-dev-aws+log@ourcompany.com",
+        "Tags": {
+          "Type": "Sub Account"
+        },
+        "Roles": {
+          "AWSAdministratorAccess": {
+            "Arn": "arn:aws:iam:833365043586:role/AWSAdministratorAccess",
+            "Tags": {
+              "AccountAlias": "Log archive",
+              "AccountID": "833365043586",
+              "AccountName": "Log archive",
+              "Email": "control-tower-dev-aws+log@ourcompany.com",
+              "Role": "AWSAdministratorAccess"
+            }
+          },
+          "AWSPowerUserAccess": {
+            "Arn": "arn:aws:iam:833365043586:role/AWSPowerUserAccess",
+            "Tags": {
+              "AccountAlias": "Log archive",
+              "AccountID": "833365043586",
+              "AccountName": "Log archive",
+              "Email": "control-tower-dev-aws+log@ourcompany.com",
+              "Role": "AWSPowerUserAccess"
+            }
+          },
+          "AWSReadOnlyAccess": {
+            "Arn": "arn:aws:iam:833365043586:role/AWSReadOnlyAccess",
+            "Tags": {
+              "AccountAlias": "Log archive",
+              "AccountID": "833365043586",
+              "AccountName": "Log archive",
+              "Email": "control-tower-dev-aws+log@ourcompany.com",
+              "Role": "AWSReadOnlyAccess"
+            }
+          },
+          "SSO-ProductionDevelopersRO": {
+            "Arn": "arn:aws:iam:833365043586:role/SSO-ProductionDevelopersRO",
+            "Tags": {
+              "AccountAlias": "Log archive",
+              "AccountID": "833365043586",
+              "AccountName": "Log archive",
+              "Email": "control-tower-dev-aws+log@ourcompany.com",
+              "Role": "SSO-ProductionDevelopersRO"
+            }
+          }
+        },
+        "DefaultRegion": "eu-north-1"
+      },
+      "502470824893": {
+        "Alias": "Audit",
+        "Name": "Audit",
+        "EmailAddress": "control-tower-dev-aws+audit@ourcompany.com",
+        "Tags": {
+          "Type": "Sub Account"
+        },
+        "Roles": {
+          "AWSAdministratorAccess": {
+            "Arn": "arn:aws:iam:502470824893:role/AWSAdministratorAccess",
+            "Tags": {
+              "AccountAlias": "Audit",
+              "AccountID": "502470824893",
+              "AccountName": "Audit",
+              "Email": "control-tower-dev-aws+audit@ourcompany.com",
+              "Role": "AWSAdministratorAccess"
+            }
+          },
+          "AWSPowerUserAccess": {
+            "Arn": "arn:aws:iam:502470824893:role/AWSPowerUserAccess",
+            "Tags": {
+              "AccountAlias": "Audit",
+              "AccountID": "502470824893",
+              "AccountName": "Audit",
+              "Email": "control-tower-dev-aws+audit@ourcompany.com",
+              "Role": "AWSPowerUserAccess"
+            }
+          },
+          "AWSReadOnlyAccess": {
+            "Arn": "arn:aws:iam:502470824893:role/AWSReadOnlyAccess",
+            "Tags": {
+              "AccountAlias": "Audit",
+              "AccountID": "502470824893",
+              "AccountName": "Audit",
+              "Email": "control-tower-dev-aws+audit@ourcompany.com",
+              "Role": "AWSReadOnlyAccess"
+            }
+          },
+          "SSO-ProductionDevelopersRO": {
+            "Arn": "arn:aws:iam:502470824893:role/SSO-ProductionDevelopersRO",
+            "Tags": {
+              "AccountAlias": "Audit",
+              "AccountID": "502470824893",
+              "AccountName": "Audit",
+              "Email": "control-tower-dev-aws+audit@ourcompany.com",
+              "Role": "SSO-ProductionDevelopersRO"
+            }
+          }
+        }
+      },
+      "707513610766": {
+        "Alias": "control-tower-dev-sub1-aws",
+        "Name": "Dev Account",
+        "EmailAddress": "test+control-tower-sub1@ourcompany.com",
+        "Tags": {
+          "Type": "Sub Account"
+        },
+        "Roles": {
+          "AWSAdministratorAccess": {
+            "Arn": "arn:aws:iam:707513610766:role/AWSAdministratorAccess",
+            "Tags": {
+              "AccountAlias": "control-tower-dev-sub1-aws",
+              "AccountID": "707513610766",
+              "AccountName": "Dev Account",
+              "Email": "test+control-tower-sub1@ourcompany.com",
+              "Role": "AWSAdministratorAccess"
+            }
+          },
+          "AWSPowerUserAccess": {
+            "Arn": "arn:aws:iam:707513610766:role/AWSPowerUserAccess",
+            "Tags": {
+              "AccountAlias": "control-tower-dev-sub1-aws",
+              "AccountID": "707513610766",
+              "AccountName": "Dev Account",
+              "Email": "test+control-tower-sub1@ourcompany.com",
+              "Role": "AWSPowerUserAccess"
+            }
+          },
+          "AWSReadOnlyAccess": {
+            "Arn": "arn:aws:iam:707513610766:role/AWSReadOnlyAccess",
+            "Tags": {
+              "AccountAlias": "control-tower-dev-sub1-aws",
+              "AccountID": "707513610766",
+              "AccountName": "Dev Account",
+              "Email": "test+control-tower-sub1@ourcompany.com",
+              "Role": "AWSReadOnlyAccess"
+            }
+          },
+          "SSO-ProductionDevelopersRO": {
+            "Arn": "arn:aws:iam:707513610766:role/SSO-ProductionDevelopersRO",
+            "Tags": {
+              "AccountAlias": "control-tower-dev-sub1-aws",
+              "AccountID": "707513610766",
+              "AccountName": "Dev Account",
+              "Email": "test+control-tower-sub1@ourcompany.com",
+              "Role": "SSO-ProductionDevelopersRO"
+            }
+          }
+        }
+      }
+    },
+    "SSORegion": "us-east-1",
+    "StartUrl": "https://d-754545454.awsapps.com/start",
+    "DefaultRegion": ""
+  }
+}
