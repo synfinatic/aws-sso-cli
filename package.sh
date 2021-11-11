@@ -23,4 +23,6 @@ package amd64
 pushd /root/dist
 pkg --name=aws-sso-cli --version=$VERSION --arch=x86_64 --deb ../package.yaml
 pkg --name=aws-sso-cli --version=$VERSION --arch=x86_64 --rpm ../package.yaml
+pkg --name=aws-sso-cli --version=$VERSION --arch=arm64 --deb ../package.yaml
+pkg --name=aws-sso-cli --version=$VERSION --arch=arm64 --rpm ../package.yaml
 popd

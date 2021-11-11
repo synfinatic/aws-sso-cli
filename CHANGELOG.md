@@ -1,10 +1,11 @@
 # AWS SSO CLI Changelog
 
-## [Unreleased]
+## [v1.2.2] - 2021-11-11
 
  * Add `AccountAlias` and `Expires` to list of fields that can be displayed via
     the `list` command
  * `AccountAlias` replaces `AccountName` in the list of default fields for `list`
+ * Add RPM and DEB package support for Linux on x86_64 and ARM64 #52
 
 ## [v1.2.1] - 2021-11-03
 
