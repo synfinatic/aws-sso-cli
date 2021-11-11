@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+ * Add `AccountAlias` and `Expires` to list of fields that can be displayed via
+    the `list` command
+ * `AccountAlias` replaces `AccountName` in the list of default fields for `list`
+
 ## [v1.2.1] - 2021-11-03
 
  * Add customizable color support #79

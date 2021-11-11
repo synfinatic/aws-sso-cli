@@ -32,7 +32,7 @@ import (
 // their YAML config file or provided list on the CLI
 var defaultListFields = []string{
 	"AccountId",
-	"AccountName",
+	"AccountAlias",
 	"RoleName",
 	"ExpiresStr",
 }
@@ -42,12 +42,14 @@ var allListFields = map[string]string{
 	"Id":            "Column Index",
 	"Arn":           "AWS Role Resource Name",
 	"AccountId":     "AWS AccountID",
-	"AccountName":   "AWS Account Name",
+	"AccountName":   "Configured Account Name",
+	"AccountAlias":  "AWS Account Alias",
 	"DefaultRegion": "Default AWS Region",
 	"EmailAddress":  "Root email for AWS account",
 	"ExpiresStr":    "Time until STS creds expire",
+	"Expires":       "Unix Epoch when STS creds expire",
 	//	"Profile":       "AWS_PROFILE",
-	"RoleName": "AWS Role",
+	"RoleName": "AWS Role Name",
 	//	"Via":           "Role Chain Via",
 }
 
