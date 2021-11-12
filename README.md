@@ -198,15 +198,15 @@ Flags:
  * `--account <account>` -- Filter results by AccountId
  * `--role <role>` -- Filter results by Role Name
 
-Note that the following tag keys are automatically defined for each role by AWS SSO CLI:
+By default the following key/values are available as tags to your roles:
 
  * `AccountID` -- AWS Account ID
  * `Role` -- AWS Role Name
  * `Email` -- Email address of root account associated with the AWS Account
- * `AccountName` -- Account Name for any role defined in config.yaml
+ * `AccountName` -- Account Name for any role defined in config (see below)
  * `AccountAlias` --- AWS Account Alias defined by account administrator
- * `History` -- Tag tracking if this role was recently used.  See `HistoryLimit` in config 
-		below for more details.
+ * `History` -- Tag tracking if this role was recently used.  See `HistoryLimit` 
+                in config.
 
 ### Environment Variables
 
@@ -263,13 +263,6 @@ HistoryLimit: <integer>
 The `Accounts` block is completely optional!  The only purpose of this block
 is to allow you to add additional tags (key/value pairs) to your accounts/roles
 to make them easier to select.
-
-By default the following key/values are available as tags to your roles:
-
- * AccountId
- * AccountName
- * EmailAddress (root account email)
- * RoleName
 
 ### Browser / UrlAction
 
