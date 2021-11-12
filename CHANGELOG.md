@@ -3,6 +3,7 @@
 ## Unreleased
 
  * Add support for tracking recently used roles via History tag for exec & console #29
+ * Continue to improve unit tests
 
 ## [v1.2.2] - 2021-11-11
 

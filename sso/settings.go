@@ -19,9 +19,7 @@ package sso
  */
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -32,6 +30,7 @@ import (
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/file"
 	log "github.com/sirupsen/logrus"
+	"github.com/synfinatic/aws-sso-cli/utils"
 )
 
 const (
@@ -77,7 +76,7 @@ type SSOAccount struct {
 
 type SSORole struct {
 	account       *SSOAccount       // pointer back up
-	ARN           string            `koanf:"ARN" yaml:"ARN"`
+	ARN           string            `yaml:"ARN"`
 	Profile       string            `koanf:"Profile" yaml:"Profile,omitempty"`
 	Tags          map[string]string `koanf:"Tags" yaml:"Tags,omitempty"`
 	DefaultRegion string            `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
@@ -197,7 +196,7 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 
 	// load the cache
 	var err error
-	if s.Cache, err = s.OpenCache(); err != nil {
+	if s.Cache, err = OpenCache(s.cacheFile, s); err != nil {
 		return s, err
 	}
 
@@ -220,42 +219,20 @@ func (s *Settings) CreatedAt() int64 {
 		log.WithError(err).Fatalf("Unable to Stat() %s", s.configFile)
 	}
 	return info.ModTime().Unix()
-
-}
-
-func (s *Settings) OpenCache() (*Cache, error) {
-	cache := Cache{
-		settings:        s,
-		CreatedAt:       0,
-		ConfigCreatedAt: 0,
-		History:         []string{},
-		Roles: &Roles{
-			Accounts: map[int64]*AWSAccount{},
-		},
-	}
-	if s.cacheFile != "" {
-		cacheBytes, err := ioutil.ReadFile(s.cacheFile)
-		if err != nil {
-			log.WithError(err).Errorf("Unable to open CacheStore: %s", s.cacheFile)
-			return &cache, nil // return empty struct
-		}
-		json.Unmarshal(cacheBytes, &cache)
-	}
-	return &cache, nil
 }
 
 // GetSelectedSSO returns a valid SSOConfig based on user intput, configured
-// value or our hardcoded 'Default' if it exists.
+// value or our hardcoded 'Default' if it exists and name is empty String
 func (s *Settings) GetSelectedSSO(name string) (*SSOConfig, error) {
 	if c, ok := s.SSO[name]; ok {
 		return c, nil
 	}
 
-	if c, ok := s.SSO[s.DefaultSSO]; ok {
+	if c, ok := s.SSO[s.DefaultSSO]; ok && s.DefaultSSO != "Default" {
 		return c, nil
 	}
 
-	if c, ok := s.SSO["Default"]; ok {
+	if c, ok := s.SSO["Default"]; ok && name == "" {
 		return c, nil
 	}
 	return &SSOConfig{}, fmt.Errorf("No available SSOConfig Provider")
@@ -264,34 +241,18 @@ func (s *Settings) GetSelectedSSO(name string) (*SSOConfig, error) {
 // Refresh should be called any time you load the SSOConfig into memory or add a role
 // to update the Role -> Account references
 func (c *SSOConfig) Refresh(s *Settings) {
-	for _, a := range c.Accounts {
-		for _, r := range a.Roles {
+	for accountId, a := range c.Accounts {
+		for roleName, r := range a.Roles {
 			r.SetParentAccount(a)
+			r.ARN = utils.MakeRoleARN(accountId, roleName)
 		}
 	}
 	c.settings = s
 }
 
-// ConfigFile returns the path to the config file
-func (c *SSOConfig) ConfigFile() string {
-	return c.settings.ConfigFile()
-}
-
 // CreatedAt returns the Unix epoch seconds that this config file was created at
 func (c *SSOConfig) CreatedAt() int64 {
 	return c.settings.CreatedAt()
-}
-
-// HasRole returns true/false if the given Account has the provided arn
-func (a *SSOAccount) HasRole(arn string) bool {
-	hasRole := false
-	for _, role := range a.Roles {
-		if role.ARN == arn {
-			hasRole = true
-			break
-		}
-	}
-	return hasRole
 }
 
 // GetRoles returns a list of all the roles for this SSOConfig
@@ -305,8 +266,56 @@ func (s *SSOConfig) GetRoles() []*SSORole {
 	return roles
 }
 
-func (r *SSORole) SetParentAccount(a *SSOAccount) {
-	r.account = a
+// returns all of the available account & role tags for our SSO Provider
+func (s *SSOConfig) GetAllTags() *TagsList {
+	tags := NewTagsList()
+
+	for _, accountInfo := range s.Accounts {
+		/*
+			if accountInfo.Tags != nil {
+				for k, v := range accountInfo.GetAllTags(account) {
+					tags.Add(k, v)
+				}
+			}
+		*/
+		for _, roleInfo := range accountInfo.Roles {
+			for k, v := range roleInfo.GetAllTags() {
+				tags.Add(k, v)
+			}
+		}
+	}
+	return tags
+}
+
+// GetRoleMatches finds all the roles which match all of the given tags
+func (s *SSOConfig) GetRoleMatches(tags map[string]string) []*SSORole {
+	match := []*SSORole{}
+	for _, role := range s.GetRoles() {
+		isMatch := true
+		roleTags := role.GetAllTags()
+		for tk, tv := range tags {
+			if roleTags[tk] != tv {
+				isMatch = false
+				break
+			}
+		}
+		if isMatch {
+			match = append(match, role)
+		}
+	}
+	return match
+}
+
+// HasRole returns true/false if the given Account has the provided arn
+func (a *SSOAccount) HasRole(arn string) bool {
+	hasRole := false
+	for _, role := range a.Roles {
+		if role.ARN == arn {
+			hasRole = true
+			break
+		}
+	}
+	return hasRole
 }
 
 // GetAllTags returns all of the user defined tags and calculated tags for this account
@@ -330,6 +339,10 @@ func (a *SSOAccount) GetAllTags(id int64) map[string]string {
 		tags[k] = v
 	}
 	return tags
+}
+
+func (r *SSORole) SetParentAccount(a *SSOAccount) {
+	r.account = a
 }
 
 // GetAllTags returns all of the user defined and calculated tags for this role
@@ -377,43 +390,4 @@ func (r *SSORole) GetAccountId64() int64 {
 		log.WithError(err).Panicf("Unable to decode account id for %s", r.ARN)
 	}
 	return i
-}
-
-// returns all of the available account & role tags for our SSO Provider
-func (s *SSOConfig) GetAllTags() *TagsList {
-	tags := NewTagsList()
-	for _, accountInfo := range s.Accounts {
-		/*
-			if accountInfo.Tags != nil {
-				for k, v := range accountInfo.GetAllTags(account) {
-					tags.Add(k, v)
-				}
-			}
-		*/
-		for _, roleInfo := range accountInfo.Roles {
-			for k, v := range roleInfo.GetAllTags() {
-				tags.Add(k, v)
-			}
-		}
-	}
-	return tags
-}
-
-// GetRoleMatches finds all the roles which match all of the given tags
-func (s *SSOConfig) GetRoleMatches(tags map[string]string) []*SSORole {
-	match := []*SSORole{}
-	for _, role := range s.GetRoles() {
-		isMatch := true
-		roleTags := role.GetAllTags()
-		for tk, tv := range tags {
-			if roleTags[tk] != tv {
-				isMatch = false
-				break
-			}
-		}
-		if isMatch {
-			match = append(match, role)
-		}
-	}
-	return match
 }

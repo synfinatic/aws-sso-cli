@@ -1,0 +1,46 @@
+SSOConfig:
+    Default:
+        SSORegion: us-east-1
+        StartUrl: https://d-754545454.awsapps.com/start
+        Accounts:
+            258234615182:
+                Name: OurCompany Control Tower Playground
+                DefaultRegion: eu-west-1
+                Tags:
+                  - Type: Main Account
+                Roles:
+                  AWSAdministratorAccess:
+                    Tags:
+                      Test: value
+                      Foo: Bar
+                  LimitedAccess:
+                    Tags:
+                      Test: value
+                      Foo: Moo
+            833365043586:
+                Name: Log archive
+                Tags:
+                  Type: Sub Account
+                Roles:
+                  AWSAdministratorAccess:
+                    Tags:
+                      Test: logs
+                      Foo: Bar
+                      Can: Man
+            502470824893:
+                Name: Audit
+                Tags:
+                  Type: Sub Account
+            707513610766:
+                Name: Dev Account
+                Tags:
+                  Type: Sub Account
+Browser: /Applications/Firefox.app
+UrlAction: print
+SecureStore: json
+JsonStore: ./testdata/store.json
+ProfileFormat: "{{.AccountName}}/{{.RoleName}}"
+AccountPrimaryTag:
+  - AccountAlias
+LogLevel: warn
+DefaultRegion: us-west-2
