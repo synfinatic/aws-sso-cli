@@ -44,8 +44,8 @@ type TagsCompleter struct {
 
 func NewTagsCompleter(ctx *RunContext, s *sso.SSOConfig, exec CompleterExec) *TagsCompleter {
 	set := ctx.Settings
-	roleTags := set.Cache.Roles.GetRoleTagsSelect()
-	allTags := set.Cache.Roles.GetAllTagsSelect()
+	roleTags := set.Cache.GetRoleTagsSelect()
+	allTags := set.Cache.GetAllTagsSelect()
 
 	return &TagsCompleter{
 		ctx:      ctx,
@@ -183,7 +183,7 @@ func completeTags(roleTags *sso.RoleTags, allTags *sso.TagsList, accountPrimaryT
 			}
 		}
 	} else if nextValue == "" {
-		// We have a 'nextKey', so search for Tags which match
+		// We have a 'nextKey', so search for Tag values which match
 		values := (*allTags).UniqueValues(nextKey)
 		if len(values) > 0 {
 			// found exact match for our nextKey
@@ -235,7 +235,7 @@ func completeTags(roleTags *sso.RoleTags, allTags *sso.TagsList, accountPrimaryT
 			}
 		}
 	} else {
-		// We have a 'nextValue', so search for Tags which match
+		// We have a 'nextValue', so search for Tag values which match
 		for _, checkValue := range allTags.UniqueValues(nextKey) {
 			if strings.Contains(strings.ToLower(checkValue), strings.ToLower(nextValue)) {
 				testSet := map[string]string{}

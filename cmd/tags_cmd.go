@@ -77,7 +77,7 @@ func (cc *TagsCmd) Run(ctx *RunContext) error {
 	}
 
 	for _, fRole := range roles {
-		fmt.Printf("%s\n  AccountId: %d\n  RoleName: %s\n", fRole.Arn, fRole.AccountId, fRole.RoleName)
+		fmt.Printf("%s\n", fRole.Arn)
 		for k, v := range fRole.Tags {
 			fmt.Printf("  %s: %s\n", k, v)
 		}

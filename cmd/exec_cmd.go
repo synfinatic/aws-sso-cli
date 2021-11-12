@@ -128,6 +128,8 @@ func accountIdToStr(id int64) string {
 
 // Executes Cmd+Args in the context of the AWS Role creds
 func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, region string) error {
+	ctx.Settings.Cache.AddHistory(utils.MakeRoleARN(accountid, role), ctx.Settings.HistoryLimit)
+	ctx.Settings.Cache.Save(false)
 
 	// ready our command and connect everything up
 	cmd := exec.Command(ctx.Cli.Exec.Cmd, ctx.Cli.Exec.Args...)

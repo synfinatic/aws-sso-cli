@@ -55,6 +55,7 @@ type Settings struct {
 	PromptColors      PromptColors          `koanf:"PromptColors" yaml:"PromptColors,omitempty"` // go-prompt colors
 	LogLevel          string                `koanf:"LogLevel" yaml:"LogLevel,omitempty"`
 	LogLines          bool                  `koanf:"LogLines" yaml:"LogLines,omitempty"`
+	HistoryLimit      int                   `koanf:"HistoryLimit" yaml:"HistoryLimit,omitempty"`
 	ssoName           string                // SSO name passed in via CLI
 }
 

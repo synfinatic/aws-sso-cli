@@ -198,6 +198,16 @@ Flags:
  * `--account <account>` -- Filter results by AccountId
  * `--role <role>` -- Filter results by Role Name
 
+Note that the following tag keys are automatically defined for each role by AWS SSO CLI:
+
+ * `AccountID` -- AWS Account ID
+ * `Role` -- AWS Role Name
+ * `Email` -- Email address of root account associated with the AWS Account
+ * `AccountName` -- Account Name for any role defined in config.yaml
+ * `AccountAlias` --- AWS Account Alias defined by account administrator
+ * `History` -- Tag tracking if this role was recently used.  See `HistoryLimit` in config 
+		below for more details.
+
 ### Environment Variables
 
 The following environment variables are honored by `exec` and `console`:
@@ -245,6 +255,7 @@ ProfileFormat: <template>
 AccountPrimaryTag: <list of role tags>
 PromptColors:
     <Option>: <Color>
+HistoryLimit: <integer>
 ```
 
 ### Accounts
@@ -402,6 +413,10 @@ Valid high intensity colors:
  * Turquoise
  * White
 
+### HistoryLimit
+
+Limits the number of recently used roles tracked via the History tag.
+Default is last 10 unique roles.  Set to 0 to disable.
 
 ## Environment Varables
 

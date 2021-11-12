@@ -74,6 +74,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"LogLevel":                                  "info",
 	"LogLines":                                  false,
 	"DefaultRegion":                             "us-east-1",
+	"HistoryLimit":                              10,
 }
 
 type CLI struct {

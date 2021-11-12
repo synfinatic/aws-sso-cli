@@ -1,5 +1,9 @@
 # AWS SSO CLI Changelog
 
+## Unreleased
+
+ * Add support for tracking recently used roles via History tag for exec & console #29
+
 ## [v1.2.2] - 2021-11-11
 
  * Add `AccountAlias` and `Expires` to list of fields that can be displayed via
@@ -70,7 +74,8 @@
 ## [v1.0.0] - 2021-07-15
 
 Initial release
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.2.1...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.2.2...main
+[v1.2.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.2.1
 [v1.2.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.2.1
 [v1.2.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.2.0
 [v1.1.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.1.0

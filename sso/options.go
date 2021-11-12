@@ -95,6 +95,9 @@ func (s *Settings) DefaultOptions(exit prompt.ExitChecker) []prompt.Option {
 		prompt.OptionPrefix("> "),
 		prompt.OptionCompletionOnDown(),
 		prompt.OptionShowCompletionAtStart(),
+		// go-prompt history isn't that useful except for accesing the "last", but
+		// seems more dangerous than it is worth IMHO, so it's disabled
+		// prompt.OptionHistory(s.Cache.History),
 	}
 }
 
