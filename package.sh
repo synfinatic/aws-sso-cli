@@ -4,11 +4,24 @@
 
 function package() {
     local CPU=$1
+    case $CPU in
+    amd64)
+        local ARCH=x86_64
+        ;;
+    arm64)
+        local ARCH=arm64
+        ;;
+    *)
+        echo "Invalid CPU=$CPU"
+        exit 1
+    esac
     cat <<EOF >/root/package.yaml
 meta:
   description: AWS SSO CLI
   vendor: Aaron Turner
   maintainer: Aaron Turner
+  license: GPLv3
+  url: https://github.com/synfinatic/aws-sso-cli
 files:
   "/usr/bin/aws-sso":
     file: /root/dist/aws-sso-${VERSION}-linux-${CPU}
@@ -16,13 +29,11 @@ files:
     user: "root"
 
 EOF
+    pushd /root/dist
+    pkg --name=aws-sso-cli --version=$VERSION --arch=$ARCH --deb ../package.yaml
+    pkg --name=aws-sso-cli --version=$VERSION --arch=$ARCH --rpm ../package.yaml
+    popd
 }
 
 package amd64
-
-pushd /root/dist
-pkg --name=aws-sso-cli --version=$VERSION --arch=x86_64 --deb ../package.yaml
-pkg --name=aws-sso-cli --version=$VERSION --arch=x86_64 --rpm ../package.yaml
-pkg --name=aws-sso-cli --version=$VERSION --arch=arm64 --deb ../package.yaml
-pkg --name=aws-sso-cli --version=$VERSION --arch=arm64 --rpm ../package.yaml
-popd
+package arm64

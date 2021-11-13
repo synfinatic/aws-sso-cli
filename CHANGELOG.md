@@ -6,6 +6,7 @@
  * Continue to improve unit tests
  * Fix bugs in `tags` command when using -A or -R to filter results
  * Fix missing tags when not defining roles in config.yaml #116
+ * Fix bad Linux ARM64/AARCH64 packages with invalid binaries
 
 ## [v1.2.2] - 2021-11-11
 
