@@ -5,6 +5,7 @@
  * Add support for tracking recently used roles via History tag for exec & console #29
  * Continue to improve unit tests
  * Fix bugs in `tags` command when using -A or -R to filter results
+ * Fix missing tags when not defining roles in config.yaml #116
 
 ## [v1.2.2] - 2021-11-11
 

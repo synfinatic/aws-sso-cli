@@ -263,8 +263,13 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 		}
 		for _, role := range roles {
 			r.Accounts[accountId].Roles[role.RoleName] = &AWSRole{
-				Arn:  utils.MakeRoleARN(accountId, role.RoleName),
-				Tags: map[string]string{},
+				Arn: utils.MakeRoleARN(accountId, role.RoleName),
+				Tags: map[string]string{
+					"AccountID":    aInfo.AccountId,
+					"AccountAlias": aInfo.AccountName,
+					"Email":        aInfo.EmailAddress,
+					"Role":         role.RoleName,
+				},
 			}
 			// need to copy over the Expires & History fields from our current cache
 			if _, ok := c.Roles.Accounts[accountId]; ok {
