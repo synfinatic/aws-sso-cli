@@ -36,10 +36,7 @@ type RegisterClientData struct {
 
 func (r *RegisterClientData) Expired() bool {
 	// XXX: I think an hour buffer here is fine?
-	if r.ClientSecretExpiresAt > time.Now().Add(time.Hour).Unix() {
-		return false
-	}
-	return true
+	return r.ClientSecretExpiresAt <= time.Now().Add(time.Hour).Unix()
 }
 
 type StartDeviceAuthData struct {
@@ -62,10 +59,7 @@ type CreateTokenResponse struct {
 
 func (t *CreateTokenResponse) Expired() bool {
 	// XXX: I think an minute buffer here is fine?
-	if t.ExpiresAt > time.Now().Add(time.Minute).Unix() {
-		return false
-	}
-	return true
+	return t.ExpiresAt <= time.Now().Add(time.Minute).Unix()
 }
 
 type RoleCredentials struct { // Cache
@@ -93,10 +87,7 @@ func (r *RoleCredentials) ExpireString() string {
 
 func (r *RoleCredentials) IsExpired() bool {
 	now := time.Now().Add(time.Minute).Unix()
-	if r.Expiration/1000 > now {
-		return false
-	}
-	return true
+	return r.Expiration/1000 <= now
 }
 
 // AccountIdStr returns our AccountId as a string

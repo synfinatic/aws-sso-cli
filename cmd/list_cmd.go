@@ -114,7 +114,9 @@ func printRoles(ctx *RunContext, fields []string) {
 		}
 	}
 
-	gotable.GenerateTable(tr, fields)
+	if err := gotable.GenerateTable(tr, fields); err != nil {
+		log.WithError(err).Fatalf("Unable to generate report")
+	}
 	fmt.Printf("\n")
 }
 
@@ -146,6 +148,8 @@ func listAllFields() {
 	}
 
 	fields := []string{"Field", "Description"}
-	gotable.GenerateTable(ts, fields)
+	if err := gotable.GenerateTable(ts, fields); err != nil {
+		log.WithError(err).Fatalf("Unable to generate report")
+	}
 	fmt.Printf("\n")
 }

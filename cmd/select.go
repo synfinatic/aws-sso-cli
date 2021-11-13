@@ -112,7 +112,6 @@ func (tc *TagsCompleter) Executor(args string) {
 	if err != nil {
 		log.Fatalf("Unable to exec: %s", err.Error())
 	}
-	return
 }
 
 // completeExitChecker implements prompt.ExitChecker

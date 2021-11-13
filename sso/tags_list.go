@@ -91,7 +91,7 @@ func (t *TagsList) UniqueKeys(picked []string) []string {
 			keys = append(keys, key)
 		}
 	}
-	sort.Sort(sort.StringSlice(keys))
+	sort.Strings(keys)
 	return keys
 }
 
@@ -99,7 +99,7 @@ func (t *TagsList) UniqueKeys(picked []string) []string {
 func (t *TagsList) UniqueValues(key string) []string {
 	x := *t
 	if values, ok := x[key]; ok {
-		sort.Sort(sort.StringSlice(values))
+		sort.Strings(values)
 		return values
 	}
 

@@ -28,6 +28,7 @@ import (
 	"strconv"
 
 	"github.com/c-bata/go-prompt"
+	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/synfinatic/aws-sso-cli/storage"
 	"github.com/synfinatic/aws-sso-cli/utils"
@@ -123,7 +124,9 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 // opens the AWS console or just prints the URL
 func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, region string) error {
 	ctx.Settings.Cache.AddHistory(utils.MakeRoleARN(accountid, role), ctx.Settings.HistoryLimit)
-	ctx.Settings.Cache.Save(false)
+	if err := ctx.Settings.Cache.Save(false); err != nil {
+		log.WithError(err).Warnf("Unable to update cache")
+	}
 
 	creds := GetRoleCredentials(ctx, awssso, accountid, role)
 
