@@ -39,7 +39,7 @@ const (
 	ENV_SSO_FILE_PASSWORD        = "AWS_SSO_FILE_PASSPHRASE"
 )
 
-// Impliments SecureStorage
+// Implements SecureStorage
 type KeyringStore struct {
 	keyring keyring.Keyring
 	config  keyring.Config

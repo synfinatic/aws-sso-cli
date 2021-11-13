@@ -270,7 +270,7 @@ func (as *AWSSSO) CreateToken() error {
 		ExpiresIn:    aws.Int64Value(resp.ExpiresIn),
 		ExpiresAt:    time.Now().Add(secs).Unix(),
 		IdToken:      aws.StringValue(resp.IdToken),
-		RefreshToken: aws.StringValue(resp.RefreshToken), // per AWS docs, not currently implimented
+		RefreshToken: aws.StringValue(resp.RefreshToken), // per AWS docs, not currently implemented
 		TokenType:    aws.StringValue(resp.TokenType),
 	}
 	err = as.store.SaveCreateTokenResponse(as.StoreKey(), as.Token)

@@ -22,10 +22,12 @@ import (
 	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
+// FlushCmd defines the Kong args for the flush command
 type FlushCmd struct {
 	All bool `kong:"optional,name='all',help='Also flush individual STS tokens'"`
 }
 
+// Run executes the flush command
 func (cc *FlushCmd) Run(ctx *RunContext) error {
 	var err error
 
@@ -51,7 +53,6 @@ func (cc *FlushCmd) Run(ctx *RunContext) error {
 				}
 			}
 		}
-		err = nil
 		err = ctx.Settings.Cache.MarkRolesExpired()
 	}
 

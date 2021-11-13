@@ -115,7 +115,7 @@ func (tc *TagsCompleter) Executor(args string) {
 	return
 }
 
-// completeExitChecker impliments prompt.ExitChecker
+// completeExitChecker implements prompt.ExitChecker
 func (tc *TagsCompleter) ExitChecker(in string, breakline bool) bool {
 	return breakline // exit our Run() loop after user selects something
 }
@@ -134,7 +134,7 @@ func completeTags(roleTags *sso.RoleTags, allTags *sso.TagsList, accountPrimaryT
 		currentRoles := roleTags.GetMatchingRoles(currentTags)
 
 		selectedKeys := []string{}
-		for k, _ := range currentTags {
+		for k := range currentTags {
 			selectedKeys = append(selectedKeys, k)
 		}
 
@@ -220,7 +220,7 @@ func completeTags(roleTags *sso.RoleTags, allTags *sso.TagsList, accountPrimaryT
 			// no exact match, look for the key
 
 			usedKeys := []string{}
-			for k, _ := range currentTags {
+			for k := range currentTags {
 				usedKeys = append(usedKeys, k)
 			}
 			remainKeys := allTags.UniqueKeys(usedKeys)

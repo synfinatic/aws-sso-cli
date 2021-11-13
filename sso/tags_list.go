@@ -79,7 +79,7 @@ func (t *TagsList) Merge(a *TagsList) {
 // Returns a sorted unique list of tag keys, removing any keys which have already been picked
 func (t *TagsList) UniqueKeys(picked []string) []string {
 	keys := []string{}
-	for key, _ := range *t {
+	for key := range *t {
 		seen := false
 		for _, c := range picked {
 			if c == key {

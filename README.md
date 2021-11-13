@@ -1,4 +1,4 @@
-# AWS SSO CLI ![Tests](https://github.com/synfinatic/aws-sso-cli/workflows/Tests/badge.svg)
+# AWS SSO CLI ![Tests](https://github.com/synfinatic/aws-sso-cli/workflows/Tests/badge.svg) [![Report Card](https://goreportcard.com/badge/github.com/synfinatic/aws-sso-cli)](https://goreportcard.com/report/github.com/synfinatic/aws-sso-cli)
 
 ## About
 

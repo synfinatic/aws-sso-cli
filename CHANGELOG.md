@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+ * Add report card and make improvements to code style #124
+ 
 ## [v1.2.3] - 2021-11-13
 
  * Add support for tracking recently used roles via History tag for exec & console #29

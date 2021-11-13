@@ -88,7 +88,7 @@ func printRoles(ctx *RunContext, fields []string) {
 
 	// print in AccountId order
 	accounts := []int64{}
-	for account, _ := range roles.Accounts {
+	for account := range roles.Accounts {
 		accounts = append(accounts, account)
 	}
 	sort.Slice(accounts, func(i, j int) bool { return accounts[i] < accounts[j] })
@@ -133,7 +133,7 @@ func (cfn ConfigFieldNames) GetHeader(fieldName string) (string, error) {
 // listAllFields generates a table with all the AWSRoleFlat fields we can print
 func listAllFields() {
 	names := []string{}
-	for k, _ := range allListFields {
+	for k := range allListFields {
 		names = append(names, k)
 	}
 	sort.Strings(names)

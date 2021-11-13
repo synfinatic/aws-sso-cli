@@ -28,7 +28,7 @@ import (
 	"github.com/synfinatic/aws-sso-cli/utils"
 )
 
-// Impliments SecureStorage insecurely
+// JsonStore implements SecureStorage insecurely
 type JsonStore struct {
 	filename            string
 	RegisterClient      map[string]RegisterClientData  `json:"RegisterClient,omitempty"`
@@ -37,6 +37,7 @@ type JsonStore struct {
 	RoleCredentials     map[string]RoleCredentials     `json:"RoleCredentials,omitempty"`
 }
 
+// OpenJsonStore opens our insecure JSON storage backend
 func OpenJsonStore(fileName string) (*JsonStore, error) {
 	cache := JsonStore{
 		filename:            fileName,
@@ -56,8 +57,8 @@ func OpenJsonStore(fileName string) (*JsonStore, error) {
 	return &cache, nil
 }
 
-// save the cache file, creating the directory if necessary
-func (jc *JsonStore) saveCache() error {
+// save writes the JSON store file, creating the directory if necessary
+func (jc *JsonStore) save() error {
 	log.Debugf("Saving JSON Cache")
 	jbytes, err := json.MarshalIndent(jc, "", "  ")
 	if err != nil {
@@ -72,12 +73,13 @@ func (jc *JsonStore) saveCache() error {
 	return ioutil.WriteFile(jc.filename, jbytes, 0600)
 }
 
-// RegisterClientData
+// SaveRegisterClientData saves the RegisterClientData in our JSON store
 func (jc *JsonStore) SaveRegisterClientData(key string, client RegisterClientData) error {
 	jc.RegisterClient[key] = client
-	return jc.saveCache()
+	return jc.save()
 }
 
+// GetRegisterClientData retrieves the RegisterClientData from our JSON store
 func (jc *JsonStore) GetRegisterClientData(key string, client *RegisterClientData) error {
 	var ok bool
 	*client, ok = jc.RegisterClient[key]
@@ -87,15 +89,16 @@ func (jc *JsonStore) GetRegisterClientData(key string, client *RegisterClientDat
 	return nil
 }
 
+// DeleteRegisterClientData deletes the RegisterClientData from the JSON store
 func (jc *JsonStore) DeleteRegisterClientData(key string) error {
 	jc.RegisterClient[key] = RegisterClientData{}
-	return jc.saveCache()
+	return jc.save()
 }
 
 // SaveCreateTokenResponse stores the token in the json file
 func (jc *JsonStore) SaveCreateTokenResponse(key string, token CreateTokenResponse) error {
 	jc.CreateTokenResponse[key] = token
-	return jc.saveCache()
+	return jc.save()
 }
 
 // GetCreateTokenResponse retrieves the CreateTokenResponse from the json file
@@ -111,13 +114,13 @@ func (jc *JsonStore) GetCreateTokenResponse(key string, token *CreateTokenRespon
 // DeleteCreateTokenResponse deletes the token from the json file
 func (jc *JsonStore) DeleteCreateTokenResponse(key string) error {
 	jc.CreateTokenResponse[key] = CreateTokenResponse{}
-	return jc.saveCache()
+	return jc.save()
 }
 
 // SaveRoleCredentials stores the token in the json file
 func (jc *JsonStore) SaveRoleCredentials(arn string, token RoleCredentials) error {
 	jc.RoleCredentials[arn] = token
-	return jc.saveCache()
+	return jc.save()
 }
 
 // GetRoleCredentials retrieves the RoleCredentials from the json file
@@ -133,5 +136,5 @@ func (jc *JsonStore) GetRoleCredentials(arn string, token *RoleCredentials) erro
 // DeleteRoleCredentials deletes the token from the json file
 func (jc *JsonStore) DeleteRoleCredentials(arn string) error {
 	jc.RoleCredentials[arn] = RoleCredentials{}
-	return jc.saveCache()
+	return jc.save()
 }
