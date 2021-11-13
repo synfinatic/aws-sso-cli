@@ -1,12 +1,14 @@
 # AWS SSO CLI Changelog
 
-## Unreleased
+## [Unreleased]
+
+## [v1.2.3] - 2021-11-13
 
  * Add support for tracking recently used roles via History tag for exec & console #29
  * Continue to improve unit tests
  * Fix bugs in `tags` command when using -A or -R to filter results
  * Fix missing tags when not defining roles in config.yaml #116
- * Fix bad Linux ARM64/AARCH64 packages with invalid binaries
+ * Fix bad Linux ARM64/AARCH64 rpm/deb packages with invalid binaries
 
 ## [v1.2.2] - 2021-11-11
 
@@ -78,8 +80,9 @@
 ## [v1.0.0] - 2021-07-15
 
 Initial release
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.2.2...main
-[v1.2.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.2.1
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.2.3...main
+[v1.2.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.2.3
+[v1.2.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.2.2
 [v1.2.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.2.1
 [v1.2.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.2.0
 [v1.1.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.1.0

@@ -18,7 +18,7 @@ endif
 
 BUILDINFOSDET ?=
 PROGRAM_ARGS ?=
-PROJECT_VERSION           := 1.2.2
+PROJECT_VERSION           := 1.2.3
 DOCKER_REPO               := synfinatic
 PROJECT_NAME              := aws-sso
 ifeq ($(PROJECT_TAG),)
@@ -102,7 +102,7 @@ include help.mk  # place after ALL target and before all other targets
 .build-release: windows windows32 linux linux-arm64 darwin darwin-arm64
 
 release: clean .build-release package ## Build all our release binaries
-	cd dist && shasum -a 256 * | gpg --clear-sign >release.sig.txt
+	cd dist && shasum -a 256 * | gpg --clear-sign >release.sig.asc
 
 .PHONY: run
 run: cmd/*.go  sso/*.go ## build and run using $PROGRAM_ARGS
