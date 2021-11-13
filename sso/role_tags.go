@@ -19,9 +19,7 @@ package sso
  */
 
 import (
-	"fmt"
 	"sort"
-	"strings"
 )
 
 // RoleTags provides an interface to find roles which match a set of tags
@@ -122,19 +120,4 @@ func (r *RoleTags) UsefulTags(tags map[string]string) []string {
 
 func (r *RoleTags) GetMatchCount(tags map[string]string) int {
 	return len(r.GetMatchingRoles(tags))
-}
-
-// takes a role ARN and returns the accountid & rolename
-func getAccountRole(arn string) (string, string, error) {
-	s := strings.Split(arn, ":")
-	if len(s) != 5 {
-		return "", "", fmt.Errorf("Invalid Role ARN: %s", arn)
-	}
-	account := s[3]
-	s = strings.Split(arn, "/")
-	if len(s) != 2 {
-		return "", "", fmt.Errorf("Invalid Role ARN: %s", arn)
-	}
-	role := s[1]
-	return account, role, nil
 }

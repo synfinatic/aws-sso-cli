@@ -55,7 +55,6 @@ type Settings struct {
 	LogLevel          string                `koanf:"LogLevel" yaml:"LogLevel,omitempty"`
 	LogLines          bool                  `koanf:"LogLines" yaml:"LogLines,omitempty"`
 	HistoryLimit      int                   `koanf:"HistoryLimit" yaml:"HistoryLimit,omitempty"`
-	ssoName           string                // SSO name passed in via CLI
 	ListFields        []string              `koanf:"ListFields" yaml:"ListFields,omitempty"`
 }
 
@@ -124,7 +123,9 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 
 	// default values.  Can be overridden using:
 	// https://pkg.go.dev/github.com/c-bata/go-prompt?utm_source=godoc#Color
-	konf.Load(confmap.Provider(defaults, "."), nil)
+	if err := konf.Load(confmap.Provider(defaults, "."), nil); err != nil {
+		return s, fmt.Errorf("Unable to load default settings: %s", err.Error())
+	}
 
 	if err := konf.Load(file.Provider(configFile), yaml.Parser()); err != nil {
 		return s, fmt.Errorf("Unable to open config file %s: %s", configFile, err.Error())
@@ -250,6 +251,7 @@ func (s *Settings) GetSelectedSSO(name string) (*SSOConfig, error) {
 // to update the Role -> Account references
 func (c *SSOConfig) Refresh(s *Settings) {
 	for accountId, a := range c.Accounts {
+		a.SetParentConfig(c)
 		for roleName, r := range a.Roles {
 			r.SetParentAccount(a)
 			r.ARN = utils.MakeRoleARN(accountId, roleName)
@@ -351,6 +353,10 @@ func (a *SSOAccount) GetAllTags(id int64) map[string]string {
 
 func (r *SSORole) SetParentAccount(a *SSOAccount) {
 	r.account = a
+}
+
+func (a *SSOAccount) SetParentConfig(c *SSOConfig) {
+	a.config = c
 }
 
 // GetAllTags returns all of the user defined and calculated tags for this role

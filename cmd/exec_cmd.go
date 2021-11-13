@@ -108,11 +108,9 @@ const (
 )
 
 func emptyString(str string) bool {
-	if str == "" {
-		return true
-	}
-	return false
+	return str == ""
 }
+
 func firstItem(items []string) string {
 	for _, v := range items {
 		if v != "" {
@@ -129,7 +127,9 @@ func accountIdToStr(id int64) string {
 // Executes Cmd+Args in the context of the AWS Role creds
 func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, region string) error {
 	ctx.Settings.Cache.AddHistory(utils.MakeRoleARN(accountid, role), ctx.Settings.HistoryLimit)
-	ctx.Settings.Cache.Save(false)
+	if err := ctx.Settings.Cache.Save(false); err != nil {
+		log.WithError(err).Warnf("Unable to update cache")
+	}
 
 	// ready our command and connect everything up
 	cmd := exec.Command(ctx.Cli.Exec.Cmd, ctx.Cli.Exec.Args...)
@@ -191,7 +191,9 @@ func execShellEnvs(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, r
 		buf := new(bytes.Buffer)
 		log.Tracef("RoleInfo: %s", spew.Sdump(roleInfo))
 		log.Tracef("Template: %s", spew.Sdump(templ))
-		templ.Execute(buf, roleInfo)
+		if err := templ.Execute(buf, roleInfo); err != nil {
+			log.WithError(err).Errorf("Unable to generate AWS_SSO_PROFILE")
+		}
 		shellVars["AWS_SSO_PROFILE"] = buf.String()
 	}
 
@@ -202,7 +204,7 @@ func execShellEnvs(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, r
 func checkAwsEnvironment() error {
 	checkVars := []string{"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_PROFILE"}
 	for _, envVar := range checkVars {
-		if _, exist := os.LookupEnv(envVar); exist == true {
+		if _, ok := os.LookupEnv(envVar); ok {
 			return fmt.Errorf("Conflicting environment variable '%s' is set", envVar)
 		}
 	}

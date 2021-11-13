@@ -124,6 +124,7 @@ func (suite *RoleTagsTestSuite) TestGetMatchCount() {
 
 func (suite *RoleTagsTestSuite) TestGetRoleTags() {
 	t := suite.T()
+
 	f := (*suite).File
 	for testName, test := range *f.GetRoleTags {
 		ret := test.RoleTags.GetRoleTags(test.Query)

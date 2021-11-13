@@ -52,15 +52,17 @@ func OpenCache(f string, s *Settings) (*Cache, error) {
 			Accounts: map[int64]*AWSAccount{},
 		},
 	}
+	var err error
+	var cacheBytes []byte
 	if f != "" {
-		cacheBytes, err := ioutil.ReadFile(f)
+		cacheBytes, err = ioutil.ReadFile(f)
 		if err != nil {
 			log.WithError(err).Errorf("Unable to open CacheStore: %s", f)
 			return &cache, nil // return empty struct
 		}
-		json.Unmarshal(cacheBytes, &cache)
+		err = json.Unmarshal(cacheBytes, &cache)
 	}
-	return &cache, nil
+	return &cache, err
 }
 
 // Expired returns if our Roles cache data is too old.
@@ -555,10 +557,7 @@ func (r *AWSRoleFlat) IsExpired() bool {
 		return true
 	}
 	d := time.Until(time.Unix(r.Expires, 0))
-	if d <= 0 {
-		return true
-	}
-	return false
+	return d <= 0
 }
 
 // ExpiresIn returns how long until this role expires as a string

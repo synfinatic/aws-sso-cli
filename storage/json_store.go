@@ -51,10 +51,10 @@ func OpenJsonStore(fileName string) (*JsonStore, error) {
 	if err != nil {
 		log.Warnf("Creating new cache file: %s", fileName)
 	} else {
-		json.Unmarshal(cacheBytes, &cache)
+		err = json.Unmarshal(cacheBytes, &cache)
 	}
 
-	return &cache, nil
+	return &cache, err
 }
 
 // save writes the JSON store file, creating the directory if necessary
