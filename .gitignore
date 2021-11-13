@@ -2,4 +2,4 @@ dist/
 config.yaml*
 store.json
 __debug_bin
-aws-sso-cli.rb
+coverage.out

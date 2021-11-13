@@ -26,3 +26,6 @@ jobs:
     
     - name: Build a binary
       run: make # not all binaries to help speed up builds
+
+    - name: Upload to codecov
+      uses: codecov/codecov-action@v2
