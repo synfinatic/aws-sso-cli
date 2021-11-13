@@ -216,8 +216,8 @@ type AWSRoleFlat struct {
 	AccountName   string            `json:"AccountName" header:"AccountName"`
 	AccountAlias  string            `json:"AccountAlias" header:"AccountAlias"`
 	EmailAddress  string            `json:"EmailAddress" header:"EmailAddress"`
-	Expires       int64             `json:"Expires"`            // used in cache
-	ExpiresStr    string            `json:"-" header:"Expires"` // used by `list` command
+	Expires       int64             `json:"Expires" header:"ExpiresEpoch"`
+	ExpiresStr    string            `json:"-" header:"Expires"`
 	Arn           string            `json:"Arn" header:"ARN"`
 	RoleName      string            `json:"RoleName" header:"Role"`
 	Profile       string            `json:"Profile" header:"Profile"`

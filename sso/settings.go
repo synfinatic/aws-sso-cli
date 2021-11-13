@@ -56,6 +56,7 @@ type Settings struct {
 	LogLines          bool                  `koanf:"LogLines" yaml:"LogLines,omitempty"`
 	HistoryLimit      int                   `koanf:"HistoryLimit" yaml:"HistoryLimit,omitempty"`
 	ssoName           string                // SSO name passed in via CLI
+	ListFields        []string              `koanf:"ListFields" yaml:"ListFields,omitempty"`
 }
 
 type SSOConfig struct {
