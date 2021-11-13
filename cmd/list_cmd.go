@@ -28,15 +28,6 @@ import (
 	"github.com/synfinatic/gotable"
 )
 
-// Fields match those in AWSRoleFlat.  Used when user doesn't have the `fields` in
-// their YAML config file or provided list on the CLI
-var defaultListFields = []string{
-	"AccountId",
-	"AccountAlias",
-	"RoleName",
-	"ExpiresStr",
-}
-
 // keys match AWSRoleFlat header and value is the description
 var allListFields = map[string]string{
 	"Id":            "Column Index",
@@ -79,7 +70,7 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 		}
 	}
 
-	fields := defaultListFields
+	fields := ctx.Settings.ListFields
 	if len(ctx.Cli.List.Fields) > 0 {
 		fields = ctx.Cli.List.Fields
 	}

@@ -175,7 +175,15 @@ Flags:
 
 Arguments: `[<field> ...]`
 
-The arguments are a list of fields to display in the report.
+The arguments are a list of fields to display in the report.  Overrides the
+defaults and/or the specified `ListFields` in the `config.yaml`.
+
+Default fields:
+
+ * `AccountId`
+ * `AccountAlias`
+ * `RoleName`
+ * `ExpiresStr`
 
 ### flush
 
@@ -257,27 +265,31 @@ UrlAction: [print|open|clip]
 SecureStore: [file|keychain|kwallet|pass|secret-service|wincred|json]
 JsonStore: <path to json file>
 ProfileFormat: <template>
-AccountPrimaryTag: 
+AccountPrimaryTag:
     - <tag 1>
     - <tag 2>
     - <tag N>
 PromptColors:
     <Option>: <Color>
 HistoryLimit: <integer>
+ListFields:
+	- <field 1>
+	- <field 2>
+	- <field N>
 ```
 
 ### SSOConfig
 
-This is the top level block for your AWS SSO instances.  Typically an organization 
+This is the top level block for your AWS SSO instances.  Typically an organization
 will have a single AWS SSO instance for all of their accounts under a single AWS master
-payer account.  If you have more than one AWS SSO instance, then `Default` will be 
+payer account.  If you have more than one AWS SSO instance, then `Default` will be
 the default unless overridden with `DefaultSSO`.
 
 The `SSOConfig` config block is required.
 
 ### StartUrl
 
-Each AWS SSO instance has a unique start URL hosted by AWS for interacting with your 
+Each AWS SSO instance has a unique start URL hosted by AWS for interacting with your
 SSO provider (Okta/OneLogin/etc).
 
 The `StartUrl` is required.
@@ -436,6 +448,27 @@ Valid high intensity colors:
 
 Limits the number of recently used roles tracked via the History tag.
 Default is last 10 unique roles.  Set to 0 to disable.
+
+#### ListFields
+
+Specify which fields to display via the `list` command.  Valid options are:
+
+ * `Id` -- Unique row identifier
+ * `AccountId` -- AWS Account Id
+ * `AccountName` -- Account Name from config.yaml
+ * `AccountAlias` -- Account Name from AWS SSO
+ * `ARN` -- Role ARN
+ * `DefaultRegion` -- Configured default region
+ * `EmailAddress` -- Email address of root account associated with AWS Account
+ * `ExpiresEpoch` -- Unix epoch time when cached STS creds expire
+ * `ExpiresStr` -- Hours and minutes until cached STS creds expire
+ * `RoleName` -- Role name
+ * `SSORegion` -- Region of AWS SSO instance
+ * `StartUrl` -- AWS SSO Start Url
+<!--
+ * `Profile` -- ???
+ * `Via` -- Previous ARN of role to assume
+-->
 
 ## Environment Varables
 
