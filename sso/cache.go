@@ -27,7 +27,7 @@ import (
 	"strings"
 	"time"
 
-	//	"github.com/davecgh/go-spew/spew"
+	// "github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/utils"
 	"github.com/synfinatic/gotable"
@@ -388,10 +388,13 @@ func (r *Roles) GetAllRoles() []*AWSRoleFlat {
 	return ret
 }
 
-// AccountRoles returns all the roles for a given account
+// GetAccountRoles returns all the roles for a given account
 func (r *Roles) GetAccountRoles(accountId int64) map[string]*AWSRoleFlat {
 	ret := map[string]*AWSRoleFlat{}
 	account := r.Accounts[accountId]
+	if account == nil {
+		return ret
+	}
 	for roleName, _ := range account.Roles {
 		flat, _ := r.GetRole(accountId, roleName)
 		ret[roleName] = flat
