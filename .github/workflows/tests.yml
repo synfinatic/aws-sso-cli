@@ -1,6 +1,7 @@
 name: Tests
 on:
   push:
+    branches: [main]
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [main]
@@ -23,5 +24,5 @@ jobs:
     - name: Tests
       run: make test
     
-    - name: Build all binaries
-      run: make .build-release
+    - name: Build a binary
+      run: make # not all binaries to help speed up builds

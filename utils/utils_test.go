@@ -44,25 +44,25 @@ func (suite *UtilsTestSuite) TestParseRoleARN() {
 	assert.Equal(t, "Foo", r)
 	assert.Nil(t, err)
 
-	a, r, err = ParseRoleARN("")
+	_, _, err = ParseRoleARN("")
 	assert.NotNil(t, err)
 
-	a, r, err = ParseRoleARN("arnFoo")
+	_, _, err = ParseRoleARN("arnFoo")
 	assert.NotNil(t, err)
 
-	a, r, err = ParseRoleARN("arn:aws:iam:a:role/Foo")
+	_, _, err = ParseRoleARN("arn:aws:iam:a:role/Foo")
 	assert.NotNil(t, err)
 
-	a, r, err = ParseRoleARN("arn:aws:iam:000000011111:role")
+	_, _, err = ParseRoleARN("arn:aws:iam:000000011111:role")
 	assert.NotNil(t, err)
 
-	a, r, err = ParseRoleARN("aws:iam:000000011111:role/Foo")
+	_, _, err = ParseRoleARN("aws:iam:000000011111:role/Foo")
 	assert.NotNil(t, err)
 
-	a, r, err = ParseRoleARN("invalid:arn:aws:iam:000000011111:role/Foo")
+	_, _, err = ParseRoleARN("invalid:arn:aws:iam:000000011111:role/Foo")
 	assert.NotNil(t, err)
 
-	a, r, err = ParseRoleARN("arn:aws:iam:000000011111:role/Foo/Bar")
+	_, _, err = ParseRoleARN("arn:aws:iam:000000011111:role/Foo/Bar")
 	assert.NotNil(t, err)
 }
 

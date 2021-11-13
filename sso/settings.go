@@ -138,52 +138,20 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 		s.AccountPrimaryTag = append(s.AccountPrimaryTag, DEFAULT_ACCOUNT_PRIMARY_TAGS...)
 	}
 
-	// Setup Logging
-	if override.LogLevel != "" {
-		s.LogLevel = override.LogLevel
-	}
-	switch s.LogLevel {
-	case "trace":
-		log.SetLevel(log.TraceLevel)
-	case "debug":
-		log.SetLevel(log.DebugLevel)
-	case "info":
-		log.SetLevel(log.InfoLevel)
-	case "warn":
-		log.SetLevel(log.WarnLevel)
-	case "error":
-		log.SetLevel(log.ErrorLevel)
-	}
-	if override.LogLines {
-		s.LogLines = true
-	}
-	if s.LogLines {
-		log.SetReportCaller(true)
-	}
-
-	// Other overrides from CLI
-	if override.Browser != "" {
-		s.Browser = override.Browser
-	}
-	if override.DefaultSSO != "" {
-		s.DefaultSSO = override.DefaultSSO
-	}
-	if override.UrlAction != "" {
-		s.UrlAction = override.UrlAction
-	}
+	s.setOverrides(override)
 
 	// Select our SSO Provider
 	if len(s.SSO) == 0 {
 		return s, fmt.Errorf("No AWS SSO providers have been configured.")
 	} else if len(s.SSO) == 1 {
 		// If we have only one SSO configured, always use that
-		for name, _ := range s.SSO {
+		for name := range s.SSO {
 			s.DefaultSSO = name
 		}
 	} else if _, ok := s.SSO[s.DefaultSSO]; !ok {
 		// more than one provider? use that
 		names := []string{}
-		for sso, _ := range s.SSO {
+		for sso := range s.SSO {
 			names = append(names, sso)
 		}
 		return s, fmt.Errorf("Invalid SSO name '%s'. Valid options: %s", s.DefaultSSO,
@@ -202,6 +170,45 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 	}
 
 	return s, nil
+}
+
+// configure our settings using the overrides
+func (s *Settings) setOverrides(override OverrideSettings) {
+	// Setup Logging
+	if override.LogLevel != "" {
+		s.LogLevel = override.LogLevel
+	}
+	switch s.LogLevel {
+	case "trace":
+		log.SetLevel(log.TraceLevel)
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+	case "info":
+		log.SetLevel(log.InfoLevel)
+	case "warn":
+		log.SetLevel(log.WarnLevel)
+	case "error":
+		log.SetLevel(log.ErrorLevel)
+	}
+
+	if override.LogLines {
+		s.LogLines = true
+	}
+
+	if s.LogLines {
+		log.SetReportCaller(true)
+	}
+
+	// Other overrides from CLI
+	if override.Browser != "" {
+		s.Browser = override.Browser
+	}
+	if override.DefaultSSO != "" {
+		s.DefaultSSO = override.DefaultSSO
+	}
+	if override.UrlAction != "" {
+		s.UrlAction = override.UrlAction
+	}
 }
 
 func (s *Settings) ConfigFile() string {

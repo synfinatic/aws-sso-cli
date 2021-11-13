@@ -165,7 +165,7 @@ func (c *Cache) SetRoleExpires(arn string, expires int64) error {
 }
 
 func (c *Cache) MarkRolesExpired() error {
-	for accountId, _ := range c.Roles.Accounts {
+	for accountId := range c.Roles.Accounts {
 		for _, role := range c.Roles.Accounts[accountId].Roles {
 			(*role).Expires = 0
 		}
@@ -303,7 +303,7 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 		}
 
 		// set the AWS SSO tags for all the SSO roles
-		for roleName, _ := range r.Accounts[accountId].Roles {
+		for roleName := range r.Accounts[accountId].Roles {
 			aId := strconv.FormatInt(accountId, 10)
 			r.Accounts[accountId].Roles[roleName].Tags["AccountID"] = aId
 			r.Accounts[accountId].Roles[roleName].Tags["AccountName"] = r.Accounts[accountId].Name
@@ -375,7 +375,7 @@ func (c *Cache) GetRoleTagsSelect() *RoleTags {
 // AccountIds returns all the configured AWS SSO AccountIds
 func (r *Roles) AccountIds() []int64 {
 	ret := []int64{}
-	for id, _ := range r.Accounts {
+	for id := range r.Accounts {
 		ret = append(ret, id)
 	}
 	return ret
@@ -385,7 +385,7 @@ func (r *Roles) AccountIds() []int64 {
 func (r *Roles) GetAllRoles() []*AWSRoleFlat {
 	ret := []*AWSRoleFlat{}
 	for _, id := range r.AccountIds() {
-		for roleName, _ := range r.Accounts[id].Roles {
+		for roleName := range r.Accounts[id].Roles {
 			flat, _ := r.GetRole(id, roleName)
 			ret = append(ret, flat)
 		}
@@ -400,7 +400,7 @@ func (r *Roles) GetAccountRoles(accountId int64) map[string]*AWSRoleFlat {
 	if account == nil {
 		return ret
 	}
-	for roleName, _ := range account.Roles {
+	for roleName := range account.Roles {
 		flat, _ := r.GetRole(accountId, roleName)
 		ret[roleName] = flat
 	}
@@ -539,7 +539,7 @@ func (r *Roles) MatchingRoles(tags map[string]string) []*AWSRoleFlat {
 func (r *Roles) MatchingRolesWithTagKey(key string) []*AWSRoleFlat {
 	ret := []*AWSRoleFlat{}
 	for _, role := range r.GetAllRoles() {
-		for k, _ := range role.Tags {
+		for k := range role.Tags {
 			if k == key {
 				ret = append(ret, role)
 				break
