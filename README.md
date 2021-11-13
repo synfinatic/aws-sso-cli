@@ -1,4 +1,4 @@
-# AWS SSO CLI
+# AWS SSO CLI ![Tests](https://github.com/synfinatic/aws-sso-cli/workflows/Tests/badge.svg)
 
 ## About
 
