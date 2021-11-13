@@ -87,7 +87,7 @@ $(HOMEBREW):  homebrew/template.rb  ## no-help
 	fi
 
 .PHONY: package
-package:  ## Build deb/rpm packages
+package: linux linux-arm64  ## Build deb/rpm packages
 	docker build -t aws-sso-cli-builder:latest .
 	docker run --rm \
 		-v $$(pwd)/dist:/root/dist \
