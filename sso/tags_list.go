@@ -19,7 +19,13 @@ package sso
  */
 
 import (
+	"fmt"
 	"sort"
+	"strconv"
+	"strings"
+	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // TagsList provides the necessary struct finding all the possible tag key/values
@@ -32,6 +38,7 @@ func NewTagsList() *TagsList {
 // Inserts the tag/value if it does not already exist in the sorted order
 func (t *TagsList) Add(tag, v string) {
 	tt := *t
+
 	if tt[tag] == nil {
 		tt[tag] = []string{v}
 		return // inserted
@@ -95,9 +102,38 @@ func (t *TagsList) UniqueKeys(picked []string) []string {
 	return keys
 }
 
+// reformatHistory modifies the History tag values to their human format for the selector
+func reformatHistory(value string) string {
+	x := strings.Split(value, ",")
+
+	// oldformat
+	if len(x) == 1 {
+		return value
+	}
+
+	i, err := strconv.ParseInt(x[1], 10, 64)
+	if err != nil {
+		log.WithError(err).Fatalf("Unable to parse: %s", value)
+	}
+
+	d := time.Since(time.Unix(i, 0)).Truncate(time.Second)
+	var s string
+
+	if d.Hours() >= 1 {
+		s = d.String()
+	} else if d.Minutes() >= 1 {
+		s = fmt.Sprintf("0h%s", d.String())
+	} else {
+		s = fmt.Sprintf("0h0m%s", d.String())
+	}
+
+	return fmt.Sprintf("[%s] %s", s, x[0])
+}
+
 // Returns a sorted unique list of tag values for the given key
 func (t *TagsList) UniqueValues(key string) []string {
 	x := *t
+
 	if values, ok := x[key]; ok {
 		sort.Strings(values)
 		return values

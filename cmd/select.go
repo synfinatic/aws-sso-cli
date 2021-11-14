@@ -204,7 +204,7 @@ func completeTags(roleTags *sso.RoleTags, allTags *sso.TagsList, accountPrimaryT
 					continue
 
 				case 1:
-					desc = checkRoles[0]
+					desc = checkRoles[0] // the ARN of the role we selected
 
 				default:
 					desc = fmt.Sprintf("%d roles", roleCnt)
