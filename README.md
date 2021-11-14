@@ -264,18 +264,20 @@ LogLines: [true|false]
 UrlAction: [print|open|clip]
 SecureStore: [file|keychain|kwallet|pass|secret-service|wincred|json]
 JsonStore: <path to json file>
-ProfileFormat: <template>
+ProfileFormat: "<template>"
 AccountPrimaryTag:
     - <tag 1>
     - <tag 2>
     - <tag N>
 PromptColors:
-    <Option>: <Color>
+    <Option 1>: <Color>
+    <Option 2>: <Color>
+    <Option N>: <Color>
 HistoryLimit: <integer>
 ListFields:
-	- <field 1>
-	- <field 2>
-	- <field N>
+    - <field 1>
+    - <field 2>
+    - <field N>
 ```
 
 ### SSOConfig
