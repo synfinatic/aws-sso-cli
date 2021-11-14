@@ -101,27 +101,25 @@ func (c *Cache) Save(updateTime bool) error {
 // adds a role to the History list up to the max number of entries
 // and then removes the History tag from any roles that aren't in our list
 func (c *Cache) AddHistory(item string, max int) {
-	// first make sure it's not already in the list because we don't want duplicates
-	duplicate := false
-	for _, h := range c.History {
+	// If it's already in the list, remove it
+	for x, h := range c.History {
 		if h == item {
-			duplicate = true
+			// delete from history
+			c.History = append(c.History[:x], c.History[x+1:]...)
 			break
 		}
 	}
 
-	if !duplicate {
-		c.History = append([]string{item}, c.History...) // push on top
-		for len(c.History) > max {
-			// remove the oldest entry
-			c.History = c.History[:len(c.History)-1]
-		}
-		aId, roleName, _ := utils.ParseRoleARN(item)
+	c.History = append([]string{item}, c.History...) // push on top
+	for len(c.History) > max {
+		// remove the oldest entry
+		c.History = c.History[:len(c.History)-1]
+	}
+	aId, roleName, _ := utils.ParseRoleARN(item)
 
-		if a, ok := c.Roles.Accounts[aId]; ok {
-			if r, ok := a.Roles[roleName]; ok {
-				r.Tags["History"] = fmt.Sprintf("%s:%s", a.Alias, roleName)
-			}
+	if a, ok := c.Roles.Accounts[aId]; ok {
+		if r, ok := a.Roles[roleName]; ok {
+			r.Tags["History"] = fmt.Sprintf("%s:%s,%d", a.Alias, roleName, time.Now().Unix())
 		}
 	}
 
@@ -351,6 +349,9 @@ func (c *Cache) GetAllTagsSelect() *TagsList {
 	for k, values := range *tags {
 		key := strings.ReplaceAll(k, " ", "_")
 		for _, v := range values {
+			if key == "History" {
+				v = reformatHistory(v)
+			}
 			fixedTags.Add(key, strings.ReplaceAll(v, " ", "_"))
 		}
 	}
@@ -366,6 +367,9 @@ func (c *Cache) GetRoleTagsSelect() *RoleTags {
 		ret[role.Arn] = map[string]string{}
 		for k, v := range role.Tags {
 			key := strings.ReplaceAll(k, " ", "_")
+			if key == "History" {
+				v = reformatHistory(v)
+			}
 			value := strings.ReplaceAll(v, " ", "_")
 			ret[role.Arn][key] = value
 		}

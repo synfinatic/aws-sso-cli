@@ -2,10 +2,14 @@
 
 ## [Unreleased]
 
+## [v1.3.0] - 2021-11-14
+
  * Add report card and make improvements to code style #124
  * Add auto-complete support #12
  * Add golangci-lint support & config file
- 
+ * Sort History tag based on time, not alphabetical
+ * History entries now have how long since it was last used #123
+
 ## [v1.2.3] - 2021-11-13
 
  * Add support for tracking recently used roles via History tag for exec & console #29
@@ -84,7 +88,8 @@
 ## [v1.0.0] - 2021-07-15
 
 Initial release
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.2.3...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.3.0...main
+[v1.3.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.3.0
 [v1.2.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.2.3
 [v1.2.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.2.2
 [v1.2.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.2.1
