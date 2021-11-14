@@ -36,7 +36,7 @@ const (
 	KEYRING_ID                   = "aws-sso-cli"
 	REGISTER_CLIENT_DATA_PREFIX  = "client-data"
 	CREATE_TOKEN_RESPONSE_PREFIX = "token-response"
-	ENV_SSO_FILE_PASSWORD        = "AWS_SSO_FILE_PASSPHRASE"
+	ENV_SSO_FILE_PASSWORD        = "AWS_SSO_FILE_PASSPHRASE" // #nosec
 )
 
 // Implements SecureStorage

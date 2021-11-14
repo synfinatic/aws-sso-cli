@@ -1,0 +1,12 @@
+linters:
+  enable:
+    - asciicheck
+    - ineffassign
+    - gocyclo
+    - dupl
+      # - funlen
+    - gofmt
+    - gosec
+    - misspell
+    - whitespace
+      # - unparam

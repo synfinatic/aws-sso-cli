@@ -14,10 +14,12 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/goccy/go-yaml v1.9.4
 	github.com/knadh/koanf v0.16.0
+	github.com/posener/complete v1.2.3
 	github.com/sirupsen/logrus v1.7.0
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/stretchr/testify v1.7.0
 	github.com/synfinatic/gotable v0.0.1
+	github.com/willabides/kongplete v0.2.0
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
 
 	// see: https://github.com/sirupsen/logrus/issues/1275

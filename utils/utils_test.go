@@ -94,3 +94,25 @@ func (suite *UtilsTestSuite) TestGetHomePath() {
 	x := filepath.Join(home, "foo/bar")
 	assert.Equal(t, x, GetHomePath("~/foo/bar"))
 }
+
+func (suite *UtilsTestSuite) TestAccountToString() {
+	t := suite.T()
+
+	a, err := AccountIdToString(0)
+	assert.Nil(t, err)
+	assert.Equal(t, "000000000000", a)
+
+	a, err = AccountIdToString(11111)
+	assert.Nil(t, err)
+	assert.Equal(t, "000000011111", a)
+
+	a, err = AccountIdToString(999999999999)
+	assert.Nil(t, err)
+	assert.Equal(t, "999999999999", a)
+
+	_, err = AccountIdToString(-1)
+	assert.NotNil(t, err)
+
+	_, err = AccountIdToString(-19999)
+	assert.NotNil(t, err)
+}

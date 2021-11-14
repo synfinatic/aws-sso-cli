@@ -103,7 +103,6 @@ func (suite *CacheTestSuite) TestGetAllRoles() {
 	assert.Equal(t, 4, len(aroles))
 	aroles = suite.cache.Roles.GetAccountRoles(258234615182)
 	assert.Equal(t, 7, len(aroles))
-
 }
 
 func (suite *CacheTestSuite) TestGetAllTags() {

@@ -167,7 +167,7 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 	// load the cache
 	var err error
 	if s.Cache, err = OpenCache(s.cacheFile, s); err != nil {
-		return s, err
+		log.Warnf("%s", err.Error())
 	}
 
 	return s, nil

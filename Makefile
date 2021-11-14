@@ -18,7 +18,7 @@ endif
 
 BUILDINFOSDET ?=
 PROGRAM_ARGS ?=
-PROJECT_VERSION           := 1.2.3
+PROJECT_VERSION           := 1.3.0
 DOCKER_REPO               := synfinatic
 PROJECT_NAME              := aws-sso
 ifeq ($(PROJECT_TAG),)
