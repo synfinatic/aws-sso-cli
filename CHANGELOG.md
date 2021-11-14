@@ -3,6 +3,8 @@
 ## [Unreleased]
 
  * Add report card and make improvements to code style #124
+ * Add auto-complete support #12
+ * Add golangci-lint support & config file
  
 ## [v1.2.3] - 2021-11-13
 

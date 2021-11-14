@@ -208,7 +208,6 @@ func completeTags(roleTags *sso.RoleTags, allTags *sso.TagsList, accountPrimaryT
 
 				default:
 					desc = fmt.Sprintf("%d roles", roleCnt)
-
 				}
 				suggestions = append(suggestions, prompt.Suggest{
 					Text:        value,

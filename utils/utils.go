@@ -111,7 +111,11 @@ func ParseRoleARN(arn string) (int64, string, error) {
 
 // Creates an AWS ARN for a role
 func MakeRoleARN(account int64, name string) string {
-	return fmt.Sprintf("arn:aws:iam:%012d:role/%s", account, name)
+	a, err := AccountIdToString(account)
+	if err != nil {
+		log.Fatalf("%s", err.Error())
+	}
+	return fmt.Sprintf("arn:aws:iam:%s:role/%s", a, name)
 }
 
 // ensures the given directory exists for the filename
@@ -161,4 +165,12 @@ func TimeRemain(expires int64, space bool) (string, error) {
 
 	// Just return the number of MMm or HHhMMm
 	return s, nil
+}
+
+// Converts an AWS AccountId to a string
+func AccountIdToString(a int64) (string, error) {
+	if a < 0 {
+		return "", fmt.Errorf("Invalid AWS AccountId: %d", a)
+	}
+	return fmt.Sprintf("%012d", a), nil
 }

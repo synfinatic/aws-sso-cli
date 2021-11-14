@@ -119,7 +119,6 @@ func (suite *RoleTagsTestSuite) TestGetMatchCount() {
 		ret := test.RoleTags.GetMatchCount(*test.Query)
 		assert.Equal(t, test.Result, ret, testName)
 	}
-
 }
 
 func (suite *RoleTagsTestSuite) TestGetRoleTags() {

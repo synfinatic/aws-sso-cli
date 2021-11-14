@@ -57,8 +57,7 @@ func OpenCache(f string, s *Settings) (*Cache, error) {
 	if f != "" {
 		cacheBytes, err = ioutil.ReadFile(f)
 		if err != nil {
-			log.WithError(err).Errorf("Unable to open CacheStore: %s", f)
-			return &cache, nil // return empty struct
+			return &cache, err // return empty struct
 		}
 		err = json.Unmarshal(cacheBytes, &cache)
 	}

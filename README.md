@@ -1,4 +1,7 @@
-# AWS SSO CLI ![Tests](https://github.com/synfinatic/aws-sso-cli/workflows/Tests/badge.svg) [![Report Card](https://goreportcard.com/badge/github.com/synfinatic/aws-sso-cli)](https://goreportcard.com/report/github.com/synfinatic/aws-sso-cli)
+# AWS SSO CLI
+![Tests](https://github.com/synfinatic/aws-sso-cli/workflows/Tests/badge.svg)
+[![Report Card](https://goreportcard.com/badge/github.com/synfinatic/aws-sso-cli)](https://goreportcard.com/report/github.com/synfinatic/aws-sso-cli)
+[![GitHub license](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://raw.githubusercontent.com/synfinatic/aws-sso-cli/main/LICENSE)
 
 ## About
 
@@ -89,12 +92,12 @@ been granted access!
  * `tags` -- List manually created tags for each role
  * `time` -- Print how much time remains for currently selected role
  * `version` -- Print the version of aws-sso
+ * `install-autocomplete` -- Install auto-complete functionality into your shell
 
 ### Common Flags
 
  * `--help`, `-h` -- Builtin and context sensitive help
  * `--browser <path>`, `-b` -- Override default browser to open AWS SSO URL (`$AWS_SSO_BROWSER`)
- * `--cache <file>` -- Specify alternative cache file (`$AWS_SSO_CACHE`)
  * `--config <file>` -- Specify alternative config file (`$AWS_SSO_CONFIG`)
  * `--level <level>`, `-L` -- Change default log level: [error|warn|info|debug|trace]
  * `--lines` -- Print file number with logs
@@ -220,6 +223,12 @@ By default the following key/values are available as tags to your roles:
  * `AccountAlias` --- AWS Account Alias defined by account administrator
  * `History` -- Tag tracking if this role was recently used.  See `HistoryLimit`
                 in config.
+
+### install-autocomplete
+
+Configures your appropriate shell configuration file to add auto-complete 
+functionality for commands, flags and options.  Must restart your shell
+for this to take effect.
 
 ### Environment Variables
 

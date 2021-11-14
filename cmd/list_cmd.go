@@ -45,8 +45,8 @@ var allListFields = map[string]string{
 }
 
 type ListCmd struct {
-	Fields     []string `kong:"optional,arg,help='Fields to display',env='AWS_SSO_FIELDS'"`
 	ListFields bool     `kong:"optional,name='list-fields',short='f',help='List available fields'"`
+	Fields     []string `kong:"optional,arg,help='Fields to display',env='AWS_SSO_FIELDS',predictor='fieldList'"`
 }
 
 // what should this actually do?

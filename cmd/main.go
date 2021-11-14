@@ -20,13 +20,16 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/alecthomas/kong"
-	//	"github.com/davecgh/go-spew/spew"
+	// "github.com/davecgh/go-spew/spew"
+	"github.com/posener/complete"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/synfinatic/aws-sso-cli/storage"
 	"github.com/synfinatic/aws-sso-cli/utils"
+	"github.com/willabides/kongplete"
 )
 
 // These variables are defined in the Makefile
@@ -81,24 +84,24 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 type CLI struct {
 	// Common Arguments
 	Browser    string `kong:"optional,short='b',help='Path to browser to open URLs with',env='AWS_SSO_BROWSER'"`
-	CacheFile  string `kong:"optional,name='cache',default='${INSECURE_CACHE_FILE}',help='Insecure cache file',env='AWS_SSO_CACHE'"`
 	ConfigFile string `kong:"optional,name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
 	Lines      bool   `kong:"optional,help='Print line number in logs'"`
 	LogLevel   string `kong:"optional,short='L',name='level',enum='error,warn,info,debug,trace,',help='Logging level [error|warn|info|debug|trace]'"`
 	UrlAction  string `kong:"optional,short='u',enum='open,print,clip,',help='How to handle URLs [open|print|clip]'"`
-	SSO        string `kong:"optional,short='S',help='AWS SSO Instance',env='AWS_SSO'"`
+	SSO        string `kong:"optional,short='S',help='AWS SSO Instance',env='AWS_SSO',predictor='sso'"`
 	STSRefresh bool   `kong:"optional,help='Force refresh of STS Token Credentials'"`
 
 	// Commands
-	Cache   CacheCmd   `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
-	Console ConsoleCmd `kong:"cmd,help='Open AWS Console using specificed AWS Role/profile'"`
-	Exec    ExecCmd    `kong:"cmd,help='Execute command using specified AWS Role/Profile'"`
-	Flush   FlushCmd   `kong:"cmd,help='Flush AWS SSO/STS credentials from cache'"`
-	List    ListCmd    `kong:"cmd,help='List all accounts / role (default command)',default='1'"`
-	Renew   RenewCmd   `kong:"cmd,help='Print renewed AWS credentials for your shell'"`
-	Tags    TagsCmd    `kong:"cmd,help='List tags'"`
-	Time    TimeCmd    `kong:"cmd,help='Print out much time before STS Token expires'"`
-	Version VersionCmd `kong:"cmd,help='Print version and exit'"`
+	Cache              CacheCmd                     `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
+	Console            ConsoleCmd                   `kong:"cmd,help='Open AWS Console using specificed AWS Role/profile'"`
+	Exec               ExecCmd                      `kong:"cmd,help='Execute command using specified AWS Role/Profile'"`
+	Flush              FlushCmd                     `kong:"cmd,help='Flush AWS SSO/STS credentials from cache'"`
+	List               ListCmd                      `kong:"cmd,help='List all accounts / role (default command)',default='1'"`
+	Renew              RenewCmd                     `kong:"cmd,help='Print renewed AWS credentials for your shell'"`
+	Tags               TagsCmd                      `kong:"cmd,help='List tags'"`
+	Time               TimeCmd                      `kong:"cmd,help='Print out much time before STS Token expires'"`
+	Version            VersionCmd                   `kong:"cmd,help='Print version and exit'"`
+	InstallCompletions kongplete.InstallCompletions `kong:"cmd,help='Install shell completions'"`
 }
 
 func main() {
@@ -113,9 +116,9 @@ func main() {
 
 	// Load the config file
 	cli.ConfigFile = utils.GetHomePath(cli.ConfigFile)
-	cli.CacheFile = utils.GetHomePath(cli.CacheFile)
+	cacheFile := utils.GetHomePath(INSECURE_CACHE_FILE)
 
-	if run_ctx.Settings, err = sso.LoadSettings(cli.ConfigFile, cli.CacheFile, DEFAULT_CONFIG, override); err != nil {
+	if run_ctx.Settings, err = sso.LoadSettings(cli.ConfigFile, cacheFile, DEFAULT_CONFIG, override); err != nil {
 		log.Fatalf("%s", err.Error())
 	}
 
@@ -147,33 +150,46 @@ func main() {
 
 // parseArgs parses our CLI arguments
 func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
-	op := kong.Description("Securely manage temporary AWS API Credentials issued via AWS SSO")
 	// need to pass in the variables for defaults
 	vars := kong.Vars{
-		"CONFIG_DIR":          CONFIG_DIR,
-		"CONFIG_FILE":         CONFIG_FILE,
-		"DEFAULT_STORE":       DEFAULT_STORE,
-		"INSECURE_CACHE_FILE": INSECURE_CACHE_FILE,
-		"JSON_STORE_FILE":     JSON_STORE_FILE,
+		"CONFIG_DIR":      CONFIG_DIR,
+		"CONFIG_FILE":     CONFIG_FILE,
+		"DEFAULT_STORE":   DEFAULT_STORE,
+		"JSON_STORE_FILE": JSON_STORE_FILE,
 	}
-	ctx := kong.Parse(cli, op, vars)
 
-	override := sso.OverrideSettings{}
+	parser := kong.Must(
+		cli,
+		kong.Name("aws-sso"),
+		kong.Description("Securely manage temporary AWS API Credentials issued via AWS SSO"),
+		kong.UsageOnError(),
+		vars,
+	)
 
-	if cli.UrlAction != "" {
-		override.UrlAction = cli.UrlAction
-	}
-	if cli.Browser != "" {
-		override.Browser = cli.Browser
-	}
-	if cli.SSO != "" {
-		override.DefaultSSO = cli.SSO
-	}
-	if cli.LogLevel != "" {
-		override.LogLevel = cli.LogLevel
-	}
-	if cli.Lines {
-		override.LogLines = true
+	p := NewPredictor(utils.GetHomePath(INSECURE_CACHE_FILE), utils.GetHomePath(CONFIG_FILE))
+
+	kongplete.Complete(parser,
+		kongplete.WithPredictors(
+			map[string]complete.Predictor{
+				"accountId": p.AccountComplete(),
+				"arn":       p.ArnComplete(),
+				"fieldList": p.FieldListComplete(),
+				"region":    p.RegionComplete(),
+				"role":      p.RoleComplete(),
+				"sso":       p.SsoComplete(),
+			},
+		),
+	)
+
+	ctx, err := parser.Parse(os.Args[1:])
+	parser.FatalIfErrorf(err)
+
+	override := sso.OverrideSettings{
+		UrlAction:  cli.UrlAction,
+		Browser:    cli.Browser,
+		DefaultSSO: cli.SSO,
+		LogLevel:   cli.LogLevel,
+		LogLines:   cli.Lines,
 	}
 
 	log.SetFormatter(&log.TextFormatter{

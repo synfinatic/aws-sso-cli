@@ -408,12 +408,15 @@ func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {
 			})
 		}
 	}
-	return as.Accounts, nil
 
+	return as.Accounts, nil
 }
 
 func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.RoleCredentials, error) {
-	aId := fmt.Sprintf("%012d", accountId)
+	aId, err := utils.AccountIdToString(accountId)
+	if err != nil {
+		return storage.RoleCredentials{}, err
+	}
 
 	input := sso.GetRoleCredentialsInput{
 		AccessToken: aws.String(as.Token.AccessToken),
@@ -433,6 +436,7 @@ func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.Role
 		SessionToken:    aws.StringValue(output.RoleCredentials.SessionToken),
 		Expiration:      aws.Int64Value(output.RoleCredentials.Expiration),
 	}
+
 	return ret, nil
 }
 
