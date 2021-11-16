@@ -102,7 +102,15 @@ include help.mk  # place after ALL target and before all other targets
 
 .build-release: windows windows32 linux linux-arm64 darwin darwin-arm64
 
-release: clean .build-release package ## Build all our release binaries
+.validate-release: ALL
+	@TAG=$$(./$(DIST_DIR)$(PROJECT_NAME) version 2>/dev/null | grep '($(PROJECT_VERSION))'); \
+		if test -z "$$TAG"; then \
+		echo "Build tag from does not match PROJECT_VERSION=$(PROJECT_VERSION) in Makefile:" ; \
+		./$(DIST_DIR)$(PROJECT_NAME) version 2>/dev/null | grep built ; \
+		exit 1 ; \
+	fi
+
+release: .validate-release clean .build-release package ## Build all our release binaries
 	cd dist && shasum -a 256 * | gpg --clear-sign >release.sig.asc
 
 .PHONY: run
