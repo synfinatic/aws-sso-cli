@@ -24,7 +24,7 @@ import (
 	"strconv"
 	"strings"
 
-	//	"github.com/davecgh/go-spew/spew"
+	// "github.com/davecgh/go-spew/spew"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
@@ -207,6 +207,7 @@ func (s *Settings) setOverrides(override OverrideSettings) {
 	if override.DefaultSSO != "" {
 		s.DefaultSSO = override.DefaultSSO
 	}
+
 	if override.UrlAction != "" {
 		s.UrlAction = override.UrlAction
 	}
