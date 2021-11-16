@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+ * Fix missing --url-action and  --browser #113
+ * Don't print out URL when sending to browser/clipboard for security
+
 ## [v1.3.0] - 2021-11-14
 
  * Add report card and make improvements to code style #124

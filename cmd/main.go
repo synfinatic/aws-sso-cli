@@ -23,7 +23,7 @@ import (
 	"os"
 
 	"github.com/alecthomas/kong"
-	// "github.com/davecgh/go-spew/spew"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/posener/complete"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
@@ -72,10 +72,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"PromptColors.SelectedSuggestionTextColor":  "Black",
 	"PromptColors.SuggestionBGColor":            "Cyan",
 	"PromptColors.SuggestionTextColor":          "White",
-	"UrlAction":                                 "open",
 	"DefaultSSO":                                "Default",
-	"LogLevel":                                  "info",
-	"LogLines":                                  false,
 	"DefaultRegion":                             "us-east-1",
 	"HistoryLimit":                              10,
 	"ListFields":                                []string{"AccountId", "AccountAlias", "RoleName", "ExpiresStr"},
@@ -83,13 +80,13 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 
 type CLI struct {
 	// Common Arguments
-	Browser    string `kong:"optional,short='b',help='Path to browser to open URLs with',env='AWS_SSO_BROWSER'"`
-	ConfigFile string `kong:"optional,name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
-	Lines      bool   `kong:"optional,help='Print line number in logs'"`
-	LogLevel   string `kong:"optional,short='L',name='level',enum='error,warn,info,debug,trace,',help='Logging level [error|warn|info|debug|trace]'"`
-	UrlAction  string `kong:"optional,short='u',enum='open,print,clip,',help='How to handle URLs [open|print|clip]'"`
-	SSO        string `kong:"optional,short='S',help='AWS SSO Instance',env='AWS_SSO',predictor='sso'"`
-	STSRefresh bool   `kong:"optional,help='Force refresh of STS Token Credentials'"`
+	Browser    string `kong:"short='b',help='Path to browser to open URLs with',env='AWS_SSO_BROWSER'"`
+	ConfigFile string `kong:"name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
+	Lines      bool   `kong:"help='Print line number in logs'"`
+	LogLevel   string `kong:"short='L',name='level',enum='error,warn,info,debug,trace',default='info',help='Logging level [error|warn|info|debug|trace]'"`
+	UrlAction  string `kong:"short='u',enum='open,print,clip',default='open',help='How to handle URLs [open|print|clip]'"`
+	SSO        string `kong:"short='S',help='AWS SSO Instance',env='AWS_SSO',predictor='sso'"`
+	STSRefresh bool   `kong:"help='Force refresh of STS Token Credentials'"`
 
 	// Commands
 	Cache              CacheCmd                     `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
@@ -121,6 +118,7 @@ func main() {
 	if run_ctx.Settings, err = sso.LoadSettings(cli.ConfigFile, cacheFile, DEFAULT_CONFIG, override); err != nil {
 		log.Fatalf("%s", err.Error())
 	}
+	log.Debugf("settings: %s", spew.Sdump(run_ctx.Settings))
 
 	// Load the secure store data
 	switch run_ctx.Settings.SecureStore {

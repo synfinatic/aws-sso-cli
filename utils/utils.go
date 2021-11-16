@@ -59,7 +59,7 @@ func HandleUrl(action, browser, url, pre, post string) error {
 		if err == nil {
 			fmt.Printf("Please open URL copied to clipboard.\n")
 		} else {
-			err = fmt.Errorf("Unable to copy %s to clipboard: %s", url, err.Error())
+			err = fmt.Errorf("Unable to copy URL to clipboard: %s", err.Error())
 		}
 	case "print":
 		fmt.Printf("%s%s%s", pre, url, post)
@@ -71,12 +71,12 @@ func HandleUrl(action, browser, url, pre, post string) error {
 			err = open.RunWith(url, browser)
 		}
 		if err != nil {
-			err = fmt.Errorf("Unable to open %s with %s: %s", url, browser, err.Error())
+			err = fmt.Errorf("Unable to open URL with %s: %s", browser, err.Error())
 		} else {
-			fmt.Printf("Opening %s in %s\n", url, browser)
+			fmt.Printf("Opening URL in %s\n", browser)
 		}
 	default:
-		err = fmt.Errorf("Unknown --url-action option: %s", action)
+		err = fmt.Errorf("Unknown --url-action option: '%s'", action)
 	}
 
 	return err
