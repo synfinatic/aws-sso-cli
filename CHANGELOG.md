@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v1.3.1] - 2021-11-15
+
  * Fix missing --url-action and  --browser #113
  * Don't print out URL when sending to browser/clipboard for security
  * Escape colon in ARN's for `-a` flag to work around the colon being a 
@@ -93,7 +95,8 @@
 ## [v1.0.0] - 2021-07-15
 
 Initial release
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.3.0...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.3.1...main
+[v1.3.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.3.1
 [v1.3.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.3.0
 [v1.2.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.2.3
 [v1.2.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.2.2

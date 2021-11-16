@@ -1,3 +1,7 @@
+PROJECT_VERSION := 1.3.1
+DOCKER_REPO     := synfinatic
+PROJECT_NAME    := aws-sso
+
 DIST_DIR ?= dist/
 GOOS ?= $(shell uname -s | tr "[:upper:]" "[:lower:]")
 ARCH ?= $(shell uname -m)
@@ -18,9 +22,6 @@ endif
 
 BUILDINFOSDET ?=
 PROGRAM_ARGS ?=
-PROJECT_VERSION           := 1.3.0
-DOCKER_REPO               := synfinatic
-PROJECT_NAME              := aws-sso
 ifeq ($(PROJECT_TAG),)
 PROJECT_TAG               := NO-TAG
 endif
