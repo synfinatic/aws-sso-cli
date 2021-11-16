@@ -20,6 +20,7 @@ package main
 
 import (
 	"io/ioutil"
+	"strings"
 
 	"github.com/goccy/go-yaml"
 	"github.com/posener/complete"
@@ -111,7 +112,15 @@ func (p *Predictor) RoleComplete() complete.Predictor {
 
 // ArnComplete returns a list of all the valid AWS Role ARNs we have in the cache
 func (p *Predictor) ArnComplete() complete.Predictor {
-	return complete.PredictSet(p.arns...)
+	arns := []string{}
+
+	// The `:` character is considered a word delimiter by bash complete
+	// so we need to escape them
+	for _, a := range p.arns {
+		arns = append(arns, strings.ReplaceAll(a, ":", "\\:"))
+	}
+
+	return complete.PredictSet(arns...)
 }
 
 // RegionsComplete returns a list of all the valid AWS Regions
