@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+ * Update interactive selected item color schme to stand our better. #138
+
 ## [v1.3.1] - 2021-11-15
 
  * Fix missing --url-action and  --browser #113
