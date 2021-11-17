@@ -196,7 +196,7 @@ func (s *Settings) Save(configFile string, overwrite bool) error {
 	}
 
 	// need to make directory if not exist
-	return ioutil.WriteFile(configFile, data, 0644)
+	return ioutil.WriteFile(configFile, data, 0600)
 }
 
 // configure our settings using the overrides

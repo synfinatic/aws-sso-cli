@@ -155,7 +155,9 @@ vet: ## Run `go vet` on the code
 	@echo checking code is vetted...
 	for x in $(shell go list ./...); do echo $$x ; go vet $$x ; done
 
-test: vet unittest ## Run all tests
+test: vet unittest lint ## Run important tests
+
+precheck: test test-fmt test-tidy ## Run all tests that happen in a PR
 
 $(DIST_DIR):
 	@if test ! -d $(DIST_DIR); then mkdir -p $(DIST_DIR) ; fi
@@ -180,9 +182,7 @@ test-tidy:  ## Test to make sure go.mod is tidy
 	    exit -1 ; \
 	fi
 
-precheck: test test-fmt test-tidy lint ## Run all tests that happen in a PR
-
-lint:
+lint:  ## Run golangci-lint
 	golangci-lint run
 
 # Build targets for our supported plaforms

@@ -113,5 +113,4 @@ func (suite *SettingsTestSuite) TestSave() {
 
 	err = suite.settings.Save(dir, false)
 	assert.NotNil(t, err)
-
 }
