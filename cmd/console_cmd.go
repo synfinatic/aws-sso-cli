@@ -37,15 +37,17 @@ import (
 const AWS_FEDERATED_URL = "https://signin.aws.amazon.com/federation"
 
 type ConsoleCmd struct {
-	Region          string `kong:"optional,name='region',help='AWS Region',env='AWS_DEFAULT_REGION',predictor='region'"`
-	AccessKeyId     string `kong:"optional,env='AWS_ACCESS_KEY_ID',hidden"`
-	AccountId       int64  `kong:"optional,name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNTID',predictor='accountId'"`
-	Arn             string `kong:"optional,short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
-	Duration        int64  `kong:"optional,short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
-	Role            string `kong:"optional,short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE',predictor='role'"`
-	SecretAccessKey string `kong:"optional,env='AWS_SECRET_ACCESS_KEY',hidden"`
-	SessionToken    string `kong:"optional,env='AWS_SESSION_TOKEN',hidden"`
-	UseEnv          bool   `kong:"optional,short='e',help='Use existing ENV vars to generate URL'"`
+	Region   string `kong:"help='AWS Region',env='AWS_DEFAULT_REGION',predictor='region'"`
+	Duration int64  `kong:"short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
+	UseEnv   bool   `kong:"short='e',help='Use existing ENV vars to generate URL'"`
+
+	Arn       string `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn',xor='arn-1',xor='arn-2'"`
+	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNTID',predictor='accountId',xor='arn-1'"`
+	Role      string `kong:"short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE',predictor='role',xor='arn-2'"`
+
+	AccessKeyId     string `kong:"env='AWS_ACCESS_KEY_ID',hidden"`
+	SecretAccessKey string `kong:"env='AWS_SECRET_ACCESS_KEY',hidden"`
+	SessionToken    string `kong:"env='AWS_SESSION_TOKEN',hidden"`
 }
 
 func (cc *ConsoleCmd) Run(ctx *RunContext) error {

@@ -45,8 +45,8 @@ var allListFields = map[string]string{
 }
 
 type ListCmd struct {
-	ListFields bool     `kong:"optional,name='list-fields',short='f',help='List available fields'"`
-	Fields     []string `kong:"optional,arg,help='Fields to display',env='AWS_SSO_FIELDS',predictor='fieldList'"`
+	ListFields bool     `kong:"optional,short='f',help='List available fields',xor='fields'"`
+	Fields     []string `kong:"optional,arg,help='Fields to display',env='AWS_SSO_FIELDS',predictor='fieldList',xor='fields'"`
 }
 
 // what should this actually do?
@@ -77,6 +77,15 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 
 	printRoles(ctx, fields)
 
+	return nil
+}
+
+// DefaultCmd has no args, and just prints the default fields and exists because
+// as of Kong 0.2.18 you can't have a default command which takes args
+type DefaultCmd struct{}
+
+func (cc *DefaultCmd) Run(ctx *RunContext) error {
+	printRoles(ctx, ctx.Settings.ListFields)
 	return nil
 }
 

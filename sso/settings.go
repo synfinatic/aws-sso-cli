@@ -190,7 +190,6 @@ func (s *Settings) Save(configFile string, overwrite bool) error {
 
 	configDir := utils.GetHomePath(filepath.Dir(configFile))
 	configFile = filepath.Join(configDir, filepath.Base(configFile))
-	log.Errorf("configFile: %s", configFile)
 	if err = utils.EnsureDirExists(configFile); err != nil {
 		return err
 	}

@@ -26,9 +26,9 @@ import (
 )
 
 type TagsCmd struct {
-	AccountId   int64  `kong:"optional,name='account',short='A',help='Filter regsults based on AWS AccountID'"`
-	Role        string `kong:"optional,name='role',short='R',help='Filter results based on AWS Role Name'"`
-	ForceUpdate bool   `kong:"optional,name='force-update',help='Force account/role cache update'"`
+	AccountId   int64  `kong:"name='account',short='A',help='Filter results based on AWS AccountID'"`
+	Role        string `kong:"short='R',help='Filter results based on AWS Role Name'"`
+	ForceUpdate bool   `kong:"help='Force account/role cache update'"`
 }
 
 func (cc *TagsCmd) Run(ctx *RunContext) error {

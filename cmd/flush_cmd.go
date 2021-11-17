@@ -24,7 +24,7 @@ import (
 
 // FlushCmd defines the Kong args for the flush command
 type FlushCmd struct {
-	All bool `kong:"optional,name='all',help='Also flush individual STS tokens'"`
+	All bool `kong:"help='Also flush individual STS tokens'"`
 }
 
 // Run executes the flush command
