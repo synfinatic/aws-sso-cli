@@ -28,95 +28,6 @@ import (
 	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
-// SetupCmd defines the Kong args for the setup command (which currently doesn't exist)
-type SetupCmd struct {
-	SSOStartUrl string `kong:"help='AWS SSO User Portal URL'"`
-	SSORegion   string `kong:"help='AWS SSO Instance Region'"`
-	Force       bool   `kong:"help='Force override of existing config file'"`
-}
-
-// Run executes the setup command
-func (cc *SetupCmd) Run(ctx *RunContext) error {
-	return setupWizard(ctx)
-}
-
-func setupWizard(ctx *RunContext) error {
-	var err error
-	var instanceName, startURL, ssoRegion string
-
-	prompt := promptui.Prompt{
-		Label:    "SSO Instance Name",
-		Validate: validateSSOName,
-		Default:  ctx.Cli.SSO,
-	}
-	if instanceName, err = prompt.Run(); err != nil {
-		return err
-	}
-
-	prompt = promptui.Prompt{
-		Label:    "SSO Start URL",
-		Validate: validateSSOUrl,
-	}
-	if startURL, err = prompt.Run(); err != nil {
-		return err
-	}
-
-	prompt = promptui.Prompt{
-		Label:    "SSO Region",
-		Validate: validateAwsRegion,
-	}
-	if ssoRegion, err = prompt.Run(); err != nil {
-		return err
-	}
-
-	s := sso.Settings{
-		DefaultSSO: instanceName,
-		SSO:        map[string]*sso.SSOConfig{},
-	}
-	s.SSO[ctx.Cli.SSO] = &sso.SSOConfig{
-		SSORegion: ssoRegion,
-		StartUrl:  startURL,
-	}
-	return s.Save(ctx.Cli.ConfigFile, false)
-}
-
-// validateSSOUrl verifies our SSO Start url is in the format of http://xxxxx.awsapps.com/start
-// and the FQDN is valid
-func validateSSOUrl(input string) error {
-	u, err := url.Parse(input)
-	if err != nil {
-		return err
-	}
-
-	if u.Path != "/start" {
-		return fmt.Errorf("AWS SSO URL must end in: /start")
-	}
-
-	host, _, err := net.SplitHostPort(u.Host)
-	if err != nil {
-		host = u.Host
-	}
-
-	if !strings.Contains(host, ".awsapps.com") {
-		return fmt.Errorf("Invalid FQDN")
-	}
-
-	_, err = net.LookupIP(host)
-	if err != nil {
-		return fmt.Errorf("Unable to lookup FQDN in AWS SSO URL: %s, %s", u.Host, err)
-	}
-
-	return nil
-}
-
-// validateSSOName just makes sure we have some text
-func validateSSOName(input string) error {
-	if len(input) > 0 {
-		return nil
-	}
-	return fmt.Errorf("SSO Name must be a valid string")
-}
-
 // https://docs.aws.amazon.com/general/latest/gr/sso.html
 var AvailableAwsSSORegions []string = []string{
 	"us-east-1",
@@ -137,11 +48,113 @@ var AvailableAwsSSORegions []string = []string{
 	"us-gov-west-1",
 }
 
-func validateAwsRegion(input string) error {
-	for _, v := range AvailableAwsSSORegions {
-		if input == v {
-			return nil
-		}
+// SetupCmd defines the Kong args for the setup command (which currently doesn't exist)
+type SetupCmd struct {
+	SSOStartUrl string `kong:"help='AWS SSO User Portal URL'"`
+	SSORegion   string `kong:"help='AWS SSO Instance Region'"`
+	Force       bool   `kong:"help='Force override of existing config file'"`
+}
+
+// Run executes the setup command
+func (cc *SetupCmd) Run(ctx *RunContext) error {
+	return setupWizard(ctx)
+}
+
+func setupWizard(ctx *RunContext) error {
+	var err error
+	var instanceName, startURL, ssoRegion, awsRegion string
+
+	prompt := promptui.Prompt{
+		Label:    "SSO Instance Name",
+		Validate: validateSSOName,
+		Default:  ctx.Cli.SSO,
 	}
-	return fmt.Errorf("Invalid AWS SSO region")
+	if instanceName, err = prompt.Run(); err != nil {
+		return err
+	}
+
+	prompt = promptui.Prompt{
+		Label:    "SSO Start URL",
+		Validate: validateSSOUrl,
+	}
+	if startURL, err = prompt.Run(); err != nil {
+		return err
+	}
+
+	sel := promptui.Select{
+		Label:        "SSO Region",
+		Items:        AvailableAwsSSORegions,
+		HideSelected: false,
+	}
+	if _, ssoRegion, err = sel.Run(); err != nil {
+		return err
+	}
+
+	defaultRegions := []string{"None"}
+	defaultRegions = append(defaultRegions, AvailableAwsSSORegions...)
+
+	sel = promptui.Select{
+		Label:        "[Optional] Default AWS Region for IAM Sessions",
+		Items:        defaultRegions,
+		HideSelected: false,
+	}
+	if _, awsRegion, err = sel.Run(); err != nil {
+		return err
+	}
+
+	if awsRegion == "None" {
+		awsRegion = ""
+	}
+
+	s := sso.Settings{
+		DefaultSSO: instanceName,
+		SSO:        map[string]*sso.SSOConfig{},
+	}
+	s.SSO[ctx.Cli.SSO] = &sso.SSOConfig{
+		SSORegion:     ssoRegion,
+		StartUrl:      startURL,
+		DefaultRegion: awsRegion,
+	}
+	return s.Save(ctx.Cli.ConfigFile, false)
+}
+
+// validateSSOUrl verifies our SSO Start url is in the format of http://xxxxx.awsapps.com/start
+// and the FQDN is valid
+func validateSSOUrl(input string) error {
+	u, err := url.Parse(input)
+	if err != nil {
+		return err
+	}
+
+	if !strings.HasPrefix(input, "https://") {
+		return fmt.Errorf("URL must start with https://")
+	}
+
+	if u.Path != "/start" {
+		return fmt.Errorf("AWS SSO URL must end in: /start")
+	}
+
+	host, _, err := net.SplitHostPort(u.Host)
+	if err != nil {
+		host = u.Host
+	}
+
+	if !strings.Contains(host, ".awsapps.com") {
+		return fmt.Errorf("Invalid FQDN.  Must be of the format of: xxxxxx.awsapps.com")
+	}
+
+	_, err = net.LookupIP(host)
+	if err != nil {
+		return fmt.Errorf("Invalid FQDN in AWS SSO URL: %s", u.Host)
+	}
+
+	return nil
+}
+
+// validateSSOName just makes sure we have some text
+func validateSSOName(input string) error {
+	if len(input) > 0 {
+		return nil
+	}
+	return fmt.Errorf("SSO Name must be a valid string")
 }

@@ -91,10 +91,11 @@ type CLI struct {
 	// Commands
 	Cache              CacheCmd                     `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
 	Console            ConsoleCmd                   `kong:"cmd,help='Open AWS Console using specificed AWS Role/profile'"`
-	Exec               ExecCmd                      `kong:"cmd,help='Execute command using specified AWS Role/Profile'"`
+	Default            DefaultCmd                   `kong:"cmd,hidden,default='1'"` // list command without args
 	Eval               EvalCmd                      `kong:"cmd,help='Print AWS Environment vars for use with eval $(aws-sso eval ...)'"`
+	Exec               ExecCmd                      `kong:"cmd,help='Execute command using specified AWS Role/Profile'"`
 	Flush              FlushCmd                     `kong:"cmd,help='Flush AWS SSO/STS credentials from cache'"`
-	List               ListCmd                      `kong:"cmd,help='List all accounts / role (default command)',default='1'"`
+	List               ListCmd                      `kong:"cmd,help='List all accounts / role (default command)'"`
 	Tags               TagsCmd                      `kong:"cmd,help='List tags'"`
 	Time               TimeCmd                      `kong:"cmd,help='Print out much time before STS Token expires'"`
 	Version            VersionCmd                   `kong:"cmd,help='Print version and exit'"`
