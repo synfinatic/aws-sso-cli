@@ -19,12 +19,16 @@ package sso
  */
 
 import (
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
 	// "github.com/davecgh/go-spew/spew"
+	goyaml "github.com/goccy/go-yaml"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
@@ -41,7 +45,7 @@ const (
 type Settings struct {
 	configFile        string                // name of this file
 	cacheFile         string                // name of cache file; always passed in via CLI args
-	Cache             *Cache                // our cache data
+	Cache             *Cache                `yaml:"-"` // our cache data
 	SSO               map[string]*SSOConfig `koanf:"SSOConfig" yaml:"SSOConfig,omitempty"`
 	DefaultSSO        string                `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`   // specify default SSO by key
 	SecureStore       string                `koanf:"SecureStore" yaml:"SecureStore,omitempty"` // json or keyring
@@ -50,7 +54,7 @@ type Settings struct {
 	UrlAction         string                `koanf:"UrlAction" yaml:"UrlAction,omitempty"`
 	Browser           string                `koanf:"Browser" yaml:"Browser,omitempty"`
 	ProfileFormat     string                `koanf:"ProfileFormat" yaml:"ProfileFormat,omitempty"`
-	AccountPrimaryTag []string              `koanf:"AccountPrimaryTag" yaml:"AccountPrimaryTag"`
+	AccountPrimaryTag []string              `koanf:"AccountPrimaryTag" yaml:"AccountPrimaryTag,omitempty"`
 	PromptColors      PromptColors          `koanf:"PromptColors" yaml:"PromptColors,omitempty"` // go-prompt colors
 	LogLevel          string                `koanf:"LogLevel" yaml:"LogLevel,omitempty"`
 	LogLines          bool                  `koanf:"LogLines" yaml:"LogLines,omitempty"`
@@ -171,6 +175,28 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 	}
 
 	return s, nil
+}
+
+// Save overwrites the current config file with our settings (not recommended)
+func (s *Settings) Save(configFile string, overwrite bool) error {
+	if _, err := os.Stat(configFile); !errors.Is(err, os.ErrNotExist) && !overwrite {
+		return fmt.Errorf("Refusing to overwrite %s", configFile)
+	}
+
+	data, err := goyaml.Marshal(s)
+	if err != nil {
+		return err
+	}
+
+	configDir := utils.GetHomePath(filepath.Dir(configFile))
+	configFile = filepath.Join(configDir, filepath.Base(configFile))
+	log.Errorf("configFile: %s", configFile)
+	if err = utils.EnsureDirExists(configFile); err != nil {
+		return err
+	}
+
+	// need to make directory if not exist
+	return ioutil.WriteFile(configFile, data, 0644)
 }
 
 // configure our settings using the overrides

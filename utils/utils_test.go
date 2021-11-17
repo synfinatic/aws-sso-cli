@@ -77,9 +77,10 @@ func (suite *UtilsTestSuite) TestMakeRoleARN() {
 func (suite *UtilsTestSuite) TestEnsureDirExists() {
 	t := suite.T()
 
+	defer os.RemoveAll("./does_not_exist_dir")
 	assert.Nil(t, EnsureDirExists("./testdata/role_tags.yaml"))
-	assert.NotNil(t, EnsureDirExists("./does_not_exist_dir/foo.yaml"))
-	defer os.Remove("./does_not_exist_dir")
+	assert.Nil(t, EnsureDirExists("./does_not_exist_dir/foo.yaml"))
+	assert.Nil(t, EnsureDirExists("./does_not_exist_dir/bar/baz/foo.yaml"))
 }
 
 func (suite *UtilsTestSuite) TestGetHomePath() {

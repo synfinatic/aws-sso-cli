@@ -38,6 +38,8 @@ type Predictor struct {
 // AvailableAwsRegions lists all the AWS regions that AWS provides
 // https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions
 var AvailableAwsRegions []string = []string{
+	"us-gov-west-1",
+	"us-gov-east-1",
 	"us-east-1",
 	"us-east-2",
 	"us-west-1",
