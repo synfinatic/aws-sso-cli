@@ -36,11 +36,11 @@ import (
 
 type ExecCmd struct {
 	// AWS Params
-	Region    string `kong:"optional,name='region',help='AWS Region',env='AWS_DEFAULT_REGION',predictor='region'"`
-	Duration  int64  `kong:"optional,name='duration',short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
-	Arn       string `kong:"optional,name='arn',short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
-	AccountId int64  `kong:"optional,name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNTID',predictor='accountId'"`
-	Role      string `kong:"optional,name='role',short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE',predictor='role'"`
+	Region    string `kong:"help='AWS Region',env='AWS_DEFAULT_REGION',predictor='region'"`
+	Duration  int64  `kong:"short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
+	Arn       string `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
+	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNTID',predictor='accountId'"`
+	Role      string `kong:"short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE',predictor='role'"`
 
 	// Exec Params
 	Cmd  string   `kong:"arg,optional,name='command',help='Command to execute',env='SHELL'"`
