@@ -21,7 +21,6 @@ package utils
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -73,7 +72,7 @@ func HandleUrl(action, browser, url, pre, post string) error {
 		if err != nil {
 			err = fmt.Errorf("Unable to open URL with %s: %s", browser, err.Error())
 		} else {
-			fmt.Printf("Opening URL in %s\n", browser)
+			fmt.Printf("Opening URL in %s.\n", browser)
 		}
 	default:
 		err = fmt.Errorf("Unknown --url-action option: '%s'", action)
@@ -121,13 +120,15 @@ func MakeRoleARN(account int64, name string) string {
 // ensures the given directory exists for the filename
 // used by JsonStore and InsecureStore
 func EnsureDirExists(filename string) error {
-	storeDir := path.Dir(filename)
+	storeDir := filepath.Dir(filename)
 	f, err := os.Open(storeDir)
-	if err != nil {
-		err = os.MkdirAll(storeDir, 0700)
-		if err != nil {
+	if os.IsNotExist(err) {
+		if err := os.MkdirAll(storeDir, 0700); err != nil {
 			return fmt.Errorf("Unable to create %s: %s", storeDir, err.Error())
 		}
+		return nil
+	} else if err != nil {
+		return err
 	}
 	info, err := f.Stat()
 	if err != nil {

@@ -1,6 +1,10 @@
 package sso
 
 import (
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -91,4 +95,23 @@ func (suite *SettingsTestSuite) TestGetAllTags() {
 	assert.ElementsMatch(t, tags["Foo"], []string{"Bar", "Moo"})
 	assert.ElementsMatch(t, tags["Can"], []string{"Man"})
 	assert.ElementsMatch(t, tags["DoesNotExistTag"], []string{})
+}
+
+func (suite *SettingsTestSuite) TestSave() {
+	t := suite.T()
+
+	dir, err := ioutil.TempDir("", "settings_test")
+	assert.Nil(t, err)
+	defer os.RemoveAll(dir)
+
+	p := filepath.Join(dir, "foo/bar/config.yaml")
+	fmt.Printf("path: %s\n", p)
+	err = suite.settings.Save(p, true)
+	assert.Nil(t, err)
+	err = suite.settings.Save(p, false)
+	assert.NotNil(t, err)
+
+	err = suite.settings.Save(dir, false)
+	assert.NotNil(t, err)
+
 }

@@ -10,6 +10,7 @@
  * Don't print out URL when sending to browser/clipboard for security
  * Escape colon in ARN's for `-a` flag to work around the colon being a 
     word delimiter for bash (auto)complete. #135
+ * Add initial basic setup if there is a missing config.yaml #131
 
 ## [v1.3.0] - 2021-11-14
 

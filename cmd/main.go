@@ -19,12 +19,13 @@ package main
  */
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/alecthomas/kong"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/posener/complete"
+	// "github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/synfinatic/aws-sso-cli/storage"
@@ -72,7 +73,6 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"PromptColors.SelectedSuggestionTextColor":  "White",
 	"PromptColors.SuggestionBGColor":            "Cyan",
 	"PromptColors.SuggestionTextColor":          "White",
-	"DefaultSSO":                                "Default",
 	"DefaultRegion":                             "us-east-1",
 	"HistoryLimit":                              10,
 	"ListFields":                                []string{"AccountId", "AccountAlias", "RoleName", "ExpiresStr"},
@@ -85,7 +85,7 @@ type CLI struct {
 	Lines      bool   `kong:"help='Print line number in logs'"`
 	LogLevel   string `kong:"short='L',name='level',enum='error,warn,info,debug,trace',default='info',help='Logging level [error|warn|info|debug|trace]'"`
 	UrlAction  string `kong:"short='u',enum='open,print,clip',default='open',help='How to handle URLs [open|print|clip]'"`
-	SSO        string `kong:"short='S',help='AWS SSO Instance',env='AWS_SSO',predictor='sso'"`
+	SSO        string `kong:"short='S',help='AWS SSO Instance',default='Default',env='AWS_SSO',predictor='sso'"`
 	STSRefresh bool   `kong:"help='Force refresh of STS Token Credentials'"`
 
 	// Commands
@@ -99,6 +99,7 @@ type CLI struct {
 	Time               TimeCmd                      `kong:"cmd,help='Print out much time before STS Token expires'"`
 	Version            VersionCmd                   `kong:"cmd,help='Print version and exit'"`
 	InstallCompletions kongplete.InstallCompletions `kong:"cmd,help='Install shell completions'"`
+	// Setup              SetupCmd                     `kong:"cmd,hidden"` // disable for now
 }
 
 func main() {
@@ -113,12 +114,19 @@ func main() {
 
 	// Load the config file
 	cli.ConfigFile = utils.GetHomePath(cli.ConfigFile)
+
+	if _, err := os.Stat(cli.ConfigFile); errors.Is(err, os.ErrNotExist) {
+		log.Warnf("No config file found!  Will now prompt you for a basic config...")
+		if err = setupWizard(&run_ctx); err != nil {
+			log.Fatalf("%s", err.Error())
+		}
+	}
+
 	cacheFile := utils.GetHomePath(INSECURE_CACHE_FILE)
 
 	if run_ctx.Settings, err = sso.LoadSettings(cli.ConfigFile, cacheFile, DEFAULT_CONFIG, override); err != nil {
 		log.Fatalf("%s", err.Error())
 	}
-	log.Debugf("settings: %s", spew.Sdump(run_ctx.Settings))
 
 	// Load the secure store data
 	switch run_ctx.Settings.SecureStore {
