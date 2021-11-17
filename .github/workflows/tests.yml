@@ -22,7 +22,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Tests
-      run: make test
+      run: make vet unittest test-tidy test-fmt
     
     - name: Build a binary
       run: make # not all binaries to help speed up builds
