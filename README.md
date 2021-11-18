@@ -3,6 +3,17 @@
 [![Report Card](https://goreportcard.com/badge/github.com/synfinatic/aws-sso-cli)](https://goreportcard.com/report/github.com/synfinatic/aws-sso-cli)
 [![GitHub license](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://raw.githubusercontent.com/synfinatic/aws-sso-cli/main/LICENSE)
 
+ * [About](#about)
+ * [What does AWS SSO CLI do?](#what-does-aws-sso-cli-do)
+ * [Demo](#demo)
+ * [Installation](#installation)
+ * [Security](#security)
+ * [Commands](#commands)
+ * [Configuration](#configuration)
+ * [Environment Varables](#environment-varables)
+ * [Release History](#release-history)
+ * [License](#license)
+
 ## About
 
 AWS SSO CLI is a secure replacement for using the [aws configure sso](
@@ -113,7 +124,6 @@ in the terminal or copied into the Copy & Paste buffer of your computer.
 
 Flags:
 
- * `--region <region>`, `-r` -- Specify the `$AWS_DEFAULT_REGION` to use
  * `--arn <arn>`, `-a` -- ARN of role to assume (`$AWS_SSO_ROLE_ARN`)
  * `--account <account>`, `-A` -- AWS AccountID of role to assume (`$AWS_SSO_ACCOUNTID`)
  * `--duration <minutes>`, `-d` -- AWS Session duration in minutes (default 60) (`$AWS_SSO_DURATION`)
@@ -136,7 +146,6 @@ Suggested use (bash): `eval $(aws-sso eval <args>)`
 
 Flags:
 
- * `--region <region>`, `-r` -- Specify the `$AWS_DEFAULT_REGION` to use
  * `--arn <arn>`, `-a` -- ARN of role to assume (`$AWS_SSO_ROLE_ARN`)
  * `--account <account>`, `-A` -- AWS AccountID of role to assume (`$AWS_SSO_ACCOUNTID`)
  * `--duration <minutes>`, `-d` -- AWS Session duration in minutes (default 60) (`$AWS_SSO_DURATION`)
@@ -155,7 +164,6 @@ commands.
 
 Flags:
 
- * `--region <region>, `-r` -- Specify the `$AWS_DEFAULT_REGION` to use
  * `--arn <arn>`, `-a` -- ARN of role to assume (`$AWS_SSO_ROLE_ARN`)
  * `--account <account>`, `-A` -- AWS AccountID of role to assume (`$AWS_SSO_ACCOUNTID`)
  * `--duration <minutes>`, `-d` -- AWS Session duration in minutes (default 60) (`$AWS_SSO_DURATION`)
@@ -176,7 +184,6 @@ The following environment variables are automatically set by `exec`:
  * `AWS_ROLE_NAME` -- The name of the IAM role
  * `AWS_ROLE_ARN` -- The full ARN of the IAM role
  * `AWS_SESSION_EXPIRATION`  -- The date and time when the IAM role credentials will expire
- * `AWS_DEFAULT_REGION` -- Region to use AWS with
  * `AWS_SSO_PROFILE` -- User customizable varible using a template
 
 ### cache
@@ -247,7 +254,6 @@ for this to take effect.
 
 The following environment variables are honored by `exec` and `console`:
 
- * `AWS_DEFAULT_REGION` -- Region to use AWS with
  * `AWS_SSO_DURATION` -- Default number of minutes to request for session lifetime
  * `AWS_SSO_ROLE_ARN` -- Specify the ARN to assume
  * `AWS_SSO_ACCOUNTID` -- Specify the AWS AccountID for the role to assume
@@ -267,13 +273,11 @@ SSOConfig:
         Accounts:  # optional block for specifying tags & overrides
             <AccountId>:
                 Name: <Friendly Name of Account>
-                DefaultRegion: <AWS_DEFAULT_REGION>
                 Tags:  # tags for all roles in the account
                     <Key1>: <Value1>
                     <Key2>: <Value2>
                 Roles:
                     <Role Name>:
-                        DefaultRegion: <AWS_DEFAULT_REGION>
                         Tags:  # tags specific for this role (will override account level tags)
                             <Key1>: <Value1>
                             <Key2>: <Value2>
@@ -386,7 +390,6 @@ The following variables are accessible from the `AWSRoleFlat` struct:
  * `Arn` -- AWS ARN for this role
  * `RoleName` -- The role name
  * `Profile` -- Manually configured AWS_SSO_PROFILE value for this role
- * `DefaultRegion` -- The manually configured default region for this role
  * `SSORegion` -- The AWS Region where AWS SSO is enabled in your account
  * `StartUrl` -- The AWS SSO start URL for your account
  * `Tags` -- Map of additional custom key/value pairs
@@ -482,7 +485,6 @@ Specify which fields to display via the `list` command.  Valid options are:
  * `AccountName` -- Account Name from config.yaml
  * `AccountAlias` -- Account Name from AWS SSO
  * `ARN` -- Role ARN
- * `DefaultRegion` -- Configured default region
  * `EmailAddress` -- Email address of root account associated with AWS Account
  * `ExpiresEpoch` -- Unix epoch time when cached STS creds expire
  * `ExpiresStr` -- Hours and minutes until cached STS creds expire
@@ -499,7 +501,6 @@ Specify which fields to display via the `list` command.  Valid options are:
 The following environment variables are honored by `aws-sso`:
 
  * `AWS_SSO_FILE_PASSPHRASE` -- Passphrase to use with the `file` SecureStore
- * `AWS_DEFAULT_REGION` -- Will pass this value to any new shell created by `exec`
  * `AWS_SSO_CONFIG` -- Specify an alternate path to the `aws-sso` config file
 	(default: `~/.aws-sso/config.yaml`)
  * `AWS_SSO_BROWSER` -- Override default browser for AWS SSO login
@@ -507,6 +508,11 @@ The following environment variables are honored by `aws-sso`:
 
 The `file` SecureStore will use the `AWS_SSO_FILE_PASSPHRASE` environment
 variable for the passphrase if it is set. (Not recommended.)
+
+## Release History
+
+ * [Releases](releases)
+ * [Changelog](CHANGELOG.md)
 
 ## License
 

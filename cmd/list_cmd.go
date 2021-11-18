@@ -30,15 +30,14 @@ import (
 
 // keys match AWSRoleFlat header and value is the description
 var allListFields = map[string]string{
-	"Id":            "Column Index",
-	"Arn":           "AWS Role Resource Name",
-	"AccountId":     "AWS AccountID",
-	"AccountName":   "Configured Account Name",
-	"AccountAlias":  "AWS Account Alias",
-	"DefaultRegion": "Default AWS Region",
-	"EmailAddress":  "Root email for AWS account",
-	"ExpiresStr":    "Time until STS creds expire",
-	"Expires":       "Unix Epoch when STS creds expire",
+	"Id":           "Column Index",
+	"Arn":          "AWS Role Resource Name",
+	"AccountId":    "AWS AccountID",
+	"AccountName":  "Configured Account Name",
+	"AccountAlias": "AWS Account Alias",
+	"EmailAddress": "Root email for AWS account",
+	"ExpiresStr":   "Time until STS creds expire",
+	"Expires":      "Unix Epoch when STS creds expire",
 	//	"Profile":       "AWS_PROFILE",
 	"RoleName": "AWS Role Name",
 	//	"Via":           "Role Chain Via",

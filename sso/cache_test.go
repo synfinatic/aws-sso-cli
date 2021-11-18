@@ -68,7 +68,6 @@ func (suite *CacheTestSuite) TestGetRole() {
 	assert.Equal(t, "control-tower-dev-sub1-aws", r.AccountAlias)
 	assert.Equal(t, "test+control-tower-sub1@ourcompany.com", r.EmailAddress)
 	assert.Equal(t, "", r.Profile)
-	assert.Equal(t, "", r.DefaultRegion)
 	assert.Equal(t, "us-east-1", r.SSORegion)
 	assert.Equal(t, "https://d-754545454.awsapps.com/start", r.StartUrl)
 

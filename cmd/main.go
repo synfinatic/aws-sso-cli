@@ -73,7 +73,6 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"PromptColors.SelectedSuggestionTextColor":  "White",
 	"PromptColors.SuggestionBGColor":            "Cyan",
 	"PromptColors.SuggestionTextColor":          "White",
-	"DefaultRegion":                             "us-east-1",
 	"HistoryLimit":                              10,
 	"ListFields":                                []string{"AccountId", "AccountAlias", "RoleName", "ExpiresStr"},
 }

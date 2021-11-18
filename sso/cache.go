@@ -183,48 +183,44 @@ func (c *Cache) GetRole(arn string) (*AWSRoleFlat, error) {
 // main struct holding all our Roles discovered via AWS SSO and
 // via the config.yaml
 type Roles struct {
-	Accounts      map[int64]*AWSAccount `json:"Accounts"`
-	SSORegion     string                `json:"SSORegion"`
-	StartUrl      string                `json:"StartUrl"`
-	DefaultRegion string                `json:"DefaultRegion"`
+	Accounts  map[int64]*AWSAccount `json:"Accounts"`
+	SSORegion string                `json:"SSORegion"`
+	StartUrl  string                `json:"StartUrl"`
 }
 
 // AWSAccount and AWSRole is how we store the data
 type AWSAccount struct {
-	Alias         string              `json:"Alias,omitempty"` // from AWS
-	Name          string              `json:"Name,omitempty"`  // from config
-	EmailAddress  string              `json:"EmailAddress,omitempty"`
-	Tags          map[string]string   `json:"Tags,omitempty"`
-	Roles         map[string]*AWSRole `json:"Roles,omitempty"`
-	DefaultRegion string              `json:"DefaultRegion,omitempty"`
+	Alias        string              `json:"Alias,omitempty"` // from AWS
+	Name         string              `json:"Name,omitempty"`  // from config
+	EmailAddress string              `json:"EmailAddress,omitempty"`
+	Tags         map[string]string   `json:"Tags,omitempty"`
+	Roles        map[string]*AWSRole `json:"Roles,omitempty"`
 }
 
 type AWSRole struct {
-	Arn           string            `json:"Arn"`
-	DefaultRegion string            `json:"DefaultRegion,omitempty"`
-	Expires       int64             `json:"Expires,omitempty"` // Seconds since Unix Epoch
-	Profile       string            `json:"Profile,omitempty"`
-	Tags          map[string]string `json:"Tags,omitempty"`
-	Via           string            `json:"Via,omitempty"`
+	Arn     string            `json:"Arn"`
+	Expires int64             `json:"Expires,omitempty"` // Seconds since Unix Epoch
+	Profile string            `json:"Profile,omitempty"`
+	Tags    map[string]string `json:"Tags,omitempty"`
+	Via     string            `json:"Via,omitempty"`
 }
 
 // This is what we always return for a role definition
 type AWSRoleFlat struct {
-	Id            int               `header:"Id"`
-	AccountId     int64             `json:"AccountId" header:"AccountId"`
-	AccountName   string            `json:"AccountName" header:"AccountName"`
-	AccountAlias  string            `json:"AccountAlias" header:"AccountAlias"`
-	EmailAddress  string            `json:"EmailAddress" header:"EmailAddress"`
-	Expires       int64             `json:"Expires" header:"ExpiresEpoch"`
-	ExpiresStr    string            `json:"-" header:"Expires"`
-	Arn           string            `json:"Arn" header:"ARN"`
-	RoleName      string            `json:"RoleName" header:"Role"`
-	Profile       string            `json:"Profile" header:"Profile"`
-	DefaultRegion string            `json:"DefaultRegion" header:"DefaultRegion"`
-	SSORegion     string            `json:"SSORegion" header:"SSORegion"`
-	StartUrl      string            `json:"StartUrl" header:"StartUrl"`
-	Tags          map[string]string `json:"Tags"` // not supported by GenerateTable
-	Via           string            `json:"Via" header:"Via"`
+	Id           int               `header:"Id"`
+	AccountId    int64             `json:"AccountId" header:"AccountId"`
+	AccountName  string            `json:"AccountName" header:"AccountName"`
+	AccountAlias string            `json:"AccountAlias" header:"AccountAlias"`
+	EmailAddress string            `json:"EmailAddress" header:"EmailAddress"`
+	Expires      int64             `json:"Expires" header:"ExpiresEpoch"`
+	ExpiresStr   string            `json:"-" header:"Expires"`
+	Arn          string            `json:"Arn" header:"ARN"`
+	RoleName     string            `json:"RoleName" header:"Role"`
+	Profile      string            `json:"Profile" header:"Profile"`
+	SSORegion    string            `json:"SSORegion" header:"SSORegion"`
+	StartUrl     string            `json:"StartUrl" header:"StartUrl"`
+	Tags         map[string]string `json:"Tags"` // not supported by GenerateTable
+	Via          string            `json:"Via" header:"Via"`
 	// SelectTags    map[string]string // tags without spaces
 }
 
@@ -236,10 +232,9 @@ func (f AWSRoleFlat) GetHeader(fieldName string) (string, error) {
 // Merges the AWS SSO and our Config file to create our Roles struct
 func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 	r := Roles{
-		SSORegion:     config.SSORegion,
-		StartUrl:      config.StartUrl,
-		DefaultRegion: config.DefaultRegion,
-		Accounts:      map[int64]*AWSAccount{},
+		SSORegion: config.SSORegion,
+		StartUrl:  config.StartUrl,
+		Accounts:  map[int64]*AWSAccount{},
 	}
 
 	// First go through all the AWS SSO Accounts & Roles
@@ -293,7 +288,6 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 				Roles: map[string]*AWSRole{},
 			}
 		}
-		r.Accounts[accountId].DefaultRegion = account.DefaultRegion
 		r.Accounts[accountId].Name = account.Name
 
 		// set our account tags
@@ -309,9 +303,6 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 			r.Accounts[accountId].Roles[roleName].Tags["AccountAlias"] = r.Accounts[accountId].Alias
 			r.Accounts[accountId].Roles[roleName].Tags["Email"] = r.Accounts[accountId].EmailAddress
 			r.Accounts[accountId].Roles[roleName].Tags["Role"] = roleName
-			if r.Accounts[accountId].Roles[roleName].DefaultRegion != "" {
-				r.Accounts[accountId].Roles[roleName].Tags["DefaultRegion"] = r.Accounts[accountId].Roles[roleName].DefaultRegion
-			}
 		}
 
 		// set the tags from the config file
@@ -324,10 +315,6 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 			r.Accounts[accountId].Roles[roleName].Arn = utils.MakeRoleARN(accountId, roleName)
 			r.Accounts[accountId].Roles[roleName].Profile = role.Profile
 			r.Accounts[accountId].Roles[roleName].Via = role.Via
-			r.Accounts[accountId].Roles[roleName].DefaultRegion = r.Accounts[accountId].DefaultRegion
-			if role.DefaultRegion != "" {
-				r.Accounts[accountId].Roles[roleName].DefaultRegion = role.DefaultRegion
-			}
 			// Copy the account tags to the role
 			for k, v := range config.Accounts[accountId].Tags {
 				r.Accounts[accountId].Roles[roleName].Tags[k] = v
@@ -443,31 +430,23 @@ func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) 
 	for thisRoleName, role := range account.Roles {
 		if thisRoleName == roleName {
 			flat := AWSRoleFlat{
-				AccountId:     accountId,
-				AccountName:   account.Name,
-				AccountAlias:  account.Alias,
-				EmailAddress:  account.EmailAddress,
-				Expires:       role.Expires,
-				Arn:           role.Arn,
-				RoleName:      roleName,
-				Profile:       role.Profile,
-				DefaultRegion: r.DefaultRegion,
-				SSORegion:     r.SSORegion,
-				StartUrl:      r.StartUrl,
-				Tags:          map[string]string{},
-				Via:           role.Via,
+				AccountId:    accountId,
+				AccountName:  account.Name,
+				AccountAlias: account.Alias,
+				EmailAddress: account.EmailAddress,
+				Expires:      role.Expires,
+				Arn:          role.Arn,
+				RoleName:     roleName,
+				Profile:      role.Profile,
+				SSORegion:    r.SSORegion,
+				StartUrl:     r.StartUrl,
+				Tags:         map[string]string{},
+				Via:          role.Via,
 			}
 
 			// copy over account tags
 			for k, v := range account.Tags {
 				flat.Tags[k] = v
-			}
-			// override account values with more specific role values
-			if account.DefaultRegion != "" {
-				flat.DefaultRegion = account.DefaultRegion
-			}
-			if role.DefaultRegion != "" {
-				flat.DefaultRegion = role.DefaultRegion
 			}
 			// Automatic tags
 			flat.Tags["AccountID"] = strconv.FormatInt(accountId, 10)

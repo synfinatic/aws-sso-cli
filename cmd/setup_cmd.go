@@ -62,7 +62,7 @@ func (cc *SetupCmd) Run(ctx *RunContext) error {
 
 func setupWizard(ctx *RunContext) error {
 	var err error
-	var instanceName, startURL, ssoRegion, awsRegion, urlAction string
+	var instanceName, startURL, ssoRegion, urlAction string
 
 	// Name our SSO instance
 	prompt := promptui.Prompt{
@@ -93,23 +93,6 @@ func setupWizard(ctx *RunContext) error {
 		return err
 	}
 
-	// Pick the AWS region to use
-	defaultRegions := []string{"None"}
-	defaultRegions = append(defaultRegions, AvailableAwsSSORegions...)
-
-	sel = promptui.Select{
-		Label:        "Default region for connecting to AWS (DefaultRegion)",
-		Items:        defaultRegions,
-		HideSelected: false,
-	}
-	if _, awsRegion, err = sel.Run(); err != nil {
-		return err
-	}
-
-	if awsRegion == "None" {
-		awsRegion = ""
-	}
-
 	// How should we deal with URLs?
 	sel = promptui.Select{
 		Label: "Default action to take with URLs (UrlAction)",
@@ -125,9 +108,8 @@ func setupWizard(ctx *RunContext) error {
 		UrlAction:  urlAction,
 	}
 	s.SSO[ctx.Cli.SSO] = &sso.SSOConfig{
-		SSORegion:     ssoRegion,
-		StartUrl:      startURL,
-		DefaultRegion: awsRegion,
+		SSORegion: ssoRegion,
+		StartUrl:  startURL,
 	}
 	return s.Save(ctx.Cli.ConfigFile, false)
 }

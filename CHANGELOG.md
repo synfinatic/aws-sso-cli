@@ -5,6 +5,7 @@
  * Update interactive selected item color schme to stand our better. #138
  * Add `eval --clear`
  * `eval` no longer prints URLs #145
+ * Remove `--region` and `DefaultRegion` #149
 
 ## [v1.3.1] - 2021-11-15
 

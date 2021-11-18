@@ -24,8 +24,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
-	"strconv"
 
 	"github.com/c-bata/go-prompt"
 	log "github.com/sirupsen/logrus"
@@ -37,9 +35,8 @@ import (
 const AWS_FEDERATED_URL = "https://signin.aws.amazon.com/federation"
 
 type ConsoleCmd struct {
-	Region   string `kong:"help='AWS Region',env='AWS_DEFAULT_REGION',predictor='region'"`
-	Duration int64  `kong:"short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
-	UseEnv   bool   `kong:"short='e',help='Use existing ENV vars to generate URL'"`
+	Duration int64 `kong:"short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
+	UseEnv   bool  `kong:"short='e',help='Use existing ENV vars to generate URL'"`
 
 	Arn       string `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn',xor='arn-1',xor='arn-2'"`
 	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNTID',predictor='accountId',xor='arn-1'"`
@@ -59,21 +56,13 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 			return err
 		}
 
-		region := ctx.Settings.GetDefaultRegion(accountid, role)
-		if ctx.Cli.Console.Region != "" {
-			region = ctx.Cli.Console.Region
-		}
-		return openConsole(ctx, awssso, accountid, role, region)
+		return openConsole(ctx, awssso, accountid, role)
 	} else if ctx.Cli.Console.AccountId != 0 || ctx.Cli.Console.Role != "" {
 		if ctx.Cli.Console.AccountId == 0 || ctx.Cli.Console.Role == "" {
 			return fmt.Errorf("Please specify both --account and --role")
 		}
 		awssso := doAuth(ctx)
-		region := ctx.Settings.GetDefaultRegion(ctx.Cli.Console.AccountId, ctx.Cli.Console.Role)
-		if ctx.Cli.Console.Region != "" {
-			region = ctx.Cli.Console.Region
-		}
-		return openConsole(ctx, awssso, ctx.Cli.Console.AccountId, ctx.Cli.Console.Role, region)
+		return openConsole(ctx, awssso, ctx.Cli.Console.AccountId, ctx.Cli.Console.Role)
 	} else if ctx.Cli.Console.UseEnv {
 		if ctx.Cli.Console.AccessKeyId == "" {
 			return fmt.Errorf("AWS_ACCESS_KEY_ID is not set")
@@ -89,15 +78,7 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 			SecretAccessKey: ctx.Cli.Console.SecretAccessKey,
 			SessionToken:    ctx.Cli.Console.SessionToken,
 		}
-		accountid, err := strconv.ParseInt(os.Getenv("AWS_ACCOUNT_ID"), 10, 64)
-		if err != nil {
-			return fmt.Errorf("Unable to parse AWS_ACCOUNT_ID: %s", os.Getenv("AWS_ACCOUNT_ID"))
-		}
-		region := ctx.Settings.GetDefaultRegion(accountid, os.Getenv("AWS_ROLE_NAME"))
-		if ctx.Cli.Console.Region != "" {
-			region = ctx.Cli.Console.Region
-		}
-		return openConsoleAccessKey(ctx, &creds, ctx.Cli.Console.Duration, region)
+		return openConsoleAccessKey(ctx, &creds, ctx.Cli.Console.Duration)
 	}
 
 	fmt.Printf("Please use `exit` or `Ctrl-D` to quit.\n")
@@ -124,7 +105,7 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 }
 
 // opens the AWS console or just prints the URL
-func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, region string) error {
+func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) error {
 	ctx.Settings.Cache.AddHistory(utils.MakeRoleARN(accountid, role), ctx.Settings.HistoryLimit)
 	if err := ctx.Settings.Cache.Save(false); err != nil {
 		log.WithError(err).Warnf("Unable to update cache")
@@ -132,10 +113,10 @@ func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, reg
 
 	creds := GetRoleCredentials(ctx, awssso, accountid, role)
 
-	return openConsoleAccessKey(ctx, creds, ctx.Cli.Console.Duration, region)
+	return openConsoleAccessKey(ctx, creds, ctx.Cli.Console.Duration)
 }
 
-func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials, duration int64, region string) error {
+func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials, duration int64) error {
 	signin := SigninTokenUrlParams{
 		SessionDuration: duration * 60,
 		Session: SessionUrlParams{
@@ -162,7 +143,7 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials, durat
 
 	login := LoginUrlParams{
 		Issuer:      "https://github.com/synfinatic/aws-sso-cli", // FIXME
-		Destination: fmt.Sprintf("https://console.aws.amazon.com/console/home?region=%s", region),
+		Destination: "https://console.aws.amazon.com/console/home",
 		SigninToken: loginResponse.SigninToken,
 	}
 	url := login.GetUrl()

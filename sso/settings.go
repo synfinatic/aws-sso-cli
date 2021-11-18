@@ -49,7 +49,6 @@ type Settings struct {
 	SSO               map[string]*SSOConfig `koanf:"SSOConfig" yaml:"SSOConfig,omitempty"`
 	DefaultSSO        string                `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`   // specify default SSO by key
 	SecureStore       string                `koanf:"SecureStore" yaml:"SecureStore,omitempty"` // json or keyring
-	DefaultRegion     string                `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
 	JsonStore         string                `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
 	UrlAction         string                `koanf:"UrlAction" yaml:"UrlAction,omitempty"`
 	Browser           string                `koanf:"Browser" yaml:"Browser,omitempty"`
@@ -63,44 +62,25 @@ type Settings struct {
 }
 
 type SSOConfig struct {
-	settings      *Settings             // pointer back up
-	SSORegion     string                `koanf:"SSORegion" yaml:"SSORegion"`
-	StartUrl      string                `koanf:"StartUrl" yaml:"StartUrl"`
-	Accounts      map[int64]*SSOAccount `koanf:"Accounts" yaml:"Accounts,omitempty"`
-	DefaultRegion string                `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
+	settings  *Settings             // pointer back up
+	SSORegion string                `koanf:"SSORegion" yaml:"SSORegion"`
+	StartUrl  string                `koanf:"StartUrl" yaml:"StartUrl"`
+	Accounts  map[int64]*SSOAccount `koanf:"Accounts" yaml:"Accounts,omitempty"`
 }
 
 type SSOAccount struct {
-	config        *SSOConfig          // pointer back up
-	Name          string              `koanf:"Name" yaml:"Name,omitempty"` // Admin configured Account Name
-	Tags          map[string]string   `koanf:"Tags" yaml:"Tags,omitempty" `
-	Roles         map[string]*SSORole `koanf:"Roles" yaml:"Roles,omitempty"`
-	DefaultRegion string              `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
+	config *SSOConfig          // pointer back up
+	Name   string              `koanf:"Name" yaml:"Name,omitempty"` // Admin configured Account Name
+	Tags   map[string]string   `koanf:"Tags" yaml:"Tags,omitempty" `
+	Roles  map[string]*SSORole `koanf:"Roles" yaml:"Roles,omitempty"`
 }
 
 type SSORole struct {
-	account       *SSOAccount       // pointer back up
-	ARN           string            `yaml:"ARN"`
-	Profile       string            `koanf:"Profile" yaml:"Profile,omitempty"`
-	Tags          map[string]string `koanf:"Tags" yaml:"Tags,omitempty"`
-	DefaultRegion string            `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
-	Via           string            `koanf:"Via" yaml:"Via,omitempty"`
-}
-
-// GetDefaultRegion returns the user defined AWS_DEFAULT_REGION for the specified role
-func (s *Settings) GetDefaultRegion(accountId int64, roleName string) string {
-	roleFlat, err := s.Cache.Roles.GetRole(accountId, roleName)
-	if err != nil {
-		if s.SSO[s.DefaultSSO].DefaultRegion != "" {
-			return s.SSO[s.DefaultSSO].DefaultRegion
-		} else {
-			return s.DefaultRegion
-		}
-	}
-	if roleFlat.DefaultRegion != "" {
-		return roleFlat.DefaultRegion
-	}
-	return s.DefaultRegion
+	account *SSOAccount       // pointer back up
+	ARN     string            `yaml:"ARN"`
+	Profile string            `koanf:"Profile" yaml:"Profile,omitempty"`
+	Tags    map[string]string `koanf:"Tags" yaml:"Tags,omitempty"`
+	Via     string            `koanf:"Via" yaml:"Via,omitempty"`
 }
 
 var DEFAULT_ACCOUNT_PRIMARY_TAGS []string = []string{
@@ -368,9 +348,6 @@ func (a *SSOAccount) GetAllTags(id int64) map[string]string {
 		accountId := strconv.FormatInt(id, 10)
 		tags["AccountId"] = accountId
 	}
-	if a.DefaultRegion != "" {
-		tags["DefaultRegion"] = a.DefaultRegion
-	}
 	for k, v := range a.Tags {
 		tags[k] = v
 	}
@@ -397,9 +374,6 @@ func (r *SSORole) GetAllTags() map[string]string {
 	tags["RoleName"] = r.GetRoleName()
 	tags["AccountId"] = r.GetAccountId()
 
-	if r.DefaultRegion != "" {
-		tags["DefaultRegion"] = r.DefaultRegion
-	}
 	for k, v := range r.Tags {
 		tags[k] = v
 	}

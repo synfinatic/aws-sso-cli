@@ -30,7 +30,6 @@ import (
 
 type EvalCmd struct {
 	// AWS Params
-	Region    string `kong:"help='AWS Region',env='AWS_DEFAULT_REGION',predictor='region'"`
 	Duration  int64  `kong:"short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
 	Arn       string `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn',xor='arn-1',xor='arn-2'"`
 	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNTID',predictor='accountId',xor='arn-1'"`
@@ -54,7 +53,6 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 	// if CLI args are speecified, use that
 	role := ctx.Cli.Eval.Role
 	account := ctx.Cli.Eval.AccountId
-	region := ctx.Cli.Eval.Region
 
 	if len(ctx.Cli.Eval.Arn) > 0 {
 		account, role, err = utils.ParseRoleARN(ctx.Cli.Eval.Arn)
@@ -78,12 +76,8 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 		log.Infof("Refreshing current AWS Role credentials")
 	}
 
-	if len(region) == 0 {
-		region = ctx.Settings.GetDefaultRegion(account, role)
-	}
-
 	awssso := doAuth(ctx)
-	for k, v := range execShellEnvs(ctx, awssso, account, role, region) {
+	for k, v := range execShellEnvs(ctx, awssso, account, role) {
 		if strings.Contains(v, " ") {
 			fmt.Printf("export %s=\"%s\"\n", k, v)
 		} else {
@@ -102,7 +96,6 @@ func unsetEnvVars() {
 		"AWS_ROLE_NAME",
 		"AWS_ROLE_ARN",
 		"AWS_SESSION_EXPIRATION",
-		"AWS_DEFAULT_REGION",
 		"AWS_SSO_PROFILE",
 	}
 	for _, e := range envs {
