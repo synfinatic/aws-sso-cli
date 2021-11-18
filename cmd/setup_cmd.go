@@ -62,8 +62,9 @@ func (cc *SetupCmd) Run(ctx *RunContext) error {
 
 func setupWizard(ctx *RunContext) error {
 	var err error
-	var instanceName, startURL, ssoRegion, awsRegion string
+	var instanceName, startURL, ssoRegion, awsRegion, urlAction string
 
+	// Name our SSO instance
 	prompt := promptui.Prompt{
 		Label:    "SSO Instance Name",
 		Validate: validateSSOName,
@@ -73,16 +74,18 @@ func setupWizard(ctx *RunContext) error {
 		return err
 	}
 
+	// Get the full AWS SSO start URL
 	prompt = promptui.Prompt{
-		Label:    "SSO Start URL",
+		Label:    "SSO Start URL (StartUrl)",
 		Validate: validateSSOUrl,
 	}
 	if startURL, err = prompt.Run(); err != nil {
 		return err
 	}
 
+	// Pick our AWS SSO region
 	sel := promptui.Select{
-		Label:        "SSO Region",
+		Label:        "AWS SSO Region (SSORegion)",
 		Items:        AvailableAwsSSORegions,
 		HideSelected: false,
 	}
@@ -90,11 +93,12 @@ func setupWizard(ctx *RunContext) error {
 		return err
 	}
 
+	// Pick the AWS region to use
 	defaultRegions := []string{"None"}
 	defaultRegions = append(defaultRegions, AvailableAwsSSORegions...)
 
 	sel = promptui.Select{
-		Label:        "[Optional] Default AWS Region for IAM Sessions",
+		Label:        "Default region for connecting to AWS (DefaultRegion)",
 		Items:        defaultRegions,
 		HideSelected: false,
 	}
@@ -106,9 +110,19 @@ func setupWizard(ctx *RunContext) error {
 		awsRegion = ""
 	}
 
+	// How should we deal with URLs?
+	sel = promptui.Select{
+		Label: "Default action to take with URLs (UrlAction)",
+		Items: []string{"open", "print", "clip"},
+	}
+	if _, urlAction, err = sel.Run(); err != nil {
+		return err
+	}
+
 	s := sso.Settings{
 		DefaultSSO: instanceName,
 		SSO:        map[string]*sso.SSOConfig{},
+		UrlAction:  urlAction,
 	}
 	s.SSO[ctx.Cli.SSO] = &sso.SSOConfig{
 		SSORegion:     ssoRegion,
