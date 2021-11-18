@@ -142,6 +142,10 @@ Flags:
  * `--duration <minutes>`, `-d` -- AWS Session duration in minutes (default 60) (`$AWS_SSO_DURATION`)
  * `--role <role>`, `-R` -- Name of AWS Role to assume (requires `--account`) (`$AWS_SSO_ROLE`)
 
+**Note:** The `eval` command will never honor the `--url-action=print`
+option as this will intefere with bash/zsh/etc ability to evaluate 
+the generated commands and will fall back to `--url-action=open`.
+
 ### exec
 
 Exec allows you to execute a command with the necessary [AWS environment variables](
