@@ -35,10 +35,21 @@ type EvalCmd struct {
 	Arn       string `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn',xor='arn-1',xor='arn-2'"`
 	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNTID',predictor='accountId',xor='arn-1'"`
 	Role      string `kong:"short='R',help='Name of AWS Role to assume',env='AWS_ROLE_NAME',predictor='role',xor='arn-2'"`
+	Clear     bool   `kong:"short='c',help='Generate \"unset XXXX\" commands to clear environment'"`
 }
 
 func (cc *EvalCmd) Run(ctx *RunContext) error {
 	var err error
+
+	if ctx.Cli.Eval.Clear {
+		unsetEnvVars()
+		return nil
+	}
+
+	// never print the URL since that breaks bash's eval
+	if ctx.Settings.UrlAction == "print" {
+		ctx.Settings.UrlAction = "open"
+	}
 
 	// if CLI args are speecified, use that
 	role := ctx.Cli.Eval.Role
@@ -57,7 +68,7 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 		accountid := os.Getenv("AWS_ACCOUNT_ID")
 		role = os.Getenv("AWS_ROLE_NAME")
 		if len(accountid) == 0 || len(role) == 0 {
-			fmt.Printf("Please specify --arn or --account and --role")
+			return fmt.Errorf("Please specify --arn or --account and --role")
 		}
 
 		account, err = strconv.ParseInt(accountid, 10, 64)
@@ -80,4 +91,21 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 		}
 	}
 	return nil
+}
+
+func unsetEnvVars() {
+	envs := []string{
+		"AWS_ACCESS_KEY_ID",
+		"AWS_SECRET_ACCESS_KEY",
+		"AWS_SESSION_TOKEN",
+		"AWS_ACCOUNT_ID",
+		"AWS_ROLE_NAME",
+		"AWS_ROLE_ARN",
+		"AWS_SESSION_EXPIRATION",
+		"AWS_DEFAULT_REGION",
+		"AWS_SSO_PROFILE",
+	}
+	for _, e := range envs {
+		fmt.Printf("unset %s\n", e)
+	}
 }

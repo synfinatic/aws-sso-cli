@@ -3,6 +3,8 @@
 ## [Unreleased]
 
  * Update interactive selected item color schme to stand our better. #138
+ * Add `eval --clear`
+ * `eval` no longer prints URLs #145
 
 ## [v1.3.1] - 2021-11-15
 
