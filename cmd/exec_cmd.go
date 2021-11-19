@@ -136,10 +136,13 @@ func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, region 
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	cmd.Stdin = os.Stdin
+	cmd.Env = os.Environ() // copy our current environment to the executor
 
+	// add the variables we need for AWS to the executor without polluting our
+	// own process
 	for k, v := range execShellEnvs(ctx, awssso, accountid, role, region) {
 		log.Debugf("Setting %s = %s", k, v)
-		os.Setenv(k, v)
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
 	// just do it!
 	return cmd.Run()
