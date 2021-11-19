@@ -5,6 +5,7 @@
  * Update interactive selected item color schme to stand our better. #138
  * Add `eval --clear`
  * `eval` no longer prints URLs #145
+ * `exec` now updates the ENV vars of the exec variable rather than our process
 
 ## [v1.3.1] - 2021-11-15
 

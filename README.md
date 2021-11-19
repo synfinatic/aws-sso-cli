@@ -3,6 +3,18 @@
 [![Report Card](https://goreportcard.com/badge/github.com/synfinatic/aws-sso-cli)](https://goreportcard.com/report/github.com/synfinatic/aws-sso-cli)
 [![GitHub license](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://raw.githubusercontent.com/synfinatic/aws-sso-cli/main/LICENSE)
 
+ * [About](#about)
+ * [What does AWS SSO CLI do?](#what-does-aws-sso-cli-do)
+ * [Demo](#demo)
+ * [Installation](#installation)
+ * [Security](#security)
+ * [Commands](#commands)
+ * [Configuration](#configuration)
+ * [Environment Varables](#environment-varables)
+ * [Release History](#release-history)
+ * [License](#license)
+
+
 ## About
 
 AWS SSO CLI is a secure replacement for using the [aws configure sso](
@@ -507,6 +519,12 @@ The following environment variables are honored by `aws-sso`:
 
 The `file` SecureStore will use the `AWS_SSO_FILE_PASSPHRASE` environment
 variable for the passphrase if it is set. (Not recommended.)
+
+## Release History
+
+ * [Releases](https://github.com/synfinatic/aws-sso-cli/releases)
+ * [Changelog](CHANGELOG.md)
+
 
 ## License
 

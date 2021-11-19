@@ -224,7 +224,3 @@ $(DARWINARM64_BIN): $(wildcard */*.go) .prepare
 
 $(OUTPUT_NAME): $(wildcard */*.go) .prepare
 	go build -ldflags='$(LDFLAGS)' -o $(OUTPUT_NAME) cmd/*.go
-
-workflow.png: workflow.dot
-	dot -oworkflow.png -Tpng workflow.dot
-
