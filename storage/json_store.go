@@ -91,7 +91,7 @@ func (jc *JsonStore) GetRegisterClientData(key string, client *RegisterClientDat
 
 // DeleteRegisterClientData deletes the RegisterClientData from the JSON store
 func (jc *JsonStore) DeleteRegisterClientData(key string) error {
-	jc.RegisterClient[key] = RegisterClientData{}
+	delete(jc.RegisterClient, key)
 	return jc.save()
 }
 
@@ -113,7 +113,7 @@ func (jc *JsonStore) GetCreateTokenResponse(key string, token *CreateTokenRespon
 
 // DeleteCreateTokenResponse deletes the token from the json file
 func (jc *JsonStore) DeleteCreateTokenResponse(key string) error {
-	jc.CreateTokenResponse[key] = CreateTokenResponse{}
+	delete(jc.CreateTokenResponse, key)
 	return jc.save()
 }
 
@@ -135,6 +135,6 @@ func (jc *JsonStore) GetRoleCredentials(arn string, token *RoleCredentials) erro
 
 // DeleteRoleCredentials deletes the token from the json file
 func (jc *JsonStore) DeleteRoleCredentials(arn string) error {
-	jc.RoleCredentials[arn] = RoleCredentials{}
+	delete(jc.RoleCredentials, arn)
 	return jc.save()
 }

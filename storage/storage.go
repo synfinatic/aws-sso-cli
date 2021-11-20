@@ -19,9 +19,10 @@ package storage
  */
 
 import (
-	"fmt"
-	"strconv"
 	"time"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/synfinatic/aws-sso-cli/utils"
 )
 
 // this struct should be cached for long term if possible
@@ -34,6 +35,7 @@ type RegisterClientData struct {
 	TokenEndpoint         string `json:"tokenEndpoint,omitempty"`
 }
 
+// Expired returns true if it has expired or will in the next hour
 func (r *RegisterClientData) Expired() bool {
 	// XXX: I think an hour buffer here is fine?
 	return r.ClientSecretExpiresAt <= time.Now().Add(time.Hour).Unix()
@@ -57,6 +59,7 @@ type CreateTokenResponse struct {
 	TokenType    string `json:"tokenType"`
 }
 
+// Expired returns true if it has expired or will in the next minute
 func (t *CreateTokenResponse) Expired() bool {
 	// XXX: I think an minute buffer here is fine?
 	return t.ExpiresAt <= time.Now().Add(time.Minute).Unix()
@@ -68,29 +71,36 @@ type RoleCredentials struct { // Cache
 	AccessKeyId     string `json:"accessKeyId"`
 	SecretAccessKey string `json:"secretAccessKey"`
 	SessionToken    string `json:"sessionToken"`
-	Expiration      int64  `json:"expiration"` // not in seconds!
+	Expiration      int64  `json:"expiration"` // not in seconds, but millisec
 }
 
+// RoleArn returns the ARN for the role
 func (r *RoleCredentials) RoleArn() string {
-	return fmt.Sprintf("arn:aws:iam:%d:role/%s", r.AccountId, r.RoleName)
+	return utils.MakeRoleARN(r.AccountId, r.RoleName)
 }
 
-// Return seconds since unix epoch when we expire
+// ExpireEpoch return seconds since unix epoch when we expire
 func (r *RoleCredentials) ExpireEpoch() int64 {
-	return r.Expiration / 1000
+	return time.UnixMilli(r.Expiration).Unix()
 }
 
+// ExpireString returns the time the creds expire in the format of "2006-01-02 15:04:05.999999999 -0700 MST"
 func (r *RoleCredentials) ExpireString() string {
 	// apparently Expiration is in ms???
-	return time.Unix(r.Expiration/1000, 0).String()
+	return time.UnixMilli(r.Expiration).String()
 }
 
-func (r *RoleCredentials) IsExpired() bool {
-	now := time.Now().Add(time.Minute).Unix()
-	return r.Expiration/1000 <= now
+// Expired returns if these role creds have expired or will expire in the next minute
+func (r *RoleCredentials) Expired() bool {
+	now := time.Now().Add(time.Minute).UnixMilli()
+	return r.Expiration <= now
 }
 
 // AccountIdStr returns our AccountId as a string
 func (r *RoleCredentials) AccountIdStr() string {
-	return strconv.FormatInt(r.AccountId, 10)
+	s, err := utils.AccountIdToString(r.AccountId)
+	if err != nil {
+		log.WithError(err).Fatalf("Unable to parse accountId from AWS role credentials")
+	}
+	return s
 }

@@ -1,0 +1,30 @@
+{
+  "RegisterClient": {
+    "us-east-1|https://d-xxxxxxx.awsapps.com/start": {
+      "clientId": "not a real client id",
+      "clientIdIssuedAt": 1629947379,
+      "clientSecret": "not a real secret",
+      "clientSecretExpiresAt": 1637723379
+    }
+  },
+  "CreateTokenResponse": {
+    "us-east-1|https://d-xxxxxxx.awsapps.com/start": {
+      "accessToken": "not a real token",
+      "expiresIn": 28800,
+      "expiresAt": 1637469677,
+      "IdToken": "",
+      "RefreshToken": "",
+      "tokenType": "Bearer"
+    }
+  },
+  "RoleCredentials": {
+    "arn:aws:iam:012344553243:role/AWSAdministratorAccess": {
+      "roleName": "AWSAdministratorAccess",
+      "accountId": 12344553243,
+      "accessKeyId": "not a real access key id",
+      "secretAccessKey": "not a real acess key",
+      "sessionToken": "not a real session token",
+      "expiration": 1637444478000
+    }
+  }
+}
