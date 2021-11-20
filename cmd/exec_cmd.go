@@ -36,11 +36,11 @@ import (
 
 type ExecCmd struct {
 	// AWS Params
-	Region    string `kong:"help='AWS Region',env='AWS_DEFAULT_REGION',predictor='region'"`
 	Duration  int64  `kong:"short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
 	Arn       string `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn',xor='arn-1',xor='arn-2'"`
 	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNTID',predictor='accountId',xor='arn-1'"`
 	Role      string `kong:"short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE',predictor='role',xor='arn-2'"`
+	NoRegion  bool   `kong:"help='Do not set AWS_DEFAULT_REGION from config'"`
 
 	// Exec Params
 	Cmd  string   `kong:"arg,optional,name='command',help='Command to execute',env='SHELL'"`
@@ -62,16 +62,14 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 			return err
 		}
 
-		region := ctx.Settings.GetDefaultRegion(accountid, role)
-		return execCmd(ctx, awssso, accountid, role, region)
+		return execCmd(ctx, awssso, accountid, role)
 	} else if ctx.Cli.Exec.AccountId != 0 || ctx.Cli.Exec.Role != "" {
 		if ctx.Cli.Exec.AccountId == 0 || ctx.Cli.Exec.Role == "" {
 			return fmt.Errorf("Please specify both --account and --role")
 		}
 		awssso := doAuth(ctx)
 
-		region := ctx.Settings.GetDefaultRegion(ctx.Cli.Exec.AccountId, ctx.Cli.Exec.Role)
-		return execCmd(ctx, awssso, ctx.Cli.Exec.AccountId, ctx.Cli.Exec.Role, region)
+		return execCmd(ctx, awssso, ctx.Cli.Exec.AccountId, ctx.Cli.Exec.Role)
 	}
 
 	// Nope, auto-complete mode...
@@ -125,7 +123,9 @@ func accountIdToStr(id int64) string {
 }
 
 // Executes Cmd+Args in the context of the AWS Role creds
-func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, region string) error {
+func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) error {
+	region := ctx.Settings.GetDefaultRegion(ctx.Cli.Exec.AccountId, ctx.Cli.Exec.Role, ctx.Cli.Exec.NoRegion)
+
 	ctx.Settings.Cache.AddHistory(utils.MakeRoleARN(accountid, role), ctx.Settings.HistoryLimit)
 	if err := ctx.Settings.Cache.Save(false); err != nil {
 		log.WithError(err).Warnf("Unable to update cache")
@@ -160,10 +160,13 @@ func execShellEnvs(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, r
 		"AWS_ROLE_NAME":          creds.RoleName,
 		"AWS_SESSION_EXPIRATION": creds.ExpireString(),
 	}
-	if ctx.Cli.Exec.Region != "" {
-		shellVars["AWS_DEFAULT_REGION"] = ctx.Cli.Exec.Region
-	} else if region != "" {
+
+	if len(region) > 0 {
 		shellVars["AWS_DEFAULT_REGION"] = region
+		shellVars["AWS_SSO_DEFAULT_REGION"] = region
+	} else {
+		// we no longer manage the region
+		shellVars["AWS_SSO_DEFAULT_REGION"] = ""
 	}
 
 	var profileFormat string = AwsSsoProfileTemplate

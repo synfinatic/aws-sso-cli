@@ -2,6 +2,7 @@ SSOConfig:
     Default:
         SSORegion: us-east-1
         StartUrl: https://d-754545454.awsapps.com/start
+        DefaultRegion: us-east-1
         Accounts:
             258234615182:
                 Name: OurCompany Control Tower Playground
@@ -10,6 +11,7 @@ SSOConfig:
                   - Type: Main Account
                 Roles:
                   AWSAdministratorAccess:
+                    DefaultRegion: ca-central-1
                     Tags:
                       Test: value
                       Foo: Bar
@@ -35,6 +37,19 @@ SSOConfig:
                 Name: Dev Account
                 Tags:
                   Type: Sub Account
+    Another:
+        SSORegion: us-east-1
+        StartUrl: https://d-754545454.awsapps.com/start
+        Accounts:
+            182347455:
+                Name: Whatever
+                Roles:
+                  AWSAdministratorAccess:
+                    Tags:
+                      Test: moocow
+                      Bar: baz
+
+DefaultSSO: Default                       
 Browser: /Applications/Firefox.app
 UrlAction: print
 SecureStore: json
