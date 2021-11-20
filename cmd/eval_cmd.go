@@ -107,6 +107,9 @@ func unsetEnvVars(ctx *RunContext) {
 	if !ctx.Cli.Eval.NoRegion && os.Getenv("AWS_DEFAULT_REGION") == os.Getenv("AWS_SSO_DEFAULT_REGION") {
 		envs = append(envs, "AWS_DEFAULT_REGION")
 		envs = append(envs, "AWS_SSO_DEFAULT_REGION")
+	} else if os.Getenv("AWS_DEFAULT_REGION") != os.Getenv("AWS_SSO_DEFAULT_REGION") {
+		// clear the tracking variable if we don't match
+		envs = append(envs, "AWS_SSO_DEFAULT_REGION")
 	}
 
 	for _, e := range envs {
