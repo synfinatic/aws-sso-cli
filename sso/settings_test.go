@@ -1,7 +1,6 @@
 package sso
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -105,7 +104,6 @@ func (suite *SettingsTestSuite) TestSave() {
 	defer os.RemoveAll(dir)
 
 	p := filepath.Join(dir, "foo/bar/config.yaml")
-	fmt.Printf("path: %s\n", p)
 	err = suite.settings.Save(p, true)
 	assert.Nil(t, err)
 	err = suite.settings.Save(p, false)
@@ -113,4 +111,46 @@ func (suite *SettingsTestSuite) TestSave() {
 
 	err = suite.settings.Save(dir, false)
 	assert.NotNil(t, err)
+}
+
+func clearEnv() {
+	os.Setenv("AWS_DEFAULT_REGION", "")
+	os.Setenv("AWS_SSO_DEFAULT_REGION", "")
+}
+
+func (suite *SettingsTestSuite) TestGetDefaultRegion() {
+	t := suite.T()
+
+	clearEnv()
+	defer clearEnv()
+
+	assert.Equal(t, "ca-central-1", suite.settings.GetDefaultRegion(258234615182, "AWSAdministratorAccess", false))
+	assert.Equal(t, "eu-west-1", suite.settings.GetDefaultRegion(258234615182, "LimitedAccess", false))
+	assert.Equal(t, "us-east-1", suite.settings.GetDefaultRegion(833365043586, "AWSAdministratorAccess:", false))
+
+	assert.Equal(t, "", suite.settings.GetDefaultRegion(258234615182, "AWSAdministratorAccess", true))
+	assert.Equal(t, "", suite.settings.GetDefaultRegion(258234615182, "LimitedAccess", true))
+	assert.Equal(t, "", suite.settings.GetDefaultRegion(833365043586, "AWSAdministratorAccess:", true))
+
+	os.Setenv("AWS_DEFAULT_REGION", "us-east-1")
+	assert.Equal(t, "", suite.settings.GetDefaultRegion(258234615182, "AWSAdministratorAccess", false))
+	assert.Equal(t, "", suite.settings.GetDefaultRegion(258234615182, "LimitedAccess", false))
+	assert.Equal(t, "", suite.settings.GetDefaultRegion(833365043586, "AWSAdministratorAccess:", false))
+
+	os.Setenv("AWS_SSO_DEFAULT_REGION", "us-east-1")
+	assert.Equal(t, "ca-central-1", suite.settings.GetDefaultRegion(258234615182, "AWSAdministratorAccess", false))
+	assert.Equal(t, "eu-west-1", suite.settings.GetDefaultRegion(258234615182, "LimitedAccess", false))
+	assert.Equal(t, "us-east-1", suite.settings.GetDefaultRegion(833365043586, "AWSAdministratorAccess:", false))
+}
+
+func (suite *SettingsTestSuite) TestOtherSSO() {
+	t := suite.T()
+	over := OverrideSettings{
+		DefaultSSO: "Another",
+	}
+	defaults := map[string]interface{}{}
+	settings, err := LoadSettings(TEST_SETTINGS_FILE, TEST_CACHE_FILE, defaults, over)
+	assert.Nil(t, err)
+
+	assert.Equal(t, "us-west-2", settings.GetDefaultRegion(182347455, "AWSAdministratorAccess", false))
 }

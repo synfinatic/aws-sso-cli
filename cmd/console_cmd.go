@@ -37,6 +37,7 @@ import (
 const AWS_FEDERATED_URL = "https://signin.aws.amazon.com/federation"
 
 type ConsoleCmd struct {
+	// Console actually should honor the --region flag
 	Region   string `kong:"help='AWS Region',env='AWS_DEFAULT_REGION',predictor='region'"`
 	Duration int64  `kong:"short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
 	UseEnv   bool   `kong:"short='e',help='Use existing ENV vars to generate URL'"`
@@ -59,41 +60,38 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 			return err
 		}
 
-		region := ctx.Settings.GetDefaultRegion(accountid, role)
-		if ctx.Cli.Console.Region != "" {
-			region = ctx.Cli.Console.Region
-		}
-		return openConsole(ctx, awssso, accountid, role, region)
+		return openConsole(ctx, awssso, accountid, role)
 	} else if ctx.Cli.Console.AccountId != 0 || ctx.Cli.Console.Role != "" {
 		if ctx.Cli.Console.AccountId == 0 || ctx.Cli.Console.Role == "" {
 			return fmt.Errorf("Please specify both --account and --role")
 		}
 		awssso := doAuth(ctx)
-		region := ctx.Settings.GetDefaultRegion(ctx.Cli.Console.AccountId, ctx.Cli.Console.Role)
-		if ctx.Cli.Console.Region != "" {
-			region = ctx.Cli.Console.Region
-		}
-		return openConsole(ctx, awssso, ctx.Cli.Console.AccountId, ctx.Cli.Console.Role, region)
+		return openConsole(ctx, awssso, ctx.Cli.Console.AccountId, ctx.Cli.Console.Role)
 	} else if ctx.Cli.Console.UseEnv {
 		if ctx.Cli.Console.AccessKeyId == "" {
 			return fmt.Errorf("AWS_ACCESS_KEY_ID is not set")
 		}
+
 		if ctx.Cli.Console.SecretAccessKey == "" {
 			return fmt.Errorf("AWS_SECRET_ACCESS_KEY is not set")
 		}
+
 		if ctx.Cli.Console.SessionToken == "" {
 			return fmt.Errorf("AWS_SESSION_TOKEN is not set")
 		}
+
 		creds := storage.RoleCredentials{
 			AccessKeyId:     ctx.Cli.Console.AccessKeyId,
 			SecretAccessKey: ctx.Cli.Console.SecretAccessKey,
 			SessionToken:    ctx.Cli.Console.SessionToken,
 		}
+
 		accountid, err := strconv.ParseInt(os.Getenv("AWS_ACCOUNT_ID"), 10, 64)
 		if err != nil {
 			return fmt.Errorf("Unable to parse AWS_ACCOUNT_ID: %s", os.Getenv("AWS_ACCOUNT_ID"))
 		}
-		region := ctx.Settings.GetDefaultRegion(accountid, os.Getenv("AWS_ROLE_NAME"))
+
+		region := ctx.Settings.GetDefaultRegion(accountid, os.Getenv("AWS_ROLE_NAME"), false)
 		if ctx.Cli.Console.Region != "" {
 			region = ctx.Cli.Console.Region
 		}
@@ -124,7 +122,12 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 }
 
 // opens the AWS console or just prints the URL
-func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, region string) error {
+func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) error {
+	region := ctx.Settings.GetDefaultRegion(accountid, role, false)
+	if ctx.Cli.Console.Region != "" {
+		region = ctx.Cli.Console.Region
+	}
+
 	ctx.Settings.Cache.AddHistory(utils.MakeRoleARN(accountid, role), ctx.Settings.HistoryLimit)
 	if err := ctx.Settings.Cache.Save(false); err != nil {
 		log.WithError(err).Warnf("Unable to update cache")
@@ -149,11 +152,13 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials, durat
 	if err != nil {
 		return fmt.Errorf("Unable to login to AWS: %s", err.Error())
 	}
+
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
+
 	loginResponse := LoginResponse{}
 	err = json.Unmarshal(body, &loginResponse)
 	if err != nil {
@@ -161,7 +166,7 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials, durat
 	}
 
 	login := LoginUrlParams{
-		Issuer:      "https://github.com/synfinatic/aws-sso-cli", // FIXME
+		Issuer:      "https://github.com/synfinatic/aws-sso-cli",
 		Destination: fmt.Sprintf("https://console.aws.amazon.com/console/home?region=%s", region),
 		SigninToken: loginResponse.SigninToken,
 	}

@@ -87,20 +87,39 @@ type SSORole struct {
 	Via           string            `koanf:"Via" yaml:"Via,omitempty"`
 }
 
-// GetDefaultRegion returns the user defined AWS_DEFAULT_REGION for the specified role
-func (s *Settings) GetDefaultRegion(accountId int64, roleName string) string {
-	roleFlat, err := s.Cache.Roles.GetRole(accountId, roleName)
-	if err != nil {
-		if s.SSO[s.DefaultSSO].DefaultRegion != "" {
-			return s.SSO[s.DefaultSSO].DefaultRegion
-		} else {
-			return s.DefaultRegion
+// GetDefaultRegion scans the config settings file to pick the most local DefaultRegion from the tree
+// for the given role
+func (s *Settings) GetDefaultRegion(accountId int64, roleName string, noRegion bool) string {
+	if noRegion {
+		return ""
+	}
+
+	currentRegion := os.Getenv("AWS_DEFAULT_REGION")
+	ssoManagedRegion := os.Getenv("AWS_SSO_DEFAULT_REGION")
+
+	if len(currentRegion) > 0 && currentRegion != ssoManagedRegion {
+		log.Debugf("Will not override current AWS_DEFAULT_REGION=%s", currentRegion)
+		return ""
+	}
+
+	role := s.DefaultRegion
+
+	if c, ok := s.SSO[s.DefaultSSO]; ok {
+		if c.DefaultRegion != "" {
+			role = c.DefaultRegion
+		}
+		if a, ok := c.Accounts[accountId]; ok {
+			if a.DefaultRegion != "" {
+				role = a.DefaultRegion
+			}
+			if r, ok := a.Roles[roleName]; ok {
+				if r.DefaultRegion != "" {
+					role = r.DefaultRegion
+				}
+			}
 		}
 	}
-	if roleFlat.DefaultRegion != "" {
-		return roleFlat.DefaultRegion
-	}
-	return s.DefaultRegion
+	return role
 }
 
 var DEFAULT_ACCOUNT_PRIMARY_TAGS []string = []string{
@@ -145,25 +164,29 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 
 	s.setOverrides(override)
 
-	// Select our SSO Provider
-	if len(s.SSO) == 0 {
-		return s, fmt.Errorf("No AWS SSO providers have been configured.")
-	} else if len(s.SSO) == 1 {
-		// If we have only one SSO configured, always use that
-		for name := range s.SSO {
-			s.DefaultSSO = name
+	if _, ok := s.SSO[s.DefaultSSO]; !ok {
+		// Select our SSO Provider
+		if len(s.SSO) == 0 {
+			return s, fmt.Errorf("No AWS SSO providers have been configured.")
+		} else if len(s.SSO) == 1 {
+			// If we have only one SSO configured, always use that
+			for name := range s.SSO {
+				s.DefaultSSO = name
+			}
+		} else {
+			// more than one provider? use that
+			names := []string{}
+			for sso := range s.SSO {
+				names = append(names, sso)
+			}
+			if len(names) > 0 {
+				return s, fmt.Errorf("Invalid SSO name '%s'. Valid options: %s", s.DefaultSSO,
+					strings.Join(names, ", "))
+			} else {
+				// couldn't find a valid provider
+				return s, fmt.Errorf("Please specify --sso, $AWS_SSO or set DefaultSSO in the config file")
+			}
 		}
-	} else if _, ok := s.SSO[s.DefaultSSO]; !ok {
-		// more than one provider? use that
-		names := []string{}
-		for sso := range s.SSO {
-			names = append(names, sso)
-		}
-		return s, fmt.Errorf("Invalid SSO name '%s'. Valid options: %s", s.DefaultSSO,
-			strings.Join(names, ", "))
-	} else {
-		// couldn't find a valid provider
-		return s, fmt.Errorf("Please specify --sso, $AWS_SSO or set DefaultSSO in the config file")
 	}
 
 	s.SSO[s.DefaultSSO].Refresh(s)
