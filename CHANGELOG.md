@@ -6,6 +6,10 @@
  * Add `eval --clear`
  * `eval` no longer prints URLs #145
  * `exec` now updates the ENV vars of the exec variable rather than our process
+ * Add full support for `DefaultRegion` in config.yaml 
+ * Will no longer overwrite user defined AWS_DEFAULT_REGION #152
+ * Remove `--region` flag for `eval` and `exec` commands 
+ * Add `--no-region` flag for `eval and `exec` commands
 
 ## [v1.3.1] - 2021-11-15
 
