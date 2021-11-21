@@ -276,7 +276,7 @@ SSOConfig:
     <Name of AWS SSO>:
         SSORegion: <AWS Region where AWS SSO is deployed>
         StartUrl: <URL for AWS SSO Portal>
-		DefaultRegion: <AWS_DEFAULT_REGION>
+        DefaultRegion: <AWS_DEFAULT_REGION>
         Accounts:  # optional block for specifying tags & overrides
             <AccountId>:
                 Name: <Friendly Name of Account>
@@ -292,6 +292,7 @@ SSOConfig:
                             <Key2>: <Value2>
 
 # See description below for these options
+DefaultRegion: <AWS_DEFAULT_REGION>
 Browser: <path to web browser>
 DefaultSSO: <name of AWS SSO>
 LogLevel: [error|warn|info|debug|trace]
