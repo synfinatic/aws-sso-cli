@@ -231,7 +231,7 @@ func GetRoleCredentials(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, ro
 		if roleFlat, err := ctx.Settings.Cache.GetRole(arn); err == nil {
 			if !roleFlat.IsExpired() {
 				if err := ctx.Store.GetRoleCredentials(arn, &creds); err == nil {
-					if !creds.IsExpired() {
+					if !creds.Expired() {
 						log.Debugf("Retrieved role credentials from the SecureStore")
 						return &creds
 					}
