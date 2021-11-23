@@ -96,6 +96,7 @@ type CLI struct {
 	Exec               ExecCmd                      `kong:"cmd,help='Execute command using specified AWS Role/Profile'"`
 	Flush              FlushCmd                     `kong:"cmd,help='Flush AWS SSO/STS credentials from cache'"`
 	List               ListCmd                      `kong:"cmd,help='List all accounts / role (default command)'"`
+	Process            ProcessCmd                   `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
 	Tags               TagsCmd                      `kong:"cmd,help='List tags'"`
 	Time               TimeCmd                      `kong:"cmd,help='Print out much time before STS Token expires'"`
 	Version            VersionCmd                   `kong:"cmd,help='Print version and exit'"`
@@ -227,6 +228,7 @@ func GetRoleCredentials(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, ro
 
 	// First look for our creds in the secure store, if we're not forcing a refresh
 	arn := utils.MakeRoleARN(accountid, role)
+	log.Debugf("Getting role credentials for %s", arn)
 	if !ctx.Cli.STSRefresh {
 		if roleFlat, err := ctx.Settings.Cache.GetRole(arn); err == nil {
 			if !roleFlat.IsExpired() {
@@ -281,8 +283,13 @@ func doAuth(ctx *RunContext) *sso.AWSSSO {
 	if err != nil {
 		log.WithError(err).Fatalf("Unable to authenticate")
 	}
-	if err := ctx.Settings.Cache.Refresh(AwsSSO, s); err != nil {
-		log.WithError(err).Fatalf("Unable to refresh cache")
+	if err = ctx.Settings.Cache.Expired(s); err != nil {
+		if err = ctx.Settings.Cache.Refresh(AwsSSO, s); err != nil {
+			log.WithError(err).Fatalf("Unable to refresh cache")
+		}
+		if err = ctx.Settings.Cache.Save(true); err != nil {
+			log.WithError(err).Errorf("Unable to save cache")
+		}
 	}
 	return AwsSSO
 }

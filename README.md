@@ -101,6 +101,7 @@ been granted access!
  * `exec` -- Exec a command with the selected role
  * `flush` -- Force delete of cached AWS SSO credentials
  * `list` -- List all accounts & roles
+ * `process` -- Generate JSON for AWS credential_process
  * `tags` -- List manually created tags for each role
  * `time` -- Print how much time remains for currently selected role
  * `version` -- Print the version of aws-sso
@@ -190,6 +191,19 @@ The following environment variables are automatically set by `exec`:
  * `AWS_SESSION_EXPIRATION`  -- The date and time when the IAM role credentials will expire
  * `AWS_DEFAULT_REGION` -- Region to use AWS with
  * `AWS_SSO_PROFILE` -- User customizable varible using a template
+
+### process
+
+Process allows you to use AWS SSO as an [external credentials provider](
+https://docs.aws.amazon.com/cli/latest/topic/config-vars.html#sourcing-credentials-from-external-processes)
+with profiles defined in `~/.aws/config`.
+
+Flags:
+
+ * `--arn <arn>`, `-a` -- ARN of role to assume (`$AWS_SSO_ROLE_ARN`)
+ * `--account <account>`, `-A` -- AWS AccountID of role to assume (`$AWS_SSO_ACCOUNTID`)
+ * `--duration <minutes>`, `-d` -- AWS Session duration in minutes (default 60) (`$AWS_SSO_DURATION`)
+ * `--role <role>`, `-R` -- Name of AWS Role to assume (requires `--account`) (`$AWS_SSO_ROLE`)
 
 ### cache
 

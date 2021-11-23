@@ -10,6 +10,9 @@
  * Will no longer overwrite user defined AWS_DEFAULT_REGION #152
  * Remove `--region` flag for `eval` and `exec` commands 
  * Add `--no-region` flag for `eval and `exec` commands
+ * Add `process` command for AWS credential_process #157
+ * Fix bug where cache auto-refresh was not saving the new file, causing future
+    runs to not utilize the cache
 
 ## [v1.3.1] - 2021-11-15
 
