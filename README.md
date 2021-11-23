@@ -13,6 +13,7 @@
  * [Environment Varables](#environment-varables)
  * [Release History](#release-history)
  * [License](#license)
+ * [Frequently Asked Questions](docs/FAQ.md)
 
 
 ## About
