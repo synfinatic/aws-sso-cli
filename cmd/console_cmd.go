@@ -40,11 +40,11 @@ type ConsoleCmd struct {
 	// Console actually should honor the --region flag
 	Region   string `kong:"help='AWS Region',env='AWS_DEFAULT_REGION',predictor='region'"`
 	Duration int64  `kong:"short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
-	UseEnv   bool   `kong:"short='e',help='Use existing ENV vars to generate URL'"`
+	UseSts   bool   `kong:"short='s',help='Use existing STS credentials to generate URL'"`
 
-	Arn       string `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn',xor='arn-1',xor='arn-2'"`
-	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNTID',predictor='accountId',xor='arn-1'"`
-	Role      string `kong:"short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE',predictor='role',xor='arn-2'"`
+	Arn       string `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
+	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNT_ID',predictor='accountId'"`
+	Role      string `kong:"short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE_NAME',predictor='role'"`
 
 	AccessKeyId     string `kong:"env='AWS_ACCESS_KEY_ID',hidden"`
 	SecretAccessKey string `kong:"env='AWS_SECRET_ACCESS_KEY',hidden"`
@@ -61,13 +61,10 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 		}
 
 		return openConsole(ctx, awssso, accountid, role)
-	} else if ctx.Cli.Console.AccountId != 0 || ctx.Cli.Console.Role != "" {
-		if ctx.Cli.Console.AccountId == 0 || ctx.Cli.Console.Role == "" {
-			return fmt.Errorf("Please specify both --account and --role")
-		}
+	} else if ctx.Cli.Console.AccountId > 0 && ctx.Cli.Console.Role != "" {
 		awssso := doAuth(ctx)
 		return openConsole(ctx, awssso, ctx.Cli.Console.AccountId, ctx.Cli.Console.Role)
-	} else if ctx.Cli.Console.UseEnv {
+	} else if ctx.Cli.Console.UseSts {
 		if ctx.Cli.Console.AccessKeyId == "" {
 			return fmt.Errorf("AWS_ACCESS_KEY_ID is not set")
 		}
@@ -86,12 +83,12 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 			SessionToken:    ctx.Cli.Console.SessionToken,
 		}
 
-		accountid, err := strconv.ParseInt(os.Getenv("AWS_ACCOUNT_ID"), 10, 64)
+		accountid, err := strconv.ParseInt(os.Getenv("AWS_SSO_ACCOUNT_ID"), 10, 64)
 		if err != nil {
-			return fmt.Errorf("Unable to parse AWS_ACCOUNT_ID: %s", os.Getenv("AWS_ACCOUNT_ID"))
+			return fmt.Errorf("Unable to parse AWS_SSO_ACCOUNT_ID: %s", os.Getenv("AWS_SSO_ACCOUNT_ID"))
 		}
 
-		region := ctx.Settings.GetDefaultRegion(accountid, os.Getenv("AWS_ROLE_NAME"), false)
+		region := ctx.Settings.GetDefaultRegion(accountid, os.Getenv("AWS_SSO_ROLE_NAME"), false)
 		if ctx.Cli.Console.Region != "" {
 			region = ctx.Cli.Console.Region
 		}

@@ -28,7 +28,7 @@ import (
 type TimeCmd struct{}
 
 func (cc *TimeCmd) Run(ctx *RunContext) error {
-	expires, isset := os.LookupEnv("AWS_SESSION_EXPIRATION")
+	expires, isset := os.LookupEnv("AWS_SSO_SESSION_EXPIRATION")
 	if !isset {
 		return nil // no output if nothing is set
 	}

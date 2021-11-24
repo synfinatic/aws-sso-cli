@@ -12,7 +12,10 @@
  * Add `--no-region` flag for `eval and `exec` commands
  * Add `process` command for AWS credential_process #157
  * Fix bug where cache auto-refresh was not saving the new file, causing future
-    runs to not utilize the cache
+    runs to not utilize the cache 
+ * Standardize on `AWS_SSO` prefix for environment variables
+ * Add `eval --refresh`
+ * `console -use-env` is now `console --use-sts` to be more clear
 
 ## [v1.3.1] - 2021-11-15
 

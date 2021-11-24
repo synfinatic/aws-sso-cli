@@ -37,10 +37,10 @@ import (
 type ExecCmd struct {
 	// AWS Params
 	Duration  int64  `kong:"short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
-	Arn       string `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn',xor='arn-1',xor='arn-2'"`
-	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNTID',predictor='accountId',xor='arn-1'"`
-	Role      string `kong:"short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE',predictor='role',xor='arn-2'"`
-	NoRegion  bool   `kong:"help='Do not set AWS_DEFAULT_REGION from config'"`
+	Arn       string `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
+	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNT_ID',predictor='accountId'"`
+	Role      string `kong:"short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE_NAME',predictor='role'"`
+	NoRegion  bool   `kong:"short='n',help='Do not set AWS_DEFAULT_REGION from config.yaml'"`
 
 	// Exec Params
 	Cmd  string   `kong:"arg,optional,name='command',help='Command to execute',env='SHELL'"`
@@ -153,12 +153,13 @@ func execShellEnvs(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, r
 	creds := *credsPtr
 
 	shellVars := map[string]string{
-		"AWS_ACCESS_KEY_ID":      creds.AccessKeyId,
-		"AWS_SECRET_ACCESS_KEY":  creds.SecretAccessKey,
-		"AWS_SESSION_TOKEN":      creds.SessionToken,
-		"AWS_ACCOUNT_ID":         creds.AccountIdStr(),
-		"AWS_ROLE_NAME":          creds.RoleName,
-		"AWS_SESSION_EXPIRATION": creds.ExpireString(),
+		"AWS_ACCESS_KEY_ID":          creds.AccessKeyId,
+		"AWS_SECRET_ACCESS_KEY":      creds.SecretAccessKey,
+		"AWS_SESSION_TOKEN":          creds.SessionToken,
+		"AWS_SSO_ACCOUNT_ID":         creds.AccountIdStr(),
+		"AWS_SSO_ROLE_NAME":          creds.RoleName,
+		"AWS_SSO_SESSION_EXPIRATION": creds.ExpireString(),
+		"AWS_SSO_ROLE_ARN":           utils.MakeRoleARN(creds.AccountId, creds.RoleName),
 	}
 
 	if len(region) > 0 {

@@ -32,9 +32,9 @@ import (
 type ProcessCmd struct {
 	// AWS Params
 	Duration  int64  `kong:"short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
-	Arn       string `kong:"short='a',help='ARN of role to assume',xor='arn-1',xor='arn-2'"`
-	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',xor='arn-1'"`
-	Role      string `kong:"short='R',help='Name of AWS Role to assume',xor='arn-2'"`
+	Arn       string `kong:"short='a',help='ARN of role to assume',xor='arn-1',xor='arn-2',predictor='arn'"`
+	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',xor='arn-1',predictor='accountId'"`
+	Role      string `kong:"short='R',help='Name of AWS Role to assume',xor='arn-2',predictor='role'"`
 }
 
 func (cc *ProcessCmd) Run(ctx *RunContext) error {
@@ -53,6 +53,10 @@ func (cc *ProcessCmd) Run(ctx *RunContext) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if len(role) == 0 || account == 0 {
+		return fmt.Errorf("Please specify --arn or --account and --role")
 	}
 
 	awssso := doAuth(ctx)
