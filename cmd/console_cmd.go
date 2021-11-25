@@ -39,8 +39,8 @@ const AWS_FEDERATED_URL = "https://signin.aws.amazon.com/federation"
 type ConsoleCmd struct {
 	// Console actually should honor the --region flag
 	Region   string `kong:"help='AWS Region',env='AWS_DEFAULT_REGION',predictor='region'"`
-	Duration int64  `kong:"short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
 	UseSts   bool   `kong:"short='s',help='Use existing STS credentials to generate URL'"`
+	Duration int64  `kong:"short='d',help='AWS Session duration in minutes (default 60)'"` // default stored in DEFAULT_CONFIG
 
 	Arn       string `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
 	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNT_ID',predictor='accountId'"`
@@ -52,6 +52,11 @@ type ConsoleCmd struct {
 }
 
 func (cc *ConsoleCmd) Run(ctx *RunContext) error {
+	duration := ctx.Settings.ConsoleDuration
+	if ctx.Cli.Console.Duration > 0 {
+		duration = ctx.Cli.Console.Duration
+	}
+
 	if ctx.Cli.Console.Arn != "" {
 		awssso := doAuth(ctx)
 
@@ -92,7 +97,7 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 		if ctx.Cli.Console.Region != "" {
 			region = ctx.Cli.Console.Region
 		}
-		return openConsoleAccessKey(ctx, &creds, ctx.Cli.Console.Duration, region)
+		return openConsoleAccessKey(ctx, &creds, duration, region)
 	}
 
 	fmt.Printf("Please use `exit` or `Ctrl-D` to quit.\n")
@@ -125,6 +130,11 @@ func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role stri
 		region = ctx.Cli.Console.Region
 	}
 
+	duration := ctx.Settings.ConsoleDuration
+	if ctx.Cli.Console.Duration > 0 {
+		duration = ctx.Cli.Console.Duration
+	}
+
 	ctx.Settings.Cache.AddHistory(utils.MakeRoleARN(accountid, role), ctx.Settings.HistoryLimit)
 	if err := ctx.Settings.Cache.Save(false); err != nil {
 		log.WithError(err).Warnf("Unable to update cache")
@@ -132,7 +142,7 @@ func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role stri
 
 	creds := GetRoleCredentials(ctx, awssso, accountid, role)
 
-	return openConsoleAccessKey(ctx, creds, ctx.Cli.Console.Duration, region)
+	return openConsoleAccessKey(ctx, creds, duration, region)
 }
 
 func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials, duration int64, region string) error {

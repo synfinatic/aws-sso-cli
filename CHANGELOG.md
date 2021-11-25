@@ -16,6 +16,8 @@
  * Standardize on `AWS_SSO` prefix for environment variables
  * Add `eval --refresh`
  * `console -use-env` is now `console --use-sts` to be more clear
+ * Add `ConsoleDuration` config option #159
+ * Remove `--duration` option from commands which don't support it
 
 ## [v1.3.1] - 2021-11-15
 
