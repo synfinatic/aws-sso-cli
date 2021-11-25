@@ -77,6 +77,8 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"HistoryLimit":                              10,
 	"ListFields":                                []string{"AccountId", "AccountAlias", "RoleName", "ExpiresStr"},
 	"ConsoleDuration":                           60,
+	"UrlAction":                                 "open",
+	"LogLevel":                                  "info",
 }
 
 type CLI struct {
@@ -84,8 +86,8 @@ type CLI struct {
 	Browser    string `kong:"short='b',help='Path to browser to open URLs with',env='AWS_SSO_BROWSER'"`
 	ConfigFile string `kong:"name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
 	Lines      bool   `kong:"help='Print line number in logs'"`
-	LogLevel   string `kong:"short='L',name='level',enum='error,warn,info,debug,trace',default='info',help='Logging level [error|warn|info|debug|trace]'"`
-	UrlAction  string `kong:"short='u',enum='open,print,clip',default='open',help='How to handle URLs [open|print|clip]'"`
+	LogLevel   string `kong:"short='L',name='level',,help='Logging level [error|warn|info|debug|trace] (default: info)'"`
+	UrlAction  string `kong:"short='u',help='How to handle URLs [open|print|clip] (default: open)'"`
 	SSO        string `kong:"short='S',help='AWS SSO Instance',default='Default',env='AWS_SSO',predictor='sso'"`
 	STSRefresh bool   `kong:"help='Force refresh of STS Token Credentials'"`
 
@@ -109,6 +111,14 @@ func main() {
 	cli := CLI{}
 	ctx, override := parseArgs(&cli)
 	var err error
+
+	if err := urlActionValidate(cli.UrlAction); err != nil {
+		log.Fatalf("%s", err.Error())
+	}
+
+	if err := logLevelValidate(cli.LogLevel); err != nil {
+		log.Fatalf("%s", err.Error())
+	}
 
 	run_ctx := RunContext{
 		Kctx: ctx,
@@ -293,4 +303,20 @@ func doAuth(ctx *RunContext) *sso.AWSSSO {
 		}
 	}
 	return AwsSSO
+}
+
+func logLevelValidate(level string) error {
+	switch level {
+	case "error", "warn", "info", "debug", "trace", "":
+		return nil
+	}
+	return fmt.Errorf("Invalid value for --log-level: %s", level)
+}
+
+func urlActionValidate(action string) error {
+	switch action {
+	case "open", "print", "clip", "":
+		return nil
+	}
+	return fmt.Errorf("Invalid value for --url-action: %s", action)
 }
