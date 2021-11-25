@@ -181,17 +181,17 @@ func TestGetStorageData(t *testing.T) {
 	suite.Run(t, &s)
 }
 
-type mockKeyringApi struct{}
+type mockKeyringAPI struct{}
 
-func (m *mockKeyringApi) Get(key string) (keyring.Item, error) {
+func (m *mockKeyringAPI) Get(key string) (keyring.Item, error) {
 	return keyring.Item{}, fmt.Errorf("Unable to get %s", key)
 }
 
-func (m *mockKeyringApi) Set(item keyring.Item) error {
+func (m *mockKeyringAPI) Set(item keyring.Item) error {
 	return fmt.Errorf("Unable to set item")
 }
 
-func (m *mockKeyringApi) Remove(key string) error {
+func (m *mockKeyringAPI) Remove(key string) error {
 	return fmt.Errorf("Unable to remove %s", key)
 }
 
@@ -205,7 +205,7 @@ func TestKeyringErrors(t *testing.T) {
 	assert.NoError(t, err)
 
 	ks := &KeyringStore{
-		keyring: &mockKeyringApi{},
+		keyring: &mockKeyringAPI{},
 		config:  *c,
 		cache:   NewStorageData(),
 	}
@@ -440,7 +440,7 @@ func TestSplitCredentials(t *testing.T) {
 	}
 	largeString := strings.Join(x, " ")
 
-	large_rc := RoleCredentials{
+	largeRC := RoleCredentials{
 		RoleName:        "MyRole",
 		AccountId:       234566767,
 		AccessKeyId:     "some not-so-secret-string",
@@ -450,22 +450,22 @@ func TestSplitCredentials(t *testing.T) {
 	}
 
 	keyringGOOS = "linux"
-	err = store.SaveRoleCredentials("bar", large_rc)
+	err = store.SaveRoleCredentials("bar", largeRC)
 	assert.NoError(t, err)
 	rc2 := RoleCredentials{}
 	err = store.GetRoleCredentials("bar", &rc2)
 	assert.NoError(t, err)
-	assert.Equal(t, large_rc, rc2)
+	assert.Equal(t, largeRC, rc2)
 	err = store.DeleteRoleCredentials("bar")
 	assert.NoError(t, err)
 
 	keyringGOOS = "windows"
-	err = store.SaveRoleCredentials("bar", large_rc)
+	err = store.SaveRoleCredentials("bar", largeRC)
 	assert.NoError(t, err)
 	rc2 = RoleCredentials{}
 	err = store.GetRoleCredentials("bar", &rc2)
 	assert.NoError(t, err)
-	assert.Equal(t, large_rc, rc2)
+	assert.Equal(t, largeRC, rc2)
 	err = store.DeleteRoleCredentials("bar")
 	assert.NoError(t, err)
 	err = store.SaveRoleCredentials("bar", rc)
@@ -479,7 +479,7 @@ func TestSplitCredentials(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Replace a chunk with wrong data
-	err = store.SaveRoleCredentials("bar", large_rc)
+	err = store.SaveRoleCredentials("bar", largeRC)
 	assert.NoError(t, err)
 	err = store.setStorageData([]byte("hello friend"), fmt.Sprintf("%s_%d", RECORD_KEY, 1), KEYRING_ID)
 	assert.NoError(t, err)

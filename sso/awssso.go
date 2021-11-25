@@ -38,21 +38,21 @@ import (
 )
 
 // Necessary for mocking
-type SsoOidcApi interface {
+type SsoOidcAPI interface {
 	RegisterClient(context.Context, *ssooidc.RegisterClientInput, ...func(*ssooidc.Options)) (*ssooidc.RegisterClientOutput, error)
 	StartDeviceAuthorization(context.Context, *ssooidc.StartDeviceAuthorizationInput, ...func(*ssooidc.Options)) (*ssooidc.StartDeviceAuthorizationOutput, error)
 	CreateToken(context.Context, *ssooidc.CreateTokenInput, ...func(*ssooidc.Options)) (*ssooidc.CreateTokenOutput, error)
 }
 
-type SsoApi interface {
+type SsoAPI interface {
 	ListAccountRoles(context.Context, *sso.ListAccountRolesInput, ...func(*sso.Options)) (*sso.ListAccountRolesOutput, error)
 	ListAccounts(context.Context, *sso.ListAccountsInput, ...func(*sso.Options)) (*sso.ListAccountsOutput, error)
 	GetRoleCredentials(context.Context, *sso.GetRoleCredentialsInput, ...func(*sso.Options)) (*sso.GetRoleCredentialsOutput, error)
 }
 
 type AWSSSO struct {
-	sso            SsoApi
-	ssooidc        SsoOidcApi
+	sso            SsoAPI
+	ssooidc        SsoOidcAPI
 	store          storage.SecureStorage
 	ClientName     string                      `json:"ClientName"`
 	ClientType     string                      `json:"ClientType"`

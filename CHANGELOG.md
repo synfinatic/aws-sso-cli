@@ -12,6 +12,10 @@
 
  * Fix documentation for `UrlExecCommand` config option (was listed as `UrlActionExec`)
 
+### Changes
+
+ * Add `revive` as a linter
+
 ## [v1.8.0] - 2022-04-30
 
 ### New Features

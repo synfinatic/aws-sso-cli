@@ -35,19 +35,19 @@ import (
 )
 
 // mock sso
-type mockSsoApi struct {
-	Results []mockSsoApiResults
+type mockSsoAPI struct {
+	Results []mockSsoAPIResults
 }
 
-type mockSsoApiResults struct {
+type mockSsoAPIResults struct {
 	ListAccountRoles   *sso.ListAccountRolesOutput
 	ListAccounts       *sso.ListAccountsOutput
 	GetRoleCredentials *sso.GetRoleCredentialsOutput
 	Error              error
 }
 
-func (m *mockSsoApi) ListAccountRoles(ctx context.Context, params *sso.ListAccountRolesInput, optFns ...func(*sso.Options)) (*sso.ListAccountRolesOutput, error) {
-	var x mockSsoApiResults
+func (m *mockSsoAPI) ListAccountRoles(ctx context.Context, params *sso.ListAccountRolesInput, optFns ...func(*sso.Options)) (*sso.ListAccountRolesOutput, error) {
+	var x mockSsoAPIResults
 	if len(m.Results) == 0 {
 		return &sso.ListAccountRolesOutput{}, fmt.Errorf("calling mocked ListAccountRoles too many times")
 	}
@@ -55,8 +55,8 @@ func (m *mockSsoApi) ListAccountRoles(ctx context.Context, params *sso.ListAccou
 	return x.ListAccountRoles, x.Error
 }
 
-func (m *mockSsoApi) ListAccounts(ctx context.Context, params *sso.ListAccountsInput, optFns ...func(*sso.Options)) (*sso.ListAccountsOutput, error) {
-	var x mockSsoApiResults
+func (m *mockSsoAPI) ListAccounts(ctx context.Context, params *sso.ListAccountsInput, optFns ...func(*sso.Options)) (*sso.ListAccountsOutput, error) {
+	var x mockSsoAPIResults
 	if len(m.Results) == 0 {
 		return &sso.ListAccountsOutput{}, fmt.Errorf("calling mocked ListAccounts too many times")
 	}
@@ -64,8 +64,8 @@ func (m *mockSsoApi) ListAccounts(ctx context.Context, params *sso.ListAccountsI
 	return x.ListAccounts, x.Error
 }
 
-func (m *mockSsoApi) GetRoleCredentials(ctx context.Context, params *sso.GetRoleCredentialsInput, optFns ...func(*sso.Options)) (*sso.GetRoleCredentialsOutput, error) {
-	var x mockSsoApiResults
+func (m *mockSsoAPI) GetRoleCredentials(ctx context.Context, params *sso.GetRoleCredentialsInput, optFns ...func(*sso.Options)) (*sso.GetRoleCredentialsOutput, error) {
+	var x mockSsoAPIResults
 	if len(m.Results) == 0 {
 		return &sso.GetRoleCredentialsOutput{}, fmt.Errorf("calling mocked GetRoleCredentials too many times")
 	}
@@ -136,7 +136,7 @@ func TestGetRoles(t *testing.T) {
 	as := &AWSSSO{
 		SsoRegion: "us-west-1",
 		StartUrl:  "https://testing.awsapps.com/start",
-		ssooidc:   &mockSsoOidcApi{},
+		ssooidc:   &mockSsoOidcAPI{},
 		store:     jstore,
 		Roles:     map[string][]RoleInfo{},
 		SSOConfig: &SSOConfig{
@@ -153,8 +153,8 @@ func TestGetRoles(t *testing.T) {
 		},
 	}
 
-	as.sso = &mockSsoApi{
-		Results: []mockSsoApiResults{
+	as.sso = &mockSsoAPI{
+		Results: []mockSsoAPIResults{
 			{
 				ListAccountRoles: &sso.ListAccountRolesOutput{
 					NextToken: aws.String("next-token"),
@@ -246,8 +246,8 @@ func TestGetRoles(t *testing.T) {
 	assert.Error(t, err)
 
 	// another code path
-	as.ssooidc = &mockSsoOidcApi{
-		Results: []mockSsoOidcApiResults{
+	as.ssooidc = &mockSsoOidcAPI{
+		Results: []mockSsoOidcAPIResults{
 			{
 				RegisterClient: &ssooidc.RegisterClientOutput{
 					AuthorizationEndpoint: nil,
@@ -283,8 +283,8 @@ func TestGetRoles(t *testing.T) {
 		},
 	}
 
-	as.sso = &mockSsoApi{
-		Results: []mockSsoApiResults{
+	as.sso = &mockSsoAPI{
+		Results: []mockSsoAPIResults{
 			{
 				Error: fmt.Errorf("Force a new token"),
 			},
@@ -337,8 +337,8 @@ func TestGetRoles(t *testing.T) {
 	as.SSOConfig = &SSOConfig{
 		Accounts: map[string]*SSOAccount{},
 	}
-	as.ssooidc = &mockSsoOidcApi{
-		Results: []mockSsoOidcApiResults{
+	as.ssooidc = &mockSsoOidcAPI{
+		Results: []mockSsoOidcAPIResults{
 			{
 				RegisterClient: &ssooidc.RegisterClientOutput{
 					AuthorizationEndpoint: nil,
@@ -374,8 +374,8 @@ func TestGetRoles(t *testing.T) {
 		},
 	}
 
-	as.sso = &mockSsoApi{
-		Results: []mockSsoApiResults{
+	as.sso = &mockSsoAPI{
+		Results: []mockSsoAPIResults{
 			{
 				Error: fmt.Errorf("Force a new token"),
 			},
@@ -422,8 +422,8 @@ func TestGetAccounts(t *testing.T) {
 		urlAction: "print",
 	}
 
-	as.sso = &mockSsoApi{
-		Results: []mockSsoApiResults{
+	as.sso = &mockSsoAPI{
+		Results: []mockSsoAPIResults{
 			{
 				ListAccounts: &sso.ListAccountsOutput{
 					NextToken: aws.String("next-token"),
@@ -494,8 +494,8 @@ func TestGetAccounts(t *testing.T) {
 	// verify we handle more complex error situations
 	as.Accounts = []AccountInfo{} // flush cash
 
-	as.sso = &mockSsoApi{
-		Results: []mockSsoApiResults{
+	as.sso = &mockSsoAPI{
+		Results: []mockSsoAPIResults{
 			{
 				Error: fmt.Errorf("This error is handled internally"),
 			},
@@ -505,8 +505,8 @@ func TestGetAccounts(t *testing.T) {
 		},
 	}
 
-	as.ssooidc = &mockSsoOidcApi{
-		Results: []mockSsoOidcApiResults{
+	as.ssooidc = &mockSsoOidcAPI{
+		Results: []mockSsoOidcAPIResults{
 			{
 				RegisterClient: &ssooidc.RegisterClientOutput{
 					AuthorizationEndpoint: nil,
@@ -595,8 +595,8 @@ func TestGetRoleCredentials(t *testing.T) {
 		},
 	}
 
-	as.sso = &mockSsoApi{
-		Results: []mockSsoApiResults{
+	as.sso = &mockSsoAPI{
+		Results: []mockSsoAPIResults{
 			{
 				GetRoleCredentials: &sso.GetRoleCredentialsOutput{
 					RoleCredentials: &types.RoleCredentials{

@@ -132,7 +132,7 @@ func main() {
 		log.Fatalf("%s", err.Error())
 	}
 
-	run_ctx := RunContext{
+	runCtx := RunContext{
 		Kctx: ctx,
 		Cli:  &cli,
 	}
@@ -142,7 +142,7 @@ func main() {
 
 	if _, err := os.Stat(cli.ConfigFile); errors.Is(err, os.ErrNotExist) {
 		log.Warnf("No config file found!  Will now prompt you for a basic config...")
-		if err = setupWizard(&run_ctx); err != nil {
+		if err = setupWizard(&runCtx); err != nil {
 			log.Fatalf("%s", err.Error())
 		}
 	} else if err != nil {
@@ -151,34 +151,34 @@ func main() {
 
 	cacheFile := utils.GetHomePath(INSECURE_CACHE_FILE)
 
-	if run_ctx.Settings, err = sso.LoadSettings(cli.ConfigFile, cacheFile, DEFAULT_CONFIG, override); err != nil {
+	if runCtx.Settings, err = sso.LoadSettings(cli.ConfigFile, cacheFile, DEFAULT_CONFIG, override); err != nil {
 		log.Fatalf("%s", err.Error())
 	}
 
 	// Load the secure store data
-	switch run_ctx.Settings.SecureStore {
+	switch runCtx.Settings.SecureStore {
 	case "json":
 		sfile := utils.GetHomePath(JSON_STORE_FILE)
-		if run_ctx.Settings.JsonStore != "" {
-			sfile = utils.GetHomePath(run_ctx.Settings.JsonStore)
+		if runCtx.Settings.JsonStore != "" {
+			sfile = utils.GetHomePath(runCtx.Settings.JsonStore)
 		}
-		run_ctx.Store, err = storage.OpenJsonStore(sfile)
+		runCtx.Store, err = storage.OpenJsonStore(sfile)
 		if err != nil {
 			log.WithError(err).Fatalf("Unable to open JsonStore %s", sfile)
 		}
 		log.Warnf("Using insecure json file for SecureStore: %s", sfile)
 	default:
-		cfg, err := storage.NewKeyringConfig(run_ctx.Settings.SecureStore, CONFIG_DIR)
+		cfg, err := storage.NewKeyringConfig(runCtx.Settings.SecureStore, CONFIG_DIR)
 		if err != nil {
 			log.WithError(err).Fatalf("Unable to create SecureStore")
 		}
-		run_ctx.Store, err = storage.OpenKeyring(cfg)
+		runCtx.Store, err = storage.OpenKeyring(cfg)
 		if err != nil {
-			log.WithError(err).Fatalf("Unable to open SecureStore %s", run_ctx.Settings.SecureStore)
+			log.WithError(err).Fatalf("Unable to open SecureStore %s", runCtx.Settings.SecureStore)
 		}
 	}
 
-	err = ctx.Run(&run_ctx)
+	err = ctx.Run(&runCtx)
 	if err != nil {
 		log.Fatalf("Error running command: %s", err.Error())
 	}
