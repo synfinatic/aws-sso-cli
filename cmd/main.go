@@ -76,6 +76,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"DefaultRegion":                             "us-east-1",
 	"HistoryLimit":                              10,
 	"ListFields":                                []string{"AccountId", "AccountAlias", "RoleName", "ExpiresStr"},
+	"ConsoleDuration":                           60,
 }
 
 type CLI struct {

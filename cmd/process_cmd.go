@@ -31,7 +31,6 @@ import (
 
 type ProcessCmd struct {
 	// AWS Params
-	Duration  int64  `kong:"short='d',help='AWS Session duration in minutes (default 60)',default=60,env='AWS_SSO_DURATION'"`
 	Arn       string `kong:"short='a',help='ARN of role to assume',xor='arn-1',xor='arn-2',predictor='arn'"`
 	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',xor='arn-1',predictor='accountId'"`
 	Role      string `kong:"short='R',help='Name of AWS Role to assume',xor='arn-2',predictor='role'"`
