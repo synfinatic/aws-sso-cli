@@ -104,7 +104,7 @@ type CLI struct {
 	Time               TimeCmd                      `kong:"cmd,help='Print out much time before current STS Token expires'"`
 	Version            VersionCmd                   `kong:"cmd,help='Print version and exit'"`
 	InstallCompletions kongplete.InstallCompletions `kong:"cmd,help='Install shell completions'"`
-	// Setup              SetupCmd                     `kong:"cmd,hidden"` // disable for now
+	Setup              SetupCmd                     `kong:"cmd,hidden"` // need this so variables are visisble.
 }
 
 func main() {
@@ -133,6 +133,8 @@ func main() {
 		if err = setupWizard(&run_ctx); err != nil {
 			log.Fatalf("%s", err.Error())
 		}
+	} else if err != nil {
+		log.WithError(err).Fatalf("Unable to open config file: %s", cli.ConfigFile)
 	}
 
 	cacheFile := utils.GetHomePath(INSECURE_CACHE_FILE)

@@ -50,9 +50,11 @@ var AvailableAwsSSORegions []string = []string{
 
 // SetupCmd defines the Kong args for the setup command (which currently doesn't exist)
 type SetupCmd struct {
-	SSOStartUrl string `kong:"help='AWS SSO User Portal URL'"`
-	SSORegion   string `kong:"help='AWS SSO Instance Region'"`
-	Force       bool   `kong:"help='Force override of existing config file'"`
+	DefaultRegion string `kong:"help='Default AWS region for running commands (or \"None\")'"`
+	UrlAction     string `kong:"name='default-url-action',help='How to handle URLs [open|print|clip]'"`
+	SSOStartUrl   string `kong:"help='AWS SSO User Portal URL'"`
+	SSORegion     string `kong:"help='AWS SSO Instance Region'"`
+	Force         bool   `kong:"help='Force override of existing config file'"`
 }
 
 // Run executes the setup command
@@ -78,6 +80,7 @@ func setupWizard(ctx *RunContext) error {
 	prompt = promptui.Prompt{
 		Label:    "SSO Start URL (StartUrl)",
 		Validate: validateSSOUrl,
+		Default:  ctx.Cli.Setup.SSOStartUrl,
 	}
 	if startURL, err = prompt.Run(); err != nil {
 		return err
@@ -93,32 +96,51 @@ func setupWizard(ctx *RunContext) error {
 		return err
 	}
 
-	// Pick the AWS region to use
+	// Pick the default AWS region to use
 	defaultRegions := []string{"None"}
-	defaultRegions = append(defaultRegions, AvailableAwsSSORegions...)
+	defaultRegions = append(defaultRegions, AvailableAwsRegions...)
 
-	sel = promptui.Select{
-		Label:        "Default region for connecting to AWS (DefaultRegion)",
-		Items:        defaultRegions,
-		HideSelected: false,
+	for _, v := range defaultRegions {
+		if v == ctx.Cli.Setup.DefaultRegion {
+			awsRegion = v
+			break
+		}
 	}
-	if _, awsRegion, err = sel.Run(); err != nil {
-		return err
+
+	if len(awsRegion) == 0 {
+		sel = promptui.Select{
+			Label:        "Default region for connecting to AWS (DefaultRegion)",
+			Items:        defaultRegions,
+			HideSelected: false,
+		}
+		if _, awsRegion, err = sel.Run(); err != nil {
+			return err
+		}
 	}
 
 	if awsRegion == "None" {
 		awsRegion = ""
 	}
 
-	// How should we deal with URLs?
-	sel = promptui.Select{
-		Label: "Default action to take with URLs (UrlAction)",
-		Items: []string{"open", "print", "clip"},
-	}
-	if _, urlAction, err = sel.Run(); err != nil {
-		return err
+	// UrlAction
+	if len(ctx.Cli.Setup.UrlAction) > 0 {
+		if err := urlActionValidate(ctx.Cli.Setup.UrlAction); err == nil {
+			urlAction = ctx.Cli.Setup.UrlAction
+		}
 	}
 
+	if len(urlAction) == 0 {
+		// How should we deal with URLs?
+		sel = promptui.Select{
+			Label: "Default action to take with URLs (UrlAction)",
+			Items: []string{"open", "print", "clip"},
+		}
+		if _, urlAction, err = sel.Run(); err != nil {
+			return err
+		}
+	}
+
+	// write config file
 	s := sso.Settings{
 		DefaultSSO: instanceName,
 		SSO:        map[string]*sso.SSOConfig{},
