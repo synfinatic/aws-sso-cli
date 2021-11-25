@@ -1,30 +1,39 @@
 # AWS SSO CLI Changelog
 
-## [Unreleased]
+## [v1.4.0]
 
- * Update interactive selected item color schme to stand our better. #138
- * Add `eval --clear`
- * `eval` no longer prints URLs #145
- * `exec` now updates the ENV vars of the exec variable rather than our process
- * Add full support for `DefaultRegion` in config.yaml 
- * Will no longer overwrite user defined AWS_DEFAULT_REGION #152
- * Remove `--region` flag for `eval` and `exec` commands 
- * Add `--no-region` flag for `eval and `exec` commands
- * Add `process` command for AWS credential_process #157
- * Fix bug where cache auto-refresh was not saving the new file, causing future
-    runs to not utilize the cache 
+### Breaking Changes
  * Standardize on `AWS_SSO` prefix for environment variables
- * Add `eval --refresh`
+ * Remove `--region` flag for `eval` and `exec` commands
  * `console -use-env` is now `console --use-sts` to be more clear
+ * Building aws-sso now requires Go v1.17+
+
+### New Features
+ * Add a simple wizard to configure aws-sso on first run if no ~/.aws-sso/config.yaml
+	file exists
+ * Update interactive selected item color schme to stand our better. #138
+ * Add `eval --clear` and `eval --refresh`
+ * Add full support for `DefaultRegion` in config.yaml
+ * Add `--no-region` flag for `eval and `exec` commands
+ * Add `process` command for AWS credential_process in ~/.aws/config #157
  * Add `ConsoleDuration` config option #159
+ * Improve documentation of environment variables
+
+### Bug Fixes
+ * `exec` now updates the ENV vars of the forked processs rather than our own process
+ * `eval` no longer prints URLs #145
+ * Will no longer overwrite user defined AWS_DEFAULT_REGION #152
+ * Fix bug where cache auto-refresh was not saving the new file, causing future
+    runs to not utilize the cache
  * Remove `--duration` option from commands which don't support it
  * `LogLevel` and `UrlAction` in the config yaml now work #161
+ * Add more unit tests & fix underlying bugs
 
 ## [v1.3.1] - 2021-11-15
 
  * Fix missing --url-action and  --browser #113
  * Don't print out URL when sending to browser/clipboard for security
- * Escape colon in ARN's for `-a` flag to work around the colon being a 
+ * Escape colon in ARN's for `-a` flag to work around the colon being a
     word delimiter for bash (auto)complete. #135
  * Add initial basic setup if there is a missing config.yaml #131
 
@@ -114,7 +123,8 @@
 ## [v1.0.0] - 2021-07-15
 
 Initial release
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.3.1...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.4.0...main
+[v1.4.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.4.0
 [v1.3.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.3.1
 [v1.3.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.3.0
 [v1.2.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.2.3
