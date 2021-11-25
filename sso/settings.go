@@ -38,8 +38,8 @@ import (
 )
 
 const (
-	AWS_SESSION_EXPIRATION_FORMAT = "2006-01-02 15:04:05 -0700 MST"
-	CACHE_TTL                     = 60 * 60 * 24 // 1 day in seconds
+	AWS_SSO_SESSION_EXPIRATION_FORMAT = "2006-01-02 15:04:05 -0700 MST"
+	CACHE_TTL                         = 60 * 60 * 24 // 1 day in seconds
 )
 
 type Settings struct {

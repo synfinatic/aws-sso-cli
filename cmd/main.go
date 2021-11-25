@@ -93,12 +93,12 @@ type CLI struct {
 	Console            ConsoleCmd                   `kong:"cmd,help='Open AWS Console using specificed AWS Role/profile'"`
 	Default            DefaultCmd                   `kong:"cmd,hidden,default='1'"` // list command without args
 	Eval               EvalCmd                      `kong:"cmd,help='Print AWS Environment vars for use with eval $(aws-sso eval ...)'"`
-	Exec               ExecCmd                      `kong:"cmd,help='Execute command using specified AWS Role/Profile'"`
+	Exec               ExecCmd                      `kong:"cmd,help='Execute command using specified IAM Role'"`
 	Flush              FlushCmd                     `kong:"cmd,help='Flush AWS SSO/STS credentials from cache'"`
 	List               ListCmd                      `kong:"cmd,help='List all accounts / role (default command)'"`
 	Process            ProcessCmd                   `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
 	Tags               TagsCmd                      `kong:"cmd,help='List tags'"`
-	Time               TimeCmd                      `kong:"cmd,help='Print out much time before STS Token expires'"`
+	Time               TimeCmd                      `kong:"cmd,help='Print out much time before current STS Token expires'"`
 	Version            VersionCmd                   `kong:"cmd,help='Print version and exit'"`
 	InstallCompletions kongplete.InstallCompletions `kong:"cmd,help='Install shell completions'"`
 	// Setup              SetupCmd                     `kong:"cmd,hidden"` // disable for now
