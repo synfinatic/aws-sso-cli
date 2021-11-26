@@ -224,3 +224,9 @@ $(DARWINARM64_BIN): $(wildcard */*.go) .prepare
 
 $(OUTPUT_NAME): $(wildcard */*.go) .prepare
 	go build -ldflags='$(LDFLAGS)' -o $(OUTPUT_NAME) cmd/*.go
+
+docs: docs/default-region.png 
+
+docs/default-region.png:
+	dot -o docs/default-region.png -Tpng docs/default-region.dot
+
