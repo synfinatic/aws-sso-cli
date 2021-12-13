@@ -1,4 +1,4 @@
-PROJECT_VERSION := 1.4.0
+PROJECT_VERSION := 1.5.0
 DOCKER_REPO     := synfinatic
 PROJECT_NAME    := aws-sso
 
@@ -50,6 +50,8 @@ DARWINARM64_BIN           := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)-darwi
 
 ALL: $(DIST_DIR)$(PROJECT_NAME) ## Build binary for this platform
 
+include help.mk  # place after ALL target and before all other targets
+
 $(DIST_DIR)$(PROJECT_NAME):	$(wildcard */*.go) .prepare
 	go build -ldflags='$(LDFLAGS)' -o $(DIST_DIR)$(PROJECT_NAME) cmd/*.go
 	@echo "Created: $(DIST_DIR)$(PROJECT_NAME)"
@@ -97,8 +99,6 @@ package: linux linux-arm64  ## Build deb/rpm packages
 tags: cmd/*.go sso/*.go  ## Create tags file for vim, etc
 	@echo Make sure you have Universal Ctags installed: https://github.com/universal-ctags/ctags
 	ctags -R
-
-include help.mk  # place after ALL target and before all other targets
 
 .build-release: windows windows32 linux linux-arm64 darwin darwin-arm64
 
@@ -158,6 +158,9 @@ vet: ## Run `go vet` on the code
 test: vet unittest lint ## Run important tests
 
 precheck: test test-fmt test-tidy ## Run all tests that happen in a PR
+
+# run everything but `lint` because that runs via it's own workflow
+.build-tests: vet unittest test-tidy test-fmt
 
 $(DIST_DIR):
 	@if test ! -d $(DIST_DIR); then mkdir -p $(DIST_DIR) ; fi
@@ -225,7 +228,7 @@ $(DARWINARM64_BIN): $(wildcard */*.go) .prepare
 $(OUTPUT_NAME): $(wildcard */*.go) .prepare
 	go build -ldflags='$(LDFLAGS)' -o $(OUTPUT_NAME) cmd/*.go
 
-docs: docs/default-region.png 
+docs: docs/default-region.png  ## Build document files
 
 docs/default-region.png:
 	dot -o docs/default-region.png -Tpng docs/default-region.dot

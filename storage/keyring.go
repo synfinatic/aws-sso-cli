@@ -24,19 +24,18 @@ import (
 	"os"
 	"path"
 	"strings"
-	"time"
 
 	"github.com/99designs/keyring"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
 const (
-	KEYRING_NAME                 = "AWSSSOCli"
 	KEYRING_ID                   = "aws-sso-cli"
+	RECORD_KEY                   = "aws-sso-cli-records"
+	KEYRING_NAME                 = "awsssocli"
 	REGISTER_CLIENT_DATA_PREFIX  = "client-data"
 	CREATE_TOKEN_RESPONSE_PREFIX = "token-response"
-	ENV_SSO_FILE_PASSWORD        = "AWS_SSO_FILE_PASSPHRASE" // #nosec
+	ENV_SSO_FILE_PASSWORD        = "AWS_SSO_FILE_PASSWORD" // #nosec
 )
 
 // Implements SecureStorage
@@ -47,20 +46,20 @@ type KeyringStore struct {
 
 var NewPassword string = ""
 
-func NewKeyringConfig(name, configDir string) *keyring.Config {
+func NewKeyringConfig(name, configDir string) (*keyring.Config, error) {
 	securePath := path.Join(configDir, "secure")
 
 	c := keyring.Config{
-		ServiceName: KEYRING_NAME, // generic
-		// OSX Keychain
-		KeychainName:                   KEYRING_NAME,
-		KeychainSynchronizable:         false,
-		KeychainAccessibleWhenUnlocked: false,
+		ServiceName: KEYRING_ID, // generic backend provider
+		// macOS KeyChain
+		KeychainTrustApplication:       true,  // stop asking user for passwords
+		KeychainSynchronizable:         false, // no iCloud sync
+		KeychainAccessibleWhenUnlocked: false, // no reads while device locked
 		// KeychainPasswordFunc: ???,
 		// Other systems below this line
 		FileDir:                 securePath,
 		FilePasswordFunc:        fileKeyringPassphrasePrompt,
-		LibSecretCollectionName: strings.ToLower(KEYRING_NAME),
+		LibSecretCollectionName: KEYRING_NAME,
 		KWalletAppID:            KEYRING_ID,
 		KWalletFolder:           KEYRING_ID,
 		WinCredPrefix:           KEYRING_ID,
@@ -76,21 +75,21 @@ func NewKeyringConfig(name, configDir string) *keyring.Config {
 				if password := os.Getenv(ENV_SSO_FILE_PASSWORD); password == "" {
 					pass1, err := fileKeyringPassphrasePrompt("Select password")
 					if err != nil {
-						log.Fatalf("Password error: %s", err.Error())
+						return &c, fmt.Errorf("Password error: %s", err.Error())
 					}
 					pass2, err := fileKeyringPassphrasePrompt("Verify password")
 					if err != nil {
-						log.Fatalf("Password error: %s", err.Error())
+						return &c, fmt.Errorf("Password error: %s", err.Error())
 					}
 					if pass1 != pass2 {
-						log.Fatalf("Password missmatch")
+						return &c, fmt.Errorf("Password missmatch: %s", err.Error())
 					}
 					NewPassword = pass1
 				}
 			}
 		}
 	}
-	return &c
+	return &c, nil
 }
 
 func fileKeyringPassphrasePrompt(prompt string) (string, error) {
@@ -126,58 +125,92 @@ func (kr *KeyringStore) RegisterClientKey(ssoRegion string) string {
 	return fmt.Sprintf("%s:%s", REGISTER_CLIENT_DATA_PREFIX, ssoRegion)
 }
 
-// Save our RegisterClientData in the key chain
-func (kr *KeyringStore) SaveRegisterClientData(region string, client RegisterClientData) error {
-	jdata, err := json.Marshal(client)
+type StorageData struct {
+	RegisterClientData  map[string]RegisterClientData
+	CreateTokenResponse map[string]CreateTokenResponse
+	RoleCredentials     map[string]RoleCredentials
+}
+
+func NewStorageData() StorageData {
+	return StorageData{
+		RegisterClientData:  map[string]RegisterClientData{},
+		CreateTokenResponse: map[string]CreateTokenResponse{},
+		RoleCredentials:     map[string]RoleCredentials{},
+	}
+}
+
+// loads the entire StorageData into memory
+func (kr *KeyringStore) getStorageData(s *StorageData) error {
+	data, err := kr.keyring.Get(RECORD_KEY)
+	if err != nil {
+		// Didn't find anything in our keyring
+		*s = NewStorageData()
+		return nil
+	}
+	if err = json.Unmarshal(data.Data, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+// saves the entire StorageData into our KeyringStore
+func (kr *KeyringStore) saveStorageData(s StorageData) error {
+	jdata, err := json.Marshal(s)
 	if err != nil {
 		return err
 	}
 	err = kr.keyring.Set(keyring.Item{
-		Key:  kr.RegisterClientKey(region),
-		Data: jdata,
+		Key:         RECORD_KEY,
+		Data:        jdata,
+		Label:       KEYRING_ID,
+		Description: "aws-sso secure storage",
 	})
 	return err
 }
 
-// Get our RegisterClientData from the key chain
-func (kr *KeyringStore) GetRegisterClientData(region string, client *RegisterClientData) error {
-	data, err := kr.keyring.Get(kr.RegisterClientKey(region))
-	if err != nil {
+// Save our RegisterClientData in the key chain
+func (kr *KeyringStore) SaveRegisterClientData(region string, client RegisterClientData) error {
+	storage := StorageData{}
+	if err := kr.getStorageData(&storage); err != nil {
 		return err
 	}
-	err = json.Unmarshal(data.Data, client)
-	if err != nil {
+
+	key := kr.RegisterClientKey(region)
+	storage.RegisterClientData[key] = client
+
+	return kr.saveStorageData(storage)
+}
+
+// Get our RegisterClientData from the key chain
+func (kr *KeyringStore) GetRegisterClientData(region string, client *RegisterClientData) error {
+	storage := StorageData{}
+	ok := false
+	if err := kr.getStorageData(&storage); err != nil {
 		return err
+	}
+
+	key := kr.RegisterClientKey(region)
+	if *client, ok = storage.RegisterClientData[key]; !ok {
+		return fmt.Errorf("No RegisterClientData for %s", region)
 	}
 	return nil
 }
 
 // Delete the RegisterClientData from the keychain
 func (kr *KeyringStore) DeleteRegisterClientData(region string) error {
-	keys, err := kr.keyring.Keys()
-	if err != nil {
+	storage := StorageData{}
+	if err := kr.getStorageData(&storage); err != nil {
 		return err
 	}
 
-	// make sure we have this profile stored
-	hasKey := false
 	key := kr.RegisterClientKey(region)
-	for _, k := range keys {
-		if k == key {
-			hasKey = true
-			break
-		}
-	}
-	if !hasKey {
-		return fmt.Errorf("Missing client data for region: %s", region)
+	if _, ok := storage.RegisterClientData[key]; !ok {
+		// return error if key doesn't exist
+		return fmt.Errorf("Missing RegisterClientData for region: %s", region)
 	}
 
-	// Can't just call keyring.Remove() because it's broken, so we'll update the record instead
-	// https://github.com/99designs/keyring/issues/84
-	// return kr.keyring.Remove(key)
-	client := RegisterClientData{}
-	client.ClientSecretExpiresAt = time.Now().Unix()
-	return kr.SaveRegisterClientData(region, client)
+	delete(storage.RegisterClientData, key)
+	return nil
 }
 
 func (kr *KeyringStore) CreateTokenResponseKey(key string) string {
@@ -186,109 +219,89 @@ func (kr *KeyringStore) CreateTokenResponseKey(key string) string {
 
 // SaveCreateTokenResponse stores the token in the keyring
 func (kr *KeyringStore) SaveCreateTokenResponse(key string, token CreateTokenResponse) error {
-	jdata, err := json.Marshal(token)
-	if err != nil {
+	storage := StorageData{}
+	if err := kr.getStorageData(&storage); err != nil {
 		return err
 	}
-	err = kr.keyring.Set(keyring.Item{
-		Key:  kr.CreateTokenResponseKey(key),
-		Data: jdata,
-	})
-	return err
+
+	k := kr.CreateTokenResponseKey(key)
+	storage.CreateTokenResponse[k] = token
+
+	return kr.saveStorageData(storage)
 }
 
 // GetCreateTokenResponse retrieves the CreateTokenResponse from the keyring
 func (kr *KeyringStore) GetCreateTokenResponse(key string, token *CreateTokenResponse) error {
-	data, err := kr.keyring.Get(kr.CreateTokenResponseKey(key))
-	if err != nil {
+	storage := StorageData{}
+	ok := false
+	if err := kr.getStorageData(&storage); err != nil {
 		return err
 	}
-	err = json.Unmarshal(data.Data, token)
-	if err != nil {
-		return err
+
+	k := kr.CreateTokenResponseKey(key)
+	if *token, ok = storage.CreateTokenResponse[k]; !ok {
+		return fmt.Errorf("No CreateTokenResponse for %s", key)
 	}
 	return nil
 }
 
 // DeleteCreateTokenResponse deletes the CreateTokenResponse from the keyring
 func (kr *KeyringStore) DeleteCreateTokenResponse(key string) error {
-	keys, err := kr.keyring.Keys()
-	if err != nil {
+	storage := StorageData{}
+	if err := kr.getStorageData(&storage); err != nil {
 		return err
 	}
 
-	// make sure we have this token response store
-	hasKey := false
-	keyValue := kr.CreateTokenResponseKey(key)
-	for _, k := range keys {
-		if k == keyValue {
-			hasKey = true
-			break
-		}
-	}
-	if !hasKey {
+	k := kr.CreateTokenResponseKey(key)
+	if _, ok := storage.CreateTokenResponse[k]; !ok {
+		// return error if key doesn't exist
 		return fmt.Errorf("Missing CreateTokenResponse for key: %s", key)
 	}
 
-	// Can't just call keyring.Remove because it's broken, so we'll udpate the record instead
-	// https://github.com/99designs/keyring/issues/84
-	// return kr.keyring.Remove(keyValue)
-	tr := CreateTokenResponse{}
-	tr.ExpiresAt = time.Now().Unix()
-	return kr.SaveCreateTokenResponse(key, tr)
+	delete(storage.CreateTokenResponse, k)
+	return nil
 }
 
 // SaveRoleCredentials stores the token in the arnring
 func (kr *KeyringStore) SaveRoleCredentials(arn string, token RoleCredentials) error {
-	jdata, err := json.Marshal(token)
-	if err != nil {
+	storage := StorageData{}
+	if err := kr.getStorageData(&storage); err != nil {
 		return err
 	}
-	err = kr.keyring.Set(keyring.Item{
-		Key:  arn,
-		Data: jdata,
-	})
-	return err
+
+	storage.RoleCredentials[arn] = token
+
+	return kr.saveStorageData(storage)
 }
 
 // GetRoleCredentials retrieves the RoleCredentials from the Keyring
 func (kr *KeyringStore) GetRoleCredentials(arn string, token *RoleCredentials) error {
-	data, err := kr.keyring.Get(arn)
-	if err != nil {
+	storage := StorageData{}
+	ok := false
+	if err := kr.getStorageData(&storage); err != nil {
 		return err
 	}
-	err = json.Unmarshal(data.Data, token)
-	if err != nil {
-		return err
+
+	if *token, ok = storage.RoleCredentials[arn]; !ok {
+		return fmt.Errorf("No RoleCredentials for %s", arn)
 	}
 	return nil
 }
 
 // DeleteRoleCredentials deletes the RoleCredentials from the Keyring
 func (kr *KeyringStore) DeleteRoleCredentials(arn string) error {
-	keys, err := kr.keyring.Keys()
-	if err != nil {
+	storage := StorageData{}
+	if err := kr.getStorageData(&storage); err != nil {
 		return err
 	}
 
-	// make sure we have this token response store
-	hasKey := false
-	for _, k := range keys {
-		if k == arn {
-			hasKey = true
-			break
-		}
-	}
-	if !hasKey {
+	if _, ok := storage.RoleCredentials[arn]; !ok {
+		// return error if key doesn't exist
 		return fmt.Errorf("Missing RoleCredentials for arn: %s", arn)
 	}
 
-	// Can't just call Keyring.Remove because it's broken, so we'll udpate the record instead
-	// https://github.com/99designs/Keyring/issues/84
-	// return kr.Keyring.Remove(arnValue)
-	rc := RoleCredentials{}
-	rc.Expiration = 0
-	return kr.SaveRoleCredentials(arn, rc)
+	delete(storage.RoleCredentials, arn)
+	return nil
 }
 
 func getHomePath(path string) string {

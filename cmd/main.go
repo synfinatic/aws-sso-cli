@@ -156,7 +156,10 @@ func main() {
 		}
 		log.Warnf("Using insecure json file for SecureStore: %s", sfile)
 	default:
-		cfg := storage.NewKeyringConfig(run_ctx.Settings.SecureStore, CONFIG_DIR)
+		cfg, err := storage.NewKeyringConfig(run_ctx.Settings.SecureStore, CONFIG_DIR)
+		if err != nil {
+			log.WithError(err).Fatalf("Unable to create SecureStore")
+		}
 		run_ctx.Store, err = storage.OpenKeyring(cfg)
 		if err != nil {
 			log.WithError(err).Fatalf("Unable to open SecureStore %s", run_ctx.Settings.SecureStore)

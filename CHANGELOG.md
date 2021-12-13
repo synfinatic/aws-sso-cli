@@ -1,5 +1,11 @@
 # AWS SSO CLI Changelog
 
+## [Unreleased]
+
+### Changes
+ * Now use macOS `login` Keychain instead of `AWSSSOCli`
+ * All secure storage methods now store a single entry instead of multiple entries
+
 ## [v1.4.0]
 
 ### Breaking Changes
