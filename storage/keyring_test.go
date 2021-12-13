@@ -24,9 +24,15 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestKeyring(t *testing.T) {
+type KeyringSuite struct {
+	suite.Suite
+	store *KeyringStore
+}
+
+func TestKeyringSuite(t *testing.T) {
 	d, err := os.MkdirTemp("", "test-keyring")
 	assert.NoError(t, err)
 	defer os.RemoveAll(d)
@@ -35,8 +41,14 @@ func TestKeyring(t *testing.T) {
 	c, err := NewKeyringConfig("file", d)
 	assert.NoError(t, err)
 
-	s, err := OpenKeyring(c)
+	s := KeyringSuite{}
+	s.store, err = OpenKeyring(c)
 	assert.NoError(t, err)
+	suite.Run(t, &s)
+}
+
+func (suite *KeyringSuite) TestRegisterClientData() {
+	t := suite.T()
 
 	data := NewStorageData()
 	rcd := RegisterClientData{
@@ -49,22 +61,88 @@ func TestKeyring(t *testing.T) {
 	}
 	data.RegisterClientData["foo"] = rcd
 
-	err = s.saveStorageData(data)
+	err := suite.store.saveStorageData(data)
 	assert.NoError(t, err)
 
 	data2 := NewStorageData()
-	err = s.getStorageData(&data2)
+	err = suite.store.getStorageData(&data2)
 	assert.NoError(t, err)
 	assert.Equal(t, data, data2)
 
-	err = s.SaveRegisterClientData("bar", rcd)
+	err = suite.store.SaveRegisterClientData("bar", rcd)
 	assert.NoError(t, err)
-	rcd2 := RegisterClientData{}
 
-	err = s.GetRegisterClientData("bar", &rcd2)
+	rcd2 := RegisterClientData{}
+	err = suite.store.GetRegisterClientData("bar", &rcd2)
 	assert.NoError(t, err)
 	assert.Equal(t, rcd, rcd2)
 
-	err = s.GetRegisterClientData("cow", &rcd2)
+	err = suite.store.GetRegisterClientData("cow", &rcd2)
+	assert.Error(t, err)
+}
+
+func (suite *KeyringSuite) TestCreateTokenResponse() {
+	t := suite.T()
+
+	data := NewStorageData()
+	ctr := CreateTokenResponse{
+		AccessToken:  "Foobar",
+		ExpiresIn:    60,
+		ExpiresAt:    time.Now().Unix() + 60,
+		IdToken:      "hellothere",
+		RefreshToken: "just another token",
+		TokenType:    "yes",
+	}
+	data.CreateTokenResponse["foo"] = ctr
+	err := suite.store.saveStorageData(data)
+	assert.NoError(t, err)
+
+	data2 := NewStorageData()
+	err = suite.store.getStorageData(&data2)
+	assert.NoError(t, err)
+	assert.Equal(t, data, data2)
+
+	err = suite.store.SaveCreateTokenResponse("bar", ctr)
+	assert.NoError(t, err)
+
+	ctr2 := CreateTokenResponse{}
+	err = suite.store.GetCreateTokenResponse("bar", &ctr2)
+	assert.NoError(t, err)
+	assert.Equal(t, ctr, ctr2)
+
+	err = suite.store.GetCreateTokenResponse("cow", &ctr2)
+	assert.Error(t, err)
+}
+
+func (suite *KeyringSuite) TestRoleCredentials() {
+	t := suite.T()
+
+	data := NewStorageData()
+	rc := RoleCredentials{
+		RoleName:        "MyRole",
+		AccountId:       234566767,
+		AccessKeyId:     "some not-so-secret-string",
+		SecretAccessKey: "a string we actually want to keep secret",
+		SessionToken:    "Another secret string",
+		Expiration:      time.Now().Unix(),
+	}
+	data.RoleCredentials["foo"] = rc
+	err := suite.store.saveStorageData(data)
+	assert.NoError(t, err)
+
+	data2 := NewStorageData()
+	err = suite.store.getStorageData(&data2)
+	assert.NoError(t, err)
+	assert.Equal(t, data, data2)
+
+	err = suite.store.SaveRoleCredentials("bar", rc)
+	assert.NoError(t, err)
+
+	rc2 := RoleCredentials{}
+	err = suite.store.GetRoleCredentials("bar", &rc2)
+	assert.NoError(t, err)
+	assert.Equal(t, rc, rc2)
+
+	err = suite.store.GetRoleCredentials("cow", &rc2)
 	assert.Error(t, err)
 }
