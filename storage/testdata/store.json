@@ -18,7 +18,7 @@
     }
   },
   "RoleCredentials": {
-    "arn:aws:iam:012344553243:role/AWSAdministratorAccess": {
+    "arn:aws:iam::012344553243:role/AWSAdministratorAccess": {
       "roleName": "AWSAdministratorAccess",
       "accountId": 12344553243,
       "accessKeyId": "not a real access key id",

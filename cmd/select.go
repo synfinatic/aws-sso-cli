@@ -75,7 +75,7 @@ func (tc *TagsCompleter) Complete(d prompt.Document) []prompt.Suggest {
 }
 
 // https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_iam-quotas.html
-var isRoleARN *regexp.Regexp = regexp.MustCompile(`^arn:aws:iam:\d+:role/[a-zA-Z0-9\+=,\.@_-]+$`)
+var isRoleARN *regexp.Regexp = regexp.MustCompile(`^arn:aws:iam::\d+:role/[a-zA-Z0-9\+=,\.@_-]+$`)
 var NoSpaceAtEnd *regexp.Regexp = regexp.MustCompile(`\s+$`)
 
 func (tc *TagsCompleter) Executor(args string) {

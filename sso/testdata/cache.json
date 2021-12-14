@@ -12,7 +12,7 @@
         },
         "Roles": {
           "AWSAdministratorAccess": {
-            "Arn": "arn:aws:iam:258234615182:role/AWSAdministratorAccess",
+            "Arn": "arn:aws:iam::258234615182:role/AWSAdministratorAccess",
             "Tags": {
               "AccountAlias": "OurCompany Control Tower Playground",
               "AccountID": "258234615182",
@@ -25,7 +25,7 @@
             }
           },
           "AWSOrganizationsFullAccess": {
-            "Arn": "arn:aws:iam:258234615182:role/AWSOrganizationsFullAccess",
+            "Arn": "arn:aws:iam::258234615182:role/AWSOrganizationsFullAccess",
             "Tags": {
               "AccountAlias": "OurCompany Control Tower Playground",
               "AccountID": "258234615182",
@@ -35,7 +35,7 @@
             }
           },
           "AWSPowerUserAccess": {
-            "Arn": "arn:aws:iam:258234615182:role/AWSPowerUserAccess",
+            "Arn": "arn:aws:iam::258234615182:role/AWSPowerUserAccess",
             "Tags": {
               "AccountAlias": "OurCompany Control Tower Playground",
               "AccountID": "258234615182",
@@ -45,7 +45,7 @@
             }
           },
           "AWSReadOnlyAccess": {
-            "Arn": "arn:aws:iam:258234615182:role/AWSReadOnlyAccess",
+            "Arn": "arn:aws:iam::258234615182:role/AWSReadOnlyAccess",
             "Tags": {
               "AccountAlias": "OurCompany Control Tower Playground",
               "AccountID": "258234615182",
@@ -55,7 +55,7 @@
             }
           },
           "AWSServiceCatalogEndUserAccess": {
-            "Arn": "arn:aws:iam:258234615182:role/AWSServiceCatalogEndUserAccess",
+            "Arn": "arn:aws:iam::258234615182:role/AWSServiceCatalogEndUserAccess",
             "Tags": {
               "AccountAlias": "OurCompany Control Tower Playground",
               "AccountID": "258234615182",
@@ -65,7 +65,7 @@
             }
           },
           "DoNothingRole": {
-            "Arn": "arn:aws:iam:258234615182:role/DoNothingRole",
+            "Arn": "arn:aws:iam::258234615182:role/DoNothingRole",
             "Tags": {
               "AccountAlias": "OurCompany Control Tower Playground",
               "AccountID": "258234615182",
@@ -75,7 +75,7 @@
             }
           },
           "SSO-ProductionDevelopersRO": {
-            "Arn": "arn:aws:iam:258234615182:role/SSO-ProductionDevelopersRO",
+            "Arn": "arn:aws:iam::258234615182:role/SSO-ProductionDevelopersRO",
             "Tags": {
               "AccountAlias": "OurCompany Control Tower Playground",
               "AccountID": "258234615182",
@@ -95,7 +95,7 @@
         },
         "Roles": {
           "AWSAdministratorAccess": {
-            "Arn": "arn:aws:iam:833365043586:role/AWSAdministratorAccess",
+            "Arn": "arn:aws:iam::833365043586:role/AWSAdministratorAccess",
             "Tags": {
               "AccountAlias": "Log archive",
               "AccountID": "833365043586",
@@ -105,7 +105,7 @@
             }
           },
           "AWSPowerUserAccess": {
-            "Arn": "arn:aws:iam:833365043586:role/AWSPowerUserAccess",
+            "Arn": "arn:aws:iam::833365043586:role/AWSPowerUserAccess",
             "Tags": {
               "AccountAlias": "Log archive",
               "AccountID": "833365043586",
@@ -115,7 +115,7 @@
             }
           },
           "AWSReadOnlyAccess": {
-            "Arn": "arn:aws:iam:833365043586:role/AWSReadOnlyAccess",
+            "Arn": "arn:aws:iam::833365043586:role/AWSReadOnlyAccess",
             "Tags": {
               "AccountAlias": "Log archive",
               "AccountID": "833365043586",
@@ -125,7 +125,7 @@
             }
           },
           "SSO-ProductionDevelopersRO": {
-            "Arn": "arn:aws:iam:833365043586:role/SSO-ProductionDevelopersRO",
+            "Arn": "arn:aws:iam::833365043586:role/SSO-ProductionDevelopersRO",
             "Tags": {
               "AccountAlias": "Log archive",
               "AccountID": "833365043586",
@@ -146,7 +146,7 @@
         },
         "Roles": {
           "AWSAdministratorAccess": {
-            "Arn": "arn:aws:iam:502470824893:role/AWSAdministratorAccess",
+            "Arn": "arn:aws:iam::502470824893:role/AWSAdministratorAccess",
             "Tags": {
               "AccountAlias": "Audit",
               "AccountID": "502470824893",
@@ -156,7 +156,7 @@
             }
           },
           "AWSPowerUserAccess": {
-            "Arn": "arn:aws:iam:502470824893:role/AWSPowerUserAccess",
+            "Arn": "arn:aws:iam::502470824893:role/AWSPowerUserAccess",
             "Tags": {
               "AccountAlias": "Audit",
               "AccountID": "502470824893",
@@ -166,7 +166,7 @@
             }
           },
           "AWSReadOnlyAccess": {
-            "Arn": "arn:aws:iam:502470824893:role/AWSReadOnlyAccess",
+            "Arn": "arn:aws:iam::502470824893:role/AWSReadOnlyAccess",
             "Tags": {
               "AccountAlias": "Audit",
               "AccountID": "502470824893",
@@ -176,7 +176,7 @@
             }
           },
           "SSO-ProductionDevelopersRO": {
-            "Arn": "arn:aws:iam:502470824893:role/SSO-ProductionDevelopersRO",
+            "Arn": "arn:aws:iam::502470824893:role/SSO-ProductionDevelopersRO",
             "Tags": {
               "AccountAlias": "Audit",
               "AccountID": "502470824893",
@@ -196,7 +196,7 @@
         },
         "Roles": {
           "AWSAdministratorAccess": {
-            "Arn": "arn:aws:iam:707513610766:role/AWSAdministratorAccess",
+            "Arn": "arn:aws:iam::707513610766:role/AWSAdministratorAccess",
             "Tags": {
               "AccountAlias": "control-tower-dev-sub1-aws",
               "AccountID": "707513610766",
@@ -206,7 +206,7 @@
             }
           },
           "AWSPowerUserAccess": {
-            "Arn": "arn:aws:iam:707513610766:role/AWSPowerUserAccess",
+            "Arn": "arn:aws:iam::707513610766:role/AWSPowerUserAccess",
             "Tags": {
               "AccountAlias": "control-tower-dev-sub1-aws",
               "AccountID": "707513610766",
@@ -216,7 +216,7 @@
             }
           },
           "AWSReadOnlyAccess": {
-            "Arn": "arn:aws:iam:707513610766:role/AWSReadOnlyAccess",
+            "Arn": "arn:aws:iam::707513610766:role/AWSReadOnlyAccess",
             "Tags": {
               "AccountAlias": "control-tower-dev-sub1-aws",
               "AccountID": "707513610766",
@@ -226,7 +226,7 @@
             }
           },
           "SSO-ProductionDevelopersRO": {
-            "Arn": "arn:aws:iam:707513610766:role/SSO-ProductionDevelopersRO",
+            "Arn": "arn:aws:iam::707513610766:role/SSO-ProductionDevelopersRO",
             "Tags": {
               "AccountAlias": "control-tower-dev-sub1-aws",
               "AccountID": "707513610766",

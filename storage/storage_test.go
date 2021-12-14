@@ -81,7 +81,7 @@ func TestRoleArn(t *testing.T) {
 		AccountId: 12344553243,
 		RoleName:  "foobar",
 	}
-	assert.Equal(t, "arn:aws:iam:012344553243:role/foobar", x.RoleArn())
+	assert.Equal(t, "arn:aws:iam::012344553243:role/foobar", x.RoleArn())
 	assert.Equal(t, "012344553243", x.AccountIdStr())
 }
 
