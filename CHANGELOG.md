@@ -3,8 +3,9 @@
 ## [Unreleased]
 
 ### Changes
- * Now use macOS `login` Keychain instead of `AWSSSOCli`
+ * Now use macOS `login` Keychain instead of `AWSSSOCli` #150
  * All secure storage methods now store a single entry instead of multiple entries
+ * Replace `console --use-sts` with `console --prompt` #169
 
 ## [v1.4.0]
 

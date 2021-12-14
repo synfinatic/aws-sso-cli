@@ -131,7 +131,7 @@ Flags:
  * `--arn <arn>`, `-a` -- ARN of role to assume (`$AWS_SSO_ROLE_ARN`)
  * `--account <account>`, `-A` -- AWS AccountID of role to assume (`$AWS_SSO_ACCOUNT_ID`)
  * `--duration <minutes>`, `-d` -- AWS Session duration in minutes (default 60)
- * `--use-sts`, `-s` -- Use existing STS credentials to generate a URL
+ * `--prompt`, `-p` -- Force interactive prompt to select role
  * `--role <role>`, `-R` -- Name of AWS Role to assume (requires `--account`) (`$AWS_SSO_ROLE_NAME`)
 
 The generated URL is good for 15 minutes after it is created.
@@ -141,9 +141,10 @@ what to do with the resulting URL from the `console` command.
 
 Priority is given to:
 
+ * `--prompt`
  * `--arn` (`$AWS_SSO_ROLE_ARN`)
  * `--account` (`$AWS_SSO_ACCOUNT_ID`) and `--role` (`$AWS_SSO_ROLE_NAME`)
- * `--use-sts`
+ * `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN` environment variables
  * Prompt user interactively
 
 ### eval
