@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/99designs/keyring"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -58,7 +59,7 @@ func NewKeyringConfig(name, configDir string) (*keyring.Config, error) {
 		// KeychainPasswordFunc: ???,
 		// Other systems below this line
 		FileDir:                 securePath,
-		FilePasswordFunc:        fileKeyringPassphrasePrompt,
+		FilePasswordFunc:        fileKeyringPassword,
 		LibSecretCollectionName: KEYRING_NAME,
 		KWalletAppID:            KEYRING_ID,
 		KWalletFolder:           KEYRING_ID,
@@ -66,18 +67,18 @@ func NewKeyringConfig(name, configDir string) (*keyring.Config, error) {
 	}
 	if name != "" {
 		c.AllowedBackends = []keyring.BackendType{keyring.BackendType(name)}
-		rolesFile := getHomePath(path.Join(securePath, "roles"))
+		rolesFile := getHomePath(path.Join(securePath, RECORD_KEY))
 
 		if name == "file" {
 			if _, err := os.Stat(rolesFile); os.IsNotExist(err) {
 				// new secure store, so we should prompt user twice for password
 				// if ENV var is not set
 				if password := os.Getenv(ENV_SSO_FILE_PASSWORD); password == "" {
-					pass1, err := fileKeyringPassphrasePrompt("Select password")
+					pass1, err := fileKeyringPassword("Select password")
 					if err != nil {
 						return &c, fmt.Errorf("Password error: %s", err.Error())
 					}
-					pass2, err := fileKeyringPassphrasePrompt("Verify password")
+					pass2, err := fileKeyringPassword("Verify password")
 					if err != nil {
 						return &c, fmt.Errorf("Password error: %s", err.Error())
 					}
@@ -92,7 +93,7 @@ func NewKeyringConfig(name, configDir string) (*keyring.Config, error) {
 	return &c, nil
 }
 
-func fileKeyringPassphrasePrompt(prompt string) (string, error) {
+func fileKeyringPassword(prompt string) (string, error) {
 	if password := os.Getenv(ENV_SSO_FILE_PASSWORD); password != "" {
 		return password, nil
 	}
@@ -105,8 +106,13 @@ func fileKeyringPassphrasePrompt(prompt string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	s := string(b)
+	if s == "" {
+		fmt.Println()
+		log.Fatalf("Aborting with empty password")
+	}
 	fmt.Println()
-	return string(b), nil
+	return s, nil
 }
 
 func OpenKeyring(cfg *keyring.Config) (*KeyringStore, error) {

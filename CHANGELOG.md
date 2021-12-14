@@ -6,6 +6,10 @@
  * Now use macOS `login` Keychain instead of `AWSSSOCli` #150
  * All secure storage methods now store a single entry instead of multiple entries
  * Replace `console --use-sts` with `console --prompt` #169
+ * Improve password prompting for file based keyring #171
+
+### Bug Fixes
+ * file keyring will no longer infinitely prompt for new password
 
 ## [v1.4.0]
 
