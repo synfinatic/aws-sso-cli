@@ -24,9 +24,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
-	"strconv"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/c-bata/go-prompt"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
@@ -39,8 +40,8 @@ const AWS_FEDERATED_URL = "https://signin.aws.amazon.com/federation"
 type ConsoleCmd struct {
 	// Console actually should honor the --region flag
 	Region   string `kong:"help='AWS Region',env='AWS_DEFAULT_REGION',predictor='region'"`
-	UseSts   bool   `kong:"short='s',help='Use existing STS credentials to generate URL'"`
 	Duration int64  `kong:"short='d',help='AWS Session duration in minutes (default 60)'"` // default stored in DEFAULT_CONFIG
+	Prompt   bool   `kong:"short='p',help='Force interactive prompt to select role'"`
 
 	Arn       string `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
 	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNT_ID',predictor='accountId'"`
@@ -57,7 +58,9 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 		duration = ctx.Cli.Console.Duration
 	}
 
-	if ctx.Cli.Console.Arn != "" {
+	if ctx.Cli.Console.Prompt {
+		return consolePrompt(ctx)
+	} else if ctx.Cli.Console.Arn != "" {
 		awssso := doAuth(ctx)
 
 		accountid, role, err := utils.ParseRoleARN(ctx.Cli.Console.Arn)
@@ -69,40 +72,42 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 	} else if ctx.Cli.Console.AccountId > 0 && ctx.Cli.Console.Role != "" {
 		awssso := doAuth(ctx)
 		return openConsole(ctx, awssso, ctx.Cli.Console.AccountId, ctx.Cli.Console.Role)
-	} else if ctx.Cli.Console.UseSts {
-		if ctx.Cli.Console.AccessKeyId == "" {
-			return fmt.Errorf("AWS_ACCESS_KEY_ID is not set")
-		}
-
-		if ctx.Cli.Console.SecretAccessKey == "" {
-			return fmt.Errorf("AWS_SECRET_ACCESS_KEY is not set")
-		}
-
-		if ctx.Cli.Console.SessionToken == "" {
-			return fmt.Errorf("AWS_SESSION_TOKEN is not set")
-		}
-
+	} else if haveAWSEnvVars(ctx) {
 		creds := storage.RoleCredentials{
 			AccessKeyId:     ctx.Cli.Console.AccessKeyId,
 			SecretAccessKey: ctx.Cli.Console.SecretAccessKey,
 			SessionToken:    ctx.Cli.Console.SessionToken,
 		}
 
-		accountid, err := strconv.ParseInt(os.Getenv("AWS_SSO_ACCOUNT_ID"), 10, 64)
+		// ask AWS STS for who we are
+		s := session.Must(session.NewSession())
+		stsSession := sts.New(s, aws.NewConfig().WithRegion("us-east-1"))
+		input := sts.GetCallerIdentityInput{}
+		output, err := stsSession.GetCallerIdentity(&input)
 		if err != nil {
-			return fmt.Errorf("Unable to parse AWS_SSO_ACCOUNT_ID: %s", os.Getenv("AWS_SSO_ACCOUNT_ID"))
+			return fmt.Errorf("Unable to call sts get-caller-identity: %s", err.Error())
 		}
 
-		region := ctx.Settings.GetDefaultRegion(accountid, os.Getenv("AWS_SSO_ROLE_NAME"), false)
+		accountid, role, err := utils.ParseRoleARN(aws.StringValue(output.Arn))
+		if err != nil {
+			return fmt.Errorf("Unable to parse ARN: %s", aws.StringValue(output.Arn))
+		}
+
+		region := ctx.Settings.GetDefaultRegion(accountid, role, false)
 		if ctx.Cli.Console.Region != "" {
 			region = ctx.Cli.Console.Region
 		}
 		return openConsoleAccessKey(ctx, &creds, duration, region)
 	}
 
+	// default action
+	return consolePrompt(ctx)
+}
+
+func consolePrompt(ctx *RunContext) error {
+	// use completer to figure out the role
 	fmt.Printf("Please use `exit` or `Ctrl-D` to quit.\n")
 
-	// use completer to figure out the role
 	sso, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
 	if err != nil {
 		return err
@@ -121,6 +126,23 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 
 	p.Run()
 	return nil
+}
+
+// haveAWSEnvVars returns true if we have all the AWS environment variables we need for a role
+func haveAWSEnvVars(ctx *RunContext) bool {
+	if ctx.Cli.Console.AccessKeyId == "" {
+		return false
+	}
+
+	if ctx.Cli.Console.SecretAccessKey == "" {
+		return false
+	}
+
+	if ctx.Cli.Console.SessionToken == "" {
+		return false
+	}
+
+	return true
 }
 
 // opens the AWS console or just prints the URL
