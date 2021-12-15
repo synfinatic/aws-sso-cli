@@ -125,7 +125,7 @@ func accountIdToStr(id int64) string {
 func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) error {
 	region := ctx.Settings.GetDefaultRegion(ctx.Cli.Exec.AccountId, ctx.Cli.Exec.Role, ctx.Cli.Exec.NoRegion)
 
-	ctx.Settings.Cache.AddHistory(utils.MakeRoleARN(accountid, role), ctx.Settings.HistoryLimit)
+	ctx.Settings.Cache.AddHistory(utils.MakeRoleARN(accountid, role))
 	if err := ctx.Settings.Cache.Save(false); err != nil {
 		log.WithError(err).Warnf("Unable to update cache")
 	}

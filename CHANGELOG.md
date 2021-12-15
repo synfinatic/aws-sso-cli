@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### New Features
+ * Add `HistoryMinutes` option to limit history by time, not just count #139
+
 ### Changes
  * Now use macOS `login` Keychain instead of `AWSSSOCli` #150
  * All secure storage methods now store a single entry instead of multiple entries

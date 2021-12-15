@@ -335,6 +335,7 @@ PromptColors:
     <Option 2>: <Color>
     <Option N>: <Color>
 HistoryLimit: <integer>
+HistoryMinutes: <integer>
 ListFields:
     - <field 1>
     - <field 2>
@@ -535,6 +536,14 @@ Valid high intensity colors:
 
 Limits the number of recently used roles tracked via the History tag.
 Default is last 10 unique roles.  Set to 0 to disable.
+
+### HistoryMinutes
+
+Limits the list of recently used roles tracked via the History tag to
+roles that were last used within the last X minutes.  Set to 0 to not limit
+based on the time.  Default is 1440 minutes (24 hours).
+
+This option has no effect if `HistoryLimit` is set to 0.
 
 #### ListFields
 

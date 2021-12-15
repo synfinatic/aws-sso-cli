@@ -61,7 +61,11 @@ func OpenCache(f string, s *Settings) (*Cache, error) {
 		}
 		err = json.Unmarshal(cacheBytes, &cache)
 	}
-	return &cache, err
+
+	c := &cache
+	c.deleteOldHistory()
+
+	return c, err
 }
 
 // Expired returns if our Roles cache data is too old.
@@ -100,7 +104,7 @@ func (c *Cache) Save(updateTime bool) error {
 
 // adds a role to the History list up to the max number of entries
 // and then removes the History tag from any roles that aren't in our list
-func (c *Cache) AddHistory(item string, max int) {
+func (c *Cache) AddHistory(item string) {
 	// If it's already in the list, remove it
 	for x, h := range c.History {
 		if h == item {
@@ -111,12 +115,13 @@ func (c *Cache) AddHistory(item string, max int) {
 	}
 
 	c.History = append([]string{item}, c.History...) // push on top
-	for len(c.History) > max {
+	for len(c.History) > c.settings.HistoryLimit {
 		// remove the oldest entry
 		c.History = c.History[:len(c.History)-1]
 	}
-	aId, roleName, _ := utils.ParseRoleARN(item)
 
+	// Update our Tags for this new item
+	aId, roleName, _ := utils.ParseRoleARN(item)
 	if a, ok := c.Roles.Accounts[aId]; ok {
 		if r, ok := a.Roles[roleName]; ok {
 			r.Tags["History"] = fmt.Sprintf("%s:%s,%d", a.Alias, roleName, time.Now().Unix())
@@ -138,6 +143,47 @@ func (c *Cache) AddHistory(item string, max int) {
 			delete(c.Roles.Accounts[aId].Roles[roleName].Tags, "History")
 		}
 	}
+}
+
+// deleteOldHistory removes any items from history which are older than HistoryMinutes
+// Does not actually save to disk, only updates in memory cache
+func (c *Cache) deleteOldHistory() {
+	if c.settings.HistoryMinutes <= 0 {
+		// no op if HistoryMinutes <= 0
+		return
+	}
+
+	newHistoryItems := []string{}
+	for _, arn := range c.History {
+		id, role, err := utils.ParseRoleARN(arn)
+		if err != nil {
+			log.Errorf("Unable to parse History ARN %s: %s", arn, err.Error())
+			continue
+		}
+
+		if a, ok := c.Roles.Accounts[id]; ok {
+			if r, ok := a.Roles[role]; ok {
+				// figure out if this history item has expired
+				values := strings.SplitN(r.Tags["History"], ",", 2)
+				lastTime, err := strconv.ParseInt(values[1], 10, 64)
+				if err != nil {
+					log.Errorf("Unable to parse History Tag '%s': %s", r.Tags["History"], err.Error())
+					continue
+				}
+
+				d := time.Since(time.Unix(lastTime, 0))
+				if int64(d.Minutes()) < c.settings.HistoryMinutes {
+					// keep current entries in our list
+					newHistoryItems = append(newHistoryItems, arn)
+				} else {
+					// else, delete the tag
+					delete(r.Tags, "History")
+				}
+			}
+		}
+	}
+
+	c.History = newHistoryItems
 }
 
 // Refresh updates our cached Roles based on AWS SSO & our Config

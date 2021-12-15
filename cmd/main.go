@@ -75,6 +75,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"PromptColors.SuggestionTextColor":          "White",
 	"DefaultRegion":                             "us-east-1",
 	"HistoryLimit":                              10,
+	"HistoryMinutes":                            1440, // 24hrs
 	"ListFields":                                []string{"AccountId", "AccountAlias", "RoleName", "ExpiresStr"},
 	"ConsoleDuration":                           60,
 	"UrlAction":                                 "open",
