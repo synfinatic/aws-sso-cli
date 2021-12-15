@@ -1,17 +1,13 @@
 # Frequently Asked Questions
 
- * [How do I change the password for the macOS Keychain?](#how-do-i-change-the-password-for-the-macos-keychain)
+ * [How do I delete all secrets from the macOS Keychain?](#how-do-i-delete-all-secrets-from-the-macos-keychain)
  * [How does AWS SSO manage the $AWS\_DEFAULT\_REGION?](#how-does-aws-sso-manage-the-aws_default_region)
 
-### How do I change the password for the macOS Keychain?
+### How do I delete all secrets from the macOS keychain?
 
-You can use `Keychain Access` to do this.  From a terminal, type:
-
-`open ~/Library/Keychains/AWSSSOCli.keychain-db`
-
-Then make sure to select the `AWSSSOCli` keychain.  Then:
-
-`Edit -> Change password for AWSSSOCli...`
+ 1. Open `/Applications/Utilities/Keychain Access.app`
+ 2. Choose the `login` keychain
+ 3. Find the entry named `aws-sso-cli` and right click -> `Delete "aws-sso-cli"`
 
 ### How does AWS SSO manage the $AWS_DEFAULT_REGION?
 
