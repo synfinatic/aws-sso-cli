@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v1.5.0] - 2021-12-14
+
 ### New Features
  * Add `HistoryMinutes` option to limit history by time, not just count #139
 
@@ -14,7 +16,7 @@
 ### Bug Fixes
  * file keyring will no longer infinitely prompt for new password
 
-## [v1.4.0]
+## [v1.4.0] - 2021-11-25
 
 ### Breaking Changes
  * Standardize on `AWS_SSO` prefix for environment variables
@@ -137,7 +139,8 @@
 ## [v1.0.0] - 2021-07-15
 
 Initial release
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.4.0...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.5.0...main
+[v1.5.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.5.0
 [v1.4.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.4.0
 [v1.3.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.3.1
 [v1.3.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.3.0
