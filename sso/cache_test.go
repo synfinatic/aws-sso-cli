@@ -18,7 +18,11 @@ type CacheTestSuite struct {
 }
 
 func TestCacheTestSuite(t *testing.T) {
-	c, _ := OpenCache(TEST_CACHE_FILE, nil)
+	settings := &Settings{
+		HistoryLimit:   1,
+		HistoryMinutes: 90,
+	}
+	c, _ := OpenCache(TEST_CACHE_FILE, settings)
 	s := &CacheTestSuite{
 		cache: c,
 	}
@@ -29,25 +33,30 @@ func (suite *CacheTestSuite) TestAddHistory() {
 	t := suite.T()
 
 	c := &Cache{
+		settings: &Settings{
+			HistoryLimit:   1,
+			HistoryMinutes: 90,
+		},
 		History: []string{},
 		Roles:   &Roles{},
 	}
 
-	c.AddHistory("foo", 1)
-	assert.Len(t, c.History, 1)
+	c.AddHistory("foo")
+	assert.Len(t, c.History, 1, 0)
 	assert.Contains(t, c.History, "foo")
 
-	c.AddHistory("bar", 1)
+	c.AddHistory("bar")
 	assert.Len(t, c.History, 1)
 	assert.Contains(t, c.History, "bar")
 
-	c.AddHistory("foo", 2)
+	c.settings.HistoryLimit = 2
+	c.AddHistory("foo")
 	assert.Len(t, c.History, 2)
 	assert.Contains(t, c.History, "bar")
 	assert.Contains(t, c.History, "foo")
 
 	// this should be a no-op
-	c.AddHistory("foo", 2)
+	c.AddHistory("foo")
 	assert.Len(t, c.History, 2)
 	assert.Contains(t, c.History, "foo")
 	assert.Contains(t, c.History, "bar")

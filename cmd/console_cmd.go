@@ -157,7 +157,7 @@ func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role stri
 		duration = ctx.Cli.Console.Duration
 	}
 
-	ctx.Settings.Cache.AddHistory(utils.MakeRoleARN(accountid, role), ctx.Settings.HistoryLimit)
+	ctx.Settings.Cache.AddHistory(utils.MakeRoleARN(accountid, role))
 	if err := ctx.Settings.Cache.Save(false); err != nil {
 		log.WithError(err).Warnf("Unable to update cache")
 	}

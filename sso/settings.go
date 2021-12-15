@@ -60,6 +60,7 @@ type Settings struct {
 	LogLevel          string                `koanf:"LogLevel" yaml:"LogLevel,omitempty"`
 	LogLines          bool                  `koanf:"LogLines" yaml:"LogLines,omitempty"`
 	HistoryLimit      int                   `koanf:"HistoryLimit" yaml:"HistoryLimit,omitempty"`
+	HistoryMinutes    int64                 `koanf:"HistoryMinutes" yaml:"HistoryMinutes,omitempty"`
 	ListFields        []string              `koanf:"ListFields" yaml:"ListFields,omitempty"`
 }
 
