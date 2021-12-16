@@ -165,7 +165,7 @@ func setupWizard(ctx *RunContext) error {
 	// HistoryLimit
 	if ctx.Cli.Setup.HistoryLimit < 0 {
 		prompt = promptui.Prompt{
-			Label:    "Maximum number of History items to keep",
+			Label:    "Maximum number of History items to keep (HistoryLimit)",
 			Validate: validateInteger,
 			Default:  "10",
 			Pointer:  promptui.PipeCursor,
@@ -180,7 +180,7 @@ func setupWizard(ctx *RunContext) error {
 
 	if ctx.Cli.Setup.HistoryMinutes < 0 {
 		prompt = promptui.Prompt{
-			Label:    "Number of minutes to keep items in History",
+			Label:    "Number of minutes to keep items in History (HistoryMinutes)",
 			Validate: validateInteger,
 			Default:  "1440",
 			Pointer:  promptui.PipeCursor,
