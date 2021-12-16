@@ -102,6 +102,7 @@ func setupWizard(ctx *RunContext) error {
 		Templates: &promptui.SelectTemplates{
 			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
 		},
+		Stdout: &bellSkipper{},
 	}
 	if _, ssoRegion, err = sel.Run(); err != nil {
 		return err
@@ -127,6 +128,7 @@ func setupWizard(ctx *RunContext) error {
 			Templates: &promptui.SelectTemplates{
 				Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
 			},
+			Stdout: &bellSkipper{},
 		}
 		if _, awsRegion, err = sel.Run(); err != nil {
 			return err
@@ -153,6 +155,7 @@ func setupWizard(ctx *RunContext) error {
 			Templates: &promptui.SelectTemplates{
 				Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
 			},
+			Stdout: &bellSkipper{},
 		}
 		if _, urlAction, err = sel.Run(); err != nil {
 			return err
