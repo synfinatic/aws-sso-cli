@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### New Features
+ * Setup now prompts for `LogLevel`
+
 ## [v1.5.1] - 2021-12-15
 
 ### New Features
