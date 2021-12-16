@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v1.5.1] - 2021-12-15
+
 ### New Features
  * Setup now prompts for `HistoryMinutes` and `HistoryLimit`
 
@@ -148,7 +150,9 @@
 ## [v1.0.0] - 2021-07-15
 
 Initial release
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.5.0...main
+
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.5.1...main
+[v1.5.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.5.1
 [v1.5.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.5.0
 [v1.4.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.4.0
 [v1.3.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.3.1
