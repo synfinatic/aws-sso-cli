@@ -80,6 +80,7 @@ run through the setup wizard and ask you a few questions to get started:
  * Default action to take with URls ([UrlAction](docs/config.md#UrlAction))
  * Maximum number of History items to keep ([HistoryLimit](docs/config.md#HistoryLimit))
  * Number of minutes to keep items in History ([HistoryMinutes](docs/config.md#HistoryMinutes))
+ * Log Level ([LogLevel](docs/config.md#LogLevel))
 
 After the guided setup, it is worth running:
 

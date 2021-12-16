@@ -68,7 +68,8 @@ func (cc *SetupCmd) Run(ctx *RunContext) error {
 
 func setupWizard(ctx *RunContext) error {
 	var err error
-	var instanceName, startURL, ssoRegion, awsRegion, urlAction, historyLimit, historyMinutes string
+	var instanceName, startURL, ssoRegion, awsRegion, urlAction string
+	var historyLimit, historyMinutes, logLevel string
 	var hLimit, hMinutes int64
 
 	// Name our SSO instance
@@ -99,10 +100,10 @@ func setupWizard(ctx *RunContext) error {
 		Label:        label,
 		Items:        AvailableAwsSSORegions,
 		HideSelected: false,
+		Stdout:       &bellSkipper{},
 		Templates: &promptui.SelectTemplates{
 			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
 		},
-		Stdout: &bellSkipper{},
 	}
 	if _, ssoRegion, err = sel.Run(); err != nil {
 		return err
@@ -125,10 +126,10 @@ func setupWizard(ctx *RunContext) error {
 			Label:        label,
 			Items:        defaultRegions,
 			HideSelected: false,
+			Stdout:       &bellSkipper{},
 			Templates: &promptui.SelectTemplates{
 				Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
 			},
-			Stdout: &bellSkipper{},
 		}
 		if _, awsRegion, err = sel.Run(); err != nil {
 			return err
@@ -150,12 +151,12 @@ func setupWizard(ctx *RunContext) error {
 		// How should we deal with URLs?
 		label = "Default action to take with URLs (UrlAction)"
 		sel = promptui.Select{
-			Label: label,
-			Items: []string{"open", "print", "clip"},
+			Label:  label,
+			Items:  []string{"open", "print", "clip"},
+			Stdout: &bellSkipper{},
 			Templates: &promptui.SelectTemplates{
 				Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
 			},
-			Stdout: &bellSkipper{},
 		}
 		if _, urlAction, err = sel.Run(); err != nil {
 			return err
@@ -178,6 +179,7 @@ func setupWizard(ctx *RunContext) error {
 		hLimit = ctx.Cli.Setup.HistoryLimit
 	}
 
+	// HistoryMinutes
 	if ctx.Cli.Setup.HistoryMinutes < 0 {
 		prompt = promptui.Prompt{
 			Label:    "Number of minutes to keep items in History (HistoryMinutes)",
@@ -193,6 +195,29 @@ func setupWizard(ctx *RunContext) error {
 		hMinutes = ctx.Cli.Setup.HistoryMinutes
 	}
 
+	// LogLevel
+	logLevels := []string{
+		"error",
+		"warn",
+		"info",
+		"debug",
+		"trace",
+	}
+	label = "Log Level (LogLevel)"
+	sel = promptui.Select{
+		Label:        label,
+		Items:        logLevels,
+		HideSelected: false,
+		CursorPos:    2, // info
+		Stdout:       &bellSkipper{},
+		Templates: &promptui.SelectTemplates{
+			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
+		},
+	}
+	if _, logLevel, err = sel.Run(); err != nil {
+		return err
+	}
+
 	// write config file
 	s := sso.Settings{
 		DefaultSSO:     instanceName,
@@ -200,6 +225,7 @@ func setupWizard(ctx *RunContext) error {
 		UrlAction:      urlAction,
 		HistoryLimit:   hLimit,
 		HistoryMinutes: hMinutes,
+		LogLevel:       logLevel,
 	}
 	s.SSO[instanceName] = &sso.SSOConfig{
 		SSORegion:     ssoRegion,
