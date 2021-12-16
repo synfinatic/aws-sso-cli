@@ -9,7 +9,7 @@
  2. Choose the `login` keychain
  3. Find the entry named `aws-sso-cli` and right click -> `Delete "aws-sso-cli"`
 
-### How does AWS SSO manage the $AWS_DEFAULT_REGION?
+### How does AWS SSO manage the $AWS\_DEFAULT\_REGION?
 
 AWS SSO will leave the `$AWS_DEFAULT_REGION` environment variable alone
 unless the following are all true:
