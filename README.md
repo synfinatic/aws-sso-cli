@@ -81,6 +81,16 @@ run through the setup wizard and ask you a few questions to get started:
  * Maximum number of History items to keep ([HistoryLimit](docs/config.md#HistoryLimit))
  * Number of minutes to keep items in History ([HistoryMinutes](docs/config.md#HistoryMinutes))
 
+After the guided setup, it is worth running:
+
+`aws-sso install-completions`
+
+to install autocomplete for your shell.
+
+For more information about configuring `aws-sso` read the
+[configuration guide](docs/config.md).  For more information about running
+`aws-sso` see [commands](#commands).
+
 ## Security
 
 Unlike the official [AWS cli tooling](https://aws.amazon.com/cli/), _all_
