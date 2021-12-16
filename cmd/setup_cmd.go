@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/manifoldco/promptui"
@@ -50,11 +52,13 @@ var AvailableAwsSSORegions []string = []string{
 
 // SetupCmd defines the Kong args for the setup command (which currently doesn't exist)
 type SetupCmd struct {
-	DefaultRegion string `kong:"help='Default AWS region for running commands (or \"None\")'"`
-	UrlAction     string `kong:"name='default-url-action',help='How to handle URLs [open|print|clip]'"`
-	SSOStartUrl   string `kong:"help='AWS SSO User Portal URL'"`
-	SSORegion     string `kong:"help='AWS SSO Instance Region'"`
-	Force         bool   `kong:"help='Force override of existing config file'"`
+	DefaultRegion  string `kong:"help='Default AWS region for running commands (or \"None\")'"`
+	UrlAction      string `kong:"name='default-url-action',help='How to handle URLs [open|print|clip]'"`
+	SSOStartUrl    string `kong:"help='AWS SSO User Portal URL'"`
+	SSORegion      string `kong:"help='AWS SSO Instance Region'"`
+	HistoryLimit   int64  `kong:"help='Number of items to keep in History',default=-1"`
+	HistoryMinutes int64  `kong:"help='Number of minutes to keep items in History',default=-1"`
+	Force          bool   `kong:"help='Force override of existing config file'"`
 }
 
 // Run executes the setup command
@@ -64,13 +68,15 @@ func (cc *SetupCmd) Run(ctx *RunContext) error {
 
 func setupWizard(ctx *RunContext) error {
 	var err error
-	var instanceName, startURL, ssoRegion, awsRegion, urlAction string
+	var instanceName, startURL, ssoRegion, awsRegion, urlAction, historyLimit, historyMinutes string
+	var hLimit, hMinutes int64
 
 	// Name our SSO instance
 	prompt := promptui.Prompt{
-		Label:    "SSO Instance Name",
+		Label:    "SSO Instance Name (DefaultSSO)",
 		Validate: validateSSOName,
 		Default:  ctx.Cli.SSO,
+		Pointer:  promptui.PipeCursor,
 	}
 	if instanceName, err = prompt.Run(); err != nil {
 		return err
@@ -81,16 +87,21 @@ func setupWizard(ctx *RunContext) error {
 		Label:    "SSO Start URL (StartUrl)",
 		Validate: validateSSOUrl,
 		Default:  ctx.Cli.Setup.SSOStartUrl,
+		Pointer:  promptui.PipeCursor,
 	}
 	if startURL, err = prompt.Run(); err != nil {
 		return err
 	}
 
 	// Pick our AWS SSO region
+	label := "AWS SSO Region (SSORegion)"
 	sel := promptui.Select{
-		Label:        "AWS SSO Region (SSORegion)",
+		Label:        label,
 		Items:        AvailableAwsSSORegions,
 		HideSelected: false,
+		Templates: &promptui.SelectTemplates{
+			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
+		},
 	}
 	if _, ssoRegion, err = sel.Run(); err != nil {
 		return err
@@ -108,10 +119,14 @@ func setupWizard(ctx *RunContext) error {
 	}
 
 	if len(awsRegion) == 0 {
+		label = "Default region for connecting to AWS (DefaultRegion)"
 		sel = promptui.Select{
-			Label:        "Default region for connecting to AWS (DefaultRegion)",
+			Label:        label,
 			Items:        defaultRegions,
 			HideSelected: false,
+			Templates: &promptui.SelectTemplates{
+				Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
+			},
 		}
 		if _, awsRegion, err = sel.Run(); err != nil {
 			return err
@@ -131,22 +146,59 @@ func setupWizard(ctx *RunContext) error {
 
 	if len(urlAction) == 0 {
 		// How should we deal with URLs?
+		label = "Default action to take with URLs (UrlAction)"
 		sel = promptui.Select{
-			Label: "Default action to take with URLs (UrlAction)",
+			Label: label,
 			Items: []string{"open", "print", "clip"},
+			Templates: &promptui.SelectTemplates{
+				Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
+			},
 		}
 		if _, urlAction, err = sel.Run(); err != nil {
 			return err
 		}
 	}
 
+	// HistoryLimit
+	if ctx.Cli.Setup.HistoryLimit < 0 {
+		prompt = promptui.Prompt{
+			Label:    "Maximum number of History items to keep",
+			Validate: validateInteger,
+			Default:  "10",
+			Pointer:  promptui.PipeCursor,
+		}
+		if historyLimit, err = prompt.Run(); err != nil {
+			return err
+		}
+		hLimit, _ = strconv.ParseInt(historyLimit, 10, 64)
+	} else {
+		hLimit = ctx.Cli.Setup.HistoryLimit
+	}
+
+	if ctx.Cli.Setup.HistoryMinutes < 0 {
+		prompt = promptui.Prompt{
+			Label:    "Number of minutes to keep items in History",
+			Validate: validateInteger,
+			Default:  "1440",
+			Pointer:  promptui.PipeCursor,
+		}
+		if historyMinutes, err = prompt.Run(); err != nil {
+			return err
+		}
+		hMinutes, _ = strconv.ParseInt(historyMinutes, 10, 64)
+	} else {
+		hMinutes = ctx.Cli.Setup.HistoryMinutes
+	}
+
 	// write config file
 	s := sso.Settings{
-		DefaultSSO: instanceName,
-		SSO:        map[string]*sso.SSOConfig{},
-		UrlAction:  urlAction,
+		DefaultSSO:     instanceName,
+		SSO:            map[string]*sso.SSOConfig{},
+		UrlAction:      urlAction,
+		HistoryLimit:   hLimit,
+		HistoryMinutes: hMinutes,
 	}
-	s.SSO[ctx.Cli.SSO] = &sso.SSOConfig{
+	s.SSO[instanceName] = &sso.SSOConfig{
 		SSORegion:     ssoRegion,
 		StartUrl:      startURL,
 		DefaultRegion: awsRegion,
@@ -189,8 +241,17 @@ func validateSSOUrl(input string) error {
 
 // validateSSOName just makes sure we have some text
 func validateSSOName(input string) error {
-	if len(input) > 0 {
+	r, _ := regexp.Compile(`^[a-zA-Z0-9]+$`)
+	if len(input) > 0 && r.Match([]byte(input)) {
 		return nil
 	}
 	return fmt.Errorf("SSO Name must be a valid string")
+}
+
+func validateInteger(input string) error {
+	_, err := strconv.ParseInt(input, 10, 64)
+	if err != nil {
+		return fmt.Errorf("Value must be a valid integer")
+	}
+	return nil
 }
