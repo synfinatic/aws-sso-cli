@@ -9,6 +9,7 @@
  * Setup now uses a smaller cursor which doesn't hide the character
  * Fix setup bug where the SSO Instance was always called `Default`
  * Setup no longer accepts invalid characters for strings #178
+ * Fix error/bell sound on macOS when selecting options during setup #179
 
 ## [v1.5.0] - 2021-12-14
 
