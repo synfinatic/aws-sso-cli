@@ -291,9 +291,14 @@ for this to take effect.
 
 ## Configuration
 
+Anytime you you run `aws-sso` and it does not find it's configuration file, it
+will prompt you via a series of questions to do a basic configuration to get
+started.
+
 By default, `aws-sso` stores it's configuration file in `~/.aws-sso/config.yaml`,
 but this can be overridden by setting `$AWS_SSO_CONFIG` in your shell or via the
 `--config` flag.
+
 
 ```yaml
 SSOConfig:

@@ -115,7 +115,7 @@ func (c *Cache) AddHistory(item string) {
 	}
 
 	c.History = append([]string{item}, c.History...) // push on top
-	for len(c.History) > c.settings.HistoryLimit {
+	for int64(len(c.History)) > c.settings.HistoryLimit {
 		// remove the oldest entry
 		c.History = c.History[:len(c.History)-1]
 	}

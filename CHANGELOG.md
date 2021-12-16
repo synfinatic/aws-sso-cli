@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### New Features
+ * Setup now prompts for `HistoryMinutes` and `HistoryLimit`
+
+### Bug Fixes
+ * Setup now uses a smaller cursor which doesn't hide the character
+ * Fix setup bug where the SSO Instance was always called `Default`
+ * Setup no longer accepts invalid characters for strings #178
+
 ## [v1.5.0] - 2021-12-14
 
 ### New Features
