@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"runtime"
 	"strings"
 
 	"github.com/99designs/keyring"
@@ -171,6 +172,13 @@ func (kr *KeyringStore) saveStorageData(s StorageData) error {
 		Label:       KEYRING_ID,
 		Description: "aws-sso secure storage",
 	})
+
+	// Work around bogus errors wincred storage issue.  Sadly doesn't seem
+	// like we can tell if are using windcred, so just key off of the OS
+	// https://github.com/99designs/keyring/issues/99
+	if runtime.GOOS == "windows" && err.Error() == "The stub received bad data." {
+		return nil
+	}
 	return err
 }
 
@@ -272,7 +280,7 @@ func (kr *KeyringStore) DeleteCreateTokenResponse(key string) error {
 func (kr *KeyringStore) SaveRoleCredentials(arn string, token RoleCredentials) error {
 	storage := StorageData{}
 	if err := kr.getStorageData(&storage); err != nil {
-		return err
+		return fmt.Errorf("Unable to getStorageData: %s", err.Error())
 	}
 
 	storage.RoleCredentials[arn] = token

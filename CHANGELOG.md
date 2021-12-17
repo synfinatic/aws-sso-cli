@@ -4,6 +4,7 @@
 
 ### New Features
  * Setup now prompts for `LogLevel`
+ * Suppress bogus warning when saving Role credentials in `wincred` store #183
 
 ### Bugs Fixes 
  * Incorrect `--level` value now correctly tells user the correct name of the flag

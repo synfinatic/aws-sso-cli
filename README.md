@@ -92,6 +92,13 @@ For more information about configuring `aws-sso` read the
 [configuration guide](docs/config.md).  For more information about running
 `aws-sso` see [commands](#commands).
 
+### Windows Support
+
+Window users are not the primary target for `aws-sso`, but I've found it generally
+works better under `Command Prompt` a lot better than `PowerShell`.  If you are
+a Windows user and experience any bugs, please open a [detailed bug report](
+https://github.com/synfinatic/aws-sso-cli/issues/new).
+
 ## Security
 
 Unlike the official [AWS cli tooling](https://aws.amazon.com/cli/), _all_
