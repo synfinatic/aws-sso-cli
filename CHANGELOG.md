@@ -5,6 +5,9 @@
 ### New Features
  * Setup now prompts for `LogLevel`
 
+### Bugs Fixes 
+ * Incorrect `--level` value now correctly tells user the correct name of the flag
+
 ## [v1.5.1] - 2021-12-15
 
 ### New Features

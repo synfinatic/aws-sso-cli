@@ -26,7 +26,7 @@ import (
 	"strings"
 
 	"github.com/manifoldco/promptui"
-	// log "github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
@@ -58,6 +58,7 @@ type SetupCmd struct {
 	SSORegion      string `kong:"help='AWS SSO Instance Region'"`
 	HistoryLimit   int64  `kong:"help='Number of items to keep in History',default=-1"`
 	HistoryMinutes int64  `kong:"help='Number of minutes to keep items in History',default=-1"`
+	DefaultLevel   string `kong:"help='Logging level [error|warn|info|debug|trace]'"`
 	Force          bool   `kong:"help='Force override of existing config file'"`
 }
 
@@ -71,6 +72,18 @@ func setupWizard(ctx *RunContext) error {
 	var instanceName, startURL, ssoRegion, awsRegion, urlAction string
 	var historyLimit, historyMinutes, logLevel string
 	var hLimit, hMinutes int64
+
+	if ctx.Cli.Setup.UrlAction != "" {
+		if err := urlActionValidate(ctx.Cli.Setup.UrlAction); err != nil {
+			log.Fatalf("Invalid value for --default-url-action %s", ctx.Cli.Setup.UrlAction)
+		}
+	}
+
+	if ctx.Cli.Setup.DefaultLevel != "" {
+		if err := logLevelValidate(ctx.Cli.Setup.DefaultLevel); err != nil {
+			log.Fatalf("Invalid value for --default-level %s", ctx.Cli.Setup.DefaultLevel)
+		}
+	}
 
 	// Name our SSO instance
 	prompt := promptui.Prompt{
@@ -196,26 +209,30 @@ func setupWizard(ctx *RunContext) error {
 	}
 
 	// LogLevel
-	logLevels := []string{
-		"error",
-		"warn",
-		"info",
-		"debug",
-		"trace",
-	}
-	label = "Log Level (LogLevel)"
-	sel = promptui.Select{
-		Label:        label,
-		Items:        logLevels,
-		HideSelected: false,
-		CursorPos:    2, // info
-		Stdout:       &bellSkipper{},
-		Templates: &promptui.SelectTemplates{
-			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
-		},
-	}
-	if _, logLevel, err = sel.Run(); err != nil {
-		return err
+	if ctx.Cli.Setup.DefaultLevel == "" {
+		logLevels := []string{
+			"error",
+			"warn",
+			"info",
+			"debug",
+			"trace",
+		}
+		label = "Log Level (LogLevel)"
+		sel = promptui.Select{
+			Label:        label,
+			Items:        logLevels,
+			HideSelected: false,
+			CursorPos:    2, // info
+			Stdout:       &bellSkipper{},
+			Templates: &promptui.SelectTemplates{
+				Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
+			},
+		}
+		if _, logLevel, err = sel.Run(); err != nil {
+			return err
+		}
+	} else {
+		logLevel = ctx.Cli.Setup.DefaultLevel
 	}
 
 	// write config file
