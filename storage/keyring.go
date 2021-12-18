@@ -176,7 +176,7 @@ func (kr *KeyringStore) saveStorageData(s StorageData) error {
 	// Work around bogus errors wincred storage issue.  Sadly doesn't seem
 	// like we can tell if are using windcred, so just key off of the OS
 	// https://github.com/99designs/keyring/issues/99
-	if runtime.GOOS == "windows" && err.Error() == "The stub received bad data." {
+	if err != nil && runtime.GOOS == "windows" && err.Error() == "The stub received bad data." {
 		return nil
 	}
 	return err

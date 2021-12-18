@@ -21,7 +21,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
+	"runtime"
 
 	// log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/utils"
@@ -42,9 +42,12 @@ type EvalCmd struct {
 func (cc *EvalCmd) Run(ctx *RunContext) error {
 	var err error
 
+	if runtime.GOOS == "windows" && !strings.HasSuffix(os.Getenv("SHELL"), "/bash") {
+		return fmt.Errorf("eval is not supported on Windows unless running under bash")
+	}
+
 	if ctx.Cli.Eval.Clear {
-		unsetEnvVars(ctx)
-		return nil
+		return unsetEnvVars(ctx)
 	}
 
 	// never print the URL since that breaks bash's eval
@@ -82,16 +85,14 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 	for k, v := range execShellEnvs(ctx, awssso, accountid, role, region) {
 		if len(v) == 0 {
 			fmt.Printf("unset %s\n", k)
-		} else if strings.Contains(v, " ") {
-			fmt.Printf("export %s=\"%s\"\n", k, v)
 		} else {
-			fmt.Printf("export %s=%s\n", k, v)
+			fmt.Printf("export %s=\"%s\"\n", k, v)
 		}
 	}
 	return nil
 }
 
-func unsetEnvVars(ctx *RunContext) {
+func unsetEnvVars(ctx *RunContext) error {
 	envs := []string{
 		"AWS_ACCESS_KEY_ID",
 		"AWS_SECRET_ACCESS_KEY",
@@ -117,4 +118,5 @@ func unsetEnvVars(ctx *RunContext) {
 	for _, e := range envs {
 		fmt.Printf("unset %s\n", e)
 	}
+	return nil
 }

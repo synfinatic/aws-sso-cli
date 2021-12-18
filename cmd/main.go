@@ -267,7 +267,7 @@ func GetRoleCredentials(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, ro
 	var err error
 	creds, err = awssso.GetRoleCredentials(accountid, role)
 	if err != nil {
-		log.WithError(err).Fatalf("Unable to get role credentials for %s", role)
+		log.WithError(err).Fatalf("Unable to get role credentials for %s", arn)
 	}
 
 	log.Debugf("Retrieved role credentials from AWS SSO")
