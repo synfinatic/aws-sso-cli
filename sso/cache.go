@@ -486,6 +486,9 @@ func (r *Roles) GetRoleTags() *RoleTags {
 // Role returns the specified role as an AWSRoleFlat
 func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) {
 	account := r.Accounts[accountId]
+	if account == nil {
+		return &AWSRoleFlat{}, fmt.Errorf("Invalid AWS AccountID: %d", accountId)
+	}
 	for thisRoleName, role := range account.Roles {
 		if thisRoleName == roleName {
 			flat := AWSRoleFlat{

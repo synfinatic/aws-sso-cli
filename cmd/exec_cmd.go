@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 	"text/template"
@@ -50,6 +51,11 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 	err := checkAwsEnvironment()
 	if err != nil {
 		log.WithError(err).Fatalf("Unable to continue")
+	}
+
+	if runtime.GOOS == "windows" && ctx.Cli.Exec.Cmd == "" {
+		// Windows doesn't set $SHELL, so default to CommandPrompt
+		ctx.Cli.Exec.Cmd = "cmd.exe"
 	}
 
 	// Did user specify the ARN or account/role?

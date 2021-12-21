@@ -5,9 +5,11 @@
 ### New Features
  * Setup now prompts for `LogLevel`
  * Suppress bogus warning when saving Role credentials in `wincred` store #183
+ * Fix `eval` command on Windows using `export` instead of `set` #183
 
 ### Bugs Fixes 
  * Incorrect `--level` value now correctly tells user the correct name of the flag
+ * `exec` command now uses `cmd.exe` when no command is specified
 
 ## [v1.5.1] - 2021-12-15
 

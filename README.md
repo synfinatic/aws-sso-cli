@@ -201,14 +201,18 @@ Priority is given to:
  * `--arn`
  * `--account` and `--role`
 
-**Note:** The `eval` command only honors the `$AWS_SSO_ROLE_ARN` in the context of the `--refresh` flag.
-The `$AWS_SSO_ROLE_NAME` and `$AWS_SSO_ACCOUNT_ID` are always ignored.
+**Note:** The `eval` command only honors the `$AWS_SSO_ROLE_ARN` in the context
+of the `--refresh` flag.  The `$AWS_SSO_ROLE_NAME` and `$AWS_SSO_ACCOUNT_ID`
+are always ignored.
 
 **Note:** The `eval` command will never honor the `--url-action=print`
 option as this will intefere with bash/zsh/etc ability to evaluate
 the generated commands and will fall back to `--url-action=open`.
 
-See [Environment Varables](#environment-varables) for more information about what varibles are set.
+**Note:** The `eval` command is not supported under Windows CommandPrompt or PowerShell.
+
+See [Environment Varables](#environment-varables) for more information about
+what varibles are set.
 
 ### exec
 
