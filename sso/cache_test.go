@@ -8,8 +8,10 @@ import (
 )
 
 const (
-	TEST_CACHE_FILE = "./testdata/cache.json"
-	TEST_ROLE_ARN   = "arn:aws:iam:707513610766:role/AWSAdministratorAccess"
+	TEST_CACHE_FILE     = "./testdata/cache.json"
+	TEST_ROLE_ARN       = "arn:aws:iam:707513610766:role/AWSAdministratorAccess"
+	INVALID_ACCOUNT_ARN = "arn:aws:iam:707513618766:role/AWSAdministratorAccess"
+	INVALID_ROLE_ARN    = "arn:aws:iam:707513610766:role/AdministratorAccess"
 )
 
 type CacheTestSuite struct {
@@ -151,4 +153,13 @@ func (suite *CacheTestSuite) TestIsExpired() {
 
 	r, _ := suite.cache.GetRole(TEST_ROLE_ARN)
 	assert.True(t, r.IsExpired())
+}
+
+func (suite *CacheTestSuite) BadRole() {
+	t := suite.T()
+	_, err := suite.cache.GetRole(INVALID_ROLE_ARN)
+	assert.Error(t, err)
+
+	_, err = suite.cache.GetRole(INVALID_ACCOUNT_ARN)
+	assert.Error(t, err)
 }

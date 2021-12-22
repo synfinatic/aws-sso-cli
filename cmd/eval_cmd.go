@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 
 	// log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/utils"
