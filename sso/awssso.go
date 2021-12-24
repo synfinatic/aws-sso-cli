@@ -493,10 +493,13 @@ func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.Role
 	}))
 	stsSession := sts.New(mySession)
 
+	previousAccount, _ := utils.AccountIdToString(creds.AccountId)
+	previousRole := fmt.Sprintf("%s@%s", creds.RoleName, previousAccount)
+
 	input := sts.AssumeRoleInput{
 		//		DurationSeconds: aws.Int64(900),
 		RoleArn:         aws.String(utils.MakeRoleARN(accountId, role)),
-		RoleSessionName: aws.String(fmt.Sprintf("Via_%s_%s", aId, role)),
+		RoleSessionName: aws.String(previousRole),
 	}
 	if configRole.ExternalId != "" {
 		// Optional vlaue: https://docs.aws.amazon.com/sdk-for-go/api/service/sts/#AssumeRoleInput

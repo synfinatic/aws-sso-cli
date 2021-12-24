@@ -2,7 +2,8 @@
 
  * [How do I delete all secrets from the macOS Keychain?](#how-do-i-delete-all-secrets-from-the-macos-keychain)
  * [How good is the Windows support?](#how-good-is-the-windows-support)
- * [How does AWS SSO manage the $AWS\_DEFAULT\_REGION?](#how-does-aws-sso-manage-the-aws_default_region)
+ * [Does AWS SSO CLI support Role Chaining?](#does-aws-sso-cli-support-role-chaining)
+ * [How does AWS SSO CLI manage the $AWS\_DEFAULT\_REGION?](#how-does-aws-sso-cli-manage-the-aws_default_region)
 
 ### How do I delete all secrets from the macOS keychain?
 
@@ -30,7 +31,13 @@ files must be written to disk and would contain the clear text secrets that
 
 [Tracking ticket](https://github.com/synfinatic/aws-sso-cli/issues/188)
 
-### How does AWS SSO manage the $AWS\_DEFAULT\_REGION?
+### Does AWS SSO CLI support role chaining?
+
+Yes.  You can use `aws-sso` to assume roles in other AWS accounts or
+roles that are not managed via AWS SSO Permission Sets.  For more
+information on this, see the [Via](config.md#Via) configuration option.
+
+### How does AWS SSO CLI manage the $AWS\_DEFAULT\_REGION?
 
 AWS SSO will leave the `$AWS_DEFAULT_REGION` environment variable alone
 unless the following are all true:
