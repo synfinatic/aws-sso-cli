@@ -96,7 +96,7 @@ func (s *JsonStoreTestSuite) TestRegisterClientData() {
 func (s *JsonStoreTestSuite) TestRoleCredentials() {
 	t := s.T()
 	rc := RoleCredentials{}
-	arn := "arn:aws:iam:012344553243:role/AWSAdministratorAccess"
+	arn := "arn:aws:iam::012344553243:role/AWSAdministratorAccess"
 
 	err := s.json.GetRoleCredentials("foobar", &rc)
 	assert.NotNil(t, err)

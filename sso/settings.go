@@ -81,12 +81,14 @@ type SSOAccount struct {
 }
 
 type SSORole struct {
-	account       *SSOAccount       // pointer back up
-	ARN           string            `yaml:"ARN"`
-	Profile       string            `koanf:"Profile" yaml:"Profile,omitempty"`
-	Tags          map[string]string `koanf:"Tags" yaml:"Tags,omitempty"`
-	DefaultRegion string            `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
-	Via           string            `koanf:"Via" yaml:"Via,omitempty"`
+	account        *SSOAccount       // pointer back up
+	ARN            string            `yaml:"ARN"`
+	Profile        string            `koanf:"Profile" yaml:"Profile,omitempty"`
+	Tags           map[string]string `koanf:"Tags" yaml:"Tags,omitempty"`
+	DefaultRegion  string            `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
+	Via            string            `koanf:"Via" yaml:"Via,omitempty"`
+	ExternalId     string            `koanf:"ExternalId" yaml:"ExternalId,omitempty"`
+	SourceIdentity string            `koanf:"SourceIdentity" yaml:"SourceIdentity,omitempty"`
 }
 
 // GetDefaultRegion scans the config settings file to pick the most local DefaultRegion from the tree
@@ -367,6 +369,17 @@ func (s *SSOConfig) GetRoleMatches(tags map[string]string) []*SSORole {
 	return match
 }
 
+// GetRole returns the matching role if it exists
+func (s *SSOConfig) GetRole(accountId int64, role string) (*SSORole, error) {
+	if a, ok := s.Accounts[accountId]; ok {
+		if r, ok := a.Roles[role]; ok {
+			return r, nil
+		}
+	}
+	a, _ := utils.AccountIdToString(accountId)
+	return &SSORole{}, fmt.Errorf("Unable to find %s:%s", a, role)
+}
+
 // HasRole returns true/false if the given Account has the provided arn
 func (a *SSOAccount) HasRole(arn string) bool {
 	hasRole := false
@@ -440,19 +453,19 @@ func (r *SSORole) GetRoleName() string {
 
 // GetAccountId returns the accountId portion of the ARN or empty string on error
 func (r *SSORole) GetAccountId() string {
-	s := strings.Split(r.ARN, ":")
-	if len(s) < 4 {
-		log.Errorf("Role.ARN is missing the account field: '%v'\n%v", r.ARN, *r)
+	a, err := utils.AccountIdToString(r.GetAccountId64())
+	if err != nil {
+		log.WithError(err).Errorf("Unable to parse AccountId '%s'", a)
 		return ""
 	}
-	return s[3]
+	return a
 }
 
 // GetAccountId64 returns the accountId portion of the ARN
 func (r *SSORole) GetAccountId64() int64 {
-	i, err := strconv.ParseInt(r.GetAccountId(), 10, 64)
+	a, _, err := utils.ParseRoleARN(r.ARN)
 	if err != nil {
-		log.WithError(err).Panicf("Unable to decode account id for %s", r.ARN)
+		log.WithError(err).Panicf("Unable to parse %s", r.ARN)
 	}
-	return i
+	return a
 }

@@ -5,9 +5,10 @@
 ### New Features
  * Setup now prompts for `LogLevel`
  * Suppress bogus warning when saving Role credentials in `wincred` store #183
- * Fix `eval` command on Windows using `export` instead of `set` #183
+ * Add support for role chaining using `Via` tag #38
 
 ### Bugs Fixes 
+ * Fix issue with missing colon in parsed/generated Role ARNs for missing AWS region #192
  * Incorrect `--level` value now correctly tells user the correct name of the flag
  * `exec` command now uses `cmd.exe` when no command is specified
 

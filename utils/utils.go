@@ -89,10 +89,10 @@ func ParseRoleARN(arn string) (int64, string, error) {
 		// short account:Role format
 		accountid = s[0]
 		role = s[1]
-	} else if len(s) == 5 {
-		// long format for arn:aws:iam:XXXXXXXXXX:role/YYYYYYYY
-		accountid = s[3]
-		s = strings.Split(s[4], "/")
+	} else if len(s) == 6 {
+		// long format for arn:aws:iam::XXXXXXXXXX:role/YYYYYYYY
+		accountid = s[4]
+		s = strings.Split(s[5], "/")
 		if len(s) != 2 {
 			return 0, "", fmt.Errorf("Unable to parse ARN: %s", arn)
 		}
@@ -114,7 +114,7 @@ func MakeRoleARN(account int64, name string) string {
 	if err != nil {
 		log.Fatalf("%s", err.Error())
 	}
-	return fmt.Sprintf("arn:aws:iam:%s:role/%s", a, name)
+	return fmt.Sprintf("arn:aws:iam::%s:role/%s", a, name)
 }
 
 // ensures the given directory exists for the filename

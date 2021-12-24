@@ -9,9 +9,9 @@ import (
 
 const (
 	TEST_CACHE_FILE     = "./testdata/cache.json"
-	TEST_ROLE_ARN       = "arn:aws:iam:707513610766:role/AWSAdministratorAccess"
-	INVALID_ACCOUNT_ARN = "arn:aws:iam:707513618766:role/AWSAdministratorAccess"
-	INVALID_ROLE_ARN    = "arn:aws:iam:707513610766:role/AdministratorAccess"
+	TEST_ROLE_ARN       = "arn:aws:iam::707513610766:role/AWSAdministratorAccess"
+	INVALID_ACCOUNT_ARN = "arn:aws:iam::707513618766:role/AWSAdministratorAccess"
+	INVALID_ROLE_ARN    = "arn:aws:iam::707513610766:role/AdministratorAccess"
 )
 
 type CacheTestSuite struct {

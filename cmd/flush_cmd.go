@@ -35,7 +35,7 @@ func (cc *FlushCmd) Run(ctx *RunContext) error {
 	if err != nil {
 		return err
 	}
-	awssso := sso.NewAWSSSO(s.SSORegion, s.StartUrl, &ctx.Store)
+	awssso := sso.NewAWSSSO(s, &ctx.Store)
 
 	// Deleting the token response invalidates all our STS tokens
 	err = ctx.Store.DeleteCreateTokenResponse(awssso.StoreKey())

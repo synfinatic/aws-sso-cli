@@ -33,9 +33,9 @@ const (
 )
 
 var TEST_GET_ROLE_ARN []string = []string{
-	"arn:aws:iam:258234615182:role/AWSAdministratorAccess",
-	"arn:aws:iam:258234615182:role/LimitedAccess",
-	"arn:aws:iam:833365043586:role/AWSAdministratorAccess",
+	"arn:aws:iam::258234615182:role/AWSAdministratorAccess",
+	"arn:aws:iam::258234615182:role/LimitedAccess",
+	"arn:aws:iam::833365043586:role/AWSAdministratorAccess",
 }
 
 type SettingsTestSuite struct {

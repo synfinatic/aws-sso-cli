@@ -39,7 +39,7 @@ func TestUtilsSuite(t *testing.T) {
 func (suite *UtilsTestSuite) TestParseRoleARN() {
 	t := suite.T()
 
-	a, r, err := ParseRoleARN("arn:aws:iam:11111:role/Foo")
+	a, r, err := ParseRoleARN("arn:aws:iam::11111:role/Foo")
 	assert.Equal(t, int64(11111), a)
 	assert.Equal(t, "Foo", r)
 	assert.Nil(t, err)
@@ -50,28 +50,28 @@ func (suite *UtilsTestSuite) TestParseRoleARN() {
 	_, _, err = ParseRoleARN("arnFoo")
 	assert.NotNil(t, err)
 
-	_, _, err = ParseRoleARN("arn:aws:iam:a:role/Foo")
+	_, _, err = ParseRoleARN("arn:aws:iam::a:role/Foo")
 	assert.NotNil(t, err)
 
-	_, _, err = ParseRoleARN("arn:aws:iam:000000011111:role")
+	_, _, err = ParseRoleARN("arn:aws:iam::000000011111:role")
 	assert.NotNil(t, err)
 
 	_, _, err = ParseRoleARN("aws:iam:000000011111:role/Foo")
 	assert.NotNil(t, err)
 
-	_, _, err = ParseRoleARN("invalid:arn:aws:iam:000000011111:role/Foo")
+	_, _, err = ParseRoleARN("invalid:arn:aws:iam::000000011111:role/Foo")
 	assert.NotNil(t, err)
 
-	_, _, err = ParseRoleARN("arn:aws:iam:000000011111:role/Foo/Bar")
+	_, _, err = ParseRoleARN("arn:aws:iam::000000011111:role/Foo/Bar")
 	assert.NotNil(t, err)
 }
 
 func (suite *UtilsTestSuite) TestMakeRoleARN() {
 	t := suite.T()
 
-	assert.Equal(t, "arn:aws:iam:000000011111:role/Foo", MakeRoleARN(11111, "Foo"))
-	assert.Equal(t, "arn:aws:iam:000000711111:role/Foo", MakeRoleARN(711111, "Foo"))
-	assert.Equal(t, "arn:aws:iam:000000000000:role/", MakeRoleARN(0, ""))
+	assert.Equal(t, "arn:aws:iam::000000011111:role/Foo", MakeRoleARN(11111, "Foo"))
+	assert.Equal(t, "arn:aws:iam::000000711111:role/Foo", MakeRoleARN(711111, "Foo"))
+	assert.Equal(t, "arn:aws:iam::000000000000:role/", MakeRoleARN(0, ""))
 }
 
 func (suite *UtilsTestSuite) TestEnsureDirExists() {

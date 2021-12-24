@@ -26,9 +26,12 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sso"
 	"github.com/aws/aws-sdk-go/service/ssooidc"
+	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/storage"
 	"github.com/synfinatic/aws-sso-cli/utils"
@@ -48,12 +51,13 @@ type AWSSSO struct {
 	Token      storage.CreateTokenResponse `json:"TokenResponse"`
 	Accounts   []AccountInfo               `json:"Accounts"`
 	Roles      map[string][]RoleInfo       `json:"Roles"`
+	SSOConfig  *SSOConfig                  `json:"SSOConfig"`
 }
 
-func NewAWSSSO(ssoRegion, startUrl string, store *storage.SecureStorage) *AWSSSO {
+func NewAWSSSO(s *SSOConfig, store *storage.SecureStorage) *AWSSSO {
 	mySession := session.Must(session.NewSession())
-	oidcSession := ssooidc.New(mySession, aws.NewConfig().WithRegion(ssoRegion))
-	ssoSession := sso.New(mySession, aws.NewConfig().WithRegion(ssoRegion))
+	oidcSession := ssooidc.New(mySession, aws.NewConfig().WithRegion(s.SSORegion))
+	ssoSession := sso.New(mySession, aws.NewConfig().WithRegion(s.SSORegion))
 
 	as := AWSSSO{
 		sso:        *ssoSession,
@@ -61,9 +65,10 @@ func NewAWSSSO(ssoRegion, startUrl string, store *storage.SecureStorage) *AWSSSO
 		store:      *store,
 		ClientName: awsSSOClientName,
 		ClientType: awsSSOClientType,
-		SsoRegion:  ssoRegion,
-		StartUrl:   startUrl,
+		SsoRegion:  s.SSORegion,
+		StartUrl:   s.StartUrl,
 		Roles:      map[string][]RoleInfo{},
+		SSOConfig:  s,
 	}
 	return &as
 }
@@ -293,6 +298,7 @@ type RoleInfo struct {
 	Region       string `yaml:"Region" json:"Region" header:"Region"`
 	SSORegion    string `header:"SSORegion"`
 	StartUrl     string `header:"StartUrl"`
+	Via          string `header:"Via"`
 }
 
 func (ri RoleInfo) GetHeader(fieldName string) (string, error) {
@@ -301,7 +307,8 @@ func (ri RoleInfo) GetHeader(fieldName string) (string, error) {
 }
 
 func (ri RoleInfo) RoleArn() string {
-	return fmt.Sprintf("arn:aws:iam:%s:role/%s", ri.AccountId, ri.RoleName)
+	a, _ := strconv.ParseInt(ri.AccountId, 10, 64)
+	return utils.MakeRoleARN(a, ri.RoleName)
 }
 
 func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
@@ -321,6 +328,17 @@ func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 		return as.Roles[account.AccountId], err
 	}
 	for i, r := range output.RoleList {
+		var via string
+
+		aId, err := strconv.ParseInt(account.AccountId, 10, 64)
+		if err != nil {
+			return as.Roles[account.AccountId], fmt.Errorf("Unable to parse accountid %s: %s",
+				account.AccountId, err.Error())
+		}
+		ssoRole, err := as.SSOConfig.GetRole(aId, aws.StringValue(r.RoleName))
+		if err != nil && len(ssoRole.Via) > 0 {
+			via = ssoRole.Via
+		}
 		as.Roles[account.AccountId] = append(as.Roles[account.AccountId], RoleInfo{
 			Id:           i,
 			AccountId:    aws.StringValue(r.AccountId),
@@ -329,6 +347,7 @@ func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 			EmailAddress: account.EmailAddress,
 			SSORegion:    as.SsoRegion,
 			StartUrl:     as.StartUrl,
+			Via:          via,
 		})
 	}
 	for aws.StringValue(output.NextToken) != "" {
@@ -412,31 +431,94 @@ func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {
 	return as.Accounts, nil
 }
 
+// GetRoleCredentials recursively does any sts:AssumeRole calls as necessary for role-chaining
+// through `Via` and returns the final set of RoleCredentials for the requested role
 func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.RoleCredentials, error) {
 	aId, err := utils.AccountIdToString(accountId)
 	if err != nil {
 		return storage.RoleCredentials{}, err
 	}
 
-	input := sso.GetRoleCredentialsInput{
-		AccessToken: aws.String(as.Token.AccessToken),
-		AccountId:   aws.String(aId),
-		RoleName:    aws.String(role),
+	configRole, err := as.SSOConfig.GetRole(accountId, role)
+	if err != nil && configRole.Via == "" {
+		log.Debugf("Getting %s:%s directly", aId, role)
+		// This are the actual role creds requested through AWS SSO
+		input := sso.GetRoleCredentialsInput{
+			AccessToken: aws.String(as.Token.AccessToken),
+			AccountId:   aws.String(aId),
+			RoleName:    aws.String(role),
+		}
+		output, err := as.sso.GetRoleCredentials(&input)
+		if err != nil {
+			return storage.RoleCredentials{}, err
+		}
+
+		ret := storage.RoleCredentials{
+			AccountId:       accountId,
+			RoleName:        role,
+			AccessKeyId:     aws.StringValue(output.RoleCredentials.AccessKeyId),
+			SecretAccessKey: aws.StringValue(output.RoleCredentials.SecretAccessKey),
+			SessionToken:    aws.StringValue(output.RoleCredentials.SessionToken),
+			Expiration:      aws.Int64Value(output.RoleCredentials.Expiration),
+		}
+
+		return ret, nil
 	}
-	output, err := as.sso.GetRoleCredentials(&input)
+
+	// Need to recursively call sts:AssumeRole in order to retrieve the STS creds for
+	// the requested role
+	// role has a Via
+	log.Debugf("Getting %s:%s via %s", aId, role, configRole.Via)
+	viaAccountId, viaRole, err := utils.ParseRoleARN(configRole.Via)
+	if err != nil {
+		return storage.RoleCredentials{}, fmt.Errorf("Invalid Via %s: %s", configRole.Via, err.Error())
+	}
+
+	// recurse
+	creds, err := as.GetRoleCredentials(viaAccountId, viaRole)
 	if err != nil {
 		return storage.RoleCredentials{}, err
 	}
 
+	sessionCreds := credentials.NewStaticCredentials(
+		creds.AccessKeyId,
+		creds.SecretAccessKey,
+		creds.SessionToken,
+	)
+	mySession := session.Must(session.NewSessionWithOptions(session.Options{
+		Config: aws.Config{
+			Region:      aws.String(as.SsoRegion),
+			Credentials: sessionCreds,
+		},
+	}))
+	stsSession := sts.New(mySession)
+
+	input := sts.AssumeRoleInput{
+		//		DurationSeconds: aws.Int64(900),
+		RoleArn:         aws.String(utils.MakeRoleARN(accountId, role)),
+		RoleSessionName: aws.String(fmt.Sprintf("Via_%s_%s", aId, role)),
+	}
+	if configRole.ExternalId != "" {
+		// Optional vlaue: https://docs.aws.amazon.com/sdk-for-go/api/service/sts/#AssumeRoleInput
+		input.ExternalId = aws.String(configRole.ExternalId)
+	}
+	if configRole.SourceIdentity != "" {
+		input.SourceIdentity = aws.String(configRole.SourceIdentity)
+	}
+
+	output, err := stsSession.AssumeRole(&input)
+	if err != nil {
+		return storage.RoleCredentials{}, err
+	}
+	log.Debugf("%s", spew.Sdump(output))
 	ret := storage.RoleCredentials{
 		AccountId:       accountId,
 		RoleName:        role,
-		AccessKeyId:     aws.StringValue(output.RoleCredentials.AccessKeyId),
-		SecretAccessKey: aws.StringValue(output.RoleCredentials.SecretAccessKey),
-		SessionToken:    aws.StringValue(output.RoleCredentials.SessionToken),
-		Expiration:      aws.Int64Value(output.RoleCredentials.Expiration),
+		AccessKeyId:     aws.StringValue(output.Credentials.AccessKeyId),
+		SecretAccessKey: aws.StringValue(output.Credentials.SecretAccessKey),
+		SessionToken:    aws.StringValue(output.Credentials.SessionToken),
+		Expiration:      aws.TimeValue(output.Credentials.Expiration).Unix(),
 	}
-
 	return ret, nil
 }
 
