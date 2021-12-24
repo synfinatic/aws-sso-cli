@@ -24,6 +24,7 @@ SSOConfig:
                         Tags:  # tags specific for this role (will override account level tags)
                             <Key1>: <Value1>
                             <Key2>: <Value2>
+                        Via: <Previous Role>  # optional, for role chaining
 
 # See description below for these options
 DefaultRegion: <AWS_DEFAULT_REGION>
@@ -61,20 +62,20 @@ the default unless overridden with `DefaultSSO`.
 
 The `SSOConfig` config block is required.
 
-## StartUrl
+### StartUrl
 
 Each AWS SSO instance has a unique start URL hosted by AWS for interacting with your
 SSO provider (Okta/OneLogin/etc).  Should be in the format of `https://xxxxxxx.awsapps.com/start`.
 
 The `StartUrl` is required.
 
-## SSORegion
+### SSORegion
 
 Each AWS SSO instance is configured in a specific AWS region which needs to be set here.
 
 The `SSORegion` is required.
 
-## DefaultRegion
+### DefaultRegion
 
 The `DefaultRegion` allows you to define a value for the `$AWS_DEFAULT_REGION` when switching to a role.
 Note that, aws-sso will NEVER change an existing `$AWS_DEFAULT_REGION` set by the user.
@@ -86,11 +87,43 @@ Note that, aws-sso will NEVER change an existing `$AWS_DEFAULT_REGION` set by th
  1. `SSOConfig -> <Name of AWS SSO>`
  1. Top level of the file
 
-## Accounts
+### Accounts
 
 The `Accounts` block is completely optional!  The only purpose of this block
 is to allow you to add additional tags (key/value pairs) to your accounts/roles
 to make them easier to select.
+
+#### Name
+
+Alternate name of the account.  Shown as `AccountName` for the list command.
+Not to be confused with the `AccountAlias` which is defined by the account owner
+in AWS.
+
+#### Tags
+
+List of key / value pairs, used by `aws-sso` in prompt mode.  Any tag placed at
+the account level will be applied to all roles in that account.
+
+#### Roles
+
+The `Roles` block is optional, except for roles you which to assume via role chaining.
+
+##### Tags
+
+List of key / value pairs, used by `aws-sso` in prompt mode.  Any tag placed at
+the role level will be applied to only that role.
+
+##### Via
+
+Impliments the concept of [role chaining](
+https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_terms-and-concepts.html).
+
+`Via` defines which role to assume before calling [sts:AssumeRole](
+https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html) in order
+to switch to the specified role.  This allows you to define and assume roles in AWS
+accounts that are not included in your organization's AWS SSO scope or roles that
+were not defined via an [AWS SSO Permission Set](
+https://docs.aws.amazon.com/singlesignon/latest/userguide/permissionsetsconcept.html).
 
 ## Browser / UrlAction
 
