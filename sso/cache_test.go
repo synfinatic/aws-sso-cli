@@ -1,6 +1,8 @@
 package sso
 
 import (
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,7 +18,8 @@ const (
 
 type CacheTestSuite struct {
 	suite.Suite
-	cache *Cache
+	cache      *Cache
+	configFile string
 }
 
 func TestCacheTestSuite(t *testing.T) {
@@ -24,11 +27,30 @@ func TestCacheTestSuite(t *testing.T) {
 		HistoryLimit:   1,
 		HistoryMinutes: 90,
 	}
-	c, _ := OpenCache(TEST_CACHE_FILE, settings)
+
+	// copy our cache test file to a temp file
+	f, err := os.CreateTemp("", "*")
+	assert.NoError(t, err)
+	f.Close()
+
+	input, err := ioutil.ReadFile(TEST_CACHE_FILE)
+	assert.NoError(t, err)
+
+	err = ioutil.WriteFile(f.Name(), input, 0600)
+	assert.NoError(t, err)
+
+	c, err := OpenCache(f.Name(), settings)
+	assert.NoError(t, err)
+
 	s := &CacheTestSuite{
-		cache: c,
+		cache:      c,
+		configFile: f.Name(),
 	}
 	suite.Run(t, s)
+}
+
+func (suite *CacheTestSuite) TearDownAllSuite() {
+	os.Remove(suite.configFile)
 }
 
 func (suite *CacheTestSuite) TestAddHistory() {
@@ -162,4 +184,13 @@ func (suite *CacheTestSuite) BadRole() {
 
 	_, err = suite.cache.GetRole(INVALID_ACCOUNT_ARN)
 	assert.Error(t, err)
+}
+
+func (suite *CacheTestSuite) Version() {
+	t := suite.T()
+	assert.NotEqual(t, CACHE_VERSION, suite.cache.Version)
+
+	err := suite.cache.Save(false)
+	assert.NoError(t, err)
+	assert.Equal(t, CACHE_VERSION, suite.cache.Version)
 }

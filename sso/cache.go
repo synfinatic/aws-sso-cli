@@ -33,8 +33,11 @@ import (
 	"github.com/synfinatic/gotable"
 )
 
+const CACHE_VERSION = 2
+
 // Our Cachefile.  Sub-structs defined in sso/cache.go
 type Cache struct {
+	Version         int64     `json:"Version"`
 	settings        *Settings // pointer back up
 	CreatedAt       int64     `json:"CreatedAt"`       // this cache.json
 	ConfigCreatedAt int64     `json:"ConfigCreatedAt"` // track config.yaml
@@ -48,6 +51,7 @@ func OpenCache(f string, s *Settings) (*Cache, error) {
 		CreatedAt:       0,
 		ConfigCreatedAt: 0,
 		History:         []string{},
+		Version:         1, // use an invalid default version for cache files without a version
 		Roles: &Roles{
 			Accounts: map[int64]*AWSAccount{},
 		},
@@ -72,6 +76,10 @@ func OpenCache(f string, s *Settings) (*Cache, error) {
 // If configFile is a valid file, we check the lastModificationTime of that file
 // vs. the ConfigCreatedAt to determine if the cache needs to be updated
 func (c *Cache) Expired(s *SSOConfig) error {
+	if c.Version < CACHE_VERSION {
+		return fmt.Errorf("Local cache is out of date; current cache version %d is less than %d", c.Version, CACHE_VERSION)
+	}
+
 	if c.CreatedAt+CACHE_TTL < time.Now().Unix() {
 		return fmt.Errorf("Local cache is out of date; TTL has been exceeded.")
 	}
@@ -88,6 +96,7 @@ func (c *Cache) CacheFile() string {
 
 // Save saves our cache to the current file
 func (c *Cache) Save(updateTime bool) error {
+	c.Version = CACHE_VERSION
 	if updateTime {
 		c.CreatedAt = time.Now().Unix()
 	}
