@@ -2,13 +2,18 @@
 
 ## [Unreleased]
 
+## [1.6.0] - 2021-12-24
+
+### Breaking Changes
+ * Fix issue with missing colon in parsed/generated Role ARNs for missing AWS region #192
+
 ### New Features
  * Setup now prompts for `LogLevel`
  * Suppress bogus warning when saving Role credentials in `wincred` store #183
  * Add support for role chaining using `Via` tag #38
+ * Cache file is now versioned for better compatibility across versions of `aws-sso` #195
 
 ### Bugs Fixes 
- * Fix issue with missing colon in parsed/generated Role ARNs for missing AWS region #192
  * Incorrect `--level` value now correctly tells user the correct name of the flag
  * `exec` command now uses `cmd.exe` when no command is specified
 
@@ -161,7 +166,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.5.1...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.6.0...main
+[v1.6.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.6.0
 [v1.5.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.5.1
 [v1.5.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.5.0
 [v1.4.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.4.0
