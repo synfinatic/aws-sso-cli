@@ -431,6 +431,8 @@ func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {
 	return as.Accounts, nil
 }
 
+var roleChainMap map[string]bool = map[string]bool{} // track our roles
+
 // GetRoleCredentials recursively does any sts:AssumeRole calls as necessary for role-chaining
 // through `Via` and returns the final set of RoleCredentials for the requested role
 func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.RoleCredentials, error) {
@@ -463,6 +465,15 @@ func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.Role
 		}
 
 		return ret, nil
+	}
+
+	// Detect loops
+	roleChainMap[configRole.ARN] = true
+	for k := range roleChainMap {
+		if k == configRole.Via {
+			log.Fatalf("Detected role chain loop!  Getting %s via %s", configRole.ARN, configRole.Via)
+		}
+		roleChainMap[k] = true
 	}
 
 	// Need to recursively call sts:AssumeRole in order to retrieve the STS creds for
