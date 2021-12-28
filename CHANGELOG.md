@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### New Features
+ * The `Via` role option is now a searchable tag #199
+ * The `tags` command now returns the keys in sorted order
+
+### Bug Fixes
+ * Consistently pad AccountID with zeros whenever necessary
+
 ## [1.6.0] - 2021-12-24
 
 ### Breaking Changes
@@ -13,7 +20,7 @@
  * Add support for role chaining using `Via` tag #38
  * Cache file is now versioned for better compatibility across versions of `aws-sso` #195
 
-### Bugs Fixes 
+### Bug Fixes 
  * Incorrect `--level` value now correctly tells user the correct name of the flag
  * `exec` command now uses `cmd.exe` when no command is specified
 

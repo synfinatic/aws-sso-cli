@@ -24,7 +24,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	// "github.com/davecgh/go-spew/spew"
@@ -403,7 +402,7 @@ func (a *SSOAccount) GetAllTags(id int64) map[string]string {
 		"AccountName": accountName,
 	}
 	if id > 0 {
-		accountId := strconv.FormatInt(id, 10)
+		accountId, _ := utils.AccountIdToString(id)
 		tags["AccountId"] = accountId
 	}
 	if a.DefaultRegion != "" {

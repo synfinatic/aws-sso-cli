@@ -279,7 +279,7 @@ type AWSRoleFlat struct {
 	SSORegion     string            `json:"SSORegion" header:"SSORegion"`
 	StartUrl      string            `json:"StartUrl" header:"StartUrl"`
 	Tags          map[string]string `json:"Tags"` // not supported by GenerateTable
-	Via           string            `json:"Via" header:"Via"`
+	Via           string            `json:"Via,omitempty" header:"Via"`
 	// SelectTags    map[string]string // tags without spaces
 }
 
@@ -305,7 +305,7 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 	for _, aInfo := range accounts {
 		accountId := aInfo.GetAccountId64()
 		r.Accounts[accountId] = &AWSAccount{
-			Alias:        aInfo.AccountName,
+			Alias:        aInfo.AccountName, // AWS SSO calls it `AccountName`
 			EmailAddress: aInfo.EmailAddress,
 			Tags:         map[string]string{},
 			Roles:        map[string]*AWSRole{},
@@ -320,7 +320,7 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 				Arn: utils.MakeRoleARN(accountId, role.RoleName),
 				Tags: map[string]string{
 					"AccountID":    aInfo.AccountId,
-					"AccountAlias": aInfo.AccountName,
+					"AccountAlias": aInfo.AccountName, // AWS SSO calls it `AccountName`
 					"Email":        aInfo.EmailAddress,
 					"Role":         role.RoleName,
 				},
@@ -358,7 +358,7 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 
 		// set the AWS SSO tags for all the SSO roles
 		for roleName := range r.Accounts[accountId].Roles {
-			aId := strconv.FormatInt(accountId, 10)
+			aId, _ := utils.AccountIdToString(accountId)
 			r.Accounts[accountId].Roles[roleName].Tags["AccountID"] = aId
 			r.Accounts[accountId].Roles[roleName].Tags["AccountName"] = r.Accounts[accountId].Name
 			r.Accounts[accountId].Roles[roleName].Tags["AccountAlias"] = r.Accounts[accountId].Alias
@@ -378,8 +378,8 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 			}
 			r.Accounts[accountId].Roles[roleName].Arn = utils.MakeRoleARN(accountId, roleName)
 			r.Accounts[accountId].Roles[roleName].Profile = role.Profile
-			r.Accounts[accountId].Roles[roleName].Via = role.Via
 			r.Accounts[accountId].Roles[roleName].DefaultRegion = r.Accounts[accountId].DefaultRegion
+			r.Accounts[accountId].Roles[roleName].Via = role.Via
 			if role.DefaultRegion != "" {
 				r.Accounts[accountId].Roles[roleName].DefaultRegion = role.DefaultRegion
 			}
@@ -528,10 +528,13 @@ func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) 
 				flat.DefaultRegion = role.DefaultRegion
 			}
 			// Automatic tags
-			flat.Tags["AccountID"] = strconv.FormatInt(accountId, 10)
+			flat.Tags["AccountID"], _ = utils.AccountIdToString(accountId)
 			flat.Tags["Email"] = account.EmailAddress
 			if role.Profile != "" {
 				flat.Tags["Profile"] = role.Profile
+			}
+			if role.Via != "" {
+				flat.Tags["Via"] = role.Via
 			}
 
 			// Account name is by default the alias, but can be manually overridden
