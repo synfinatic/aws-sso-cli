@@ -8,6 +8,7 @@
 
 ### Bug Fixes
  * Consistently pad AccountID with zeros whenever necessary
+ * Detect role chain loops using `Via` #194
 
 ## [1.6.0] - 2021-12-24
 
