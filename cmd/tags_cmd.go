@@ -20,6 +20,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
@@ -57,6 +58,10 @@ func (cc *TagsCmd) Run(ctx *RunContext) error {
 
 		if err := set.Cache.Expired(s); err != nil {
 			log.Warn(err.Error())
+			c := &CacheCmd{}
+			if err = c.Run(ctx); err != nil {
+				return err
+			}
 		}
 	}
 	roles := []*sso.AWSRoleFlat{}
@@ -84,8 +89,13 @@ func (cc *TagsCmd) Run(ctx *RunContext) error {
 
 	for _, fRole := range roles {
 		fmt.Printf("%s\n", fRole.Arn)
-		for k, v := range fRole.Tags {
-			fmt.Printf("  %s: %s\n", k, v)
+		keys := make([]string, 0, len(fRole.Tags))
+		for k := range fRole.Tags {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			fmt.Printf("  %s: %s\n", k, fRole.Tags[k])
 		}
 		fmt.Printf("\n")
 	}

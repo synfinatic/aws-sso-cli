@@ -24,7 +24,6 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
-	"strconv"
 	"strings"
 	"text/template"
 
@@ -124,7 +123,8 @@ func firstItem(items []string) string {
 }
 
 func accountIdToStr(id int64) string {
-	return strconv.FormatInt(id, 10)
+	i, _ := utils.AccountIdToString(id)
+	return i
 }
 
 // Executes Cmd+Args in the context of the AWS Role creds
