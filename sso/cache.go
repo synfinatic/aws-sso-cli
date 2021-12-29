@@ -360,10 +360,12 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 		for roleName := range r.Accounts[accountId].Roles {
 			aId, _ := utils.AccountIdToString(accountId)
 			r.Accounts[accountId].Roles[roleName].Tags["AccountID"] = aId
-			r.Accounts[accountId].Roles[roleName].Tags["AccountName"] = r.Accounts[accountId].Name
 			r.Accounts[accountId].Roles[roleName].Tags["AccountAlias"] = r.Accounts[accountId].Alias
 			r.Accounts[accountId].Roles[roleName].Tags["Email"] = r.Accounts[accountId].EmailAddress
 			r.Accounts[accountId].Roles[roleName].Tags["Role"] = roleName
+			if r.Accounts[accountId].Name != "" {
+				r.Accounts[accountId].Roles[roleName].Tags["AccountName"] = r.Accounts[accountId].Name
+			}
 			if r.Accounts[accountId].Roles[roleName].DefaultRegion != "" {
 				r.Accounts[accountId].Roles[roleName].Tags["DefaultRegion"] = r.Accounts[accountId].Roles[roleName].DefaultRegion
 			}
@@ -530,17 +532,21 @@ func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) 
 			// Automatic tags
 			flat.Tags["AccountID"], _ = utils.AccountIdToString(accountId)
 			flat.Tags["Email"] = account.EmailAddress
+
+			if account.Alias != "" {
+				flat.Tags["AccountAlias"] = account.Alias
+			}
+
+			if flat.AccountName != "" {
+				flat.Tags["AccountName"] = flat.AccountName
+			}
+
 			if role.Profile != "" {
 				flat.Tags["Profile"] = role.Profile
 			}
+
 			if role.Via != "" {
 				flat.Tags["Via"] = role.Via
-			}
-
-			// Account name is by default the alias, but can be manually overridden
-			flat.Tags["AccountName"] = flat.AccountAlias
-			if flat.AccountName != "" {
-				flat.Tags["AccountName"] = flat.AccountName
 			}
 
 			// finally override role specific tags
