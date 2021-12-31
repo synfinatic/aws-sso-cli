@@ -34,6 +34,7 @@ type TagsCmd struct {
 
 func (cc *TagsCmd) Run(ctx *RunContext) error {
 	set := ctx.Settings
+	cache := ctx.Settings.Cache.GetSSO()
 	if ctx.Cli.Tags.ForceUpdate {
 		s := set.SSO[ctx.Cli.SSO]
 		awssso := sso.NewAWSSSO(s, &ctx.Store)
@@ -68,7 +69,7 @@ func (cc *TagsCmd) Run(ctx *RunContext) error {
 
 	// If user has specified an account (or account + role) then limit
 	if ctx.Cli.Tags.AccountId != 0 {
-		for _, fRole := range set.Cache.Roles.GetAccountRoles(ctx.Cli.Tags.AccountId) {
+		for _, fRole := range cache.Roles.GetAccountRoles(ctx.Cli.Tags.AccountId) {
 			if ctx.Cli.Tags.Role == "" {
 				roles = append(roles, fRole)
 			} else {
@@ -78,13 +79,13 @@ func (cc *TagsCmd) Run(ctx *RunContext) error {
 			}
 		}
 	} else if ctx.Cli.Tags.Role != "" {
-		for _, v := range set.Cache.Roles.GetAllRoles() {
+		for _, v := range cache.Roles.GetAllRoles() {
 			if v.RoleName == ctx.Cli.Tags.Role {
 				roles = append(roles, v)
 			}
 		}
 	} else {
-		roles = set.Cache.Roles.GetAllRoles()
+		roles = cache.Roles.GetAllRoles()
 	}
 
 	for _, fRole := range roles {

@@ -26,6 +26,7 @@ func TestCacheTestSuite(t *testing.T) {
 	settings := &Settings{
 		HistoryLimit:   1,
 		HistoryMinutes: 90,
+		DefaultSSO:     "Default",
 	}
 
 	// copy our cache test file to a temp file
@@ -61,34 +62,40 @@ func (suite *CacheTestSuite) TestAddHistory() {
 			HistoryLimit:   1,
 			HistoryMinutes: 90,
 		},
-		History: []string{},
-		Roles:   &Roles{},
+		ssoName: "Default",
+		SSO:     map[string]*SSOCache{},
+	}
+	c.SSO["Default"] = &SSOCache{
+		LastUpdate: 2345,
+		History:    []string{},
+		Roles:      &Roles{},
 	}
 
+	cache := c.GetSSO()
 	c.AddHistory("foo")
-	assert.Len(t, c.History, 1, 0)
-	assert.Contains(t, c.History, "foo")
+	assert.Len(t, cache.History, 1, 0)
+	assert.Contains(t, cache.History, "foo")
 
 	c.AddHistory("bar")
-	assert.Len(t, c.History, 1)
-	assert.Contains(t, c.History, "bar")
+	assert.Len(t, cache.History, 1)
+	assert.Contains(t, cache.History, "bar")
 
 	c.settings.HistoryLimit = 2
 	c.AddHistory("foo")
-	assert.Len(t, c.History, 2)
-	assert.Contains(t, c.History, "bar")
-	assert.Contains(t, c.History, "foo")
+	assert.Len(t, cache.History, 2)
+	assert.Contains(t, cache.History, "bar")
+	assert.Contains(t, cache.History, "foo")
 
 	// this should be a no-op
 	c.AddHistory("foo")
-	assert.Len(t, c.History, 2)
-	assert.Contains(t, c.History, "foo")
-	assert.Contains(t, c.History, "bar")
+	assert.Len(t, cache.History, 2)
+	assert.Contains(t, cache.History, "foo")
+	assert.Contains(t, cache.History, "bar")
 }
 
 func (suite *CacheTestSuite) TestExpired() {
 	t := suite.T()
-	assert.NotNil(t, suite.cache.Expired(nil))
+	assert.Error(t, suite.cache.Expired(nil))
 }
 
 func (suite *CacheTestSuite) TestGetRole() {
@@ -120,27 +127,30 @@ func (suite *CacheTestSuite) TestGetRole() {
 func (suite *CacheTestSuite) TestAccountIds() {
 	t := suite.T()
 
-	ids := suite.cache.Roles.AccountIds()
+	ids := suite.cache.GetSSO().Roles.AccountIds()
 	assert.Equal(t, 4, len(ids))
 }
 
 func (suite *CacheTestSuite) TestGetAllRoles() {
 	t := suite.T()
 
-	roles := suite.cache.Roles.GetAllRoles()
+	cache := suite.cache.GetSSO()
+	roles := cache.Roles.GetAllRoles()
 	assert.Equal(t, 19, len(roles))
 
-	aroles := suite.cache.Roles.GetAccountRoles(707513610766)
+	aroles := cache.Roles.GetAccountRoles(707513610766)
 	assert.Equal(t, 4, len(aroles))
-	aroles = suite.cache.Roles.GetAccountRoles(502470824893)
+	aroles = cache.Roles.GetAccountRoles(502470824893)
 	assert.Equal(t, 4, len(aroles))
-	aroles = suite.cache.Roles.GetAccountRoles(258234615182)
+	aroles = cache.Roles.GetAccountRoles(258234615182)
 	assert.Equal(t, 7, len(aroles))
 }
 
 func (suite *CacheTestSuite) TestGetAllTags() {
 	t := suite.T()
-	tl := suite.cache.Roles.GetAllTags()
+	cache := suite.cache.GetSSO()
+
+	tl := cache.Roles.GetAllTags()
 	assert.Equal(t, 8, len(*tl))
 	tl = suite.cache.GetAllTagsSelect()
 	assert.Equal(t, 8, len(*tl))
@@ -148,8 +158,9 @@ func (suite *CacheTestSuite) TestGetAllTags() {
 
 func (suite *CacheTestSuite) TestGetRoleTags() {
 	t := suite.T()
+	cache := suite.cache.GetSSO()
 
-	rt := suite.cache.Roles.GetRoleTags()
+	rt := cache.Roles.GetRoleTags()
 	assert.Equal(t, 19, len(*rt))
 	rt = suite.cache.GetRoleTagsSelect()
 	assert.Equal(t, 19, len(*rt))
@@ -157,16 +168,17 @@ func (suite *CacheTestSuite) TestGetRoleTags() {
 
 func (suite *CacheTestSuite) TestMatchingRoles() {
 	t := suite.T()
+	cache := suite.cache.GetSSO()
 
 	match := map[string]string{
 		"Type": "Main Account",
 		"Foo":  "Bar",
 	}
-	roles := suite.cache.Roles.MatchingRoles(match)
+	roles := cache.Roles.MatchingRoles(match)
 	assert.Equal(t, 1, len(roles))
 
 	match["Nothing"] = "Matches"
-	roles = suite.cache.Roles.MatchingRoles(match)
+	roles = cache.Roles.MatchingRoles(match)
 	assert.Equal(t, 0, len(roles))
 }
 
@@ -193,4 +205,20 @@ func (suite *CacheTestSuite) Version() {
 	err := suite.cache.Save(false)
 	assert.NoError(t, err)
 	assert.Equal(t, CACHE_VERSION, suite.cache.Version)
+}
+
+func (suite *CacheTestSuite) GetSSO() {
+	t := suite.T()
+
+	suite.cache.ssoName = "Invalid"
+	cache := suite.cache.GetSSO()
+	assert.Empty(t, cache.Roles)
+	assert.Empty(t, cache.History)
+	assert.Equal(t, 0, cache.LastUpdate)
+
+	suite.cache.ssoName = "Default"
+	cache = suite.cache.GetSSO()
+	assert.NotEmpty(t, cache.Roles)
+	assert.Empty(t, cache.History)
+	assert.NotEqual(t, 0, cache.LastUpdate)
 }

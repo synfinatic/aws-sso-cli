@@ -33,29 +33,32 @@ import (
 	"github.com/synfinatic/gotable"
 )
 
-const CACHE_VERSION = 2
+const CACHE_VERSION = 3
+
+type SSOCache struct {
+	LastUpdate int64    `json:"LastUpdate,omitempty"` // when these records for this SSO were updated
+	History    []string `json:"History,omitempty"`
+	Roles      *Roles   `json:"Roles,omitempty"`
+}
 
 // Our Cachefile.  Sub-structs defined in sso/cache.go
 type Cache struct {
-	Version         int64     `json:"Version"`
-	settings        *Settings // pointer back up
-	CreatedAt       int64     `json:"CreatedAt"`       // this cache.json
-	ConfigCreatedAt int64     `json:"ConfigCreatedAt"` // track config.yaml
-	History         []string  `json:"History,omitempty"`
-	Roles           *Roles    `json:"Roles,omitempty"`
+	Version         int64                `json:"Version"`
+	settings        *Settings            // pointer back up
+	ConfigCreatedAt int64                `json:"ConfigCreatedAt"` // track config.yaml
+	SSO             map[string]*SSOCache `json:"SSO,omitempty"`
+	ssoName         string               // name of SSO that is active
 }
 
 func OpenCache(f string, s *Settings) (*Cache, error) {
 	cache := Cache{
 		settings:        s,
-		CreatedAt:       0,
 		ConfigCreatedAt: 0,
-		History:         []string{},
 		Version:         1, // use an invalid default version for cache files without a version
-		Roles: &Roles{
-			Accounts: map[int64]*AWSAccount{},
-		},
+		SSO:             map[string]*SSOCache{},
+		ssoName:         s.DefaultSSO,
 	}
+
 	var err error
 	var cacheBytes []byte
 	if f != "" {
@@ -72,6 +75,23 @@ func OpenCache(f string, s *Settings) (*Cache, error) {
 	return c, err
 }
 
+// GetSSO returns the current SSOCache object for the current SSO instance
+func (c *Cache) GetSSO() *SSOCache {
+	if v, ok := c.SSO[c.ssoName]; ok {
+		return v
+	}
+
+	// init a new one
+	c.SSO[c.ssoName] = &SSOCache{
+		LastUpdate: 0,
+		History:    []string{},
+		Roles: &Roles{
+			Accounts: map[int64]*AWSAccount{},
+		},
+	}
+	return c.SSO[c.ssoName]
+}
+
 // Expired returns if our Roles cache data is too old.
 // If configFile is a valid file, we check the lastModificationTime of that file
 // vs. the ConfigCreatedAt to determine if the cache needs to be updated
@@ -80,7 +100,8 @@ func (c *Cache) Expired(s *SSOConfig) error {
 		return fmt.Errorf("Local cache is out of date; current cache version %d is less than %d", c.Version, CACHE_VERSION)
 	}
 
-	if c.CreatedAt+CACHE_TTL < time.Now().Unix() {
+	cache := c.GetSSO()
+	if cache.LastUpdate+CACHE_TTL < time.Now().Unix() {
 		return fmt.Errorf("Local cache is out of date; TTL has been exceeded.")
 	}
 
@@ -98,7 +119,8 @@ func (c *Cache) CacheFile() string {
 func (c *Cache) Save(updateTime bool) error {
 	c.Version = CACHE_VERSION
 	if updateTime {
-		c.CreatedAt = time.Now().Unix()
+		cache := c.GetSSO()
+		cache.LastUpdate = time.Now().Unix()
 	}
 	jbytes, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
@@ -114,34 +136,35 @@ func (c *Cache) Save(updateTime bool) error {
 // adds a role to the History list up to the max number of entries
 // and then removes the History tag from any roles that aren't in our list
 func (c *Cache) AddHistory(item string) {
+	cache := c.GetSSO()
 	// If it's already in the list, remove it
-	for x, h := range c.History {
+	for x, h := range cache.History {
 		if h == item {
 			// delete from history
-			c.History = append(c.History[:x], c.History[x+1:]...)
+			cache.History = append(cache.History[:x], cache.History[x+1:]...)
 			break
 		}
 	}
 
-	c.History = append([]string{item}, c.History...) // push on top
-	for int64(len(c.History)) > c.settings.HistoryLimit {
+	cache.History = append([]string{item}, cache.History...) // push on top
+	for int64(len(cache.History)) > c.settings.HistoryLimit {
 		// remove the oldest entry
-		c.History = c.History[:len(c.History)-1]
+		cache.History = cache.History[:len(cache.History)-1]
 	}
 
 	// Update our Tags for this new item
 	aId, roleName, _ := utils.ParseRoleARN(item)
-	if a, ok := c.Roles.Accounts[aId]; ok {
+	if a, ok := cache.Roles.Accounts[aId]; ok {
 		if r, ok := a.Roles[roleName]; ok {
 			r.Tags["History"] = fmt.Sprintf("%s:%s,%d", a.Alias, roleName, time.Now().Unix())
 		}
 	}
 
 	// remove any history tags not in our list
-	roles := c.Roles.MatchingRolesWithTagKey("History")
+	roles := cache.Roles.MatchingRolesWithTagKey("History")
 	for _, role := range roles {
 		exists := false
-		for _, history := range c.History {
+		for _, history := range cache.History {
 			if history == (*role).Arn {
 				exists = true
 				break
@@ -149,7 +172,7 @@ func (c *Cache) AddHistory(item string) {
 		}
 		if !exists {
 			aId, roleName, _ := utils.ParseRoleARN(role.Arn)
-			delete(c.Roles.Accounts[aId].Roles[roleName].Tags, "History")
+			delete(cache.Roles.Accounts[aId].Roles[roleName].Tags, "History")
 		}
 	}
 }
@@ -162,15 +185,17 @@ func (c *Cache) deleteOldHistory() {
 		return
 	}
 
+	cache := c.GetSSO()
+
 	newHistoryItems := []string{}
-	for _, arn := range c.History {
+	for _, arn := range cache.History {
 		id, role, err := utils.ParseRoleARN(arn)
 		if err != nil {
 			log.Errorf("Unable to parse History ARN %s: %s", arn, err.Error())
 			continue
 		}
 
-		if a, ok := c.Roles.Accounts[id]; ok {
+		if a, ok := cache.Roles.Accounts[id]; ok {
 			if r, ok := a.Roles[role]; ok {
 				// figure out if this history item has expired
 				values := strings.SplitN(r.Tags["History"], ",", 2)
@@ -192,7 +217,7 @@ func (c *Cache) deleteOldHistory() {
 		}
 	}
 
-	c.History = newHistoryItems
+	cache.History = newHistoryItems
 }
 
 // Refresh updates our cached Roles based on AWS SSO & our Config
@@ -202,7 +227,8 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig) error {
 	if err != nil {
 		return err
 	}
-	c.Roles = r
+	cache := c.GetSSO()
+	cache.Roles = r
 	c.ConfigCreatedAt = config.CreatedAt()
 	return nil
 }
@@ -214,13 +240,15 @@ func (c *Cache) SetRoleExpires(arn string, expires int64) error {
 		return err
 	}
 
-	c.Roles.Accounts[accountId].Roles[roleName].Expires = expires
+	cache := c.GetSSO()
+	cache.Roles.Accounts[accountId].Roles[roleName].Expires = expires
 	return c.Save(false)
 }
 
 func (c *Cache) MarkRolesExpired() error {
-	for accountId := range c.Roles.Accounts {
-		for _, role := range c.Roles.Accounts[accountId].Roles {
+	cache := c.GetSSO()
+	for accountId := range cache.Roles.Accounts {
+		for _, role := range cache.Roles.Accounts[accountId].Roles {
 			(*role).Expires = 0
 		}
 	}
@@ -232,7 +260,8 @@ func (c *Cache) GetRole(arn string) (*AWSRoleFlat, error) {
 	if err != nil {
 		return &AWSRoleFlat{}, err
 	}
-	return c.Roles.GetRole(accountId, roleName)
+	cache := c.GetSSO()
+	return cache.Roles.GetRole(accountId, roleName)
 }
 
 // main struct holding all our Roles discovered via AWS SSO and
@@ -297,6 +326,8 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 		Accounts:      map[int64]*AWSAccount{},
 	}
 
+	cache := c.GetSSO()
+
 	// First go through all the AWS SSO Accounts & Roles
 	accounts, err := as.GetAccounts()
 	if err != nil {
@@ -326,12 +357,12 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 				},
 			}
 			// need to copy over the Expires & History fields from our current cache
-			if _, ok := c.Roles.Accounts[accountId]; ok {
-				if _, ok := c.Roles.Accounts[accountId].Roles[role.RoleName]; ok {
-					if expires := c.Roles.Accounts[accountId].Roles[role.RoleName].Expires; expires > 0 {
+			if _, ok := cache.Roles.Accounts[accountId]; ok {
+				if _, ok := cache.Roles.Accounts[accountId].Roles[role.RoleName]; ok {
+					if expires := cache.Roles.Accounts[accountId].Roles[role.RoleName].Expires; expires > 0 {
 						r.Accounts[accountId].Roles[role.RoleName].Expires = expires
 					}
-					if v, ok := c.Roles.Accounts[accountId].Roles[role.RoleName].Tags["History"]; ok {
+					if v, ok := cache.Roles.Accounts[accountId].Roles[role.RoleName].Tags["History"]; ok {
 						r.Accounts[accountId].Roles[role.RoleName].Tags["History"] = v
 					}
 				}
@@ -401,7 +432,8 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 
 // returns all tags, but with with spaces replaced with underscores
 func (c *Cache) GetAllTagsSelect() *TagsList {
-	tags := c.Roles.GetAllTags()
+	cache := c.GetSSO()
+	tags := cache.Roles.GetAllTags()
 	fixedTags := NewTagsList()
 	for k, values := range *tags {
 		key := strings.ReplaceAll(k, " ", "_")
@@ -419,7 +451,8 @@ func (c *Cache) GetAllTagsSelect() *TagsList {
 // replaced with underscores
 func (c *Cache) GetRoleTagsSelect() *RoleTags {
 	ret := RoleTags{}
-	fList := c.Roles.GetAllRoles()
+	cache := c.GetSSO()
+	fList := cache.Roles.GetAllRoles()
 	for _, role := range fList {
 		ret[role.Arn] = map[string]string{}
 		for k, v := range role.Tags {

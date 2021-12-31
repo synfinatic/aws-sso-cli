@@ -91,7 +91,7 @@ func (cc *DefaultCmd) Run(ctx *RunContext) error {
 
 // Print all our roles
 func printRoles(ctx *RunContext, fields []string) {
-	roles := ctx.Settings.Cache.Roles
+	roles := ctx.Settings.Cache.GetSSO().Roles
 	tr := []gotable.TableStruct{}
 	idx := 0
 
@@ -123,6 +123,7 @@ func printRoles(ctx *RunContext, fields []string) {
 		}
 	}
 
+	fmt.Printf("List of AWS roles for SSO Instance: %s\n", ctx.Settings.DefaultSSO)
 	if err := gotable.GenerateTable(tr, fields); err != nil {
 		log.WithError(err).Fatalf("Unable to generate report")
 	}

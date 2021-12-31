@@ -13,6 +13,7 @@
  * Honor config.yaml `DefaultSSO` #209
  * Setup now defaults to `warn` log level instead of `info` #214
  * `console` command did not know when you are using a non-Default SSO instance #208
+ * cache now handles multiple AWS SSO Instances correctly which fixes numerous issues #219
 
 ### Changes
  * Reduce number of warnings #205
