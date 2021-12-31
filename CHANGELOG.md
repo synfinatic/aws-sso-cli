@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [1.6.1] - 2021-12-31
+
 ### New Features
  * The `Via` role option is now a searchable tag #199
  * The `tags` command now returns the keys in sorted order
@@ -182,7 +184,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.6.0...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.6.1...main
+[v1.6.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.6.1
 [v1.6.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.6.0
 [v1.5.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.5.1
 [v1.5.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.5.0
