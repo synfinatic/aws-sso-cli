@@ -103,6 +103,7 @@ func unsetEnvVars(ctx *RunContext) error {
 		"AWS_SSO_ROLE_ARN",
 		"AWS_SSO_SESSION_EXPIRATION",
 		"AWS_SSO_PROFILE",
+		"AWS_SSO",
 	}
 
 	// clear the region if

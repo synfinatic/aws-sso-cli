@@ -90,7 +90,7 @@ type CLI struct {
 	Lines      bool   `kong:"help='Print line number in logs'"`
 	LogLevel   string `kong:"short='L',name='level',help='Logging level [error|warn|info|debug|trace] (default: info)'"`
 	UrlAction  string `kong:"short='u',help='How to handle URLs [open|print|clip] (default: open)'"`
-	SSO        string `kong:"short='S',help='AWS SSO Instance',env='AWS_SSO',predictor='sso'"`
+	SSO        string `kong:"short='S',help='Override default AWS SSO Instance',env='AWS_SSO',predictor='sso'"`
 	STSRefresh bool   `kong:"help='Force refresh of STS Token Credentials'"`
 
 	// Commands

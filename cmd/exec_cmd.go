@@ -82,7 +82,7 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 		return err
 	}
 	if err = ctx.Settings.Cache.Expired(sso); err != nil {
-		log.Warnf(err.Error())
+		log.Infof(err.Error())
 		c := &CacheCmd{}
 		if err = c.Run(ctx); err != nil {
 			return err
@@ -165,6 +165,7 @@ func execShellEnvs(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, r
 		"AWS_SSO_ROLE_NAME":          creds.RoleName,
 		"AWS_SSO_SESSION_EXPIRATION": creds.ExpireString(),
 		"AWS_SSO_ROLE_ARN":           utils.MakeRoleARN(creds.AccountId, creds.RoleName),
+		"AWS_SSO":                    ctx.Cli.SSO,
 	}
 
 	if len(region) > 0 {

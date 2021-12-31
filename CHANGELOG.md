@@ -12,6 +12,7 @@
  * AccountAlias/AccountName tags are inconsistenly applied/missing #201
  * Honor config.yaml `DefaultSSO` #209
  * Setup now defaults to `warn` log level instead of `info` #214
+ * `console` command did not know when you are using a non-Default SSO instance #208
 
 ## [1.6.0] - 2021-12-24
 
