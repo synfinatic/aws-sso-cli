@@ -46,7 +46,8 @@ func (cc *FlushCmd) Run(ctx *RunContext) error {
 	}
 
 	if ctx.Cli.Flush.All {
-		for _, role := range ctx.Settings.Cache.Roles.GetAllRoles() {
+		cache := ctx.Settings.Cache.GetSSO()
+		for _, role := range cache.Roles.GetAllRoles() {
 			if !role.IsExpired() {
 				if err = ctx.Store.DeleteRoleCredentials(role.Arn); err != nil {
 					log.WithError(err).Errorf("Unable to delete STS token for %s", role.Arn)

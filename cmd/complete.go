@@ -76,7 +76,8 @@ func NewPredictor(cacheFile, configFile string) *Predictor {
 
 	uniqueRoles := map[string]bool{}
 
-	for i, a := range c.Roles.Accounts {
+	cache := c.GetSSO()
+	for i, a := range cache.Roles.Accounts {
 		id, _ := utils.AccountIdToString(i)
 		p.accountids = append(p.accountids, id)
 		for role, r := range a.Roles {

@@ -191,7 +191,8 @@ func execShellEnvs(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, r
 
 	// Set the AWS_SSO_PROFILE env var using our template
 	var templ *template.Template
-	if roleInfo, err := ctx.Settings.Cache.Roles.GetRole(accountid, role); err != nil {
+	cache := ctx.Settings.Cache.GetSSO()
+	if roleInfo, err := cache.Roles.GetRole(accountid, role); err != nil {
 		// this error should never happen
 		log.Errorf("Unable to find role in cache.  Unable to set AWS_SSO_PROFILE")
 	} else {
