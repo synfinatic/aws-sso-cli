@@ -49,7 +49,7 @@ func OpenJsonStore(fileName string) (*JsonStore, error) {
 
 	cacheBytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
-		log.Warnf("Creating new cache file: %s", fileName)
+		log.Infof("Creating new cache file: %s", fileName)
 	} else {
 		err = json.Unmarshal(cacheBytes, &cache)
 	}
