@@ -82,7 +82,7 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 		return err
 	}
 	if err = ctx.Settings.Cache.Expired(sso); err != nil {
-		log.Warnf(err.Error())
+		log.Infof(err.Error())
 		c := &CacheCmd{}
 		if err = c.Run(ctx); err != nil {
 			return err

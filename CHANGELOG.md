@@ -13,6 +13,9 @@
  * Honor config.yaml `DefaultSSO` #209
  * Setup now defaults to `warn` log level instead of `info` #214
 
+### Changes
+ * Reduce number of warnings #205
+
 ## [1.6.0] - 2021-12-24
 
 ### Breaking Changes

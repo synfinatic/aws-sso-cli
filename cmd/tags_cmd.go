@@ -48,7 +48,7 @@ func (cc *TagsCmd) Run(ctx *RunContext) error {
 		}
 		err = set.Cache.Save(true)
 		if err != nil {
-			log.WithError(err).Warnf("Unable to save cache")
+			log.WithError(err).Errorf("Unable to save cache")
 		}
 	} else {
 		s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
