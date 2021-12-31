@@ -222,7 +222,7 @@ func setupWizard(ctx *RunContext) error {
 			Label:        label,
 			Items:        logLevels,
 			HideSelected: false,
-			CursorPos:    2, // info
+			CursorPos:    1, // warn
 			Stdout:       &bellSkipper{},
 			Templates: &promptui.SelectTemplates{
 				Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
