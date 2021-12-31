@@ -10,6 +10,7 @@
  * Consistently pad AccountID with zeros whenever necessary
  * Detect role chain loops using `Via` #194
  * AccountAlias/AccountName tags are inconsistenly applied/missing #201
+ * Honor config.yaml `DefaultSSO` #209
 
 ## [1.6.0] - 2021-12-24
 
