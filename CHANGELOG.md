@@ -11,6 +11,7 @@
  * Detect role chain loops using `Via` #194
  * AccountAlias/AccountName tags are inconsistenly applied/missing #201
  * Honor config.yaml `DefaultSSO` #209
+ * Setup now defaults to `warn` log level instead of `info` #214
 
 ## [1.6.0] - 2021-12-24
 
