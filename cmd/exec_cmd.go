@@ -106,14 +106,14 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 }
 
 const (
-	AwsSsoProfileTemplate = "{{.AccountId}}:{{.RoleName}}"
+	AwsSsoProfileTemplate = "{{AccountIdStr .AccountId}}:{{.RoleName}}"
 )
 
 func emptyString(str string) bool {
 	return str == ""
 }
 
-func firstItem(items []string) string {
+func firstItem(items ...string) string {
 	for _, v := range items {
 		if v != "" {
 			return v
@@ -125,6 +125,10 @@ func firstItem(items []string) string {
 func accountIdToStr(id int64) string {
 	i, _ := utils.AccountIdToString(id)
 	return i
+}
+
+func stringsJoin(x string, items ...string) string {
+	return strings.Join(items, x)
 }
 
 // Executes Cmd+Args in the context of the AWS Role creds
@@ -182,7 +186,7 @@ func execShellEnvs(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, r
 		"AccountIdStr": accountIdToStr,
 		"EmptyString":  emptyString,
 		"FirstItem":    firstItem,
-		"StringsJoin":  strings.Join,
+		"StringsJoin":  stringsJoin,
 	}
 
 	if ctx.Settings.ProfileFormat != "" {
