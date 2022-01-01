@@ -23,16 +23,17 @@ type CacheTestSuite struct {
 }
 
 func TestCacheTestSuite(t *testing.T) {
-	settings := &Settings{
-		HistoryLimit:   1,
-		HistoryMinutes: 90,
-		DefaultSSO:     "Default",
-	}
-
 	// copy our cache test file to a temp file
 	f, err := os.CreateTemp("", "*")
 	assert.NoError(t, err)
 	f.Close()
+
+	settings := &Settings{
+		HistoryLimit:   1,
+		HistoryMinutes: 90,
+		DefaultSSO:     "Default",
+		cacheFile:      f.Name(),
+	}
 
 	input, err := ioutil.ReadFile(TEST_CACHE_FILE)
 	assert.NoError(t, err)
@@ -111,6 +112,7 @@ func (suite *CacheTestSuite) TestGetRole() {
 	assert.Equal(t, "", r.DefaultRegion)
 	assert.Equal(t, "us-east-1", r.SSORegion)
 	assert.Equal(t, "https://d-754545454.awsapps.com/start", r.StartUrl)
+	assert.Equal(t, "Default", r.SSO)
 
 	tags := map[string]string{
 		"AccountAlias": "control-tower-dev-sub1-aws",
@@ -198,23 +200,23 @@ func (suite *CacheTestSuite) BadRole() {
 	assert.Error(t, err)
 }
 
-func (suite *CacheTestSuite) Version() {
+func (suite *CacheTestSuite) TestVersion() {
 	t := suite.T()
-	assert.NotEqual(t, CACHE_VERSION, suite.cache.Version)
+	assert.Equal(t, int64(CACHE_VERSION), suite.cache.Version)
 
 	err := suite.cache.Save(false)
 	assert.NoError(t, err)
-	assert.Equal(t, CACHE_VERSION, suite.cache.Version)
+	assert.Equal(t, int64(CACHE_VERSION), suite.cache.Version)
 }
 
-func (suite *CacheTestSuite) GetSSO() {
+func (suite *CacheTestSuite) TestGetSSO() {
 	t := suite.T()
 
 	suite.cache.ssoName = "Invalid"
 	cache := suite.cache.GetSSO()
-	assert.Empty(t, cache.Roles)
+	assert.Empty(t, cache.Roles.Accounts)
 	assert.Empty(t, cache.History)
-	assert.Equal(t, 0, cache.LastUpdate)
+	assert.Equal(t, int64(0), cache.LastUpdate)
 
 	suite.cache.ssoName = "Default"
 	cache = suite.cache.GetSSO()

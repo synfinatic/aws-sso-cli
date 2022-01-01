@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### New Features
+ * Add `Via` and `SSO` to possible `list` command output fields
+ * Add `SSO` to list of valid ProfileFormat template variables
+ * Improve ProfileFormat documentation
+
+### Bug Fixes
+
+ * Fix broken FirstItem and StringsJoin ProfileFormat functions
+ * Default ProfileFormat now zero-pads the AWS AccountID
+
 ## [1.6.1] - 2021-12-31
 
 ### New Features

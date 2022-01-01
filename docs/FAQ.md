@@ -4,6 +4,8 @@
  * [How good is the Windows support?](#how-good-is-the-windows-support)
  * [Does AWS SSO CLI support Role Chaining?](#does-aws-sso-cli-support-role-chaining)
  * [How does AWS SSO CLI manage the $AWS\_DEFAULT\_REGION?](#how-does-aws-sso-cli-manage-the-aws_default_region)
+ * [How to configure ProfileFormat](#how-to-configure-profileformat)
+
 
 ### How do I delete all secrets from the macOS keychain?
 
@@ -60,3 +62,21 @@ manage the variable.
 
 <!-- https://github.com/synfinatic/aws-sso-cli/issues/166 -->
 ![](https://user-images.githubusercontent.com/1075352/143502947-1465f68f-0ef5-4de7-a997-ea716facc637.png)
+
+### How to configure ProfileFormat
+
+`aws-sso` makes it easy to modify your shell `$PROMPT` to include information
+about what AWS Account/Role you have currently assumed by defining the `$AWS_SSO_PROFILE`
+environment variable.  By default, `ProfileFormat` is set to
+`{{ AccountIdStr .AccountId }}:{{ .RoleName }}` which will generate a value like
+`02345678901:MyRoleName`.
+
+Some examples:
+
+ * `{{ FirstItem .AccountName .AccountAlias }}` -- If there is an Account Name set in the config.yaml use that,
+	otherwise use the Account Alias defined by the AWS administrator.
+ * `{{ AccountIdStr .AccountId }}` -- Pad the AccountId with leading zeros if it is < 12 digits long
+ * `{{ .AccountId }}` -- Print the AccountId as a regular number
+ * `{{ StringsJoin ":" .AccountAlias .RoleName}} -- Another way of writing `{{ .AccountAlias }}:{{ .RoleName }}`
+
+For a full list of available variables, [see here](config.md#profileformat).

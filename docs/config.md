@@ -165,12 +165,12 @@ or with the `--duration` flag.
 
 `SecureStore` supports the following backends:
 
- * `file` - Encrypted local files (OS agnostic and default)
- * `keychain` - macOS [Keychain](https://support.apple.com/guide/mac-help/use-keychains-to-store-passwords-mchlf375f392/mac)
+ * `file` - Encrypted local files (OS agnostic and default on Linux)
+ * `keychain` - macOS [Keychain](https://support.apple.com/guide/mac-help/use-keychains-to-store-passwords-mchlf375f392/mac) (default on macOS)
  * `kwallet` - [KDE Wallet](https://utils.kde.org/projects/kwalletmanager/)
  * `pass` - [pass](https://www.passwordstore.org)
  * `secret-service` - Freedesktop.org [Secret Service](https://specifications.freedesktop.org/secret-service/latest/re01.html)
- * `wincred` - Windows [Credential Manager](https://support.microsoft.com/en-us/windows/accessing-credential-manager-1b5c916a-6a16-889f-8581-fc16e8165ac0)
+ * `wincred` - Windows [Credential Manager](https://support.microsoft.com/en-us/windows/accessing-credential-manager-1b5c916a-6a16-889f-8581-fc16e8165ac0) (default on Windows)
  * `json` - Cleartext JSON file (very insecure and not recommended).  Location can be overridden with `JsonStore`
 
 ## ProfileFormat
@@ -190,26 +190,26 @@ The following variables are accessible from the `AWSRoleFlat` struct:
  * `Expires` -- When your API credentials expire (string)
  * `Arn` -- AWS ARN for this role
  * `RoleName` -- The role name
- * `Profile` -- Manually configured AWS_SSO_PROFILE value for this role
  * `DefaultRegion` -- The manually configured default region for this role
+ * `SSO` -- Name of the AWS SSO instance
  * `SSORegion` -- The AWS Region where AWS SSO is enabled in your account
  * `StartUrl` -- The AWS SSO start URL for your account
  * `Tags` -- Map of additional custom key/value pairs
-<!--
-issue: #38
  * `Via` -- Role AWS SSO CLI will assume before assuming this role
--->
+
+By default, `ProfileFormat` is set to `{{ AccountIdStr .AccountId }}:{{ .RoleName }}`.
 
 The following functions are available in your template:
 
  * `AccountIdStr(x)` -- Converts an AWS Account ID to a string
  * `EmptyString(x)` -- Returns true/false if the value `x` is an empty string
  * `FirstItem([]x)` -- Returns the first item in a list that is not an empty string
- * `StringsJoin([]x, y)` -- Joins the items in `x` with the string `y`
+ * `StringsJoin(x, []y)` -- Joins the items in `y` with the string `x`
 
-**Note:** Unlike most values stored in the `config.yaml`, because `ProfileFormat`
-values often start with a `{` you will need to quote the value for it to be valid
-YAML.
+**Note:** Unlike most values stored in the `config.yaml`,  you will need to single-quote
+(`'`) the value because because `ProfileFormat` values often start with a `{`.
+
+For more information, [see the FAQ](FAQ.md#how-to-configure-profileformat).
 
 ## AccountPrimaryTag
 

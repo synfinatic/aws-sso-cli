@@ -39,6 +39,7 @@ type SSOCache struct {
 	LastUpdate int64    `json:"LastUpdate,omitempty"` // when these records for this SSO were updated
 	History    []string `json:"History,omitempty"`
 	Roles      *Roles   `json:"Roles,omitempty"`
+	name       string   // name of this SSO Instance
 }
 
 // Our Cachefile.  Sub-structs defined in sso/cache.go
@@ -78,15 +79,19 @@ func OpenCache(f string, s *Settings) (*Cache, error) {
 // GetSSO returns the current SSOCache object for the current SSO instance
 func (c *Cache) GetSSO() *SSOCache {
 	if v, ok := c.SSO[c.ssoName]; ok {
+		v.name = c.ssoName
+		v.Roles.ssoName = c.ssoName
 		return v
 	}
 
 	// init a new one
 	c.SSO[c.ssoName] = &SSOCache{
+		name:       c.ssoName,
 		LastUpdate: 0,
 		History:    []string{},
 		Roles: &Roles{
 			Accounts: map[int64]*AWSAccount{},
+			ssoName:  c.ssoName,
 		},
 	}
 	return c.SSO[c.ssoName]
@@ -124,13 +129,17 @@ func (c *Cache) Save(updateTime bool) error {
 	}
 	jbytes, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
-		return err
+		return fmt.Errorf("Unable to masrhal json: %s", err.Error())
 	}
 	err = utils.EnsureDirExists(c.CacheFile())
 	if err != nil {
-		return err
+		return fmt.Errorf("Unable to create directory for %s: %s", c.CacheFile(), err.Error())
 	}
-	return ioutil.WriteFile(c.CacheFile(), jbytes, 0600)
+	err = ioutil.WriteFile(c.CacheFile(), jbytes, 0600)
+	if err != nil {
+		return fmt.Errorf("Unable to write %s: %s", c.CacheFile(), err.Error())
+	}
+	return nil
 }
 
 // adds a role to the History list up to the max number of entries
@@ -271,6 +280,7 @@ type Roles struct {
 	SSORegion     string                `json:"SSORegion"`
 	StartUrl      string                `json:"StartUrl"`
 	DefaultRegion string                `json:"DefaultRegion"`
+	ssoName       string
 }
 
 // AWSAccount and AWSRole is how we store the data
@@ -305,6 +315,7 @@ type AWSRoleFlat struct {
 	RoleName      string            `json:"RoleName" header:"Role"`
 	Profile       string            `json:"Profile" header:"Profile"`
 	DefaultRegion string            `json:"DefaultRegion" header:"DefaultRegion"`
+	SSO           string            `json:"SSO" header:"SSO"`
 	SSORegion     string            `json:"SSORegion" header:"SSORegion"`
 	StartUrl      string            `json:"StartUrl" header:"StartUrl"`
 	Tags          map[string]string `json:"Tags"` // not supported by GenerateTable
@@ -324,6 +335,7 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 		StartUrl:      config.StartUrl,
 		DefaultRegion: config.DefaultRegion,
 		Accounts:      map[int64]*AWSAccount{},
+		ssoName:       config.settings.DefaultSSO,
 	}
 
 	cache := c.GetSSO()
@@ -545,6 +557,7 @@ func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) 
 				RoleName:      roleName,
 				Profile:       role.Profile,
 				DefaultRegion: r.DefaultRegion,
+				SSO:           r.ssoName,
 				SSORegion:     r.SSORegion,
 				StartUrl:      r.StartUrl,
 				Tags:          map[string]string{},

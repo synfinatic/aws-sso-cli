@@ -36,12 +36,13 @@ var allListFields = map[string]string{
 	"AccountName":   "Configured Account Name",
 	"AccountAlias":  "AWS Account Alias",
 	"DefaultRegion": "Default AWS Region",
-	"EmailAddress":  "Root email for AWS account",
+	"EmailAddress":  "Root Email for AWS account",
 	"ExpiresStr":    "Time until STS creds expire",
 	"Expires":       "Unix Epoch when STS creds expire",
+	"RoleName":      "AWS Role Name",
+	"SSO":           "AWS SSO Instance Name",
+	"Via":           "Role Chain Via",
 	//	"Profile":       "AWS_PROFILE",
-	"RoleName": "AWS Role Name",
-	//	"Via":           "Role Chain Via",
 }
 
 type ListCmd struct {
