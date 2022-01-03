@@ -95,6 +95,7 @@ type CLI struct {
 
 	// Commands
 	Cache              CacheCmd                     `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
+	Config             ConfigCmd                    `kong:"cmd,help='Update ~/.aws/config with AWS SSO profiles'"`
 	Console            ConsoleCmd                   `kong:"cmd,help='Open AWS Console using specificed AWS Role/profile'"`
 	Default            DefaultCmd                   `kong:"cmd,hidden,default='1'"` // list command without args
 	Eval               EvalCmd                      `kong:"cmd,help='Print AWS Environment vars for use with eval $(aws-sso eval ...)'"`

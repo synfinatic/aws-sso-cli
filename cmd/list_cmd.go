@@ -42,7 +42,7 @@ var allListFields = map[string]string{
 	"RoleName":      "AWS Role Name",
 	"SSO":           "AWS SSO Instance Name",
 	"Via":           "Role Chain Via",
-	//	"Profile":       "AWS_PROFILE",
+	"Profile":       "AWS_SSO_PROFILE / AWS_PROFILE",
 }
 
 type ListCmd struct {
@@ -117,6 +117,11 @@ func printRoles(ctx *RunContext, fields []string) {
 				if exp, err := utils.TimeRemain(roleFlat.Expires, true); err == nil {
 					roleFlat.ExpiresStr = exp
 				}
+			}
+			// update Profile
+			p, err := roleFlat.ProfileName(ctx.Settings)
+			if err == nil {
+				roleFlat.Profile = p
 			}
 			roleFlat.Id = idx
 			idx += 1

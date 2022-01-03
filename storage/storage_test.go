@@ -91,16 +91,26 @@ func TestExpireEpoch(t *testing.T) {
 	}
 	assert.Equal(t, int64(0), x.ExpireEpoch())
 
-	x.Expiration = time.Now().UnixMilli()
-	assert.Equal(t, time.UnixMilli(x.Expiration).Unix(), x.ExpireEpoch())
+	x.Expiration = time.Now().Unix()
+	assert.Equal(t, time.Unix(x.Expiration, 0).Unix(), x.ExpireEpoch())
 }
 
 func TestExpireString(t *testing.T) {
 	x := RoleCredentials{
 		Expiration: 0,
 	}
-	assert.Equal(t, time.UnixMilli(0).String(), x.ExpireString())
+	assert.Equal(t, time.Unix(0, 0).String(), x.ExpireString())
 
-	x.Expiration = time.Now().UnixMilli()
-	assert.Equal(t, time.UnixMilli(x.Expiration).String(), x.ExpireString())
+	x.Expiration = time.Now().Unix()
+	assert.Equal(t, time.Unix(x.Expiration, 0).String(), x.ExpireString())
+}
+
+func TestExpireISO8601(t *testing.T) {
+	x := RoleCredentials{
+		Expiration: 0,
+	}
+	assert.Equal(t, time.Unix(0, 0).Format(time.RFC3339), x.ExpireISO8601())
+
+	x.Expiration = time.Now().Unix()
+	assert.Equal(t, time.Unix(x.Expiration, 0).Format(time.RFC3339), x.ExpireISO8601())
 }
