@@ -19,16 +19,12 @@ package main
  */
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
-	"strings"
-	"text/template"
 
 	"github.com/c-bata/go-prompt"
-	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/synfinatic/aws-sso-cli/utils"
@@ -105,32 +101,6 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 	return nil
 }
 
-const (
-	AwsSsoProfileTemplate = "{{AccountIdStr .AccountId}}:{{.RoleName}}"
-)
-
-func emptyString(str string) bool {
-	return str == ""
-}
-
-func firstItem(items ...string) string {
-	for _, v := range items {
-		if v != "" {
-			return v
-		}
-	}
-	return ""
-}
-
-func accountIdToStr(id int64) string {
-	i, _ := utils.AccountIdToString(id)
-	return i
-}
-
-func stringsJoin(x string, items ...string) string {
-	return strings.Join(items, x)
-}
-
 // Executes Cmd+Args in the context of the AWS Role creds
 func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) error {
 	region := ctx.Settings.GetDefaultRegion(ctx.Cli.Exec.AccountId, ctx.Cli.Exec.Role, ctx.Cli.Exec.NoRegion)
@@ -158,6 +128,7 @@ func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) 
 }
 
 func execShellEnvs(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, region string) map[string]string {
+	var err error
 	credsPtr := GetRoleCredentials(ctx, awssso, accountid, role)
 	creds := *credsPtr
 
@@ -180,39 +151,17 @@ func execShellEnvs(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, r
 		shellVars["AWS_SSO_DEFAULT_REGION"] = ""
 	}
 
-	var profileFormat string = AwsSsoProfileTemplate
-
-	funcMap := template.FuncMap{
-		"AccountIdStr": accountIdToStr,
-		"EmptyString":  emptyString,
-		"FirstItem":    firstItem,
-		"StringsJoin":  stringsJoin,
-	}
-
-	if ctx.Settings.ProfileFormat != "" {
-		profileFormat = ctx.Settings.ProfileFormat
-	}
-
 	// Set the AWS_SSO_PROFILE env var using our template
-	var templ *template.Template
 	cache := ctx.Settings.Cache.GetSSO()
-	if roleInfo, err := cache.Roles.GetRole(accountid, role); err != nil {
+	var roleInfo *sso.AWSRoleFlat
+	if roleInfo, err = cache.Roles.GetRole(accountid, role); err != nil {
 		// this error should never happen
 		log.Errorf("Unable to find role in cache.  Unable to set AWS_SSO_PROFILE")
 	} else {
-		templ, err = template.New("main").Funcs(funcMap).Parse(profileFormat)
+		shellVars["AWS_SSO_PROFILE"], err = roleInfo.ProfileName(ctx.Settings)
 		if err != nil {
-			log.Errorf("Invalid ProfileFormat '%s': %s -- using default", ctx.Settings.ProfileFormat, err)
-			templ, _ = template.New("main").Funcs(funcMap).Parse(AwsSsoProfileTemplate)
+			log.Errorf("Unable to generate AWS_SSO_PROFILE: %s", err.Error())
 		}
-
-		buf := new(bytes.Buffer)
-		log.Tracef("RoleInfo: %s", spew.Sdump(roleInfo))
-		log.Tracef("Template: %s", spew.Sdump(templ))
-		if err := templ.Execute(buf, roleInfo); err != nil {
-			log.WithError(err).Errorf("Unable to generate AWS_SSO_PROFILE")
-		}
-		shellVars["AWS_SSO_PROFILE"] = buf.String()
 	}
 
 	return shellVars

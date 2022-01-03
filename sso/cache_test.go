@@ -1,5 +1,23 @@
 package sso
 
+/*
+ * AWS SSO CLI
+ * Copyright (c) 2021-2022 Aaron Turner  <synfinatic at gmail dot com>
+ *
+ * This program is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or with the authors permission any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 import (
 	"io/ioutil"
 	"os"
@@ -18,8 +36,8 @@ const (
 
 type CacheTestSuite struct {
 	suite.Suite
-	cache      *Cache
-	configFile string
+	cache     *Cache
+	cacheFile string
 }
 
 func TestCacheTestSuite(t *testing.T) {
@@ -45,14 +63,14 @@ func TestCacheTestSuite(t *testing.T) {
 	assert.NoError(t, err)
 
 	s := &CacheTestSuite{
-		cache:      c,
-		configFile: f.Name(),
+		cache:     c,
+		cacheFile: f.Name(),
 	}
 	suite.Run(t, s)
 }
 
 func (suite *CacheTestSuite) TearDownAllSuite() {
-	os.Remove(suite.configFile)
+	os.Remove(suite.cacheFile)
 }
 
 func (suite *CacheTestSuite) TestAddHistory() {
@@ -223,4 +241,35 @@ func (suite *CacheTestSuite) TestGetSSO() {
 	assert.NotEmpty(t, cache.Roles)
 	assert.Empty(t, cache.History)
 	assert.NotEqual(t, 0, cache.LastUpdate)
+}
+
+func (suite *CacheTestSuite) TestCacheFile() {
+	t := suite.T()
+	assert.Equal(t, suite.cacheFile, suite.cache.CacheFile())
+}
+
+func (suite *CacheTestSuite) TestMarkRolesExpired() {
+	t := suite.T()
+	err := suite.cache.MarkRolesExpired()
+	assert.NoError(t, err)
+
+	sso := suite.cache.GetSSO()
+	for _, account := range sso.Roles.Accounts {
+		for _, role := range account.Roles {
+			assert.Equal(t, int64(0), (*role).Expires)
+		}
+	}
+}
+
+func (suite CacheTestSuite) TestSetRoleExpires() {
+	t := suite.T()
+	err := suite.cache.SetRoleExpires(TEST_ROLE_ARN, 12344553243)
+	assert.NoError(t, err)
+
+	flat, err := suite.cache.GetRole(TEST_ROLE_ARN)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(12344553243), flat.Expires)
+
+	err = suite.cache.SetRoleExpires(INVALID_ROLE_ARN, 12344553243)
+	assert.Error(t, err)
 }

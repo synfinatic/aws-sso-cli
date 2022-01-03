@@ -21,9 +21,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 
-	//log "github.com/sirupsen/logrus"
+	// log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/synfinatic/aws-sso-cli/storage"
 	"github.com/synfinatic/aws-sso-cli/utils"
@@ -71,12 +70,13 @@ type CredentialProcessOutput struct {
 }
 
 func NewCredentialsProcessOutput(creds *storage.RoleCredentials) *CredentialProcessOutput {
+	x := *creds
 	c := CredentialProcessOutput{
 		Version:         1,
-		AccessKeyId:     (*creds).AccessKeyId,
-		SecretAccessKey: (*creds).SecretAccessKey,
-		SessionToken:    (*creds).SessionToken,
-		Expiration:      time.Unix((*creds).ExpireEpoch(), 0).Format(time.RFC3339),
+		AccessKeyId:     x.AccessKeyId,
+		SecretAccessKey: x.SecretAccessKey,
+		SessionToken:    x.SessionToken,
+		Expiration:      x.ExpireISO8601(),
 	}
 	return &c
 }

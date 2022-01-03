@@ -54,7 +54,7 @@ If the above are true, then AWS SSO will define both:
  * `$AWS_DEFAULT_REGION`
  * `$AWS_SSO_DEFAULT_REGION`
 
-to the default region as defined by `config.yaml`.  If the user changes
+to the default region as def)ined by `config.yaml`.  If the user changes
 roles and the two variables are set to the same region, then AWS SSO will
 update the region.   If the user ever overrides the `$AWS_DEFAULT_REGION`
 value or deletes the `$AWS_SSO_DEFAULT_REGION` then AWS SSO will no longer
@@ -65,18 +65,34 @@ manage the variable.
 
 ### How to configure ProfileFormat
 
-`aws-sso` makes it easy to modify your shell `$PROMPT` to include information
-about what AWS Account/Role you have currently assumed by defining the `$AWS_SSO_PROFILE`
-environment variable.  By default, `ProfileFormat` is set to
-`{{ AccountIdStr .AccountId }}:{{ .RoleName }}` which will generate a value like
-`02345678901:MyRoleName`.
+`aws-sso` uses the `ProfileFormat` configuration option for two different purposes:
+
+ 1. Makes it easy to modify your shell `$PROMPT` to include information
+	about what AWS Account/Role you have currently assumed by defining the
+	`$AWS_SSO_PROFILE` environment variable.
+ 2. Makes it easy to select a role via the `$AWS_PROFILE` environment variable
+	when you use the [config](../README.md#config) command.
+
+By default, `ProfileFormat` is set to `{{ AccountIdStr .AccountId }}:{{ .RoleName }}`
+which will generate a value like `02345678901:MyRoleName`.
 
 Some examples:
 
- * `{{ FirstItem .AccountName .AccountAlias }}` -- If there is an Account Name set in the config.yaml use that,
-	otherwise use the Account Alias defined by the AWS administrator.
- * `{{ AccountIdStr .AccountId }}` -- Pad the AccountId with leading zeros if it is < 12 digits long
+ * `{{ FirstItem .AccountName .AccountAlias }}` -- If there is an Account Name
+	set in the config.yaml print that, otherwise print the Account Alias defined
+	by the AWS administrator.
+ * `{{ AccountIdStr .AccountId }}` -- Pad the AccountId with leading zeros if it
+	is < 12 digits long
  * `{{ .AccountId }}` -- Print the AccountId as a regular number
- * `{{ StringsJoin ":" .AccountAlias .RoleName}} -- Another way of writing `{{ .AccountAlias }}:{{ .RoleName }}`
+ * `{{ StringsJoin ":" .AccountAlias .RoleName }} -- Another way of writing
+	`{{ .AccountAlias }}:{{ .RoleName }}`
+ * `{{ StringReplace " " "_" .AccountAlias }}` -- Replace any spaces (` `) in the
+	AccountAlias with an underscore (`_`).
+ * `{{ FirstItem .AccountName .AccountAlias | StringReplace " " "_" }}:{{ .RoleName }}` --
+	Use the Account Name if set, otherwise use the Account Alias and replace any spaces
+	with an underscore and then append a colon, followed by the role name.
 
 For a full list of available variables, [see here](config.md#profileformat).
+
+To see a list of values across your roles for a given variable, you can use
+the [list](../README.md#list) command.

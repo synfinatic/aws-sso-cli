@@ -10,6 +10,17 @@
  * [Quick Setup](#quick-setup)
  * [Security](#security)
  * [Commands](#commands)
+    * [cache](#cache)
+    * [console](#console)
+	* [config](#config)
+	* [eval](#eval)
+	* [exec](#exec)
+	* [flush](#flush)
+	* [list](#list)
+	* [process](#process)
+	* [tags](#tags)
+	* [time](#time)
+	* [install-autocomplete](#install-autocomplete)
  * [Configuration](docs/config.md)
  * [Environment Varables](#environment-varables)
  * [Release History](#release-history)
@@ -130,6 +141,7 @@ been granted access!
 
  * [cache](#cache) -- Force refresh of AWS SSO role information
  * [console](#console) -- Open AWS Console in a browser with the selected role
+ * [config](#config) -- Update your `~/.aws/config` file with the AWS profiles in AWS SSO
  * [eval](#eval) -- Print shell environment variables for use in your shell
  * [exec](#exec) -- Exec a command with the selected role
  * [flush](#flush) -- Force delete of cached AWS SSO credentials
@@ -178,6 +190,33 @@ Priority is given to:
  * `--account` (`$AWS_SSO_ACCOUNT_ID`) and `--role` (`$AWS_SSO_ROLE_NAME`)
  * `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN` environment variables
  * Prompt user interactively
+
+### config
+
+Modifies the `~/.aws/config` file to contain a profile for every role accessible
+via AWS SSO CLI.
+
+Flags:
+
+ * `--print` -- Print profile entries instead of modifying config file
+ * `--output` -- Set the default output format.
+	Must be one of `json`, `yaml`, `yaml-stream`, `text`, `table`.  Default is `json`.
+
+This generates a series of [named profile entries](
+https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html) in the
+`~/.aws/config` file which allows you to easily use any AWS SSO role just by setting
+the `$AWS_PROFILE` environment variable.  By default, each profile is named according
+to the [ProfileFormat](docs/config.md#profileformat) config option or overridden by
+the user defined [Profile](docs/config.md#profile) option on a role by role basis.
+
+**Note:** You should run this command any time your list of AWS roles changes.
+
+**Note:** It is important that you do _NOT_ remove the `# BEGIN_AWS_SSO_CLI` and
+`# END_AWS_SSO_CLI` lines from your config file!  These markers are used to track
+which profiles are managed by AWS SSO CLI.
+
+**Note:** This command does not honor the `--sso` option as it operates on all 
+of the configured AWS SSO instances in the `~/.aws-sso/config.yaml` file.
 
 ### eval
 
@@ -319,11 +358,20 @@ By default the following key/values are available as tags to your roles:
  * `History` -- Tag tracking if this role was recently used.  See `HistoryLimit`
                 in config.
 
+### time
+
+Print a string containing the number of hours and minutes that the current
+AWS Role's STS credentials are valid for in the format of `HHhMMm`
+
 ### install-autocomplete
 
 Configures your appropriate shell configuration file to add auto-complete
 functionality for commands, flags and options.  Must restart your shell
 for this to take effect.
+
+Modifies the following file based on your shell:
+ * `~/.bash_profile` -- bash
+ * `~/.zshrc` -- zsh
 
 ## Environment Varables
 

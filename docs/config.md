@@ -20,6 +20,7 @@ SSOConfig:
                     <Key2>: <Value2>
                 Roles:
                     <Role Name>:
+                        Profile: <ProfileName>
                         DefaultRegion: <AWS_DEFAULT_REGION>
                         Tags:  # tags specific for this role (will override account level tags)
                             <Key1>: <Value1>
@@ -107,6 +108,11 @@ the account level will be applied to all roles in that account.
 #### Roles
 
 The `Roles` block is optional, except for roles you which to assume via role chaining.
+
+##### Profile
+
+Define a custom `$AWS_PROFILE` / `$AWS_SSO_PROFILE` value for this role which overrides
+the [ProfileFormat](#profileformat) config option.
 
 ##### Tags
 
