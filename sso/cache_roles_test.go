@@ -162,3 +162,20 @@ func (suite *CacheRolesTestSuite) TestGetRole() {
 	assert.NoError(t, err)
 	assert.Equal(t, "OurCompany Control Tower Playground/AWSAdministratorAccess", p)
 }
+
+func (suite *CacheRolesTestSuite) TestProfileName() {
+	t := suite.T()
+	roles := suite.cache.SSO[suite.cache.ssoName].Roles
+	r, err := roles.GetRole(258234615182, "AWSAdministratorAccess")
+	assert.NoError(t, err)
+
+	p, err := r.ProfileName(suite.settings)
+	assert.NoError(t, err)
+	assert.Equal(t, "OurCompany Control Tower Playground/AWSAdministratorAccess", p)
+
+	settings := suite.settings
+	settings.ProfileFormat = `{{ FirstItem .AccountName .AccountAlias | StringReplace " " "_" }}:{{ .RoleName }}`
+	p, err = r.ProfileName(settings)
+	assert.NoError(t, err)
+	assert.Equal(t, "OurCompany_Control_Tower_Playground:AWSAdministratorAccess", p)
+}

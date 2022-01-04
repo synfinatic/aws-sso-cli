@@ -297,7 +297,7 @@ func doAuth(ctx *RunContext) *sso.AWSSSO {
 	if err != nil {
 		log.Fatalf("%s", err.Error())
 	}
-	AwsSSO := sso.NewAWSSSO(s, &ctx.Store)
+	AwsSSO = sso.NewAWSSSO(s, &ctx.Store)
 	err = AwsSSO.Authenticate(ctx.Settings.UrlAction, ctx.Settings.Browser)
 	if err != nil {
 		log.WithError(err).Fatalf("Unable to authenticate")
