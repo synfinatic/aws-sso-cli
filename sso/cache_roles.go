@@ -32,6 +32,8 @@ import (
 	"github.com/synfinatic/gotable"
 )
 
+const DEFAULT_PROFILE_TEMPLATE = "{{AccountIdStr .AccountId}}:{{.RoleName}}"
+
 // main struct holding all our Roles discovered via AWS SSO and
 // via the config.yaml
 type Roles struct {
@@ -307,7 +309,7 @@ func (r *AWSRoleFlat) ProfileName(s *Settings) (string, error) {
 		"StringsJoin":   stringsJoin,
 		"StringReplace": stringReplace,
 	}
-	templ, err := template.New("main").Funcs(funcMap).Parse(format)
+	templ, err := template.New("profile_name").Funcs(funcMap).Parse(format)
 	if err != nil {
 		return "", err
 	}
@@ -321,8 +323,6 @@ func (r *AWSRoleFlat) ProfileName(s *Settings) (string, error) {
 
 	return buf.String(), nil
 }
-
-const DEFAULT_PROFILE_TEMPLATE = "{{AccountIdStr .AccountId}}:{{.RoleName}}"
 
 func emptyString(str string) bool {
 	return str == ""
