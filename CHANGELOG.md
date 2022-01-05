@@ -6,6 +6,7 @@
  * Add `Via` and `SSO` to possible `list` command output fields
  * Add `SSO` to list of valid ProfileFormat template variables
  * Improve ProfileFormat documentation
+ * Add `config` command to manage `~/.aws/config` #157
 
 ### Bug Fixes
 
@@ -41,7 +42,7 @@
  * Add support for role chaining using `Via` tag #38
  * Cache file is now versioned for better compatibility across versions of `aws-sso` #195
 
-### Bug Fixes 
+### Bug Fixes
  * Incorrect `--level` value now correctly tells user the correct name of the flag
  * `exec` command now uses `cmd.exe` when no command is specified
 

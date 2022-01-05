@@ -37,22 +37,17 @@ const (
 	AWS_CONFIG_FILE = "~/.aws/config"
 	CONFIG_PREFIX   = "# BEGIN_AWS_SSO_CLI"
 	CONFIG_SUFFIX   = "# END_AWS_SSO_CLI"
-	CONFIG_TEMPLATE = `
-{{ .Prefix }}
-{{ range .Profiles }}
-[profile {{ .Profile }}]
-credential_process = {{ .BinaryPath }} -u open -S "{{ .Sso }}" process --arn {{ .Arn }}
-output={{ .Output }}
-{{end}}
-{{ .Suffix }}
+	CONFIG_TEMPLATE = `# BEGIN_AWS_SSO_CLI
+{{ range $sso, $struct := . }}{{ range $arn, $profile := $struct }}
+[profile {{ $profile.Profile }}]
+credential_process = {{ $profile.BinaryPath }} -u open -S "{{ $profile.Sso }}" process --arn {{ $profile.Arn }}
+output={{ $profile.Output }}
+{{end}}{{end}}
+# END_AWS_SSO_CLI
 `
 )
 
-type TemplateConfig struct {
-	Prefix   string
-	Suffix   string
-	Profiles []ProfileConfig
-}
+type ProfileMap map[string]map[string]ProfileConfig
 
 type ProfileConfig struct {
 	Sso        string
@@ -63,30 +58,39 @@ type ProfileConfig struct {
 }
 
 type ConfigCmd struct {
-	Print  bool   `kong:"help='Print profile entries instead of modifying config file',xor='action'"`
-	Diff   bool   `kong:"help='Print a diff of the new config file instead of modifying it',xor='action'"`
+	Diff   bool   `kong:"help='Print a diff of changes to the config file instead of modifying it'"`
 	Output string `kong:"help='Output format [json|yaml|yaml-stream|text|table]',default='json',enum='json,yaml,yaml-stream,text,table'"`
+	Print  bool   `kong:"help='Print profile entries instead of modifying config file',xor='action'"`
 }
 
 func (cc *ConfigCmd) Run(ctx *RunContext) error {
 	set := ctx.Settings
-	binaryPath, _ := os.Executable()
+	binaryPath, err := os.Executable()
+	if err != nil {
+		return err
+	}
+
+	profiles := ProfileMap{}
 
 	// Find all the roles across all of the SSO instances
-	profiles := []ProfileConfig{}
 	for ssoName, s := range set.Cache.SSO {
 		for _, role := range s.Roles.GetAllRoles() {
 			profile, err := role.ProfileName(ctx.Settings)
 			if err != nil {
 				log.Errorf("Unable to generate profile name for %s: %s", role.Arn, err.Error())
 			}
-			profiles = append(profiles, ProfileConfig{
+
+			if _, ok := profiles[ssoName]; !ok {
+				profiles[ssoName] = map[string]ProfileConfig{}
+			}
+
+			profiles[ssoName][role.Arn] = ProfileConfig{
 				Sso:        ssoName,
 				Arn:        role.Arn,
 				Profile:    profile,
 				Output:     ctx.Cli.Config.Output,
 				BinaryPath: binaryPath,
-			})
+			}
 		}
 	}
 
@@ -95,21 +99,16 @@ func (cc *ConfigCmd) Run(ctx *RunContext) error {
 		return err
 	}
 
-	config := TemplateConfig{
-		Prefix:   CONFIG_PREFIX,
-		Suffix:   CONFIG_SUFFIX,
-		Profiles: profiles,
-	}
-
 	if ctx.Cli.Config.Print {
-		if err := templ.Execute(os.Stdout, config); err != nil {
+		if err := templ.Execute(os.Stdout, profiles); err != nil {
 			return err
 		}
 	}
 	return updateConfig(ctx, templ, profiles)
 }
 
-func updateConfig(ctx *RunContext, templ *template.Template, profiles []ProfileConfig) error {
+// updateConfig calculates the diff
+func updateConfig(ctx *RunContext, templ *template.Template, profiles ProfileMap) error {
 	// open our config file
 	configFile := awsConfigFile()
 	input, err := os.Open(configFile)
@@ -118,25 +117,20 @@ func updateConfig(ctx *RunContext, templ *template.Template, profiles []ProfileC
 	}
 
 	// open a temp file
-	tfile, err := os.CreateTemp("", "config.*")
-	tempFileName := tfile.Name()
+	output, err := os.CreateTemp("", "config.*")
 	if err != nil {
 		return err
 	}
+	tempFileName := output.Name()
+	defer os.Remove(tempFileName)
 
-	w := bufio.NewWriter(tfile)
-
-	config := TemplateConfig{
-		Profiles: profiles,
-		Prefix:   CONFIG_PREFIX,
-		Suffix:   CONFIG_SUFFIX,
-	}
+	w := bufio.NewWriter(output)
 
 	// read & write up to the prefix
 	r := bufio.NewReader(input)
 
 	line, err := r.ReadString('\n')
-	for err == nil && line != CONFIG_PREFIX {
+	for err == nil && line != fmt.Sprintf("%s\n", CONFIG_PREFIX) {
 		if _, err = w.WriteString(line); err != nil {
 			return err
 		}
@@ -152,14 +146,14 @@ func updateConfig(ctx *RunContext, templ *template.Template, profiles []ProfileC
 	}
 
 	// write our template out
-	if err = templ.Execute(w, config); err != nil {
+	if err = templ.Execute(w, profiles); err != nil {
 		return err
 	}
 
 	if !endOfFile {
 		line, err = r.ReadString('\n')
 		// consume our entries and the suffix
-		for err == nil && line != CONFIG_SUFFIX {
+		for err == nil && line != fmt.Sprintf("%s\n", CONFIG_SUFFIX) {
 			line, err = r.ReadString('\n')
 		}
 
@@ -179,24 +173,36 @@ func updateConfig(ctx *RunContext, templ *template.Template, profiles []ProfileC
 		}
 	}
 	w.Flush()
-	tfile.Close()
+	output.Close()
 	input.Close()
 
-	aBytes, err := ioutil.ReadFile(configFile)
+	diff, err := generateDiff(configFile, tempFileName)
 	if err != nil {
 		return err
 	}
-	bBytes, err := ioutil.ReadFile(tempFileName)
-	if err != nil {
-		return err
+
+	if len(diff) == 0 {
+		// do nothing if there is no diff
+		log.Infof("No changes to made to %s", configFile)
+		return nil
 	}
+
 	if ctx.Cli.Config.Diff {
-		edits := myers.ComputeEdits(span.URIFromPath(configFile), string(aBytes), string(bBytes))
-		fmt.Printf("%s", gotextdiff.ToUnified(configFile, tempFileName, string(aBytes), edits))
-	} else {
-		return fmt.Errorf("Writing a new config file is not yet supported")
+		fmt.Printf("%s", diff)
+		return nil
 	}
-	return nil
+
+	// copy file into place
+	input, err = os.Open(tempFileName) // output/tempFile is now the input!
+	if err != nil {
+		return err
+	}
+	output, err = os.OpenFile(configFile, os.O_RDWR|os.O_CREATE, 0600) // ~/.aws/config is now the output
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(output, input)
+	return err
 }
 
 // awsConfigFile returns the path the the users ~/.aws/config
@@ -208,4 +214,21 @@ func awsConfigFile() string {
 	}
 	log.Debugf("path = %s", path)
 	return path
+}
+
+// generateDiff generates a diff between two files.  Takes two file names as inputs
+func generateDiff(aFile, bFile string) (string, error) {
+	// open the files fresh for the diff
+	aBytes, err := ioutil.ReadFile(aFile)
+	if err != nil {
+		return "", err
+	}
+	bBytes, err := ioutil.ReadFile(bFile)
+	if err != nil {
+		return "", err
+	}
+	edits := myers.ComputeEdits(span.URIFromPath(aFile), string(aBytes), string(bBytes))
+	diff := fmt.Sprintf("%s", gotextdiff.ToUnified(aFile, bFile, string(aBytes), edits))
+	log.Debugf("diff:\n%s", diff)
+	return diff, nil
 }
