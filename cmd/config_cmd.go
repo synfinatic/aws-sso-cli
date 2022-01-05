@@ -40,7 +40,7 @@ const (
 	CONFIG_TEMPLATE = `# BEGIN_AWS_SSO_CLI
 {{ range $sso, $struct := . }}{{ range $arn, $profile := $struct }}
 [profile {{ $profile.Profile }}]
-credential_process = {{ $profile.BinaryPath }} -u open -S "{{ $profile.Sso }}" process --arn {{ $profile.Arn }}
+credential_process = {{ $profile.BinaryPath }} -u {{ $profile.Open }} -S "{{ $profile.Sso }}" process --arn {{ $profile.Arn }}
 {{ range $key, $value := $profile.ConfigVariables }}{{ $key }} = {{ $value }}
 {{end}}{{end}}{{end}}
 # END_AWS_SSO_CLI
@@ -50,16 +50,18 @@ credential_process = {{ $profile.BinaryPath }} -u open -S "{{ $profile.Sso }}" p
 type ProfileMap map[string]map[string]ProfileConfig
 
 type ProfileConfig struct {
-	Sso             string
 	Arn             string
-	Profile         string
-	ConfigVariables map[string]interface{}
 	BinaryPath      string
+	ConfigVariables map[string]interface{}
+	Open            string
+	Profile         string
+	Sso             string
 }
 
 type ConfigCmd struct {
-	Diff  bool `kong:"help='Print a diff of changes to the config file instead of modifying it'"`
-	Print bool `kong:"help='Print profile entries instead of modifying config file',xor='action'"`
+	Diff  bool   `kong:"help='Print a diff of changes to the config file instead of modifying it'"`
+	Open  string `kong:"help='Override how to open URLs: [open|clip]',required"`
+	Print bool   `kong:"help='Print profile entries instead of modifying config file',xor='action'"`
 }
 
 func (cc *ConfigCmd) Run(ctx *RunContext) error {
@@ -84,11 +86,12 @@ func (cc *ConfigCmd) Run(ctx *RunContext) error {
 			}
 
 			profiles[ssoName][role.Arn] = ProfileConfig{
-				Sso:             ssoName,
 				Arn:             role.Arn,
-				Profile:         profile,
-				ConfigVariables: ctx.Settings.ConfigVariables,
 				BinaryPath:      binaryPath,
+				ConfigVariables: ctx.Settings.ConfigVariables,
+				Open:            ctx.Cli.Config.Open,
+				Profile:         profile,
+				Sso:             ssoName,
 			}
 		}
 	}
