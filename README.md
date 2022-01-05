@@ -198,9 +198,10 @@ via AWS SSO CLI.
 
 Flags:
 
- * `--print` -- Print profile entries instead of modifying config file
+ * `--diff` -- Print a diff of changes to the config file instead of modifying it
  * `--output` -- Set the default output format.
 	Must be one of `json`, `yaml`, `yaml-stream`, `text`, `table`.  Default is `json`.
+ * `--print` -- Print profile entries instead of modifying config file
 
 This generates a series of [named profile entries](
 https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html) in the
@@ -215,7 +216,7 @@ the user defined [Profile](docs/config.md#profile) option on a role by role basi
 `# END_AWS_SSO_CLI` lines from your config file!  These markers are used to track
 which profiles are managed by AWS SSO CLI.
 
-**Note:** This command does not honor the `--sso` option as it operates on all 
+**Note:** This command does not honor the `--sso` option as it operates on all
 of the configured AWS SSO instances in the `~/.aws-sso/config.yaml` file.
 
 ### eval
