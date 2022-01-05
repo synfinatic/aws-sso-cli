@@ -45,9 +45,9 @@ JsonStore: <path to json file>
 
 ProfileFormat: "<template>"
 ConfigVariables:
-	<Var1>: <Value1>
-	<Var2>: <Value2>
-	<VarN>: <ValueN>
+    <Var1>: <Value1>
+    <Var2>: <Value2>
+    <VarN>: <ValueN>
 
 AccountPrimaryTag:
     - <tag 1>
@@ -316,18 +316,15 @@ This option has no effect if `HistoryLimit` is set to 0.
 Specify which fields to display via the `list` command.  Valid options are:
 
  * `Id` -- Unique row identifier
+ * `AccountAlias` -- Account Name from AWS SSO
  * `AccountId` -- AWS Account Id
  * `AccountName` -- Account Name from config.yaml
- * `AccountAlias` -- Account Name from AWS SSO
- * `ARN` -- Role ARN
+ * `Arn` -- Role ARN
  * `DefaultRegion` -- Configured default region
  * `EmailAddress` -- Email address of root account associated with AWS Account
- * `ExpiresEpoch` -- Unix epoch time when cached STS creds expire
+ * `Expires` -- Unix epoch time when cached STS creds expire
  * `ExpiresStr` -- Hours and minutes until cached STS creds expire
+ * `Profile` -- Value used for `$AWS_SSO_PROFILE` and the profile name in `~/.aws/config`
  * `RoleName` -- Role name
- * `SSORegion` -- Region of AWS SSO instance
- * `StartUrl` -- AWS SSO Start Url
-<!--
- * `Profile` -- ???
- * `Via` -- Previous ARN of role to assume
--->
+ * `SSO` -- AWS SSO instance name
+ * `Via` -- Role Chain Via

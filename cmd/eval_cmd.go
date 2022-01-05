@@ -51,11 +51,6 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 		return unsetEnvVars(ctx)
 	}
 
-	// never print the URL since that breaks bash's eval
-	if ctx.Settings.UrlAction == "print" {
-		ctx.Settings.UrlAction = "open"
-	}
-
 	var role string
 	var accountid int64
 

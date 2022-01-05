@@ -61,7 +61,7 @@ func HandleUrl(action, browser, url, pre, post string) error {
 			err = fmt.Errorf("Unable to copy URL to clipboard: %s", err.Error())
 		}
 	case "print":
-		fmt.Printf("%s%s%s", pre, url, post)
+		os.Stderr.WriteString(fmt.Sprintf("%s%s%s", pre, url, post))
 	case "open":
 		if len(browser) == 0 {
 			err = open.Run(url)

@@ -38,9 +38,8 @@ type ProcessCmd struct {
 func (cc *ProcessCmd) Run(ctx *RunContext) error {
 	var err error
 
-	// never print the URL since that breaks AWS's eval
 	if ctx.Settings.UrlAction == "print" {
-		ctx.Settings.UrlAction = "open"
+		return fmt.Errorf("Unsupported --url-action=print option")
 	}
 
 	role := ctx.Cli.Process.Role

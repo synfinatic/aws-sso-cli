@@ -199,6 +199,7 @@ via AWS SSO CLI.
 Flags:
 
  * `--diff` -- Print a diff of changes to the config file instead of modifying it
+ * `--open` -- Override how to open URls: [open|clip] (required)
  * `--print` -- Print profile entries instead of modifying config file
 
 This generates a series of [named profile entries](
@@ -211,6 +212,10 @@ the user defined [Profile](docs/config.md#profile) option on a role by role basi
 For each profile generated, it will specify a [list of settings](
 https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html) as defined by
 the [ConfigVariables](docs/config.md#configvariables) setting in the `~/.aws-sso/config.yaml`.
+
+**Note:** Due to a limitation in the AWS tooling, `print` is not a supported `--url-action`
+when using the `$AWS_PROFILE` variable with AWS SSO CLI.  Hence, you must use `open` to auto-open
+URLs in your browser (recommended) or `clip` to automatically copy URLs to your clipboard.
 
 **Note:** You should run this command any time your list of AWS roles changes.
 
@@ -247,9 +252,8 @@ Priority is given to:
 of the `--refresh` flag.  The `$AWS_SSO_ROLE_NAME` and `$AWS_SSO_ACCOUNT_ID`
 are always ignored.
 
-**Note:** The `eval` command will never honor the `--url-action=print`
-option as this will intefere with bash/zsh/etc ability to evaluate
-the generated commands and will fall back to `--url-action=open`.
+**Note:** Using `--url-action=print` is supported, but you must be able to see the output
+of _STDERR_ to see the URL to open.
 
 **Note:** The `eval` command is not supported under Windows CommandPrompt or PowerShell.
 
@@ -302,6 +306,9 @@ Priority is given to:
 
 **Note:** The `process` command does not honor the `$AWS_SSO_ROLE_ARN`, `$AWS_SSO_ACCOUNT_ID`, or
 `$AWS_SSO_ROLE_NAME` environment variables.
+
+**Note:** Due to a limitation of the AWS tooling, setting `--url-action print` will cause an error
+because of a limitation of the AWS tooling which prevents it from working.
 
 ### cache
 
