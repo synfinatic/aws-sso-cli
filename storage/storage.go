@@ -81,17 +81,17 @@ func (r *RoleCredentials) RoleArn() string {
 
 // ExpireEpoch return seconds since unix epoch when we expire
 func (r *RoleCredentials) ExpireEpoch() int64 {
-	return time.Unix(r.Expiration, 0).Unix()
+	return time.UnixMilli(r.Expiration).Unix() // yes, millisec
 }
 
 // ExpireString returns the time the creds expire in the format of "2006-01-02 15:04:05.999999999 -0700 MST"
 func (r *RoleCredentials) ExpireString() string {
-	return time.Unix(r.Expiration, 0).String()
+	return time.UnixMilli(r.Expiration).String() // yes, millisec
 }
 
 // Expired returns if these role creds have expired or will expire in the next minute
 func (r *RoleCredentials) Expired() bool {
-	now := time.Now().Add(time.Minute).UnixMilli()
+	now := time.Now().Add(time.Minute).UnixMilli() // yes, millisec
 	return r.Expiration <= now
 }
 
