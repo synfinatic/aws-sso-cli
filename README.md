@@ -199,8 +199,6 @@ via AWS SSO CLI.
 Flags:
 
  * `--diff` -- Print a diff of changes to the config file instead of modifying it
- * `--output` -- Set the default output format.
-	Must be one of `json`, `yaml`, `yaml-stream`, `text`, `table`.  Default is `json`.
  * `--print` -- Print profile entries instead of modifying config file
 
 This generates a series of [named profile entries](
@@ -209,6 +207,10 @@ https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html) in
 the `$AWS_PROFILE` environment variable.  By default, each profile is named according
 to the [ProfileFormat](docs/config.md#profileformat) config option or overridden by
 the user defined [Profile](docs/config.md#profile) option on a role by role basis.
+
+For each profile generated, it will specify a [list of settings](
+https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html) as defined by
+the [ConfigVariables](docs/config.md#configvariables) setting in the `~/.aws-sso/config.yaml`.
 
 **Note:** You should run this command any time your list of AWS roles changes.
 

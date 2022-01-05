@@ -29,15 +29,26 @@ SSOConfig:
 
 # See description below for these options
 DefaultRegion: <AWS_DEFAULT_REGION>
-Browser: <path to web browser>
 DefaultSSO: <name of AWS SSO>
-LogLevel: [error|warn|info|debug|trace]
-LogLines: [true|false]
+
+Browser: <path to web browser>
 UrlAction: [print|open|clip]
 ConsoleDuration: <minutes>
+
+LogLevel: [error|warn|info|debug|trace]
+LogLines: [true|false]
+HistoryLimit: <integer>
+HistoryMinutes: <integer>
+
 SecureStore: [file|keychain|kwallet|pass|secret-service|wincred|json]
 JsonStore: <path to json file>
+
 ProfileFormat: "<template>"
+ConfigVariables:
+	<Var1>: <Value1>
+	<Var2>: <Value2>
+	<VarN>: <ValueN>
+
 AccountPrimaryTag:
     - <tag 1>
     - <tag 2>
@@ -46,8 +57,6 @@ PromptColors:
     <Option 1>: <Color>
     <Option 2>: <Color>
     <Option N>: <Color>
-HistoryLimit: <integer>
-HistoryMinutes: <integer>
 ListFields:
     - <field 1>
     - <field 2>
@@ -131,6 +140,12 @@ accounts that are not included in your organization's AWS SSO scope or roles tha
 were not defined via an [AWS SSO Permission Set](
 https://docs.aws.amazon.com/singlesignon/latest/userguide/permissionsetsconcept.html).
 
+## DefaultSSO
+
+If you only have a single AWS SSO instance, then it doesn't really matter what you call it,
+but if you have two or more, than `Default` is automatically selected unless you manually
+specify it here, on the CLI (`--sso`), or via the `AWS_SSO` environment variable.
+
 ## Browser / UrlAction
 
 `UrlAction` gives you control over how AWS SSO and AWS Console URLs are opened in a browser:
@@ -141,12 +156,6 @@ https://docs.aws.amazon.com/singlesignon/latest/userguide/permissionsetsconcept.
 
 If `Browser` is not set, then your default browser will be used.  Note that
 your browser needs to support Javascript for the AWS SSO user interface.
-
-## DefaultSSO
-
-If you only have a single AWS SSO instance, then it doesn't really matter what you call it,
-but if you have two or more, than `Default` is automatically selected unless you manually
-specify it here, on the CLI (`--sso`), or via the `AWS_SSO` environment variable.
 
 ## LogLevel / LogLines
 
@@ -216,6 +225,16 @@ The following functions are available in your template:
 (`'`) the value because because `ProfileFormat` values often start with a `{`.
 
 For more information, [see the FAQ](FAQ.md#how-to-configure-profileformat).
+
+## ConfigVariables
+
+Define a set of [config settings](https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html)
+for each profile in your `~/.aws/config` file generated via the [config](../README.md#config) command.
+
+Some examples to consider:
+
+ * `sts_regional_endpoints: regional`
+ * `output: json`
 
 ## AccountPrimaryTag
 

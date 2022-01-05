@@ -41,8 +41,8 @@ const (
 {{ range $sso, $struct := . }}{{ range $arn, $profile := $struct }}
 [profile {{ $profile.Profile }}]
 credential_process = {{ $profile.BinaryPath }} -u open -S "{{ $profile.Sso }}" process --arn {{ $profile.Arn }}
-output={{ $profile.Output }}
-{{end}}{{end}}
+{{ range $key, $value := $profile.ConfigVariables }}{{ $key }} = {{ $value }}
+{{end}}{{end}}{{end}}
 # END_AWS_SSO_CLI
 `
 )
@@ -50,17 +50,16 @@ output={{ $profile.Output }}
 type ProfileMap map[string]map[string]ProfileConfig
 
 type ProfileConfig struct {
-	Sso        string
-	Arn        string
-	Profile    string
-	Output     string
-	BinaryPath string
+	Sso             string
+	Arn             string
+	Profile         string
+	ConfigVariables map[string]interface{}
+	BinaryPath      string
 }
 
 type ConfigCmd struct {
-	Diff   bool   `kong:"help='Print a diff of changes to the config file instead of modifying it'"`
-	Output string `kong:"help='Output format [json|yaml|yaml-stream|text|table]',default='json',enum='json,yaml,yaml-stream,text,table'"`
-	Print  bool   `kong:"help='Print profile entries instead of modifying config file',xor='action'"`
+	Diff  bool `kong:"help='Print a diff of changes to the config file instead of modifying it'"`
+	Print bool `kong:"help='Print profile entries instead of modifying config file',xor='action'"`
 }
 
 func (cc *ConfigCmd) Run(ctx *RunContext) error {
@@ -85,11 +84,11 @@ func (cc *ConfigCmd) Run(ctx *RunContext) error {
 			}
 
 			profiles[ssoName][role.Arn] = ProfileConfig{
-				Sso:        ssoName,
-				Arn:        role.Arn,
-				Profile:    profile,
-				Output:     ctx.Cli.Config.Output,
-				BinaryPath: binaryPath,
+				Sso:             ssoName,
+				Arn:             role.Arn,
+				Profile:         profile,
+				ConfigVariables: ctx.Settings.ConfigVariables,
+				BinaryPath:      binaryPath,
 			}
 		}
 	}
