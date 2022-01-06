@@ -4,8 +4,10 @@
  * [How good is the Windows support?](#how-good-is-the-windows-support)
  * [Does AWS SSO CLI support Role Chaining?](#does-aws-sso-cli-support-role-chaining)
  * [How does AWS SSO CLI manage the $AWS\_DEFAULT\_REGION?](#how-does-aws-sso-cli-manage-the-aws_default_region)
+ * [AccountAlias vs AccountName](#accountalias-vs-accountname)
  * [How to configure ProfileFormat](#how-to-configure-profileformat)
-
+ * [Example of multiple AWS SSO instances](#example-of-multiple-aws-sso-instances)
+ * [What are the purpose of the Tags?](#what-are-the-purpose-of-the-tags)
 
 ### How do I delete all secrets from the macOS keychain?
 
@@ -32,6 +34,9 @@ files must be written to disk and would contain the clear text secrets that
 `aws-sso` works very hard to never write to disk in clear text.
 
 [Tracking ticket](https://github.com/synfinatic/aws-sso-cli/issues/188)
+
+If you are a Windows user and experience any bugs, please open a [detailed bug report](
+https://github.com/synfinatic/aws-sso-cli/issues/new?labels=bug&template=bug_report.md).
 
 ### Does AWS SSO CLI support role chaining?
 
@@ -63,6 +68,25 @@ manage the variable.
 <!-- https://github.com/synfinatic/aws-sso-cli/issues/166 -->
 ![](https://user-images.githubusercontent.com/1075352/143502947-1465f68f-0ef5-4de7-a997-ea716facc637.png)
 
+### AccountName vs AccountAlias
+
+The `AccountAlias` is defined in AWS itself and is visible via the 
+[iam:ListAccountAliases](
+https://docs.aws.amazon.com/IAM/latest/APIReference/API_ListAccountAliases.html)
+API call.
+
+The `AccountName` is defined in the `~/.aws-sso/config.yaml` file like this:
+
+```yaml
+SSOConfig:
+  Default:
+    SSORegion: us-east-1
+    StartUrl: https://d-23234235.awsapps.com/start
+    Accounts:
+      2347575757:
+        Name: Production
+```
+
 ### How to configure ProfileFormat
 
 `aws-sso` uses the `ProfileFormat` configuration option for two different purposes:
@@ -78,17 +102,17 @@ which will generate a value like `02345678901:MyRoleName`.
 
 Some examples:
 
- * `{{ FirstItem .AccountName .AccountAlias }}` -- If there is an Account Name
+ * `ProfileFormat: '{{ FirstItem .AccountName .AccountAlias }}'` -- If there is an Account Name
 	set in the config.yaml print that, otherwise print the Account Alias defined
 	by the AWS administrator.
- * `{{ AccountIdStr .AccountId }}` -- Pad the AccountId with leading zeros if it
+ * `ProfileFormat: '{{ AccountIdStr .AccountId }}'` -- Pad the AccountId with leading zeros if it
 	is < 12 digits long
- * `{{ .AccountId }}` -- Print the AccountId as a regular number
- * `{{ StringsJoin ":" .AccountAlias .RoleName }} -- Another way of writing
+ * `ProfileFormat: '{{ .AccountId }}'` -- Print the AccountId as a regular number
+ * `ProfileFormat: '{{ StringsJoin ":" .AccountAlias .RoleName }}'` -- Another way of writing
 	`{{ .AccountAlias }}:{{ .RoleName }}`
- * `{{ StringReplace " " "_" .AccountAlias }}` -- Replace any spaces (` `) in the
+ * `ProfileFormat: '{{ StringReplace " " "_" .AccountAlias }}'` -- Replace any spaces (` `) in the
 	AccountAlias with an underscore (`_`).
- * `{{ FirstItem .AccountName .AccountAlias | StringReplace " " "_" }}:{{ .RoleName }}` --
+ * `ProfileFormat: '{{ FirstItem .AccountName .AccountAlias | StringReplace " " "_" }}:{{ .RoleName }}'` --
 	Use the Account Name if set, otherwise use the Account Alias and replace any spaces
 	with an underscore and then append a colon, followed by the role name.
 
@@ -96,3 +120,32 @@ For a full list of available variables, [see here](config.md#profileformat).
 
 To see a list of values across your roles for a given variable, you can use
 the [list](../README.md#list) command.
+
+### Example of multiple AWS SSO instances
+
+This is an example of how to configure two different AWS SSO instances:
+
+```yaml
+SSOConfig:
+  Primary:
+    SSORegion: us-east-2
+    StartUrl: https://d-123455555.awsapps.com/start
+  Testing:
+      SSORegion: us-east-1
+      StartUrl: https://d-906766e422.awsapps.com/start
+DefaultSSO: Primary
+```
+
+With the above config, `Primary` is the default AWS SSO instance, but you can
+select `Testing` via the `--sso` argument or `$AWS_SSO` environment variable.
+ 
+### What are the purpose of the Tags?
+
+Tags are key/value pairs that you can use to search for roles to assume when 
+using the [exec](../README.md#exec) command.
+
+The `~/.aws-sso/config.yaml` file supports defining [tags](config.md#tags) at
+the `Account` and `Role` levels.  These tags make it easier to manage many
+roles in larger scale deployments with lots of AWS Accounts. AWS SSO CLI adds
+a number of tags by default for each role and a full list of tags can be viewed
+by using the [tags](../README.md#tags) command.

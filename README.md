@@ -1,13 +1,11 @@
 # AWS SSO CLI
 ![Tests](https://github.com/synfinatic/aws-sso-cli/workflows/Tests/badge.svg)
-[![Report Card](https://goreportcard.com/badge/github.com/synfinatic/aws-sso-cli)](https://goreportcard.com/report/github.com/synfinatic/aws-sso-cli)
-[![GitHub license](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://raw.githubusercontent.com/synfinatic/aws-sso-cli/main/LICENSE)
+[![Report Card Badge](https://goreportcard.com/badge/github.com/synfinatic/aws-sso-cli)](https://goreportcard.com/report/github.com/synfinatic/aws-sso-cli)
+[![License Badge](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://raw.githubusercontent.com/synfinatic/aws-sso-cli/main/LICENSE)
 
  * [About](#about)
  * [What does AWS SSO CLI do?](#what-does-aws-sso-cli-do)
  * [Demo](#demo)
- * [Installation](#installation)
- * [Quick Setup](#quick-setup)
  * [Security](#security)
  * [Commands](#commands)
     * [cache](#cache)
@@ -20,12 +18,17 @@
 	* [process](#process)
 	* [tags](#tags)
 	* [time](#time)
-	* [install-autocomplete](#install-autocomplete)
- * [Configuration](docs/config.md)
+	* [install-completions](#install-completions)
  * [Environment Varables](#environment-varables)
- * [Release History](#release-history)
  * [License](#license)
+
+Other Pages:
+
+ * [Quick Start & Installation Guide](docs/quickstart.md)
+ * [Configuration](docs/config.md)
  * [Frequently Asked Questions](docs/FAQ.md)
+ * [Releases](https://github.com/synfinatic/aws-sso-cli/releases)
+ * [Changelog](CHANGELOG.md)
 
 
 ## About
@@ -61,62 +64,13 @@ and then run commands in that context (by default it starts a new shell).
 
 [![asciicast](https://asciinema.org/a/445604.svg)](https://asciinema.org/a/445604)
 
-## Installation
-
- * Option 1: [Download binary](https://github.com/synfinatic/aws-sso-cli/releases)
-    1. Copy to appropriate location and `chmod 755`
- * Option 2: [Download RPM or DEB package](https://github.com/synfinatic/aws-sso-cli/releases)
-    1. Use your package manager to install (Linux only)
- * Option 3: Install via [Homebrew](https://brew.sh)
-    1. Run `brew install synfinatic/aws-sso-cli/aws-sso-cli`
- * Option 4: Build from source:
-    1. Install [GoLang](https://golang.org) v1.17+ and GNU Make
-    1. Clone this repo
-    1. Run `make` (or `gmake` for GNU Make)
-    1. Your binary will be created in the `dist` directory
-    1. Run `make install` to install in /usr/local/bin
-
-Note that the release binaries and packages are not officially signed at this time so
-systems may generate warnings.
-
-## Quick Setup
-
-After installation, running `aws-sso` with no arguments will cause it to automatically
-run through the setup wizard and ask you a few questions to get started:
-
- * SSO Instance Name ([DefaultSSO](docs/config.md#DefaultSSO))
- * SSO Start URL ([StartUrl](docs/config.md#StartUrl))
- * AWS SSO Region ([SSORegion](docs/config.md#SSORegion))
- * Default region for connecting to AWS ([DefaultRegion](docs/config.md#DefaultRegion))
- * Default action to take with URls ([UrlAction](docs/config.md#UrlAction))
- * Maximum number of History items to keep ([HistoryLimit](docs/config.md#HistoryLimit))
- * Number of minutes to keep items in History ([HistoryMinutes](docs/config.md#HistoryMinutes))
- * Log Level ([LogLevel](docs/config.md#LogLevel))
-
-After the guided setup, it is worth running:
-
-`aws-sso install-completions`
-
-to install autocomplete for your shell.
-
-For more information about configuring `aws-sso` read the
-[configuration guide](docs/config.md).  For more information about running
-`aws-sso` see [commands](#commands).
-
-### Windows Support
-
-Window users are not the primary target for `aws-sso`, but I've found it generally
-works better under `Command Prompt` a lot better than `PowerShell`.  If you are
-a Windows user and experience any bugs, please open a [detailed bug report](
-https://github.com/synfinatic/aws-sso-cli/issues/new).
-
 ## Security
 
 Unlike the official [AWS cli tooling](https://aws.amazon.com/cli/), _all_
 authentication tokens and credentials used for accessing AWS and your SSO
 provider are encrypted on disk using your choice of secure storage solution.
 All encryption is handled by the [99designs/keyring](https://github.com/99designs/keyring)
-library.
+library which is also used by [aws-vault](https://github.com/99designs/aws-vault).
 
 Credentials encrypted by `aws-sso` and not via the standard AWS CLI tool:
 
@@ -149,7 +103,7 @@ been granted access!
  * [process](#process) -- Generate JSON for AWS profile credential\_process option
  * [tags](#tags) -- List manually created tags for each role
  * [time](#time) -- Print how much time remains for currently selected role
- * [install-autocomplete](#install-autocomplete) -- Install auto-complete functionality into your shell
+ * [install-completions](#install-completions) -- Install auto-complete functionality into your shell
  * `version` -- Print the version of aws-sso
 
 ### Common Flags
@@ -373,7 +327,10 @@ By default the following key/values are available as tags to your roles:
 Print a string containing the number of hours and minutes that the current
 AWS Role's STS credentials are valid for in the format of `HHhMMm`
 
-### install-autocomplete
+**Note:** This command is only useful when you have STS credentials configured
+in your shell via [eval](#eval) or [exec](#exec).
+
+### install-completions
 
 Configures your appropriate shell configuration file to add auto-complete
 functionality for commands, flags and options.  Must restart your shell
@@ -420,12 +377,6 @@ The following environment variables are specific to `aws-sso`:
  * `AWS_SSO_DEFAULT_REGION` -- Tracking variable for `AWS_DEFAULT_REGION`
  * `AWS_SSO_PROFILE` -- User customizable varible using the [ProfileFormat](docs/config.md#profileformat) template
  * `AWS_SSO` -- AWS SSO instance name
-
-## Release History
-
- * [Releases](https://github.com/synfinatic/aws-sso-cli/releases)
- * [Changelog](CHANGELOG.md)
-
 
 ## License
 
