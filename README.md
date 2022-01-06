@@ -357,6 +357,9 @@ The following environment variables are honored by `aws-sso`:
 The `file` SecureStore will use the `AWS_SSO_FILE_PASSPHRASE` environment
 variable for the passphrase if it is set. (Not recommended.)
 
+Additionally, `$AWS_PROFILE` is honored via the standard AWS tooling when using
+the [config](#config) command to manage your `~/.aws/config` file.
+
 ### Managed Variables
 
 The following [AWS environment variables](
