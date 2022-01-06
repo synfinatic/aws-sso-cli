@@ -5,6 +5,7 @@
  * [Does AWS SSO CLI support Role Chaining?](#does-aws-sso-cli-support-role-chaining)
  * [How does AWS SSO CLI manage the $AWS\_DEFAULT\_REGION?](#how-does-aws-sso-cli-manage-the-aws_default_region)
  * [AccountAlias vs AccountName](#accountalias-vs-accountname)
+ * [Defining $AWS\_PROFILE and $AWS\_SSO\_PROFILE variable names](#defining-aws_profile-and-aws_sso_profile-variable-names)
  * [How to configure ProfileFormat](#how-to-configure-profileformat)
  * [Example of multiple AWS SSO instances](#example-of-multiple-aws-sso-instances)
  * [What are the purpose of the Tags?](#what-are-the-purpose-of-the-tags)
@@ -70,7 +71,7 @@ manage the variable.
 
 ### AccountName vs AccountAlias
 
-The `AccountAlias` is defined in AWS itself and is visible via the 
+The `AccountAlias` is defined in AWS itself and is visible via the
 [iam:ListAccountAliases](
 https://docs.aws.amazon.com/IAM/latest/APIReference/API_ListAccountAliases.html)
 API call.
@@ -87,15 +88,35 @@ SSOConfig:
         Name: Production
 ```
 
+### Defining `$AWS_PROFILE` and `$AWS_SSO_PROFILE` variable names
+
+As [covered here](../README.md#environment-variables), AWS SSO CLI will set the
+`$AWS_SSO_PROFILE` variable when you use [exec](../README.md#exec) or [eval](
+../README.md#eval) and can honor the `$AWS_PROFILE` variable.
+
+AWS SSO CLI tries to make it easy to manage many roles across many accounts
+by giving users a lot of control over what the value of these variables are for
+each role.
+
+ * You can use [ProfileFormat](config.md#profileformat) to create an auto-generated
+    profile name for each role based upon things like the AccountID, AccountName, RoleName,
+    etc.
+ * You can also use [Profile](config.md#profile) to define a profile name for any specific
+    role.
+ * You can also use both: `ProfileFormat` to set a default value and override specific roles
+    that you use more often via `Profile` with an easier to remember value.  The choice is yours,
+    but remember that every unique Role ARN needs a unique value if you wish to use it to
+    select a role to use via `$AWS_PROFILE` and the [config](../README.md#config) command.
+
 ### How to configure ProfileFormat
 
 `aws-sso` uses the `ProfileFormat` configuration option for two different purposes:
 
  1. Makes it easy to modify your shell `$PROMPT` to include information
-	about what AWS Account/Role you have currently assumed by defining the
-	`$AWS_SSO_PROFILE` environment variable.
+    about what AWS Account/Role you have currently assumed by defining the
+    `$AWS_SSO_PROFILE` environment variable.
  2. Makes it easy to select a role via the `$AWS_PROFILE` environment variable
-	when you use the [config](../README.md#config) command.
+    when you use the [config](../README.md#config) command.
 
 By default, `ProfileFormat` is set to `{{ AccountIdStr .AccountId }}:{{ .RoleName }}`
 which will generate a value like `02345678901:MyRoleName`.
@@ -103,18 +124,18 @@ which will generate a value like `02345678901:MyRoleName`.
 Some examples:
 
  * `ProfileFormat: '{{ FirstItem .AccountName .AccountAlias }}'` -- If there is an Account Name
-	set in the config.yaml print that, otherwise print the Account Alias defined
-	by the AWS administrator.
+    set in the config.yaml print that, otherwise print the Account Alias defined
+    by the AWS administrator.
  * `ProfileFormat: '{{ AccountIdStr .AccountId }}'` -- Pad the AccountId with leading zeros if it
-	is < 12 digits long
+    is < 12 digits long
  * `ProfileFormat: '{{ .AccountId }}'` -- Print the AccountId as a regular number
  * `ProfileFormat: '{{ StringsJoin ":" .AccountAlias .RoleName }}'` -- Another way of writing
-	`{{ .AccountAlias }}:{{ .RoleName }}`
+    `{{ .AccountAlias }}:{{ .RoleName }}`
  * `ProfileFormat: '{{ StringReplace " " "_" .AccountAlias }}'` -- Replace any spaces (` `) in the
-	AccountAlias with an underscore (`_`).
- * `ProfileFormat: '{{ FirstItem .AccountName .AccountAlias | StringReplace " " "_" }}:{{ .RoleName }}'` --
-	Use the Account Name if set, otherwise use the Account Alias and replace any spaces
-	with an underscore and then append a colon, followed by the role name.
+    AccountAlias with an underscore (`_`).
+ * `ProfileFormat: '{{ FirstItem .AccountName .AccountAlias | StringReplace " " "_" }}:{{ .RoleName }}'`
+    -- Use the Account Name if set, otherwise use the Account Alias and replace any spaces
+    with an underscore and then append a colon, followed by the role name.
 
 For a full list of available variables, [see here](config.md#profileformat).
 
@@ -138,10 +159,10 @@ DefaultSSO: Primary
 
 With the above config, `Primary` is the default AWS SSO instance, but you can
 select `Testing` via the `--sso` argument or `$AWS_SSO` environment variable.
- 
+
 ### What are the purpose of the Tags?
 
-Tags are key/value pairs that you can use to search for roles to assume when 
+Tags are key/value pairs that you can use to search for roles to assume when
 using the [exec](../README.md#exec) command.
 
 The `~/.aws-sso/config.yaml` file supports defining [tags](config.md#tags) at
