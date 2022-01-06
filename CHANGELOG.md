@@ -7,11 +7,16 @@
  * Add `SSO` to list of valid ProfileFormat template variables
  * Improve ProfileFormat documentation
  * Add `config` command to manage `~/.aws/config` #157
+ * Add Quick Start Guide
 
 ### Bug Fixes
 
  * Fix broken FirstItem and StringsJoin ProfileFormat functions
  * Default ProfileFormat now zero-pads the AWS AccountID
+
+### Changes
+
+ * `eval` command now supports `--url-action=print`
 
 ## [1.6.1] - 2021-12-31
 
