@@ -179,3 +179,18 @@ func (suite *CacheRolesTestSuite) TestProfileName() {
 	assert.NoError(t, err)
 	assert.Equal(t, "OurCompany_Control_Tower_Playground:AWSAdministratorAccess", p)
 }
+
+func (suite *CacheRolesTestSuite) TestGetRoleByProfile() {
+	t := suite.T()
+	roles := suite.cache.SSO[suite.cache.ssoName].Roles
+	flat, err := roles.GetRoleByProfile("audit-admin", suite.settings)
+	assert.NoError(t, err)
+	assert.Equal(t, "arn:aws:iam::502470824893:role/AWSAdministratorAccess", flat.Arn)
+
+	_, err = roles.GetRoleByProfile("foobar", suite.settings)
+	assert.Error(t, err)
+
+	flat, err = roles.GetRoleByProfile("Dev Account/AWSReadOnlyAccess", suite.settings)
+	assert.NoError(t, err)
+	assert.Equal(t, "arn:aws:iam::707513610766:role/AWSReadOnlyAccess", flat.Arn)
+}

@@ -143,6 +143,7 @@ Priority is given to:
  * `--arn` (`$AWS_SSO_ROLE_ARN`)
  * `--account` (`$AWS_SSO_ACCOUNT_ID`) and `--role` (`$AWS_SSO_ROLE_NAME`)
  * `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN` environment variables
+ * `AWS_PROFILE` environment variable (works with both SSO and static profiles)
  * Prompt user interactively
 
 ### config

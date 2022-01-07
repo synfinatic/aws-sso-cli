@@ -189,6 +189,27 @@ func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) 
 	return &AWSRoleFlat{}, fmt.Errorf("Unable to find role %d:%s", accountId, roleName)
 }
 
+// GetRoleByProfile is just like GetRole(), but selects the role based on the Profile
+func (r *Roles) GetRoleByProfile(profileName string, s *Settings) (*AWSRoleFlat, error) {
+	for aId, account := range r.Accounts {
+		for roleName := range account.Roles {
+			flat, err := r.GetRole(aId, roleName)
+			if err != nil {
+				return &AWSRoleFlat{}, err
+			}
+			pName, err := flat.ProfileName(s)
+			if err != nil {
+				log.WithError(err).Warnf(
+					"Unable to generate Profile for %s", utils.MakeRoleARN(aId, roleName))
+			}
+			if pName == profileName {
+				return flat, nil
+			}
+		}
+	}
+	return &AWSRoleFlat{}, fmt.Errorf("Unable to locate role with Profile: %s", profileName)
+}
+
 // GetRoleChain figures out the AssumeRole chain required to assume the given role
 func (r *Roles) GetRoleChain(accountId int64, roleName string) []*AWSRoleFlat {
 	ret := []*AWSRoleFlat{}

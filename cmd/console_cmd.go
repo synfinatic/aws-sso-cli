@@ -24,6 +24,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os/user"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -50,6 +51,7 @@ type ConsoleCmd struct {
 	AccessKeyId     string `kong:"env='AWS_ACCESS_KEY_ID',hidden"`
 	SecretAccessKey string `kong:"env='AWS_SECRET_ACCESS_KEY',hidden"`
 	SessionToken    string `kong:"env='AWS_SESSION_TOKEN',hidden"`
+	AwsProfile      string `kong:"env='AWS_PROFILE',hidden"`
 }
 
 func (cc *ConsoleCmd) Run(ctx *RunContext) error {
@@ -73,35 +75,83 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 		awssso := doAuth(ctx)
 		return openConsole(ctx, awssso, ctx.Cli.Console.AccountId, ctx.Cli.Console.Role)
 	} else if haveAWSEnvVars(ctx) {
-		creds := storage.RoleCredentials{
-			AccessKeyId:     ctx.Cli.Console.AccessKeyId,
-			SecretAccessKey: ctx.Cli.Console.SecretAccessKey,
-			SessionToken:    ctx.Cli.Console.SessionToken,
-		}
-
-		// ask AWS STS for who we are
-		s := session.Must(session.NewSession())
-		stsSession := sts.New(s, aws.NewConfig().WithRegion("us-east-1"))
-		input := sts.GetCallerIdentityInput{}
-		output, err := stsSession.GetCallerIdentity(&input)
-		if err != nil {
-			return fmt.Errorf("Unable to call sts get-caller-identity: %s", err.Error())
-		}
-
-		accountid, role, err := utils.ParseRoleARN(aws.StringValue(output.Arn))
-		if err != nil {
-			return fmt.Errorf("Unable to parse ARN: %s", aws.StringValue(output.Arn))
-		}
-
-		region := ctx.Settings.GetDefaultRegion(accountid, role, false)
-		if ctx.Cli.Console.Region != "" {
-			region = ctx.Cli.Console.Region
-		}
-		return openConsoleAccessKey(ctx, &creds, duration, region)
+		return consoleViaEnvVars(ctx, duration)
+	} else if ctx.Cli.Console.AwsProfile != "" {
+		return consoleViaSDK(ctx, duration)
 	}
 
-	// default action
+	// default action is to prompt
 	return consolePrompt(ctx)
+}
+
+func consoleViaEnvVars(ctx *RunContext, duration int64) error {
+	creds := storage.RoleCredentials{
+		AccessKeyId:     ctx.Cli.Console.AccessKeyId,
+		SecretAccessKey: ctx.Cli.Console.SecretAccessKey,
+		SessionToken:    ctx.Cli.Console.SessionToken,
+	}
+
+	// ask AWS STS for who we are so we can look it up in our cache
+	s := session.Must(session.NewSession())
+	stsSession := sts.New(s, aws.NewConfig().WithRegion("us-east-1"))
+	input := sts.GetCallerIdentityInput{}
+	output, err := stsSession.GetCallerIdentity(&input)
+	if err != nil {
+		return fmt.Errorf("Unable to call sts get-caller-identity: %s", err.Error())
+	}
+
+	accountid, role, err := utils.ParseRoleARN(aws.StringValue(output.Arn))
+	if err != nil {
+		return fmt.Errorf("Unable to parse ARN: %s", aws.StringValue(output.Arn))
+	}
+
+	// now we know who we are, get our configured default region
+	region := ctx.Settings.GetDefaultRegion(accountid, role, false)
+	if ctx.Cli.Console.Region != "" {
+		region = ctx.Cli.Console.Region
+	}
+	return openConsoleAccessKey(ctx, &creds, duration, region)
+}
+
+func consoleViaSDK(ctx *RunContext, duration int64) error {
+	awssso := doAuth(ctx)
+	rFlat, err := ctx.Settings.Cache.GetSSO().Roles.GetRoleByProfile(ctx.Cli.Console.AwsProfile, ctx.Settings)
+	if err == nil {
+		return openConsole(ctx, awssso, rFlat.AccountId, rFlat.RoleName)
+	}
+
+	region := ctx.Settings.DefaultRegion
+	if ctx.Cli.Console.Region != "" {
+		region = ctx.Cli.Console.Region
+	}
+	if region == "" {
+		region = "us-east-1" // need a region for a valid url!
+	}
+
+	// have to use the Go SDK to load our creds because apparently the profile
+	// is based on static API creds
+	s := session.Must(session.NewSession())
+	stsSession := sts.New(s, aws.NewConfig().WithRegion(region))
+	u, err := user.Current()
+	if err != nil {
+		return err
+	}
+
+	input := sts.GetFederationTokenInput{
+		DurationSeconds: aws.Int64(duration * 60),
+		Name:            aws.String(u.Username),
+	}
+	token, err := stsSession.GetFederationToken(&input)
+	if err != nil {
+		return err
+	}
+	creds := storage.RoleCredentials{
+		AccessKeyId:     aws.StringValue(token.Credentials.AccessKeyId),
+		SecretAccessKey: aws.StringValue(token.Credentials.SecretAccessKey),
+		SessionToken:    aws.StringValue(token.Credentials.SessionToken),
+	}
+
+	return openConsoleAccessKey(ctx, &creds, duration, region)
 }
 
 func consolePrompt(ctx *RunContext) error {
@@ -167,6 +217,7 @@ func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role stri
 	return openConsoleAccessKey(ctx, creds, duration, region)
 }
 
+// openConsoleAccessKey opens the Frederated Console access URL
 func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials, duration int64, region string) error {
 	signin := SigninTokenUrlParams{
 		SessionDuration: duration * 60,
