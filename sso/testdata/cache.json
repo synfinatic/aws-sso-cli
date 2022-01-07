@@ -150,6 +150,7 @@
             "Roles": {
               "AWSAdministratorAccess": {
                 "Arn": "arn:aws:iam::502470824893:role/AWSAdministratorAccess",
+                "Profile": "audit-admin",
                 "Tags": {
                   "AccountAlias": "Audit",
                   "AccountID": "502470824893",

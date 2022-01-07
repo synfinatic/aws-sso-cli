@@ -206,9 +206,13 @@ func (c *Cache) deleteOldHistory() {
 			if r, ok := a.Roles[role]; ok {
 				// figure out if this history item has expired
 				values := strings.SplitN(r.Tags["History"], ",", 2)
+				if len(values) != 2 {
+					log.Errorf("Too few fields for %s History Tag: '%s'", r.Arn, r.Tags["History"])
+					continue
+				}
 				lastTime, err := strconv.ParseInt(values[1], 10, 64)
 				if err != nil {
-					log.Errorf("Unable to parse History Tag '%s': %s", r.Tags["History"], err.Error())
+					log.Errorf("Unable to parse %s History Tag '%s': %s", r.Arn, r.Tags["History"], err.Error())
 					continue
 				}
 

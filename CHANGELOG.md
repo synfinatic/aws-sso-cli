@@ -8,11 +8,13 @@
  * Improve ProfileFormat documentation
  * Add `config` command to manage `~/.aws/config` #157
  * Add Quick Start Guide
+ * `console` command now works with any credentials using `$AWS_PROFILE` #234
 
 ### Bug Fixes
 
  * Fix broken FirstItem and StringsJoin ProfileFormat functions
  * Default ProfileFormat now zero-pads the AWS AccountID
+ * Fix crash with invalid History tags
 
 ### Changes
 
