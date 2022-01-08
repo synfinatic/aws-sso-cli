@@ -21,17 +21,20 @@ package sso
 import (
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
+	goyaml "github.com/goccy/go-yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
 const (
-	TEST_CACHE_FILE     = "./testdata/cache.json"
-	TEST_ROLE_ARN       = "arn:aws:iam::707513610766:role/AWSAdministratorAccess"
-	INVALID_ACCOUNT_ARN = "arn:aws:iam::707513618766:role/AWSAdministratorAccess"
-	INVALID_ROLE_ARN    = "arn:aws:iam::707513610766:role/AdministratorAccess"
+	TEST_CACHE_FILE      = "./testdata/cache.json"
+	TEST_ROLES_TEST_FILE = "./testdata/roles_tests.yaml"
+	TEST_ROLE_ARN        = "arn:aws:iam::707513610766:role/AWSAdministratorAccess"
+	INVALID_ACCOUNT_ARN  = "arn:aws:iam::707513618766:role/AWSAdministratorAccess"
+	INVALID_ROLE_ARN     = "arn:aws:iam::707513610766:role/AdministratorAccess"
 )
 
 type CacheTestSuite struct {
@@ -39,6 +42,8 @@ type CacheTestSuite struct {
 	cache     *Cache
 	cacheFile string
 }
+
+type ProfileTests map[string]Roles
 
 func TestCacheTestSuite(t *testing.T) {
 	// copy our cache test file to a temp file
@@ -271,5 +276,40 @@ func (suite CacheTestSuite) TestSetRoleExpires() {
 	assert.Equal(t, int64(12344553243), flat.Expires)
 
 	err = suite.cache.SetRoleExpires(INVALID_ROLE_ARN, 12344553243)
+	assert.Error(t, err)
+}
+
+func (suite CacheTestSuite) TestCheckProfiles() {
+	t := suite.T()
+	tests := ProfileTests{}
+
+	data, err := ioutil.ReadFile(TEST_ROLES_TEST_FILE)
+	assert.NoError(t, err)
+
+	err = goyaml.Unmarshal(data, &tests)
+	assert.NoError(t, err)
+
+	for testName, testData := range tests {
+		err := testData.checkProfiles(suite.cache.settings)
+		if strings.HasPrefix(testName, "Invalid") {
+			assert.Error(t, err, testName)
+		} else {
+			assert.NoError(t, err, testName)
+		}
+	}
+
+	badSettings := *suite.cache.settings
+	badSettings.ProfileFormat = "{{ .AccountName }}"
+	r := tests["Valid1"]
+	err = r.checkProfiles(&badSettings)
+	assert.NoError(t, err)
+
+	r = tests["Valid2"]
+	err = r.checkProfiles(&badSettings)
+	assert.Error(t, err)
+
+	badSettings.ProfileFormat = "{{ .RoleName }}"
+	r = tests["Valid3"]
+	err = r.checkProfiles(&badSettings)
 	assert.Error(t, err)
 }
