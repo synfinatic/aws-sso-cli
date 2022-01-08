@@ -87,15 +87,17 @@ The `SSORegion` is required.
 
 ### DefaultRegion
 
-The `DefaultRegion` allows you to define a value for the `$AWS_DEFAULT_REGION` when switching to a role.
-Note that, aws-sso will NEVER change an existing `$AWS_DEFAULT_REGION` set by the user.
+The `DefaultRegion` allows you to define a value for the `$AWS_DEFAULT_REGION`
+when switching to a role.  Note that, aws-sso will NEVER change an existing
+`$AWS_DEFAULT_REGION` set by the user.
 
-`DefaultRegion` can be specified at the following levels and the first match is selected:
+`DefaultRegion` can be specified at the following levels and the first match is
+selected (most specific to most generic):
 
- 1. `SSOConfig -> <Name of the AWS SSO> -> Accounts -> <AccountId> -> Roles -> <RoleName>`
- 1. `SSOConfig -> <Name of the AWS SSO> -> Accounts -> <AccountId>`
- 1. `SSOConfig -> <Name of AWS SSO>`
- 1. Top level of the file
+ 1. At the inidividual role level: `SSOConfig -> <AWS SSO Instance> -> Accounts -> <AccountId> -> Roles -> <RoleName>`
+ 1. At the AWS Account level:`SSOConfig -> <Name of the AWS SSO> -> Accounts -> <AccountId>`
+ 1. At the AWS SSO Instance level: `SSOConfig -> <AWS SSO Instance>`
+ 1. At the config file level (default is `us-east-1`)
 
 ### Accounts
 

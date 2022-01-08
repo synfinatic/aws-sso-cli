@@ -9,6 +9,7 @@
  * [How to configure ProfileFormat](#how-to-configure-profileformat)
  * [Example of multiple AWS SSO instances](#example-of-multiple-aws-sso-instances)
  * [What are the purpose of the Tags?](#what-are-the-purpose-of-the-tags)
+ * [Which SecureStore should I use?](#which-securestore-should-i-use)
 
 ### How do I delete all secrets from the macOS keychain?
 
@@ -42,8 +43,10 @@ https://github.com/synfinatic/aws-sso-cli/issues/new?labels=bug&template=bug_rep
 ### Does AWS SSO CLI support role chaining?
 
 Yes.  You can use `aws-sso` to assume roles in other AWS accounts or
-roles that are not managed via AWS SSO Permission Sets.  For more
-information on this, see the [Via](config.md#Via) configuration option.
+roles that are not managed via AWS SSO Permission Sets using [role chaining](
+https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_terms-and-concepts.html).
+
+For more information on this, see the [Via](config.md#Via) configuration option.
 
 ### How does AWS SSO CLI manage the $AWS\_DEFAULT\_REGION?
 
@@ -60,7 +63,7 @@ If the above are true, then AWS SSO will define both:
  * `$AWS_DEFAULT_REGION`
  * `$AWS_SSO_DEFAULT_REGION`
 
-to the default region as def)ined by `config.yaml`.  If the user changes
+to the default region as defined by `config.yaml`.  If the user changes
 roles and the two variables are set to the same region, then AWS SSO will
 update the region.   If the user ever overrides the `$AWS_DEFAULT_REGION`
 value or deletes the `$AWS_SSO_DEFAULT_REGION` then AWS SSO will no longer
@@ -98,19 +101,21 @@ AWS SSO CLI tries to make it easy to manage many roles across many accounts
 by giving users a lot of control over what the value of these variables are for
 each role.
 
- * You can use [ProfileFormat](config.md#profileformat) to create an auto-generated
-    profile name for each role based upon things like the AccountID, AccountName, RoleName,
-    etc.
- * You can also use [Profile](config.md#profile) to define a profile name for any specific
-    role.
- * You can also use both: `ProfileFormat` to set a default value and override specific roles
-    that you use more often via `Profile` with an easier to remember value.  The choice is yours,
-    but remember that every unique Role ARN needs a unique value if you wish to use it to
-    select a role to use via `$AWS_PROFILE` and the [config](../README.md#config) command.
+ * You can use [ProfileFormat](config.md#profileformat) to create an
+    auto-generated profile name for each role based upon things like the
+    AccountID, AccountName, RoleName, etc.
+ * You can also use [Profile](config.md#profile) to define a profile name for
+    any specific role.
+ * You can also use both: `ProfileFormat` to set a default value and override
+    specific roles that you use more often via `Profile` with an easier to
+    remember value.  The choice is yours, but remember that every unique Role
+    ARN needs a unique value if you wish to use it to select a role to use
+    via `$AWS_PROFILE` and the [config](../README.md#config) command.
 
 ### How to configure ProfileFormat
 
-`aws-sso` uses the `ProfileFormat` configuration option for two different purposes:
+`aws-sso` uses the `ProfileFormat` configuration option for two different
+purposes:
 
  1. Makes it easy to modify your shell `$PROMPT` to include information
     about what AWS Account/Role you have currently assumed by defining the
@@ -123,19 +128,20 @@ which will generate a value like `02345678901:MyRoleName`.
 
 Some examples:
 
- * `ProfileFormat: '{{ FirstItem .AccountName .AccountAlias }}'` -- If there is an Account Name
-    set in the config.yaml print that, otherwise print the Account Alias defined
-    by the AWS administrator.
- * `ProfileFormat: '{{ AccountIdStr .AccountId }}'` -- Pad the AccountId with leading zeros if it
-    is < 12 digits long
+ * `ProfileFormat: '{{ FirstItem .AccountName .AccountAlias }}'` -- If there
+    is an Account Name set in the config.yaml print that, otherwise print the
+    Account Alias defined by the AWS administrator.
+ * `ProfileFormat: '{{ AccountIdStr .AccountId }}'` -- Pad the AccountId with
+    leading zeros if it is < 12 digits long
  * `ProfileFormat: '{{ .AccountId }}'` -- Print the AccountId as a regular number
- * `ProfileFormat: '{{ StringsJoin ":" .AccountAlias .RoleName }}'` -- Another way of writing
-    `{{ .AccountAlias }}:{{ .RoleName }}`
- * `ProfileFormat: '{{ StringReplace " " "_" .AccountAlias }}'` -- Replace any spaces (` `) in the
-    AccountAlias with an underscore (`_`).
+ * `ProfileFormat: '{{ StringsJoin ":" .AccountAlias .RoleName }}'` -- Another
+    way of writing `{{ .AccountAlias }}:{{ .RoleName }}`
+ * `ProfileFormat: '{{ StringReplace " " "_" .AccountAlias }}'` -- Replace any
+    spaces (` `) in the AccountAlias with an underscore (`_`).
  * `ProfileFormat: '{{ FirstItem .AccountName .AccountAlias | StringReplace " " "_" }}:{{ .RoleName }}'`
-    -- Use the Account Name if set, otherwise use the Account Alias and replace any spaces
-    with an underscore and then append a colon, followed by the role name.
+    -- Use the Account Name if set, otherwise use the Account Alias and replace
+    any spaces with an underscore and then append a colon, followed by the role
+    name.
 
 For a full list of available variables, [see here](config.md#profileformat).
 
@@ -170,3 +176,33 @@ the `Account` and `Role` levels.  These tags make it easier to manage many
 roles in larger scale deployments with lots of AWS Accounts. AWS SSO CLI adds
 a number of tags by default for each role and a full list of tags can be viewed
 by using the [tags](../README.md#tags) command.
+
+### Which SecureStore should I use?
+
+The answer depends, but if you are running AWS SSO CLI on macOS then I
+recommend to use the default `keychain`.  Windows users should use the default
+`wincred` store.  Both utilize the secure storage provided by Apple/Microsoft
+and generally provides good security and ease of use.
+
+If you are running on Linux, then consider `kwallet`, `pass` and
+`secret-service` depending on which ever password manager you use.
+
+You can always fall back to `file` which is an encrypted file.  Every time you
+run AWS SSO CLI and it needs to open the file for read/writing data it will
+prompt you for your password.  This is probably the best option for Linux
+jumphosts.  In these cases, I suggest using the `eval` or `exec` command to
+load the resulting AWS API credentials into your shell so that you don't have
+to keep typing in your password contantly.  Of course, you can also set the
+`$AWS_SSO_FILE_PASSPHRASE` environment variable in your shell to avoid typing
+it in, but please make sure you are aware of the security implications of
+doing so.
+
+Lastly, there is the `json` storage backend which is _not_ secure.  It literally
+is a plain, clear text JSON file stored on disk and is no better than the
+official AWS tooling.  It is included here only for debug and development
+purposes only.
+
+Is there another secure storage backend you would like to see AWS SSO CLI
+support?  If so, please [open a feature request](
+https://github.com/synfinatic/aws-sso-cli/issues/new?assignees=&labels=enhancement&template=feature_request.md)
+and let me know!
