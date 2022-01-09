@@ -1,6 +1,6 @@
 # AWS SSO CLI Changelog
 
-## [Unreleased]
+## [1.7.0] - 2022-01-09
 
 ### New Features
  * Add `Via` and `SSO` to possible `list` command output fields
