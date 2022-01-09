@@ -324,13 +324,30 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 		ssoName:       config.settings.DefaultSSO,
 	}
 
+	if err := c.addSSORoles(&r, as); err != nil {
+		return &Roles{}, err
+	}
+
+	if err := c.addConfigRoles(&r, config); err != nil {
+		return &Roles{}, err
+	}
+
+	if err := r.checkProfiles(c.settings); err != nil {
+		return &Roles{}, err
+	}
+
+	return &r, nil
+}
+
+func (c *Cache) addSSORoles(r *Roles, as *AWSSSO) error {
 	cache := c.GetSSO()
 
 	// First go through all the AWS SSO Accounts & Roles
 	accounts, err := as.GetAccounts()
 	if err != nil {
-		return &r, fmt.Errorf("Unable to get AWS SSO accounts: %s", err.Error())
+		return fmt.Errorf("Unable to get AWS SSO accounts: %s", err.Error())
 	}
+
 	for _, aInfo := range accounts {
 		accountId := aInfo.GetAccountId64()
 		r.Accounts[accountId] = &AWSAccount{
@@ -342,7 +359,7 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 
 		roles, err := as.GetRoles(aInfo)
 		if err != nil {
-			return &r, fmt.Errorf("Unable to get AWS SSO roles: %s", err.Error())
+			return fmt.Errorf("Unable to get AWS SSO roles: %s", err.Error())
 		}
 		for _, role := range roles {
 			r.Accounts[accountId].Roles[role.RoleName] = &AWSRole{
@@ -367,7 +384,10 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 			}
 		}
 	}
+	return nil
+}
 
+func (c *Cache) addConfigRoles(r *Roles, config *SSOConfig) error {
 	// The load all the Config file stuff.  Normally this is just adding markup, but
 	// for accounts &roles that are not in SSO, we may be creating them as well!
 	for accountId, account := range config.Accounts {
@@ -424,6 +444,30 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 			}
 		}
 	}
+	return nil
+}
 
-	return &r, nil
+// checkProfiles verfies that all the Profile names are unique for all the defined roles
+func (r *Roles) checkProfiles(s *Settings) error {
+	profileUniqueCheck := map[string]string{} // ProfileName() => Arn
+	for accountId, account := range r.Accounts {
+		for roleName, role := range account.Roles {
+			flat, err := r.GetRole(accountId, roleName)
+			if err != nil {
+				return err
+			}
+
+			pname, err := flat.ProfileName(s)
+			if err != nil {
+				return err
+			}
+
+			if arn, duplicate := profileUniqueCheck[pname]; duplicate {
+				return fmt.Errorf("Duplicate profile name '%s' for:\n- %s\n- %s", pname, arn, role.Arn)
+			} else {
+				profileUniqueCheck[pname] = arn
+			}
+		}
+	}
+	return nil
 }

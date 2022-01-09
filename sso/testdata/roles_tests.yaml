@@ -1,0 +1,53 @@
+Invalid1:
+  Accounts:
+    0000001:
+      Roles:
+        Foobar:
+          Profile: FunnyMan
+    0000002:
+      Roles:
+        Foobar:
+          Profile: FunnyMan
+
+Invalid2:
+  Accounts:
+    0000001:
+      Roles:
+        Foobar:
+          Profile: FunnyMan
+        Foobar2:
+          Profile: FunnyMan
+
+Valid1:
+  Accounts:
+    0000001:
+      Roles:
+        Foobar:
+          Profile: FunnyMan
+        Foobar2:
+          Profile: FunnyMan2
+
+Valid2:
+  Accounts:
+    0000001:
+      Roles:
+        Foobar:
+          Tags:
+            Foo: Bar
+        Foobar2:
+          Tags:
+            Foo: Bar
+
+Valid3:
+  Accounts:
+    0000001:
+      Roles:
+        Foobar:
+          Tags:
+            Foo: Bar
+    0000002:
+      Roles:
+        Foobar:
+          Tags:
+            Foo: Bar
+

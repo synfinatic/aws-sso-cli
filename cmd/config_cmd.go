@@ -72,6 +72,7 @@ func (cc *ConfigCmd) Run(ctx *RunContext) error {
 	}
 
 	profiles := ProfileMap{}
+	profileUniqueCheck := map[string][]string{} // ProfileName() => Arn
 
 	// Find all the roles across all of the SSO instances
 	for ssoName, s := range set.Cache.SSO {
@@ -80,6 +81,12 @@ func (cc *ConfigCmd) Run(ctx *RunContext) error {
 			if err != nil {
 				log.Errorf("Unable to generate profile name for %s: %s", role.Arn, err.Error())
 			}
+
+			if match, duplicate := profileUniqueCheck[profile]; duplicate {
+				return fmt.Errorf("Duplicate profile name '%s' for:\n%s: %s\n%s: %s",
+					profile, match[0], match[1], ssoName, role.Arn)
+			}
+			profileUniqueCheck[profile] = []string{ssoName, role.Arn}
 
 			if _, ok := profiles[ssoName]; !ok {
 				profiles[ssoName] = map[string]ProfileConfig{}
