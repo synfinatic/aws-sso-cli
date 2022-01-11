@@ -19,7 +19,7 @@
 	* [tags](#tags)
 	* [time](#time)
 	* [install-completions](#install-completions)
- * [Environment Varables](#environment-varables)
+ * [Environment Variables](#environment-variables)
  * [License](#license)
 
 Other Pages:
@@ -212,7 +212,7 @@ of _STDERR_ to see the URL to open.
 
 **Note:** The `eval` command is not supported under Windows CommandPrompt or PowerShell.
 
-See [Environment Varables](#environment-varables) for more information about
+See [Environment Variables](#environment-variables) for more information about
 what varibles are set.
 
 ### exec
@@ -240,7 +240,7 @@ Priority is given to:
 
 You can not run `exec` inside of another `exec` shell.
 
-See [Environment Varables](#environment-varables) for more information about what varibles are set.
+See [Environment Variables](#environment-variables) for more information about what varibles are set.
 
 ### process
 
@@ -341,7 +341,7 @@ Modifies the following file based on your shell:
  * `~/.bash_profile` -- bash
  * `~/.zshrc` -- zsh
 
-## Environment Varables
+## Environment Variables
 
 ### Honored Variables
 
