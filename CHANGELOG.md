@@ -1,5 +1,16 @@
 # AWS SSO CLI Changelog
 
+## [1.7.1] - Unreleased
+
+### Changes
+
+ * `flush` now flushes the STS IAM Role credentials first by default #236
+
+### New Features
+
+ * Add a lot more `ProfileFormat` functions via sprig #244
+ * `flush` command gives users more control over what is flushed
+
 ## [1.7.0] - 2022-01-09
 
 ### New Features

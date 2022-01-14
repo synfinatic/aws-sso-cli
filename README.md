@@ -297,12 +297,15 @@ Default fields:
 
 ### flush
 
-Flush any cached AWS SSO/STS credentials.  By default, it only flushes the SSO
-credentials used to issue new STS tokens.
+Flush any cached AWS SSO/STS credentials.  By default, it only flushes the
+temporary STS IAM role credentials for the selected SSO instance.
 
 Flags:
 
- * `--all` -- Also delete any non-expired AWS STS credentials from secure store
+ * `--type`, `-t` -- Type of credentials to flush:
+    * `sts` -- Flush temporary STS credentials for IAM roles
+    * `sso` -- Flush temporary AWS SSO credentials
+	* `all` -- Flush temporary STS and SSO  credentials
 
 ### tags
 

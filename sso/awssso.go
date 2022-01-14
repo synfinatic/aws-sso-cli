@@ -85,7 +85,7 @@ func (as *AWSSSO) Authenticate(urlAction, browser string) error {
 		as.Token = token
 		return nil
 	} else if err != nil {
-		log.WithError(err).Errorf("Unable read SSO token from cache")
+		log.Debugf(err.Error())
 	} else {
 		if as.Token.ExpiresAt != 0 {
 			t := time.Unix(as.Token.ExpiresAt, 0)
