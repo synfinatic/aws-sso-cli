@@ -26,6 +26,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/Masterminds/sprig/v3"
 	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/utils"
@@ -323,13 +324,22 @@ func (r *AWSRoleFlat) ProfileName(s *Settings) (string, error) {
 	if len(format) == 0 {
 		format = DEFAULT_PROFILE_TEMPLATE
 	}
-	funcMap := template.FuncMap{
+
+	// our custom functions
+	customFuncs := template.FuncMap{
 		"AccountIdStr":  accountIdToStr,
 		"EmptyString":   emptyString,
 		"FirstItem":     firstItem,
 		"StringsJoin":   stringsJoin,
 		"StringReplace": stringReplace,
 	}
+
+	// all the sprig functions
+	funcMap := sprig.TxtFuncMap()
+	for k, v := range customFuncs {
+		funcMap[k] = v
+	}
+
 	templ, err := template.New("profile_name").Funcs(funcMap).Parse(format)
 	if err != nil {
 		return "", err

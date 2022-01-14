@@ -178,6 +178,11 @@ func (suite *CacheRolesTestSuite) TestProfileName() {
 	p, err = r.ProfileName(settings)
 	assert.NoError(t, err)
 	assert.Equal(t, "OurCompany_Control_Tower_Playground:AWSAdministratorAccess", p)
+
+	settings.ProfileFormat = `{{ FirstItem .AccountName .AccountAlias | StringReplace " " "_" | lower }}:{{ .RoleName | upper }}`
+	p, err = r.ProfileName(settings)
+	assert.NoError(t, err)
+	assert.Equal(t, "ourcompany_control_tower_playground:AWSADMINISTRATORACCESS", p)
 }
 
 func (suite *CacheRolesTestSuite) TestGetRoleByProfile() {

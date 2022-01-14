@@ -142,6 +142,11 @@ Some examples:
     -- Use the Account Name if set, otherwise use the Account Alias and replace
     any spaces with an underscore and then append a colon, followed by the role
     name.
+ * `ProfileFormat: '{{ .AccountAlias | kebabcase }}:{{ .RoleName }}'
+	-- Reformat the AWS account alias like `AStringLikeThis` into
+	`a-string-like-this` using the [kebabcase function](
+	http://masterminds.github.io/sprig/strings.html#kebabcase).
+
 
 For a full list of available variables, [see here](config.md#profileformat).
 
