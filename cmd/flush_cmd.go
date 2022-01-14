@@ -24,7 +24,7 @@ import (
 
 // FlushCmd defines the Kong args for the flush command
 type FlushCmd struct {
-	All bool `kong:"help='Also flush individual STS tokens'"`
+	Type string `kong:"short='t',default='sts',enum='sts,sso,all',help='Type of credentials to flush [sts|sso|all]'"`
 }
 
 // Run executes the flush command
@@ -37,26 +37,42 @@ func (cc *FlushCmd) Run(ctx *RunContext) error {
 	}
 	awssso := sso.NewAWSSSO(s, &ctx.Store)
 
-	// Deleting the token response invalidates all our STS tokens
-	err = ctx.Store.DeleteCreateTokenResponse(awssso.StoreKey())
-	if err != nil {
-		log.WithError(err).Errorf("Unable to delete TokenResponse")
-	} else {
-		log.Infof("Deleted cached Token for %s", awssso.StoreKey())
-	}
-
-	if ctx.Cli.Flush.All {
-		cache := ctx.Settings.Cache.GetSSO()
-		for _, role := range cache.Roles.GetAllRoles() {
-			if !role.IsExpired() {
-				if err = ctx.Store.DeleteRoleCredentials(role.Arn); err != nil {
-					log.WithError(err).Errorf("Unable to delete STS token for %s", role.Arn)
-				}
-			}
-		}
-		err = ctx.Settings.Cache.MarkRolesExpired()
+	switch ctx.Cli.Flush.Type {
+	case "sts":
+		flushSts(ctx, awssso)
+	case "sso":
+		flushSso(ctx, awssso)
+	case "all":
+		flushSts(ctx, awssso)
+		flushSso(ctx, awssso)
 	}
 
 	// Inform the cache the roles are expired
-	return err
+	return nil
+}
+
+func flushSso(ctx *RunContext, awssso *sso.AWSSSO) {
+	// Deleting the token response invalidates all our STS tokens
+	err := ctx.Store.DeleteCreateTokenResponse(awssso.StoreKey())
+	if err != nil {
+		log.WithError(err).Errorf("Unable to delete TokenResponse")
+	} else {
+		log.Infof("Deleted cached AWS SSO Token for %s", awssso.StoreKey())
+	}
+}
+
+func flushSts(ctx *RunContext, awssso *sso.AWSSSO) {
+	cache := ctx.Settings.Cache.GetSSO()
+	for _, role := range cache.Roles.GetAllRoles() {
+		if !role.IsExpired() {
+			if err := ctx.Store.DeleteRoleCredentials(role.Arn); err != nil {
+				log.WithError(err).Errorf("Unable to delete STS token for %s", role.Arn)
+			}
+		}
+	}
+	if err := ctx.Settings.Cache.MarkRolesExpired(); err != nil {
+		log.Errorf(err.Error())
+	} else {
+		log.Infof("Deleted cached AWS STS credentials for %s", awssso.StoreKey())
+	}
 }
