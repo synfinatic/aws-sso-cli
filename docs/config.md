@@ -216,7 +216,8 @@ The following variables are accessible from the `AWSRoleFlat` struct:
 
 By default, `ProfileFormat` is set to `{{ AccountIdStr .AccountId }}:{{ .RoleName }}`.
 
-The following functions are available in your template:
+AWS SSO CLI uses [sprig](http://masterminds.github.io/sprig/) for most of its functions,
+but a few custom functions are available:
 
  * `AccountIdStr(x)` -- Converts an AWS Account ID to a string
  * `EmptyString(x)` -- Returns true/false if the value `x` is an empty string
