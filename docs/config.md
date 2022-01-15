@@ -26,6 +26,7 @@ SSOConfig:
                             <Key1>: <Value1>
                             <Key2>: <Value2>
                         Via: <Previous Role>  # optional, for role chaining
+                        SourceIdentity: <Source Identity>
 
 # See description below for these options
 DefaultRegion: <AWS_DEFAULT_REGION>
@@ -127,8 +128,8 @@ the [ProfileFormat](#profileformat) config option.
 
 ##### Tags
 
-List of key / value pairs, used by `aws-sso` in prompt mode.  Any tag placed at
-the role level will be applied to only that role.
+List of key/value pairs, used by `aws-sso` in prompt mode with `exec`.  Any tag
+placed at the role level will be applied to only that role.
 
 ##### Via
 
@@ -141,6 +142,13 @@ to switch to the specified role.  This allows you to define and assume roles in 
 accounts that are not included in your organization's AWS SSO scope or roles that
 were not defined via an [AWS SSO Permission Set](
 https://docs.aws.amazon.com/singlesignon/latest/userguide/permissionsetsconcept.html).
+
+##### SourceIdentity
+
+An [optional string](
+https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html#API_AssumeRole_RequestParameters)
+which must not start with `aws:` that your administrator may require you to set
+in order to assume a role with `Via`.
 
 ## DefaultSSO
 
