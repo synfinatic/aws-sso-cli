@@ -62,6 +62,7 @@ type Settings struct {
 	HistoryMinutes    int64                  `koanf:"HistoryMinutes" yaml:"HistoryMinutes,omitempty"`
 	ListFields        []string               `koanf:"ListFields" yaml:"ListFields,omitempty"`
 	ConfigVariables   map[string]interface{} `koanf:"ConfigVariables" yaml:"ConfigVariables,omitempty"`
+	EnvVarTags        []string               `koanf:"EnvVarTags" yaml:"EnvVarTags,omitempty"`
 }
 
 type SSOConfig struct {
@@ -298,6 +299,15 @@ func (s *Settings) GetSelectedSSO(name string) (*SSOConfig, error) {
 		return c, nil
 	}
 	return &SSOConfig{}, fmt.Errorf("No available SSOConfig Provider")
+}
+
+// Returns the Tag name => Environment variable name
+func (s *Settings) GetEnvVarTags() map[string]string {
+	ret := map[string]string{}
+	for _, tag := range s.EnvVarTags {
+		ret[tag] = fmt.Sprintf("AWS_SSO_TAG_%s", strings.ToUpper(tag))
+	}
+	return ret
 }
 
 // Refresh should be called any time you load the SSOConfig into memory or add a role

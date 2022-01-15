@@ -386,3 +386,15 @@ func stringsJoin(x string, items ...string) string {
 func stringReplace(search, replace, str string) string {
 	return strings.ReplaceAll(str, search, replace)
 }
+
+// GetEnvVarTags returns a map containing a set of keys represening the
+// environment variable names and their values
+func (r *AWSRoleFlat) GetEnvVarTags(s *Settings) map[string]string {
+	ret := map[string]string{}
+	for k, v := range s.GetEnvVarTags() {
+		if val, ok := r.Tags[k]; ok {
+			ret[v] = val
+		}
+	}
+	return ret
+}

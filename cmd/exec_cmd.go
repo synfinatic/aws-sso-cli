@@ -162,6 +162,11 @@ func execShellEnvs(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, r
 		if err != nil {
 			log.Errorf("Unable to generate AWS_SSO_PROFILE: %s", err.Error())
 		}
+
+		// and any EnvVarTags
+		for k, v := range roleInfo.GetEnvVarTags(ctx.Settings) {
+			shellVars[k] = v
+		}
 	}
 
 	return shellVars

@@ -199,3 +199,26 @@ func (suite *CacheRolesTestSuite) TestGetRoleByProfile() {
 	assert.NoError(t, err)
 	assert.Equal(t, "arn:aws:iam::707513610766:role/AWSReadOnlyAccess", flat.Arn)
 }
+
+func (suite *CacheRolesTestSuite) TestGetEnvVarTags() {
+	t := suite.T()
+	roles := suite.cache.SSO[suite.cache.ssoName].Roles
+	flat, err := roles.GetRoleByProfile("audit-admin", suite.settings)
+	assert.NoError(t, err)
+
+	settings := Settings{
+		EnvVarTags: []string{
+			"Role",
+			"Email",
+			"AccountName",
+			"FooBar", // doesn't exist
+		},
+	}
+
+	x := map[string]string{
+		"AWS_SSO_TAG_ROLE":        "AWSAdministratorAccess",
+		"AWS_SSO_TAG_EMAIL":       "control-tower-dev-aws+audit@ourcompany.com",
+		"AWS_SSO_TAG_ACCOUNTNAME": "Audit",
+	}
+	assert.Equal(t, x, flat.GetEnvVarTags(&settings))
+}

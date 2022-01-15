@@ -172,3 +172,15 @@ func (suite *SettingsTestSuite) TestOtherSSO() {
 
 	assert.Equal(t, "us-west-2", settings.GetDefaultRegion(182347455, "AWSAdministratorAccess", false))
 }
+
+func (suite *SettingsTestSuite) TestGetEnvVarTags() {
+	t := suite.T()
+
+	x := map[string]string{
+		"Role": "AWS_SSO_TAG_ROLE",
+		"Arn":  "AWS_SSO_TAG_ARN",
+		"Foo":  "AWS_SSO_TAG_FOO",
+	}
+	y := suite.settings.GetEnvVarTags()
+	assert.EqualValues(t, x, y)
+}
