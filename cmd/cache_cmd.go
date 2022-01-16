@@ -34,10 +34,17 @@ func (cc *CacheCmd) Run(ctx *RunContext) error {
 	if err != nil {
 		log.Fatalf("%s", err.Error())
 	}
-	err = ctx.Settings.Cache.Refresh(awssso, s)
+
+	ssoName, err := ctx.Settings.GetSelectedSSOName(ctx.Cli.SSO)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+
+	err = ctx.Settings.Cache.Refresh(awssso, s, ssoName)
 	if err != nil {
 		return fmt.Errorf("Unable to refresh role cache: %s", err.Error())
 	}
+
 	err = ctx.Settings.Cache.Save(true)
 	if err != nil {
 		return fmt.Errorf("Unable to save role cache: %s", err.Error())

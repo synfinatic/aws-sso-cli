@@ -303,7 +303,11 @@ func doAuth(ctx *RunContext) *sso.AWSSSO {
 		log.WithError(err).Fatalf("Unable to authenticate")
 	}
 	if err = ctx.Settings.Cache.Expired(s); err != nil {
-		if err = ctx.Settings.Cache.Refresh(AwsSSO, s); err != nil {
+		ssoName, err := ctx.Settings.GetSelectedSSOName(ctx.Cli.SSO)
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
+		if err = ctx.Settings.Cache.Refresh(AwsSSO, s, ssoName); err != nil {
 			log.WithError(err).Fatalf("Unable to refresh cache")
 		}
 		if err = ctx.Settings.Cache.Save(true); err != nil {

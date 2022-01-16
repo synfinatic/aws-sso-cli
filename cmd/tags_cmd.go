@@ -43,7 +43,12 @@ func (cc *TagsCmd) Run(ctx *RunContext) error {
 			log.WithError(err).Fatalf("Unable to authenticate")
 		}
 
-		err = set.Cache.Refresh(awssso, s)
+		ssoName, err := ctx.Settings.GetSelectedSSOName(ctx.Cli.SSO)
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
+
+		err = set.Cache.Refresh(awssso, s, ssoName)
 		if err != nil {
 			log.WithError(err).Fatalf("Unable to refresh role cache")
 		}

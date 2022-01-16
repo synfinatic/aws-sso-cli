@@ -82,7 +82,7 @@ func (c *Cache) GetSSO() *SSOCache {
 		return v
 	}
 
-	// init a new one
+	// else, init a new one
 	c.SSO[c.ssoName] = &SSOCache{
 		name:       c.ssoName,
 		LastUpdate: 0,
@@ -233,13 +233,37 @@ func (c *Cache) deleteOldHistory() {
 
 // Refresh updates our cached Roles based on AWS SSO & our Config
 // but does not save this data!
-func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig) error {
+func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string) error {
+	// first remove our current roles cache entries so they don't get merged
+	c.SSO[ssoName].Roles = &Roles{}
+
+	// save history tags
+	historyTags := map[string]string{}
+	for _, arn := range c.SSO[ssoName].History {
+		roleFlat, err := c.GetRole(arn)
+		if err != nil {
+			continue
+		}
+		if value, ok := roleFlat.Tags["History"]; ok {
+			historyTags[arn] = value
+		}
+	}
+
+	// load our AWSSSO & Config
 	r, err := c.NewRoles(sso, config)
 	if err != nil {
 		return err
 	}
-	cache := c.GetSSO()
-	cache.Roles = r
+	c.SSO[ssoName].Roles = r
+
+	// restore our history tags
+	for _, account := range c.SSO[ssoName].Roles.Accounts {
+		for _, role := range account.Roles {
+			if value, ok := historyTags[role.Arn]; ok {
+				role.Tags["History"] = value
+			}
+		}
+	}
 	c.ConfigCreatedAt = config.CreatedAt()
 	return nil
 }
@@ -342,7 +366,6 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 func (c *Cache) addSSORoles(r *Roles, as *AWSSSO) error {
 	cache := c.GetSSO()
 
-	// First go through all the AWS SSO Accounts & Roles
 	accounts, err := as.GetAccounts()
 	if err != nil {
 		return fmt.Errorf("Unable to get AWS SSO accounts: %s", err.Error())
@@ -387,6 +410,7 @@ func (c *Cache) addSSORoles(r *Roles, as *AWSSSO) error {
 	return nil
 }
 
+// addConfigRoles decorates the provided Roles with the contents of our config
 func (c *Cache) addConfigRoles(r *Roles, config *SSOConfig) error {
 	// The load all the Config file stuff.  Normally this is just adding markup, but
 	// for accounts &roles that are not in SSO, we may be creating them as well!
