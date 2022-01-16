@@ -50,6 +50,10 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 	var role string
 	var accountid int64
 
+	if ctx.Cli.Eval.Clear {
+		return unsetEnvVars(ctx)
+	}
+
 	// refreshing?
 	if ctx.Cli.Eval.Refresh {
 		if len(ctx.Cli.Eval.EnvArn) == 0 {
@@ -69,15 +73,11 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 		role = ctx.Cli.Eval.Role
 		accountid = ctx.Cli.Eval.AccountId
 	} else {
-		return fmt.Errorf("Please specify --refresh, --arn, or --account and --role")
+		return fmt.Errorf("Please specify --refresh, --clear, --arn, or --account and --role")
 	}
 	region := ctx.Settings.GetDefaultRegion(accountid, role, ctx.Cli.Eval.NoRegion)
 
 	awssso := doAuth(ctx)
-
-	if ctx.Cli.Eval.Clear {
-		return unsetEnvVars(ctx)
-	}
 
 	for k, v := range execShellEnvs(ctx, awssso, accountid, role, region) {
 		if len(v) == 0 {
