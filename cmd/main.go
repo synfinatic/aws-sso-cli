@@ -79,7 +79,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"ListFields":                                []string{"AccountId", "AccountAlias", "RoleName", "ExpiresStr"},
 	"ConsoleDuration":                           60,
 	"UrlAction":                                 "open",
-	"LogLevel":                                  "info",
+	"LogLevel":                                  "warn",
 	"DefaultSSO":                                "Default",
 }
 
@@ -88,7 +88,7 @@ type CLI struct {
 	Browser    string `kong:"short='b',help='Path to browser to open URLs with',env='AWS_SSO_BROWSER'"`
 	ConfigFile string `kong:"name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
 	Lines      bool   `kong:"help='Print line number in logs'"`
-	LogLevel   string `kong:"short='L',name='level',help='Logging level [error|warn|info|debug|trace] (default: info)'"`
+	LogLevel   string `kong:"short='L',name='level',help='Logging level [error|warn|info|debug|trace] (default: warn)'"`
 	UrlAction  string `kong:"short='u',help='How to handle URLs [open|print|clip] (default: open)'"`
 	SSO        string `kong:"short='S',help='Override default AWS SSO Instance',env='AWS_SSO',predictor='sso'"`
 	STSRefresh bool   `kong:"help='Force refresh of STS Token Credentials'"`
@@ -136,7 +136,6 @@ func main() {
 		if err = setupWizard(&run_ctx); err != nil {
 			log.Fatalf("%s", err.Error())
 		}
-		cli.ConfigFile = utils.GetHomePath(cli.ConfigFile)
 	} else if err != nil {
 		log.WithError(err).Fatalf("Unable to open config file: %s", cli.ConfigFile)
 	}

@@ -86,6 +86,19 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 type DefaultCmd struct{}
 
 func (cc *DefaultCmd) Run(ctx *RunContext) error {
+	s, err := ctx.Settings.GetSelectedSSO("")
+	if err != nil {
+		return err
+	}
+
+	// update cache?
+	if err = ctx.Settings.Cache.Expired(s); err != nil {
+		c := &CacheCmd{}
+		if err = c.Run(ctx); err != nil {
+			log.WithError(err).Errorf("Unable to refresh local cache")
+		}
+	}
+
 	printRoles(ctx, ctx.Settings.ListFields)
 	return nil
 }
