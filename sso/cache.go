@@ -236,7 +236,8 @@ func (c *Cache) deleteOldHistory() {
 func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string) error {
 	// save role creds expires time
 	expires := map[string]int64{}
-	for _, account := range c.SSO[ssoName].Roles.Accounts {
+	cache := c.GetSSO()
+	for _, account := range cache.Roles.Accounts {
 		for _, role := range account.Roles {
 			if role.Expires > 0 {
 				expires[role.Arn] = role.Expires

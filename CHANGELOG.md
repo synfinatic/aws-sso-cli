@@ -12,6 +12,7 @@
     or the role History
  * Auto-guided setup now loads the config so the user defined command is
     successful #260
+ * default `list` command will now refresh the cache if necessary
 
 ### Changes
 

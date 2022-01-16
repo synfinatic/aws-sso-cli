@@ -266,7 +266,7 @@ func (suite *CacheTestSuite) TestMarkRolesExpired() {
 	}
 }
 
-func (suite CacheTestSuite) TestSetRoleExpires() {
+func (suite *CacheTestSuite) TestSetRoleExpires() {
 	t := suite.T()
 	err := suite.cache.SetRoleExpires(TEST_ROLE_ARN, 12344553243)
 	assert.NoError(t, err)
@@ -279,7 +279,7 @@ func (suite CacheTestSuite) TestSetRoleExpires() {
 	assert.Error(t, err)
 }
 
-func (suite CacheTestSuite) TestCheckProfiles() {
+func (suite *CacheTestSuite) TestCheckProfiles() {
 	t := suite.T()
 	tests := ProfileTests{}
 

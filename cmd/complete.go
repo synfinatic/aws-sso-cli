@@ -19,7 +19,6 @@ package main
  */
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -81,13 +80,11 @@ func NewPredictor(cacheFile, configFile string) *Predictor {
 
 	settings, err := sso.LoadSettings(configFile, cacheFile, defaults, override)
 	if err != nil {
-		fmt.Printf("Unable to open config.  Auto-complete is disabled: %s", err.Error())
 		return &p
 	}
 
 	c, err := sso.OpenCache(cacheFile, settings)
 	if err != nil {
-		fmt.Printf("Unable to open cache. Auto-complete is disabled: %s", err.Error())
 		return &p
 	}
 
