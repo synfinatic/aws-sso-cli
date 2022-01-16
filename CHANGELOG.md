@@ -4,7 +4,8 @@
 
 ### Bug Fixes
 
- * `AWS_SSO` env var is now set with the `eval` and `exec` command #251 
+ * `AWS_SSO` env var is now set with the `eval` and `exec` command #251
+ * Fix broken auto-complete for non-Default AWS SSO instances #249
 
 ### Changes
 
