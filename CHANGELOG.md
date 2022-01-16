@@ -8,6 +8,8 @@
  * Fix broken auto-complete for non-Default AWS SSO instances #249
  * Fix incorrect `AWS_SSO_SESSION_EXPIRATION` values #250
  * Remove old config settings that no longer exist #254
+ * `cache` command no longer flushes the Expires field for role credentials
+    or the role History
 
 ### Changes
 

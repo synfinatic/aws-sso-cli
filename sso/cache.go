@@ -234,7 +234,17 @@ func (c *Cache) deleteOldHistory() {
 // Refresh updates our cached Roles based on AWS SSO & our Config
 // but does not save this data!
 func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string) error {
-	// first remove our current roles cache entries so they don't get merged
+	// save role creds expires time
+	expires := map[string]int64{}
+	for _, account := range c.SSO[ssoName].Roles.Accounts {
+		for _, role := range account.Roles {
+			if role.Expires > 0 {
+				expires[role.Arn] = role.Expires
+			}
+		}
+	}
+
+	// zero out our current roles cache entries so they don't get merged
 	c.SSO[ssoName].Roles = &Roles{}
 
 	// save history tags
@@ -256,11 +266,14 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string) error {
 	}
 	c.SSO[ssoName].Roles = r
 
-	// restore our history tags
+	// restore our history tags & expires
 	for _, account := range c.SSO[ssoName].Roles.Accounts {
 		for _, role := range account.Roles {
 			if value, ok := historyTags[role.Arn]; ok {
 				role.Tags["History"] = value
+			}
+			if value, ok := expires[role.Arn]; ok {
+				role.Expires = value
 			}
 		}
 	}
