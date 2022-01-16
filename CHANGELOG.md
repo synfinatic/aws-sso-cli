@@ -7,6 +7,7 @@
  * `AWS_SSO` env var is now set with the `eval` and `exec` command #251
  * Fix broken auto-complete for non-Default AWS SSO instances #249
  * Fix incorrect `AWS_SSO_SESSION_EXPIRATION` values #250
+ * Remove old config settings that no longer exist #254
 
 ### Changes
 
