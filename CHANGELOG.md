@@ -14,6 +14,7 @@
 ### Changes
 
  * `flush` now flushes the STS IAM Role credentials first by default #236
+ * Guided setup now uses the hostname or FQDN instead of full URL for the SSO StartURL #258
 
 ### New Features
 
