@@ -20,7 +20,6 @@ package main
 import (
 	"fmt"
 	"net"
-	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -50,16 +49,21 @@ var AvailableAwsSSORegions []string = []string{
 	"us-gov-west-1",
 }
 
+const (
+	START_URL_FORMAT  = "https://%s.awsapps.com/start"
+	START_FQDN_FORMAT = "%s.awsapps.com"
+)
+
 // SetupCmd defines the Kong args for the setup command (which currently doesn't exist)
 type SetupCmd struct {
-	DefaultRegion  string `kong:"help='Default AWS region for running commands (or \"None\")'"`
-	UrlAction      string `kong:"name='default-url-action',help='How to handle URLs [open|print|clip]'"`
-	SSOStartUrl    string `kong:"help='AWS SSO User Portal URL'"`
-	SSORegion      string `kong:"help='AWS SSO Instance Region'"`
-	HistoryLimit   int64  `kong:"help='Number of items to keep in History',default=-1"`
-	HistoryMinutes int64  `kong:"help='Number of minutes to keep items in History',default=-1"`
-	DefaultLevel   string `kong:"help='Logging level [error|warn|info|debug|trace]'"`
-	Force          bool   `kong:"help='Force override of existing config file'"`
+	DefaultRegion    string `kong:"help='Default AWS region for running commands (or \"None\")'"`
+	UrlAction        string `kong:"name='default-url-action',help='How to handle URLs [open|print|clip]'"`
+	SSOStartHostname string `kong:"help='AWS SSO User Portal Hostname'"`
+	SSORegion        string `kong:"help='AWS SSO Instance Region'"`
+	HistoryLimit     int64  `kong:"help='Number of items to keep in History',default=-1"`
+	HistoryMinutes   int64  `kong:"help='Number of minutes to keep items in History',default=-1"`
+	DefaultLevel     string `kong:"help='Logging level [error|warn|info|debug|trace]'"`
+	Force            bool   `kong:"help='Force override of existing config file'"`
 }
 
 // Run executes the setup command
@@ -69,7 +73,7 @@ func (cc *SetupCmd) Run(ctx *RunContext) error {
 
 func setupWizard(ctx *RunContext) error {
 	var err error
-	var instanceName, startURL, ssoRegion, awsRegion, urlAction string
+	var instanceName, startHostname, ssoRegion, awsRegion, urlAction string
 	var historyLimit, historyMinutes, logLevel string
 	var hLimit, hMinutes int64
 
@@ -96,15 +100,27 @@ func setupWizard(ctx *RunContext) error {
 		return err
 	}
 
-	// Get the full AWS SSO start URL
-	prompt = promptui.Prompt{
-		Label:    "SSO Start URL (StartUrl)",
-		Validate: validateSSOUrl,
-		Default:  ctx.Cli.Setup.SSOStartUrl,
-		Pointer:  promptui.PipeCursor,
-	}
-	if startURL, err = prompt.Run(); err != nil {
-		return err
+	validFQDN := false
+	for !validFQDN {
+		// Get the hostname of the AWS SSO start URL
+		prompt = promptui.Prompt{
+			Label:    "SSO Start URL Hostname (XXXXXXX.awsapps.com)",
+			Validate: validateSSOHostname,
+			Default:  ctx.Cli.Setup.SSOStartHostname,
+			Pointer:  promptui.PipeCursor,
+		}
+		if startHostname, err = prompt.Run(); err != nil {
+			return err
+		}
+		if strings.HasSuffix(startHostname, ".awsapps.com") {
+			fqdn := strings.Split(startHostname, ".")
+			startHostname = fqdn[0]
+		}
+		if _, err := net.LookupHost(fmt.Sprintf(START_FQDN_FORMAT, startHostname)); err == nil {
+			validFQDN = true
+		} else if err != nil {
+			log.Errorf("Unable to resolve %s", fmt.Sprintf(START_FQDN_FORMAT, startHostname))
+		}
 	}
 
 	// Pick our AWS SSO region
@@ -246,49 +262,34 @@ func setupWizard(ctx *RunContext) error {
 	}
 	s.SSO[instanceName] = &sso.SSOConfig{
 		SSORegion:     ssoRegion,
-		StartUrl:      startURL,
+		StartUrl:      fmt.Sprintf(START_URL_FORMAT, startHostname),
 		DefaultRegion: awsRegion,
 	}
 	return s.Save(ctx.Cli.ConfigFile, false)
 }
 
-// validateSSOUrl verifies our SSO Start url is in the format of http://xxxxx.awsapps.com/start
+var ssoHostnameRegexp *regexp.Regexp
+
+// validateSSOHostname verifies our SSO Start url is in the format of http://xxxxx.awsapps.com/start
 // and the FQDN is valid
-func validateSSOUrl(input string) error {
-	u, err := url.Parse(input)
-	if err != nil {
-		return err
+func validateSSOHostname(input string) error {
+	if ssoHostnameRegexp == nil {
+		ssoHostnameRegexp, _ = regexp.Compile(`^([a-zA-Z0-9-]+)(\.awsapps\.com)?$`)
 	}
-
-	if !strings.HasPrefix(input, "https://") {
-		return fmt.Errorf("URL must start with https://")
+	if len(input) > 0 && len(input) < 64 && ssoHostnameRegexp.Match([]byte(input)) {
+		return nil
 	}
-
-	if u.Path != "/start" {
-		return fmt.Errorf("AWS SSO URL must end in: /start")
-	}
-
-	host, _, err := net.SplitHostPort(u.Host)
-	if err != nil {
-		host = u.Host
-	}
-
-	if !strings.Contains(host, ".awsapps.com") {
-		return fmt.Errorf("Invalid FQDN.  Must be of the format of: xxxxxx.awsapps.com")
-	}
-
-	_, err = net.LookupIP(host)
-	if err != nil {
-		return fmt.Errorf("Invalid FQDN in AWS SSO URL: %s", u.Host)
-	}
-
-	return nil
+	return fmt.Errorf("Invalid DNS hostname: %s", input)
 }
+
+var ssoNameRegexp *regexp.Regexp
 
 // validateSSOName just makes sure we have some text
 func validateSSOName(input string) error {
-	r, _ := regexp.Compile(`^[a-zA-Z0-9]+$`)
-	if len(input) > 0 && r.Match([]byte(input)) {
+	if ssoNameRegexp == nil {
+		ssoNameRegexp, _ = regexp.Compile(`^[a-zA-Z0-9]+$`)
+	}
+	if len(input) > 0 && ssoNameRegexp.Match([]byte(input)) {
 		return nil
 	}
 	return fmt.Errorf("SSO Name must be a valid string")
