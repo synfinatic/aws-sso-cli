@@ -55,7 +55,7 @@ func OpenCache(f string, s *Settings) (*Cache, error) {
 		ConfigCreatedAt: 0,
 		Version:         1, // use an invalid default version for cache files without a version
 		SSO:             map[string]*SSOCache{},
-		ssoName:         s.DefaultSSO,
+		ssoName:         s.DefaultSSO, // default to the config file default
 	}
 
 	var err error

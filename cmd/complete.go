@@ -19,9 +19,12 @@ package main
  */
 
 import (
+	"fmt"
 	"io/ioutil"
+	"os"
 	"strings"
 
+	// "github.com/davecgh/go-spew/spew"
 	"github.com/goccy/go-yaml"
 	"github.com/posener/complete"
 	"github.com/synfinatic/aws-sso-cli/sso"
@@ -66,17 +69,32 @@ var AvailableAwsRegions []string = []string{
 
 // NewPredictor loads our cache file (if exists) and loads the values
 func NewPredictor(cacheFile, configFile string) *Predictor {
+	defaults := map[string]interface{}{}
+	override := sso.OverrideSettings{}
 	p := Predictor{
 		configFile: configFile,
 	}
-	c, err := sso.OpenCache(cacheFile, &sso.Settings{})
+	ssoName := os.Getenv("AWS_SSO")
+	if ssoName != "" {
+		override.DefaultSSO = ssoName
+	}
+
+	settings, err := sso.LoadSettings(configFile, cacheFile, defaults, override)
 	if err != nil {
+		fmt.Printf("Unable to open config.  Auto-complete is disabled: %s", err.Error())
+		return &p
+	}
+
+	c, err := sso.OpenCache(cacheFile, settings)
+	if err != nil {
+		fmt.Printf("Unable to open cache. Auto-complete is disabled: %s", err.Error())
 		return &p
 	}
 
 	uniqueRoles := map[string]bool{}
 
 	cache := c.GetSSO()
+	//	fmt.Printf("cache: %s", spew.Sdump(c))
 	for i, a := range cache.Roles.Accounts {
 		id, _ := utils.AccountIdToString(i)
 		p.accountids = append(p.accountids, id)

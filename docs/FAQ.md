@@ -10,6 +10,7 @@
  * [Example of multiple AWS SSO instances](#example-of-multiple-aws-sso-instances)
  * [What are the purpose of the Tags?](#what-are-the-purpose-of-the-tags)
  * [Which SecureStore should I use?](#which-securestore-should-i-use)
+ * [Using non-default AWS SSO instances with auto-complete](#using-non-default-aws-sso-instances-with-auto-complete)
 
 ### How do I delete all secrets from the macOS keychain?
 
@@ -211,3 +212,25 @@ Is there another secure storage backend you would like to see AWS SSO CLI
 support?  If so, please [open a feature request](
 https://github.com/synfinatic/aws-sso-cli/issues/new?assignees=&labels=enhancement&template=feature_request.md)
 and let me know!
+
+
+### Using non-default AWS SSO instances with auto-complete
+
+The handling of the auto-completion of the `-A`, `-R`, and `-a` flags happens
+before processing of the command line arguments so you can not use the `--sso` / `-S`
+flag to specify a non-default AWS SSO instance.  The result is it will always
+present your [DefaultSSO](config.md#defaultsso) list of accounts and roles.
+
+If you wish to use auto-complete with a different AWS SSO instance, you must
+first set the `AWS_SSO` environment variable in your shell:
+
+```bash
+$ export AWS_SSO=OtherInstance
+$ aws eval ...
+```
+
+Note, the following shorter version of specifying it as a single command does not work:
+
+```bash
+$ AWS_SSO=OtherInstance aws-sso eval ...
+```
