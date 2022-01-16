@@ -62,7 +62,10 @@ to your shell environment.
 Here's a quick demo showing how to select a role to assume in interactive mode
 and then run commands in that context (by default it starts a new shell).
 
-[![asciicast](https://asciinema.org/a/445604.svg)](https://asciinema.org/a/445604)
+<!-- exec -->
+[![asciicast](https://asciinema.org/a/462167.svg)](https://asciinema.org/a/462167)
+
+Want to see more?  Check out the [other demos](docs/demos.md).
 
 ## Security
 
