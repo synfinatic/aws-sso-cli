@@ -6,6 +6,7 @@
 
  * `AWS_SSO` env var is now set with the `eval` and `exec` command #251
  * Fix broken auto-complete for non-Default AWS SSO instances #249
+ * Fix incorrect `AWS_SSO_SESSION_EXPIRATION` values #250
 
 ### Changes
 
@@ -15,7 +16,7 @@
 
  * Add a lot more `ProfileFormat` functions via sprig #244
  * `flush` command gives users more control over what is flushed
- * Add support for `SourceIdentity` for AssumeRole operations
+ * Add documentation for `SourceIdentity` for AssumeRole operations
  * Add `EnvVarTags` config file option #134
 
 ## [1.7.0] - 2022-01-09
