@@ -1,6 +1,6 @@
 # AWS SSO CLI Changelog
 
-## [1.7.1] - Unreleased
+## [v1.7.1] - 2022-01-16
 
 ### Bug Fixes
 
@@ -26,7 +26,7 @@
  * Add documentation for `SourceIdentity` for AssumeRole operations
  * Add `EnvVarTags` config file option #134
 
-## [1.7.0] - 2022-01-09
+## [v1.7.0] - 2022-01-09
 
 ### New Features
  * Add `Via` and `SSO` to possible `list` command output fields
@@ -46,7 +46,7 @@
 
  * `eval` command now supports `--url-action=print`
 
-## [1.6.1] - 2021-12-31
+## [v1.6.1] - 2021-12-31
 
 ### New Features
  * The `Via` role option is now a searchable tag #199
@@ -64,7 +64,7 @@
 ### Changes
  * Reduce number of warnings #205
 
-## [1.6.0] - 2021-12-24
+## [v1.6.0] - 2021-12-24
 
 ### Breaking Changes
  * Fix issue with missing colon in parsed/generated Role ARNs for missing AWS region #192
@@ -228,7 +228,9 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.6.1...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.7.1...main
+[v1.7.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.1
+[v1.7.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.0
 [v1.6.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.6.1
 [v1.6.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.6.0
 [v1.5.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.5.1
