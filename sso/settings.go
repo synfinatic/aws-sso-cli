@@ -287,18 +287,33 @@ func (s *Settings) CreatedAt() int64 {
 // GetSelectedSSO returns a valid SSOConfig based on user intput, configured
 // value or our hardcoded 'Default' if it exists and name is empty String
 func (s *Settings) GetSelectedSSO(name string) (*SSOConfig, error) {
-	if c, ok := s.SSO[name]; ok {
-		return c, nil
+	n, err := s.GetSelectedSSOName(name)
+	if err != nil {
+		return &SSOConfig{}, err
+	}
+	return s.SSO[n], nil
+}
+
+// GetSelectedSSOName returns the name of the selected SSO name where
+// the input is the option passed in via the CLI (should be an empty string)
+// if user did not specify a value on the CLI
+func (s *Settings) GetSelectedSSOName(name string) (string, error) {
+	if name != "" {
+		if _, ok := s.SSO[name]; ok {
+			return name, nil
+		}
+
+		return "", fmt.Errorf("'%s' is not a valid AWS SSO Instance", name)
 	}
 
-	if c, ok := s.SSO[s.DefaultSSO]; ok && s.DefaultSSO != "Default" {
-		return c, nil
+	if _, ok := s.SSO[s.DefaultSSO]; ok {
+		return s.DefaultSSO, nil
 	}
 
-	if c, ok := s.SSO["Default"]; ok && name == "" {
-		return c, nil
+	if _, ok := s.SSO["Default"]; ok {
+		return "Default", nil
 	}
-	return &SSOConfig{}, fmt.Errorf("No available SSOConfig Provider")
+	return "", fmt.Errorf("No available AWS SSO Instance")
 }
 
 // Returns the Tag name => Environment variable name

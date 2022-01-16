@@ -2,6 +2,10 @@
 
 ## [1.7.1] - Unreleased
 
+### Bug Fixes
+
+ * `AWS_SSO` env var is now set with the `eval` and `exec` command #251 
+
 ### Changes
 
  * `flush` now flushes the STS IAM Role credentials first by default #236

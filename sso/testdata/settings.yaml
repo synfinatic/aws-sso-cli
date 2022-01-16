@@ -39,7 +39,7 @@ SSOConfig:
                   Type: Sub Account
     Another:
         SSORegion: us-east-1
-        StartUrl: https://d-754545454.awsapps.com/start
+        StartUrl: https://d-755555555.awsapps.com/start
         Accounts:
             182347455:
                 Name: Whatever

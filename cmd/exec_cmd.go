@@ -132,6 +132,7 @@ func execShellEnvs(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, r
 	credsPtr := GetRoleCredentials(ctx, awssso, accountid, role)
 	creds := *credsPtr
 
+	ssoName, _ := ctx.Settings.GetSelectedSSOName(ctx.Cli.SSO)
 	shellVars := map[string]string{
 		"AWS_ACCESS_KEY_ID":          creds.AccessKeyId,
 		"AWS_SECRET_ACCESS_KEY":      creds.SecretAccessKey,
@@ -140,7 +141,7 @@ func execShellEnvs(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, r
 		"AWS_SSO_ROLE_NAME":          creds.RoleName,
 		"AWS_SSO_SESSION_EXPIRATION": creds.ExpireString(),
 		"AWS_SSO_ROLE_ARN":           utils.MakeRoleARN(creds.AccountId, creds.RoleName),
-		"AWS_SSO":                    ctx.Cli.SSO,
+		"AWS_SSO":                    ssoName,
 	}
 
 	if len(region) > 0 {
