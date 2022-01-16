@@ -65,16 +65,47 @@ func (suite *SettingsTestSuite) TestGetSelectedSSO() {
 	t := suite.T()
 
 	sso, err := suite.settings.GetSelectedSSO("Default")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, "https://d-754545454.awsapps.com/start", sso.StartUrl)
 
+	sso, err = suite.settings.GetSelectedSSO("Another")
+	assert.NoError(t, err)
+	assert.Equal(t, "https://d-755555555.awsapps.com/start", sso.StartUrl)
+
 	sso, err = suite.settings.GetSelectedSSO("Foobar")
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Equal(t, "", sso.StartUrl)
 
 	sso, err = suite.settings.GetSelectedSSO("")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, "https://d-754545454.awsapps.com/start", sso.StartUrl)
+}
+
+func (suite *SettingsTestSuite) TestGetSelectedSSOName() {
+	t := suite.T()
+
+	name, err := suite.settings.GetSelectedSSOName("Default")
+	assert.NoError(t, err)
+	assert.Equal(t, "Default", name)
+
+	name, err = suite.settings.GetSelectedSSOName("Foobar")
+	assert.Error(t, err)
+	assert.Equal(t, "", name)
+
+	name, err = suite.settings.GetSelectedSSOName("Another")
+	assert.NoError(t, err)
+	assert.Equal(t, "Another", name)
+
+	name, err = suite.settings.GetSelectedSSOName("")
+	assert.NoError(t, err)
+	assert.Equal(t, "Default", name)
+
+	// what if user removes this value from the config file?
+	s := *suite.settings
+	s.DefaultSSO = ""
+	name, err = (&s).GetSelectedSSOName("")
+	assert.NoError(t, err)
+	assert.Equal(t, "Default", name)
 }
 
 func (suite *SettingsTestSuite) TestCreatedAt() {
