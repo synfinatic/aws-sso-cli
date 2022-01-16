@@ -269,7 +269,7 @@ func (as *AWSSSO) CreateToken() error {
 		}
 	}
 
-	secs, _ := time.ParseDuration(fmt.Sprintf("%ds", *resp.ExpiresIn))
+	secs, _ := time.ParseDuration(fmt.Sprintf("%ds", *resp.ExpiresIn)) // seconds
 	as.Token = storage.CreateTokenResponse{
 		AccessToken:  aws.StringValue(resp.AccessToken),
 		ExpiresIn:    aws.Int64Value(resp.ExpiresIn),
@@ -531,7 +531,7 @@ func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.Role
 		AccessKeyId:     aws.StringValue(output.Credentials.AccessKeyId),
 		SecretAccessKey: aws.StringValue(output.Credentials.SecretAccessKey),
 		SessionToken:    aws.StringValue(output.Credentials.SessionToken),
-		Expiration:      aws.TimeValue(output.Credentials.Expiration).Unix(),
+		Expiration:      aws.TimeValue(output.Credentials.Expiration).UnixMilli(),
 	}
 	return ret, nil
 }
