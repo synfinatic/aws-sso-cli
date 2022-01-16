@@ -136,6 +136,7 @@ func main() {
 		if err = setupWizard(&run_ctx); err != nil {
 			log.Fatalf("%s", err.Error())
 		}
+		cli.ConfigFile = utils.GetHomePath(cli.ConfigFile)
 	} else if err != nil {
 		log.WithError(err).Fatalf("Unable to open config file: %s", cli.ConfigFile)
 	}
