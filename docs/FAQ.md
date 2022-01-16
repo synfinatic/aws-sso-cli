@@ -11,6 +11,7 @@
  * [What are the purpose of the Tags?](#what-are-the-purpose-of-the-tags)
  * [Which SecureStore should I use?](#which-securestore-should-i-use)
  * [Using non-default AWS SSO instances with auto-complete](#using-non-default-aws-sso-instances-with-auto-complete)
+ * [Error: Invalid grant provided](#error-invalid-grant-provided)
 
 ### How do I delete all secrets from the macOS keychain?
 
@@ -234,3 +235,13 @@ Note, the following shorter version of specifying it as a single command does no
 ```bash
 $ AWS_SSO=OtherInstance aws-sso eval ...
 ```
+
+### Error: Invalid grant provided
+
+If you get this error from AWS:
+
+<!-- https://github.com/synfinatic/aws-sso-cli/issues/166 -->
+![](https://user-images.githubusercontent.com/1075352/149675666-64512a6a-f252-4841-8222-a2dc1f8f7c1f.png)
+
+Then the most likely cause is you selected the wrong AWS Region for [SSORegion](
+config.md#ssoregion) in the config file.

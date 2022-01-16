@@ -10,6 +10,8 @@
  * Remove old config settings that no longer exist #254
  * `cache` command no longer flushes the Expires field for role credentials
     or the role History
+ * Auto-guided setup now loads the config so the user defined command is
+    successful #260
 
 ### Changes
 
