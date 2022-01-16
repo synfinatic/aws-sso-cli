@@ -47,10 +47,6 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 		return fmt.Errorf("eval is not supported on Windows unless running under bash")
 	}
 
-	if ctx.Cli.Eval.Clear {
-		return unsetEnvVars(ctx)
-	}
-
 	var role string
 	var accountid int64
 
@@ -78,6 +74,11 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 	region := ctx.Settings.GetDefaultRegion(accountid, role, ctx.Cli.Eval.NoRegion)
 
 	awssso := doAuth(ctx)
+
+	if ctx.Cli.Eval.Clear {
+		return unsetEnvVars(ctx)
+	}
+
 	for k, v := range execShellEnvs(ctx, awssso, accountid, role, region) {
 		if len(v) == 0 {
 			fmt.Printf("unset %s\n", k)
@@ -110,6 +111,10 @@ func unsetEnvVars(ctx *RunContext) error {
 	} else if os.Getenv("AWS_DEFAULT_REGION") != os.Getenv("AWS_SSO_DEFAULT_REGION") {
 		// clear the tracking variable if we don't match
 		envs = append(envs, "AWS_SSO_DEFAULT_REGION")
+	}
+
+	for _, env := range ctx.Settings.GetEnvVarTags() {
+		envs = append(envs, env)
 	}
 
 	for _, e := range envs {

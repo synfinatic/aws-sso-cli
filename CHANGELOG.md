@@ -11,6 +11,7 @@
  * Add a lot more `ProfileFormat` functions via sprig #244
  * `flush` command gives users more control over what is flushed
  * Add support for `SourceIdentity` for AssumeRole operations
+ * Add `EnvVarTags` config file option #134
 
 ## [1.7.0] - 2022-01-09
 

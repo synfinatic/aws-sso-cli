@@ -62,6 +62,10 @@ ListFields:
     - <field 1>
     - <field 2>
     - <field N>
+EnvVarTags:
+    - <Tag1>
+    - <Tag2>
+    - <TagN>
 ```
 
 ## SSOConfig
@@ -339,3 +343,15 @@ Specify which fields to display via the `list` command.  Valid options are:
  * `RoleName` -- Role name
  * `SSO` -- AWS SSO instance name
  * `Via` -- Role Chain Via
+
+## EnvVarTags
+
+List of tag keys that should be set as a shell environment variable when
+using the `eval` or `exec` commands.
+
+**Note:** These environment variables are considered completely owned and
+controlled by `aws-sso` so any existing value will be overwritten.
+
+**Note:** This feature is not compatible when using roles using the 
+`$AWS_PROFILE` via the `config` command.
+
