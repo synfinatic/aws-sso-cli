@@ -27,6 +27,7 @@ Other Pages:
  * [Quick Start & Installation Guide](docs/quickstart.md)
  * [Configuration](docs/config.md)
  * [Frequently Asked Questions](docs/FAQ.md)
+ * [Compared to AWS Vault](docs/aws-vault.md)
  * [Releases](https://github.com/synfinatic/aws-sso-cli/releases)
  * [Changelog](CHANGELOG.md)
 
@@ -36,7 +37,11 @@ Other Pages:
 AWS SSO CLI is a secure replacement for using the [aws configure sso](
 https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html)
 wizard with a focus on security and ease of use for organizations with
-many AWS Accounts and/or users with many IAM Roles to assume.
+many AWS Accounts and/or users with many IAM Roles to assume. It shares
+a lot in common with [aws-vault](https://github.com/99designs/aws-vault),
+but is more focused on the AWS SSO use case instead of static API credentials.
+Check out [this page](docs/aws-vault.md) for more information on how these
+two tools compare.
 
 AWS SSO CLI requires your AWS account(s) to be setup with [AWS SSO](
 https://aws.amazon.com/single-sign-on/)!  If your organization is using the
