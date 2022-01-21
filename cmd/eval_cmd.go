@@ -33,6 +33,7 @@ type EvalCmd struct {
 	Arn       string `kong:"short='a',help='ARN of role to assume',predictor='arn'"`
 	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',predictor='accountId'"`
 	Role      string `kong:"short='R',help='Name of AWS Role to assume',predictor='role'"`
+	Profile   string `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile'"`
 
 	Clear    bool   `kong:"short='c',help='Generate \"unset XXXX\" commands to clear environment'"`
 	NoRegion bool   `kong:"short='n',help='Do not set/clear AWS_DEFAULT_REGION from config.yaml'"`
@@ -56,19 +57,28 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 
 	// refreshing?
 	if ctx.Cli.Eval.Refresh {
-		if len(ctx.Cli.Eval.EnvArn) == 0 {
+		if ctx.Cli.Eval.EnvArn != "" {
 			return fmt.Errorf("Unable to determine current IAM role")
 		}
 		accountid, role, err = utils.ParseRoleARN(ctx.Cli.Eval.EnvArn)
 		if err != nil {
 			return err
 		}
-	} else if len(ctx.Cli.Eval.Arn) > 0 {
+	} else if ctx.Cli.Eval.Profile != "" {
+		cache := ctx.Settings.Cache.GetSSO()
+		rFlat, err := cache.Roles.GetRoleByProfile(ctx.Cli.Eval.Profile, ctx.Settings)
+		if err != nil {
+			return err
+		}
+
+		role = rFlat.RoleName
+		accountid = rFlat.AccountId
+	} else if ctx.Cli.Eval.Arn != "" {
 		accountid, role, err = utils.ParseRoleARN(ctx.Cli.Eval.Arn)
 		if err != nil {
 			return err
 		}
-	} else if len(ctx.Cli.Eval.Role) > 0 && ctx.Cli.Eval.AccountId > 0 {
+	} else if ctx.Cli.Eval.Role != "" && ctx.Cli.Eval.AccountId > 0 {
 		// if CLI args are speecified, use that
 		role = ctx.Cli.Eval.Role
 		accountid = ctx.Cli.Eval.AccountId

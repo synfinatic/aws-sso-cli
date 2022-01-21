@@ -42,11 +42,12 @@ type ConsoleCmd struct {
 	// Console actually should honor the --region flag
 	Region   string `kong:"help='AWS Region',env='AWS_DEFAULT_REGION',predictor='region'"`
 	Duration int64  `kong:"short='d',help='AWS Session duration in minutes (default 60)'"` // default stored in DEFAULT_CONFIG
-	Prompt   bool   `kong:"short='p',help='Force interactive prompt to select role'"`
+	Prompt   bool   `kong:"short='P',help='Force interactive prompt to select role'"`
 
 	Arn       string `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
 	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNT_ID',predictor='accountId'"`
 	Role      string `kong:"short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE_NAME',predictor='role'"`
+	Profile   string `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile'"`
 
 	AccessKeyId     string `kong:"env='AWS_ACCESS_KEY_ID',hidden"`
 	SecretAccessKey string `kong:"env='AWS_SECRET_ACCESS_KEY',hidden"`
@@ -62,6 +63,15 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 
 	if ctx.Cli.Console.Prompt {
 		return consolePrompt(ctx)
+	} else if ctx.Cli.Console.Profile != "" {
+		awssso := doAuth(ctx)
+		cache := ctx.Settings.Cache.GetSSO()
+		rFlat, err := cache.Roles.GetRoleByProfile(ctx.Cli.Console.Profile, ctx.Settings)
+		if err != nil {
+			return err
+		}
+
+		return openConsole(ctx, awssso, rFlat.AccountId, rFlat.RoleName)
 	} else if ctx.Cli.Console.Arn != "" {
 		awssso := doAuth(ctx)
 

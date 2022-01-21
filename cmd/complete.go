@@ -26,6 +26,7 @@ import (
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/goccy/go-yaml"
 	"github.com/posener/complete"
+	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/synfinatic/aws-sso-cli/utils"
 )
@@ -35,6 +36,7 @@ type Predictor struct {
 	accountids []string
 	roles      []string
 	arns       []string
+	profiles   []string
 }
 
 // AvailableAwsRegions lists all the AWS regions that AWS provides
@@ -91,13 +93,19 @@ func NewPredictor(cacheFile, configFile string) *Predictor {
 	uniqueRoles := map[string]bool{}
 
 	cache := c.GetSSO()
-	//	fmt.Printf("cache: %s", spew.Sdump(c))
-	for i, a := range cache.Roles.Accounts {
-		id, _ := utils.AccountIdToString(i)
+	for aid := range cache.Roles.Accounts {
+		id, _ := utils.AccountIdToString(aid)
 		p.accountids = append(p.accountids, id)
-		for role, r := range a.Roles {
-			p.arns = append(p.arns, r.Arn)
-			uniqueRoles[role] = true
+
+		for roleName, rFlat := range cache.Roles.GetAccountRoles(aid) {
+			p.arns = append(p.arns, rFlat.Arn)
+			uniqueRoles[roleName] = true
+			profile, err := rFlat.ProfileName(settings)
+			if err != nil {
+				log.Warnf(err.Error())
+				continue
+			}
+			p.profiles = append(p.profiles, profile)
 		}
 	}
 
@@ -159,4 +167,17 @@ func (p *Predictor) SsoComplete() complete.Predictor {
 		}
 	}
 	return complete.PredictSet(ssos...)
+}
+
+// ProfileComplete returns a list of all the valid AWS_PROFILE values
+func (p *Predictor) ProfileComplete() complete.Predictor {
+	profiles := []string{}
+
+	// The `:` character is considered a word delimiter by bash complete
+	// so we need to escape them
+	for _, x := range p.profiles {
+		profiles = append(profiles, strings.ReplaceAll(x, ":", "\\:"))
+	}
+
+	return complete.PredictSet(profiles...)
 }
