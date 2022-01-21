@@ -33,6 +33,7 @@ type ProcessCmd struct {
 	Arn       string `kong:"short='a',help='ARN of role to assume',xor='arn-1',xor='arn-2',predictor='arn'"`
 	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',xor='arn-1',predictor='accountId'"`
 	Role      string `kong:"short='R',help='Name of AWS Role to assume',xor='arn-2',predictor='role'"`
+	Profile   string `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile'"`
 }
 
 func (cc *ProcessCmd) Run(ctx *RunContext) error {
@@ -45,14 +46,23 @@ func (cc *ProcessCmd) Run(ctx *RunContext) error {
 	role := ctx.Cli.Process.Role
 	account := ctx.Cli.Process.AccountId
 
-	if len(ctx.Cli.Process.Arn) > 0 {
+	if ctx.Cli.Process.Profile != "" {
+		cache := ctx.Settings.Cache.GetSSO()
+		rFlat, err := cache.Roles.GetRoleByProfile(ctx.Cli.Eval.Profile, ctx.Settings)
+		if err != nil {
+			return err
+		}
+
+		role = rFlat.RoleName
+		account = rFlat.AccountId
+	} else if ctx.Cli.Process.Arn != "" {
 		account, role, err = utils.ParseRoleARN(ctx.Cli.Process.Arn)
 		if err != nil {
 			return err
 		}
 	}
 
-	if len(role) == 0 || account == 0 {
+	if role != "" || account == 0 {
 		return fmt.Errorf("Please specify --arn or --account and --role")
 	}
 

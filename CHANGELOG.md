@@ -1,5 +1,15 @@
 # AWS SSO CLI Changelog
 
+## [v1.8.0] - Unreleased
+
+### Changes
+
+ * `console -P` is now `console -p` to force prompting 
+
+### New Features
+
+ * Support specifying the role to assume via the `-p`/`--profile` flag #268
+
 ## [v1.7.1] - 2022-01-16
 
 ### Bug Fixes

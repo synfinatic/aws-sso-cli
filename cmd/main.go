@@ -201,6 +201,7 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 				"accountId": p.AccountComplete(),
 				"arn":       p.ArnComplete(),
 				"fieldList": p.FieldListComplete(),
+				"profile":   p.ProfileComplete(),
 				"region":    p.RegionComplete(),
 				"role":      p.RoleComplete(),
 				"sso":       p.SsoComplete(),
