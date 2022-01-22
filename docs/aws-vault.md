@@ -125,32 +125,37 @@ and configured!
 
 ### Feature Comparison
 
-| Feature                 | aws-vault | aws-sso   |
-|-------------------------|-----------|-----------|
-| Static AWS API Creds    | Yes       | No *      |
-| AWS + SAML              | No        | No        |
-| AWS SSO                 | Yes       | Yes       |
-| SSO Role discovery      | No        | Yes       |
-| Encrypt all creds       | Yes       | Yes       |
-| Read ~/.aws/config      | Yes       | N/A       |
-| Write ~/.aws/config     | No        | Yes       |
-| Open web console        | Yes       | Yes       |
-| User defined ENV vars   | No        | Yes       |
-| $AWS\_PROFILE templates | No        | Yes       |
-| Role chaining           | Yes       | Yes       |
-| CLI Tab auto-complete   | Yes       | Yes       |
-| EC2/ECS Metadata server | Yes       | No *      |
-| Exec a new shell with AWS creds        | Yes  | Yes |
-| Detect $AWS\_PROFILE collision         | No   | Yes |
-| Add AWS credentials into current shell | No   | Yes |
+| Feature                 | aws-vault | aws-sso   | AWS CLI v2 |
+|-------------------------|-----------|-----------|------------|
+| Secure store creds      | Yes       | Yes       | No         |
+| Static AWS API Creds    | Yes       | No \*\*   | Yes        |
+| SAML auth support       | No        | No        | No         |
+| AWS SSO support         | Yes       | Yes       | Yes        |
+| Web Identity support    | Yes       | No        | Yes        |
+| Open AWS web console    | Yes       | Yes       | No         |
+| SSO Role discovery      | No        | Yes       | No         |
+| Read ~/.aws/config      | Yes       | N/A       | Yes        |
+| Write ~/.aws/config     | No        | Yes       | Yes        |
+| User defined ENV vars   | No        | Yes       | No         |
+| $AWS\_PROFILE templates | No        | Yes       | No         |
+| Role chaining           | Yes       | Yes       | Yes        |
+| CLI auto-complete       | Yes       | Yes       | Yes        |
+| EC2/ECS Metadata server | Yes       | No *      | No         |
+| AWS Session tags        | Yes       | No *      | Yes        |
+| AWS Transitive tags     | Yes       | No *      | Yes        |
+| Exec new shell with AWS creds    | Yes  | Yes   | No     |
+| Detect $AWS\_PROFILE collision   | No   | Yes   | Yes    |
+| Add AWS creds into current shell | No   | Yes   | No     |
 
-| Select Role Via      | aws-vault | aws-sso |
-|----------------------|-----------|---------|
-| $AWS\_PROFILE        | Yes       | Yes     |
-| Profile name (CLI)   | Yes       | No *    |
-| Tags                 | No        | Yes     |
-| Role ARN             | No        | Yes     |
-| AccountId & RoleName | No        | Yes     |
+| Select Role Via      | aws-vault | aws-sso | AWS CLI v2 |
+|----------------------|-----------|---------|------------|
+| $AWS\_PROFILE        | Yes       | Yes     | Yes        |
+| Profile name (CLI)   | Yes       | No \*\* | Yes        |
+| Tags                 | No        | Yes     | No         |
+| Role ARN             | No        | Yes     | No         |
+| AccountId & RoleName | No        | Yes     | No         |
 
 
-Note: Items above marked with a `*` are on the `aws-sso` feature roadmap.
+**Note:** Items above marked with a `*` are on the `aws-sso` feature roadmap.
+
+**Note:** Items above marked with a `**` will be in the next release.
