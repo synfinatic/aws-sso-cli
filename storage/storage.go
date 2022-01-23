@@ -46,13 +46,13 @@ type StartDeviceAuthData struct {
 	UserCode                string `json:"userCode"`
 	VerificationUri         string `json:"verificationUri"`
 	VerificationUriComplete string `json:"verificationUriComplete"`
-	ExpiresIn               int64  `json:"expiresIn"`
-	Interval                int64  `json:"interval"`
+	ExpiresIn               int32  `json:"expiresIn"`
+	Interval                int32  `json:"interval"`
 }
 
 type CreateTokenResponse struct {
 	AccessToken  string `json:"accessToken"` // should be cached to issue new creds
-	ExpiresIn    int64  `json:"expiresIn"`   // number of seconds it expires in (from AWS)
+	ExpiresIn    int32  `json:"expiresIn"`   // number of seconds it expires in (from AWS)
 	ExpiresAt    int64  `json:"expiresAt"`   // Unix time when it expires
 	IdToken      string `json:"IdToken"`
 	RefreshToken string `json:"RefreshToken"`
