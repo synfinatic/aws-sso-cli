@@ -49,7 +49,7 @@ type Settings struct {
 	DefaultSSO        string                 `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`   // specify default SSO by key
 	SecureStore       string                 `koanf:"SecureStore" yaml:"SecureStore,omitempty"` // json or keyring
 	DefaultRegion     string                 `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
-	ConsoleDuration   int64                  `koanf:"ConsoleDuration" yaml:"ConsoleDuration,omitempty"`
+	ConsoleDuration   int32                  `koanf:"ConsoleDuration" yaml:"ConsoleDuration,omitempty"`
 	JsonStore         string                 `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
 	UrlAction         string                 `koanf:"UrlAction" yaml:"UrlAction,omitempty"`
 	Browser           string                 `koanf:"Browser" yaml:"Browser,omitempty"`

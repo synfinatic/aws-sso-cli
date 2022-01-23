@@ -19,18 +19,20 @@ package sso
  */
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sso"
-	"github.com/aws/aws-sdk-go/service/ssooidc"
-	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/sso"
+	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
+	oidctypes "github.com/aws/aws-sdk-go-v2/service/ssooidc/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/storage"
@@ -39,8 +41,8 @@ import (
 )
 
 type AWSSSO struct {
-	sso        sso.SSO
-	ssooidc    ssooidc.SSOOIDC
+	sso        sso.Client
+	ssooidc    ssooidc.Client
 	store      storage.SecureStorage
 	ClientName string                      `json:"ClientName"`
 	ClientType string                      `json:"ClientType"`
@@ -55,9 +57,13 @@ type AWSSSO struct {
 }
 
 func NewAWSSSO(s *SSOConfig, store *storage.SecureStorage) *AWSSSO {
-	mySession := session.Must(session.NewSession())
-	oidcSession := ssooidc.New(mySession, aws.NewConfig().WithRegion(s.SSORegion))
-	ssoSession := sso.New(mySession, aws.NewConfig().WithRegion(s.SSORegion))
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(s.SSORegion))
+	if err != nil {
+		log.Fatalf("Unable to get accounts: %s", err.Error())
+	}
+
+	oidcSession := ssooidc.NewFromConfig(cfg)
+	ssoSession := sso.NewFromConfig(cfg)
 
 	as := AWSSSO{
 		sso:        *ssoSession,
@@ -151,17 +157,17 @@ func (as *AWSSSO) RegisterClient() error {
 		ClientType: aws.String(as.ClientType),
 		Scopes:     nil,
 	}
-	resp, err := as.ssooidc.RegisterClient(&input)
+	resp, err := as.ssooidc.RegisterClient(context.TODO(), &input)
 	if err != nil {
 		return err
 	}
 
 	as.ClientData = storage.RegisterClientData{
 		// AuthorizationEndpoint: *resp.AuthorizationEndpoint,
-		ClientId:              aws.StringValue(resp.ClientId),
-		ClientSecret:          aws.StringValue(resp.ClientSecret),
-		ClientIdIssuedAt:      aws.Int64Value(resp.ClientIdIssuedAt),
-		ClientSecretExpiresAt: aws.Int64Value(resp.ClientSecretExpiresAt),
+		ClientId:              aws.ToString(resp.ClientId),
+		ClientSecret:          aws.ToString(resp.ClientSecret),
+		ClientIdIssuedAt:      resp.ClientIdIssuedAt,
+		ClientSecretExpiresAt: resp.ClientSecretExpiresAt,
 		// TokenEndpoint:         *resp.TokenEndpoint,
 	}
 	err = as.store.SaveRegisterClientData(as.StoreKey(), as.ClientData)
@@ -179,18 +185,18 @@ func (as *AWSSSO) StartDeviceAuthorization() error {
 		ClientId:     aws.String(as.ClientData.ClientId),
 		ClientSecret: aws.String(as.ClientData.ClientSecret),
 	}
-	resp, err := as.ssooidc.StartDeviceAuthorization(&input)
+	resp, err := as.ssooidc.StartDeviceAuthorization(context.TODO(), &input)
 	if err != nil {
 		return err
 	}
 
 	as.DeviceAuth = storage.StartDeviceAuthData{
-		DeviceCode:              aws.StringValue(resp.DeviceCode),
-		UserCode:                aws.StringValue(resp.UserCode),
-		VerificationUri:         aws.StringValue(resp.VerificationUri),
-		VerificationUriComplete: aws.StringValue(resp.VerificationUriComplete),
-		ExpiresIn:               aws.Int64Value(resp.ExpiresIn),
-		Interval:                aws.Int64Value(resp.Interval),
+		DeviceCode:              aws.ToString(resp.DeviceCode),
+		UserCode:                aws.ToString(resp.UserCode),
+		VerificationUri:         aws.ToString(resp.VerificationUri),
+		VerificationUriComplete: aws.ToString(resp.VerificationUriComplete),
+		ExpiresIn:               resp.ExpiresIn,
+		Interval:                resp.Interval,
 	}
 	log.Debugf("Created OIDC device code for %s (expires in: %ds)",
 		as.StartUrl, as.DeviceAuth.ExpiresIn)
@@ -244,39 +250,33 @@ func (as *AWSSSO) CreateToken() error {
 	var resp *ssooidc.CreateTokenOutput
 
 	for {
-		resp, err = as.ssooidc.CreateToken(&input)
+		resp, err = as.ssooidc.CreateToken(context.TODO(), &input)
 		if err == nil {
 			break
 		}
 
-		e, ok := err.(awserr.Error)
-		if !ok {
-			return err
-		}
+		var sde *oidctypes.SlowDownException
+		var ape *oidctypes.AuthorizationPendingException
 
-		switch e.Code() {
-		case ssooidc.ErrCodeSlowDownException:
+		if errors.As(err, &sde) {
 			log.Debugf("Slowing down CreateToken()")
 			retryInterval += slowDown
-			fallthrough
-
-		case ssooidc.ErrCodeAuthorizationPendingException:
 			time.Sleep(retryInterval)
-			continue
-
-		default:
+		} else if errors.As(err, &ape) {
+			time.Sleep(retryInterval)
+		} else {
 			return err
 		}
 	}
 
-	secs, _ := time.ParseDuration(fmt.Sprintf("%ds", *resp.ExpiresIn)) // seconds
+	secs, _ := time.ParseDuration(fmt.Sprintf("%ds", resp.ExpiresIn)) // seconds
 	as.Token = storage.CreateTokenResponse{
-		AccessToken:  aws.StringValue(resp.AccessToken),
-		ExpiresIn:    aws.Int64Value(resp.ExpiresIn),
+		AccessToken:  aws.ToString(resp.AccessToken),
+		ExpiresIn:    resp.ExpiresIn,
 		ExpiresAt:    time.Now().Add(secs).Unix(),
-		IdToken:      aws.StringValue(resp.IdToken),
-		RefreshToken: aws.StringValue(resp.RefreshToken), // per AWS docs, not currently implemented
-		TokenType:    aws.StringValue(resp.TokenType),
+		IdToken:      aws.ToString(resp.IdToken),
+		RefreshToken: aws.ToString(resp.RefreshToken), // per AWS docs, not currently implemented
+		TokenType:    aws.ToString(resp.TokenType),
 	}
 	err = as.store.SaveCreateTokenResponse(as.StoreKey(), as.Token)
 	if err != nil {
@@ -321,9 +321,9 @@ func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 	input := sso.ListAccountRolesInput{
 		AccessToken: aws.String(as.Token.AccessToken),
 		AccountId:   aws.String(account.AccountId),
-		MaxResults:  aws.Int64(1000),
+		MaxResults:  aws.Int32(1000),
 	}
-	output, err := as.sso.ListAccountRoles(&input)
+	output, err := as.sso.ListAccountRoles(context.TODO(), &input)
 	if err != nil {
 		return as.Roles[account.AccountId], err
 	}
@@ -335,14 +335,14 @@ func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 			return as.Roles[account.AccountId], fmt.Errorf("Unable to parse accountid %s: %s",
 				account.AccountId, err.Error())
 		}
-		ssoRole, err := as.SSOConfig.GetRole(aId, aws.StringValue(r.RoleName))
+		ssoRole, err := as.SSOConfig.GetRole(aId, aws.ToString(r.RoleName))
 		if err != nil && len(ssoRole.Via) > 0 {
 			via = ssoRole.Via
 		}
 		as.Roles[account.AccountId] = append(as.Roles[account.AccountId], RoleInfo{
 			Id:           i,
-			AccountId:    aws.StringValue(r.AccountId),
-			RoleName:     aws.StringValue(r.RoleName),
+			AccountId:    aws.ToString(r.AccountId),
+			RoleName:     aws.ToString(r.RoleName),
 			AccountName:  account.AccountName,
 			EmailAddress: account.EmailAddress,
 			SSORegion:    as.SsoRegion,
@@ -350,9 +350,9 @@ func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 			Via:          via,
 		})
 	}
-	for aws.StringValue(output.NextToken) != "" {
+	for aws.ToString(output.NextToken) != "" {
 		input.NextToken = output.NextToken
-		output, err := as.sso.ListAccountRoles(&input)
+		output, err := as.sso.ListAccountRoles(context.TODO(), &input)
 		if err != nil {
 			return as.Roles[account.AccountId], err
 		}
@@ -360,8 +360,8 @@ func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 		for i, r := range output.RoleList {
 			as.Roles[account.AccountId] = append(as.Roles[account.AccountId], RoleInfo{
 				Id:           x + i,
-				AccountId:    aws.StringValue(r.AccountId),
-				RoleName:     aws.StringValue(r.RoleName),
+				AccountId:    aws.ToString(r.AccountId),
+				RoleName:     aws.ToString(r.RoleName),
 				AccountName:  account.AccountName,
 				EmailAddress: account.EmailAddress,
 			})
@@ -397,23 +397,23 @@ func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {
 
 	input := sso.ListAccountsInput{
 		AccessToken: aws.String(as.Token.AccessToken),
-		MaxResults:  aws.Int64(1000),
+		MaxResults:  aws.Int32(1000),
 	}
-	output, err := as.sso.ListAccounts(&input)
+	output, err := as.sso.ListAccounts(context.TODO(), &input)
 	if err != nil {
 		return as.Accounts, err
 	}
 	for i, r := range output.AccountList {
 		as.Accounts = append(as.Accounts, AccountInfo{
 			Id:           i,
-			AccountId:    aws.StringValue(r.AccountId),
-			AccountName:  aws.StringValue(r.AccountName),
-			EmailAddress: aws.StringValue(r.EmailAddress),
+			AccountId:    aws.ToString(r.AccountId),
+			AccountName:  aws.ToString(r.AccountName),
+			EmailAddress: aws.ToString(r.EmailAddress),
 		})
 	}
-	for aws.StringValue(output.NextToken) != "" {
+	for aws.ToString(output.NextToken) != "" {
 		input.NextToken = output.NextToken
-		output, err := as.sso.ListAccounts(&input)
+		output, err := as.sso.ListAccounts(context.TODO(), &input)
 		if err != nil {
 			return as.Accounts, err
 		}
@@ -421,9 +421,9 @@ func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {
 		for i, r := range output.AccountList {
 			as.Accounts = append(as.Accounts, AccountInfo{
 				Id:           x + i,
-				AccountId:    aws.StringValue(r.AccountId),
-				AccountName:  aws.StringValue(r.AccountName),
-				EmailAddress: aws.StringValue(r.EmailAddress),
+				AccountId:    aws.ToString(r.AccountId),
+				AccountName:  aws.ToString(r.AccountName),
+				EmailAddress: aws.ToString(r.EmailAddress),
 			})
 		}
 	}
@@ -450,7 +450,7 @@ func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.Role
 			AccountId:   aws.String(aId),
 			RoleName:    aws.String(role),
 		}
-		output, err := as.sso.GetRoleCredentials(&input)
+		output, err := as.sso.GetRoleCredentials(context.TODO(), &input)
 		if err != nil {
 			return storage.RoleCredentials{}, err
 		}
@@ -458,10 +458,10 @@ func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.Role
 		ret := storage.RoleCredentials{
 			AccountId:       accountId,
 			RoleName:        role,
-			AccessKeyId:     aws.StringValue(output.RoleCredentials.AccessKeyId),
-			SecretAccessKey: aws.StringValue(output.RoleCredentials.SecretAccessKey),
-			SessionToken:    aws.StringValue(output.RoleCredentials.SessionToken),
-			Expiration:      aws.Int64Value(output.RoleCredentials.Expiration),
+			AccessKeyId:     aws.ToString(output.RoleCredentials.AccessKeyId),
+			SecretAccessKey: aws.ToString(output.RoleCredentials.SecretAccessKey),
+			SessionToken:    aws.ToString(output.RoleCredentials.SessionToken),
+			Expiration:      output.RoleCredentials.Expiration,
 		}
 
 		return ret, nil
@@ -491,18 +491,20 @@ func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.Role
 		return storage.RoleCredentials{}, err
 	}
 
-	sessionCreds := credentials.NewStaticCredentials(
+	cfgCreds := credentials.NewStaticCredentialsProvider(
 		creds.AccessKeyId,
 		creds.SecretAccessKey,
 		creds.SessionToken,
 	)
-	mySession := session.Must(session.NewSessionWithOptions(session.Options{
-		Config: aws.Config{
-			Region:      aws.String(as.SsoRegion),
-			Credentials: sessionCreds,
-		},
-	}))
-	stsSession := sts.New(mySession)
+
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(as.SsoRegion),
+		config.WithCredentialsProvider(cfgCreds),
+	)
+	if err != nil {
+		return storage.RoleCredentials{}, err
+	}
+	stsSession := sts.NewFromConfig(cfg)
 
 	previousAccount, _ := utils.AccountIdToString(creds.AccountId)
 	previousRole := fmt.Sprintf("%s@%s", creds.RoleName, previousAccount)
@@ -520,7 +522,7 @@ func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.Role
 		input.SourceIdentity = aws.String(configRole.SourceIdentity)
 	}
 
-	output, err := stsSession.AssumeRole(&input)
+	output, err := stsSession.AssumeRole(context.TODO(), &input)
 	if err != nil {
 		return storage.RoleCredentials{}, err
 	}
@@ -528,34 +530,10 @@ func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.Role
 	ret := storage.RoleCredentials{
 		AccountId:       accountId,
 		RoleName:        role,
-		AccessKeyId:     aws.StringValue(output.Credentials.AccessKeyId),
-		SecretAccessKey: aws.StringValue(output.Credentials.SecretAccessKey),
-		SessionToken:    aws.StringValue(output.Credentials.SessionToken),
-		Expiration:      aws.TimeValue(output.Credentials.Expiration).UnixMilli(),
+		AccessKeyId:     aws.ToString(output.Credentials.AccessKeyId),
+		SecretAccessKey: aws.ToString(output.Credentials.SecretAccessKey),
+		SessionToken:    aws.ToString(output.Credentials.SessionToken),
+		Expiration:      aws.ToTime(output.Credentials.Expiration).UnixMilli(),
 	}
 	return ret, nil
-}
-
-// returns all of the available tags from AWS SSO
-func (as *AWSSSO) GetAllTags() *TagsList {
-	tags := NewTagsList()
-	accounts, err := as.GetAccounts()
-	if err != nil {
-		log.Fatalf("Unable to get accounts: %s", err.Error())
-	}
-
-	for _, aInfo := range accounts {
-		roles, err := as.GetRoles(aInfo)
-		if err != nil {
-			log.Fatalf("Unable to get roles: %s", err.Error())
-		}
-
-		for _, role := range roles {
-			tags.Add("RoleName", role.RoleName)
-			tags.Add("AccountId", role.AccountId)
-			tags.Add("AccountName", role.AccountName)
-			tags.Add("EmailAddress", role.EmailAddress)
-		}
-	}
-	return tags
 }

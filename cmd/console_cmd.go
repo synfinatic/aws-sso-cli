@@ -19,6 +19,7 @@ package main
  */
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -26,9 +27,10 @@ import (
 	"net/url"
 	"os/user"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/c-bata/go-prompt"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
@@ -41,7 +43,7 @@ const AWS_FEDERATED_URL = "https://signin.aws.amazon.com/federation"
 type ConsoleCmd struct {
 	// Console actually should honor the --region flag
 	Region   string `kong:"help='AWS Region',env='AWS_DEFAULT_REGION',predictor='region'"`
-	Duration int64  `kong:"short='d',help='AWS Session duration in minutes (default 60)'"` // default stored in DEFAULT_CONFIG
+	Duration int32  `kong:"short='d',help='AWS Session duration in minutes (default 60)'"` // default stored in DEFAULT_CONFIG
 	Prompt   bool   `kong:"short='P',help='Force interactive prompt to select role'"`
 
 	Arn       string `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
@@ -94,25 +96,42 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 	return consolePrompt(ctx)
 }
 
-func consoleViaEnvVars(ctx *RunContext, duration int64) error {
-	creds := storage.RoleCredentials{
-		AccessKeyId:     ctx.Cli.Console.AccessKeyId,
-		SecretAccessKey: ctx.Cli.Console.SecretAccessKey,
-		SessionToken:    ctx.Cli.Console.SessionToken,
+func stsSession(ctx *RunContext) (*sts.Client, error) {
+	cfgCreds := credentials.NewStaticCredentialsProvider(
+		ctx.Cli.Console.AccessKeyId,
+		ctx.Cli.Console.SecretAccessKey,
+		ctx.Cli.Console.SessionToken,
+	)
+
+	ssoRegion := ctx.Settings.SSO[ctx.Cli.SSO].SSORegion
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(ssoRegion),
+		config.WithCredentialsProvider(cfgCreds),
+	)
+	if err != nil {
+		return &sts.Client{}, err
 	}
 
+	return sts.NewFromConfig(cfg), nil
+}
+
+func consoleViaEnvVars(ctx *RunContext, duration int32) error {
 	// ask AWS STS for who we are so we can look it up in our cache
-	s := session.Must(session.NewSession())
-	stsSession := sts.New(s, aws.NewConfig().WithRegion("us-east-1"))
+
+	stsHandle, err := stsSession(ctx)
+	if err != nil {
+		return err
+	}
+
 	input := sts.GetCallerIdentityInput{}
-	output, err := stsSession.GetCallerIdentity(&input)
+	output, err := stsHandle.GetCallerIdentity(context.TODO(), &input)
 	if err != nil {
 		return fmt.Errorf("Unable to call sts get-caller-identity: %s", err.Error())
 	}
 
-	accountid, role, err := utils.ParseRoleARN(aws.StringValue(output.Arn))
+	accountid, role, err := utils.ParseRoleARN(aws.ToString(output.Arn))
 	if err != nil {
-		return fmt.Errorf("Unable to parse ARN: %s", aws.StringValue(output.Arn))
+		return fmt.Errorf("Unable to parse ARN: %s", aws.ToString(output.Arn))
 	}
 
 	// now we know who we are, get our configured default region
@@ -120,10 +139,16 @@ func consoleViaEnvVars(ctx *RunContext, duration int64) error {
 	if ctx.Cli.Console.Region != "" {
 		region = ctx.Cli.Console.Region
 	}
+
+	creds := storage.RoleCredentials{
+		AccessKeyId:     ctx.Cli.Console.AccessKeyId,
+		SecretAccessKey: ctx.Cli.Console.SecretAccessKey,
+		SessionToken:    ctx.Cli.Console.SessionToken,
+	}
 	return openConsoleAccessKey(ctx, &creds, duration, region)
 }
 
-func consoleViaSDK(ctx *RunContext, duration int64) error {
+func consoleViaSDK(ctx *RunContext, duration int32) error {
 	awssso := doAuth(ctx)
 	rFlat, err := ctx.Settings.Cache.GetSSO().Roles.GetRoleByProfile(ctx.Cli.Console.AwsProfile, ctx.Settings)
 	if err == nil {
@@ -140,25 +165,29 @@ func consoleViaSDK(ctx *RunContext, duration int64) error {
 
 	// have to use the Go SDK to load our creds because apparently the profile
 	// is based on static API creds
-	s := session.Must(session.NewSession())
-	stsSession := sts.New(s, aws.NewConfig().WithRegion(region))
+
+	stsHandle, err := stsSession(ctx)
+	if err != nil {
+		return err
+	}
+
 	u, err := user.Current()
 	if err != nil {
 		return err
 	}
 
 	input := sts.GetFederationTokenInput{
-		DurationSeconds: aws.Int64(duration * 60),
+		DurationSeconds: aws.Int32(duration * 60),
 		Name:            aws.String(u.Username),
 	}
-	token, err := stsSession.GetFederationToken(&input)
+	token, err := stsHandle.GetFederationToken(context.TODO(), &input)
 	if err != nil {
 		return err
 	}
 	creds := storage.RoleCredentials{
-		AccessKeyId:     aws.StringValue(token.Credentials.AccessKeyId),
-		SecretAccessKey: aws.StringValue(token.Credentials.SecretAccessKey),
-		SessionToken:    aws.StringValue(token.Credentials.SessionToken),
+		AccessKeyId:     aws.ToString(token.Credentials.AccessKeyId),
+		SecretAccessKey: aws.ToString(token.Credentials.SecretAccessKey),
+		SessionToken:    aws.ToString(token.Credentials.SessionToken),
 	}
 
 	return openConsoleAccessKey(ctx, &creds, duration, region)
@@ -228,7 +257,7 @@ func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role stri
 }
 
 // openConsoleAccessKey opens the Frederated Console access URL
-func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials, duration int64, region string) error {
+func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials, duration int32, region string) error {
 	signin := SigninTokenUrlParams{
 		SessionDuration: duration * 60,
 		Session: SessionUrlParams{
@@ -271,7 +300,7 @@ type LoginResponse struct {
 }
 
 type SigninTokenUrlParams struct {
-	SessionDuration int64
+	SessionDuration int32
 	Session         SessionUrlParams // URL encoded SessionUrlParams
 }
 
