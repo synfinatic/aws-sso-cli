@@ -33,7 +33,8 @@ type JsonStore struct {
 	RegisterClient      map[string]RegisterClientData  `json:"RegisterClient,omitempty"`
 	StartDeviceAuth     map[string]StartDeviceAuthData `json:"StartDeviceAuth,omitempty"`
 	CreateTokenResponse map[string]CreateTokenResponse `json:"CreateTokenResponse,omitempty"`
-	RoleCredentials     map[string]RoleCredentials     `json:"RoleCredentials,omitempty"`
+	RoleCredentials     map[string]RoleCredentials     `json:"RoleCredentials,omitempty"`   // ARN = key
+	StaticCredentials   map[string]StaticCredentials   `json:"StaticCredentials,omitempty"` // ARN = key
 }
 
 // OpenJsonStore opens our insecure JSON storage backend
@@ -44,6 +45,7 @@ func OpenJsonStore(fileName string) (*JsonStore, error) {
 		StartDeviceAuth:     map[string]StartDeviceAuthData{},
 		CreateTokenResponse: map[string]CreateTokenResponse{},
 		RoleCredentials:     map[string]RoleCredentials{},
+		StaticCredentials:   map[string]StaticCredentials{},
 	}
 
 	cacheBytes, err := ioutil.ReadFile(fileName)
@@ -127,7 +129,7 @@ func (jc *JsonStore) GetRoleCredentials(arn string, token *RoleCredentials) erro
 	var ok bool
 	*token, ok = jc.RoleCredentials[arn]
 	if !ok {
-		return fmt.Errorf("No RoleCredentials for %s", arn)
+		return fmt.Errorf("No RoleCredentials for ARN: %s", arn)
 	}
 	return nil
 }
@@ -136,4 +138,42 @@ func (jc *JsonStore) GetRoleCredentials(arn string, token *RoleCredentials) erro
 func (jc *JsonStore) DeleteRoleCredentials(arn string) error {
 	delete(jc.RoleCredentials, arn)
 	return jc.save()
+}
+
+// SaveStaticCredentials stores the token in the json file
+func (jc *JsonStore) SaveStaticCredentials(arn string, creds StaticCredentials) error {
+	jc.StaticCredentials[arn] = creds
+	return jc.save()
+}
+
+// GetStaticCredentials retrieves the StaticCredentials from the json file
+func (jc *JsonStore) GetStaticCredentials(arn string, creds *StaticCredentials) error {
+	var ok bool
+	*creds, ok = jc.StaticCredentials[arn]
+	if !ok {
+		return fmt.Errorf("No StaticCredentials for ARN: %s", arn)
+	}
+	return nil
+}
+
+// DeleteStaticCredentials deletes the StaticCredentials from the json file
+func (jc *JsonStore) DeleteStaticCredentials(arn string) error {
+	if _, ok := jc.StaticCredentials[arn]; !ok {
+		// return error if key doesn't exist
+		return fmt.Errorf("No StaticCredentials for ARN: %s", arn)
+	}
+
+	delete(jc.StaticCredentials, arn)
+	return jc.save()
+}
+
+// ListStaticCredentials returns all the ARN's of static credentials
+func (jc *JsonStore) ListStaticCredentials() []string {
+	ret := make([]string, len(jc.StaticCredentials))
+	i := 0
+	for k := range jc.StaticCredentials {
+		ret[i] = k
+		i++
+	}
+	return ret
 }

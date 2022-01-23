@@ -114,3 +114,32 @@ func TestExpireISO8601(t *testing.T) {
 	x.Expiration = time.Now().Unix()
 	assert.Equal(t, time.UnixMilli(x.Expiration).Format(time.RFC3339), x.ExpireISO8601())
 }
+
+func TestGetArn(t *testing.T) {
+	x := StaticCredentials{
+		UserName:  "foobar",
+		AccountId: 123456789012,
+	}
+	assert.Equal(t, "arn:aws:iam::123456789012:user/foobar", x.UserArn())
+}
+
+func TestGetAccountIdStr(t *testing.T) {
+	x := StaticCredentials{
+		UserName:  "foobar",
+		AccountId: 23456789012,
+	}
+	assert.Equal(t, "023456789012", x.AccountIdStr())
+
+	x = StaticCredentials{
+		UserName:  "foobar",
+		AccountId: -1,
+	}
+	assert.Panics(t, func() { x.AccountIdStr() })
+}
+
+func TestGetHeader(t *testing.T) {
+	x := StaticCredentials{}
+	h, err := x.GetHeader("Profile")
+	assert.NoError(t, err)
+	assert.Equal(t, "Profile", h)
+}

@@ -331,6 +331,89 @@ func (s *Settings) GetEnvVarTags() map[string]string {
 	return ret
 }
 
+type ProfileMap map[string]map[string]ProfileConfig
+
+type ProfileConfig struct {
+	Arn             string
+	BinaryPath      string
+	ConfigVariables map[string]interface{}
+	Open            string
+	Profile         string
+	Sso             string
+}
+
+// allow os.Executable call to be overridden for unit testing purposes
+var getExecutable func() (string, error) = os.Executable
+
+// GetAllProfiles returns a map of the ProfileConfig for each SSOConfig.
+// takes the binary path to `open` URL with if set
+func (s *Settings) GetAllProfiles(open string) (*ProfileMap, error) {
+	profiles := ProfileMap{}
+
+	binaryPath, err := getExecutable()
+	if err != nil {
+		return &profiles, err
+	}
+
+	// Find all the roles across all of the SSO instances
+	for ssoName, sso := range s.Cache.SSO {
+		for _, role := range sso.Roles.GetAllRoles() {
+			profile, err := role.ProfileName(s)
+			if err != nil {
+				return &profiles, err
+			}
+
+			if _, ok := profiles[ssoName]; !ok {
+				profiles[ssoName] = map[string]ProfileConfig{}
+			}
+
+			profiles[ssoName][role.Arn] = ProfileConfig{
+				Arn:             role.Arn,
+				BinaryPath:      binaryPath,
+				ConfigVariables: s.ConfigVariables,
+				Open:            open,
+				Profile:         profile,
+				Sso:             ssoName,
+			}
+		}
+	}
+
+	return &profiles, nil
+}
+
+// UniqueCheck verifies that all of the profiles are unique
+func (p *ProfileMap) UniqueCheck(s *Settings) error {
+	profileUniqueCheck := map[string][]string{} // ProfileName() => Arn
+
+	for ssoName, sso := range s.Cache.SSO {
+		for _, role := range sso.Roles.GetAllRoles() {
+			profile, err := role.ProfileName(s)
+			if err != nil {
+				return err
+			}
+
+			if match, duplicate := profileUniqueCheck[profile]; duplicate {
+				return fmt.Errorf("Duplicate profile name '%s' for:\n%s: %s\n%s: %s",
+					profile, match[0], match[1], ssoName, role.Arn)
+			}
+			profileUniqueCheck[profile] = []string{ssoName, role.Arn}
+		}
+	}
+
+	return nil
+}
+
+func (p *ProfileMap) IsDuplicate(newProfile string) bool {
+	for _, roles := range *p {
+		for _, config := range roles {
+			if config.Profile == newProfile {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // Refresh should be called any time you load the SSOConfig into memory or add a role
 // to update the Role -> Account references
 func (c *SSOConfig) Refresh(s *Settings) {

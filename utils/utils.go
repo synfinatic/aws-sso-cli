@@ -33,6 +33,8 @@ import (
 	"github.com/skratchdot/open-golang/open" // default opener
 )
 
+const MAX_AWS_ACCOUNTID = 999999999999
+
 // GetHomePath returns the absolute path of the provided path with the first ~
 // replaced with the location of the users home directory and the path rewritten
 // for the host operating system
@@ -214,6 +216,11 @@ func ParseRoleARN(arn string) (int64, string, error) {
 	return aId, role, nil
 }
 
+// ParseUserARN parses an ARN representing a user in long or short format
+func ParseUserARN(arn string) (int64, string, error) {
+	return ParseRoleARN(arn)
+}
+
 // MakeRoleARN create an IAM Role ARN using an int64 for the account
 func MakeRoleARN(account int64, name string) string {
 	a, err := AccountIdToString(account)
@@ -221,6 +228,15 @@ func MakeRoleARN(account int64, name string) string {
 		log.WithError(err).Panicf("Unable to MakeRoleARN")
 	}
 	return fmt.Sprintf("arn:aws:iam::%s:role/%s", a, name)
+}
+
+// MakeUserARN create an IAM User ARN using an int64 for the account
+func MakeUserARN(account int64, name string) string {
+	a, err := AccountIdToString(account)
+	if err != nil {
+		log.WithError(err).Panicf("Unable to MakeUserARN")
+	}
+	return fmt.Sprintf("arn:aws:iam::%s:user/%s", a, name)
 }
 
 // MakeRoleARNs creates an IAM Role ARN using a string for the account and role
@@ -288,7 +304,7 @@ func TimeRemain(expires int64, space bool) (string, error) {
 
 // AccountIdToString returns a string version of AWS AccountID
 func AccountIdToString(a int64) (string, error) {
-	if a < 0 {
+	if a < 0 || a > MAX_AWS_ACCOUNTID {
 		return "", fmt.Errorf("Invalid AWS AccountId: %d", a)
 	}
 	return fmt.Sprintf("%012d", a), nil
