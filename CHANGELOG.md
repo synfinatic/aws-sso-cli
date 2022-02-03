@@ -1,6 +1,11 @@
 # AWS SSO CLI Changelog
 
-## [v1.8.0] - Unreleased
+## [v1.7.2] - Unreleased
+
+### Bug Fixes
+
+ * Cached AWS SSO AccessToken is sometimes invalid even though it was not expired
+    and any calls to SSO were failing.  #279
 
 ### Changes
 
