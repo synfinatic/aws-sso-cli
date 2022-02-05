@@ -128,7 +128,7 @@ and configured!
 | Feature                 | aws-vault | aws-sso   | AWS CLI v2 |
 |-------------------------|-----------|-----------|------------|
 | Secure store creds      | Yes       | Yes       | No         |
-| Static AWS API Creds    | Yes       | No \*\*   | Yes        |
+| Static AWS API Creds    | Yes       | No *      | Yes        |
 | SAML auth support       | No        | No        | No         |
 | AWS SSO support         | Yes       | Yes       | Yes        |
 | Web Identity support    | Yes       | No        | Yes        |
@@ -150,12 +150,10 @@ and configured!
 | Select Role Via      | aws-vault | aws-sso | AWS CLI v2 |
 |----------------------|-----------|---------|------------|
 | $AWS\_PROFILE        | Yes       | Yes     | Yes        |
-| Profile name (CLI)   | Yes       | No \*\* | Yes        |
+| Profile name (CLI)   | Yes       | Yes     | Yes        |
 | Tags                 | No        | Yes     | No         |
 | Role ARN             | No        | Yes     | No         |
 | AccountId & RoleName | No        | Yes     | No         |
 
 
 **Note:** Items above marked with a `*` are on the `aws-sso` feature roadmap.
-
-**Note:** Items above marked with a `**` will be in the next release.
