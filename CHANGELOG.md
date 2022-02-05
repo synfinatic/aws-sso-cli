@@ -1,6 +1,6 @@
 # AWS SSO CLI Changelog
 
-## [v1.7.2] - Unreleased
+## [v1.7.2] - 2022-02-05
 
 ### Bug Fixes
 
@@ -10,6 +10,7 @@
 ### Changes
 
  * `console -P` is now `console -p` to force prompting 
+ * Update to AWS Go SDK v2
 
 ### New Features
 
