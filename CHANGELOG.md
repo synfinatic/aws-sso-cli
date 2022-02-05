@@ -244,7 +244,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.7.1...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.7.2...main
+[v1.7.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.1
 [v1.7.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.1
 [v1.7.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.0
 [v1.6.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.6.1
