@@ -127,7 +127,7 @@ func (c *Cache) Save(updateTime bool) error {
 	}
 	jbytes, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
-		return fmt.Errorf("Unable to masrhal json: %s", err.Error())
+		return fmt.Errorf("Unable to marshal json: %s", err.Error())
 	}
 	err = utils.EnsureDirExists(c.CacheFile())
 	if err != nil {
@@ -377,6 +377,7 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 	return &r, nil
 }
 
+// addSSORoles retrieves all the SSO Roles from AWS SSO and places them in r
 func (c *Cache) addSSORoles(r *Roles, as *AWSSSO) error {
 	cache := c.GetSSO()
 

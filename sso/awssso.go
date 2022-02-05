@@ -20,18 +20,15 @@ package sso
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sso"
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
-	oidctypes "github.com/aws/aws-sdk-go-v2/service/ssooidc/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
@@ -54,6 +51,8 @@ type AWSSSO struct {
 	Accounts   []AccountInfo               `json:"Accounts"`
 	Roles      map[string][]RoleInfo       `json:"Roles"`
 	SSOConfig  *SSOConfig                  `json:"SSOConfig"`
+	urlAction  string                      // cache for future calls
+	browser    string                      // cache for future calls
 }
 
 func NewAWSSSO(s *SSOConfig, store *storage.SecureStorage) *AWSSSO {
@@ -81,209 +80,6 @@ func NewAWSSSO(s *SSOConfig, store *storage.SecureStorage) *AWSSSO {
 
 func (as *AWSSSO) StoreKey() string {
 	return fmt.Sprintf("%s|%s", as.SsoRegion, as.StartUrl)
-}
-
-func (as *AWSSSO) Authenticate(urlAction, browser string) error {
-	// see if we have valid cached data
-	token := storage.CreateTokenResponse{}
-	err := as.store.GetCreateTokenResponse(as.StoreKey(), &token)
-	if err == nil && !token.Expired() {
-		as.Token = token
-		return nil
-	} else if err != nil {
-		log.Debugf(err.Error())
-	} else {
-		if as.Token.ExpiresAt != 0 {
-			t := time.Unix(as.Token.ExpiresAt, 0)
-			log.Infof("Cached SSO token expired at: %s.  Reauthenticating...\n", t.Format("Mon Jan 2 15:04:05 -0700 MST 2006"))
-		} else {
-			log.Infof("Cached SSO token has expired.  Reauthenticating...\n")
-		}
-	}
-
-	// Nope- fall back to our standard process
-	err = as.RegisterClient()
-	if err != nil {
-		return fmt.Errorf("Unable to RegisterClient: %s", err.Error())
-	}
-
-	err = as.StartDeviceAuthorization()
-	if err != nil {
-		return fmt.Errorf("Unable to StartDeviceAuth: %s", err.Error())
-	}
-
-	auth, err := as.GetDeviceAuthInfo()
-	if err != nil {
-		return fmt.Errorf("Unable to get DeviceAuthInfo: %s", err.Error())
-	}
-
-	err = utils.HandleUrl(urlAction, browser, auth.VerificationUriComplete,
-		"Please open the following URL in your browser:\n\n", "\n\n")
-	if err != nil {
-		return err
-	}
-
-	log.Infof("Waiting for SSO authentication...")
-
-	err = as.CreateToken()
-	if err != nil {
-		return fmt.Errorf("Unable to get AWS SSO Token: %s", err.Error())
-	}
-
-	return nil
-}
-
-const (
-	awsSSOClientName = "aws-sso-cli"
-	awsSSOClientType = "public"
-	awsSSOGrantType  = "urn:ietf:params:oauth:grant-type:device_code"
-	// The default values for ODIC defined in:
-	// https://tools.ietf.org/html/draft-ietf-oauth-device-flow-15#section-3.5
-	SLOW_DOWN_SEC  = 5
-	RETRY_INTERVAL = 5
-)
-
-// Does the needful to talk to AWS or read our cache to get the RegisterClientData
-func (as *AWSSSO) RegisterClient() error {
-	log.Tracef("RegisterClient()")
-	err := as.store.GetRegisterClientData(as.StoreKey(), &as.ClientData)
-	if err == nil && !as.ClientData.Expired() {
-		log.Debug("Using RegisterClient cache")
-		return nil
-	}
-
-	input := ssooidc.RegisterClientInput{
-		ClientName: aws.String(as.ClientName),
-		ClientType: aws.String(as.ClientType),
-		Scopes:     nil,
-	}
-	resp, err := as.ssooidc.RegisterClient(context.TODO(), &input)
-	if err != nil {
-		return err
-	}
-
-	as.ClientData = storage.RegisterClientData{
-		// AuthorizationEndpoint: *resp.AuthorizationEndpoint,
-		ClientId:              aws.ToString(resp.ClientId),
-		ClientSecret:          aws.ToString(resp.ClientSecret),
-		ClientIdIssuedAt:      resp.ClientIdIssuedAt,
-		ClientSecretExpiresAt: resp.ClientSecretExpiresAt,
-		// TokenEndpoint:         *resp.TokenEndpoint,
-	}
-	err = as.store.SaveRegisterClientData(as.StoreKey(), as.ClientData)
-	if err != nil {
-		log.WithError(err).Errorf("Unable to save RegisterClientData")
-	}
-	return nil
-}
-
-// Makes the call to AWS to initiate the OIDC auth to the SSO provider.
-func (as *AWSSSO) StartDeviceAuthorization() error {
-	log.Tracef("StartDeviceAuthorization()")
-	input := ssooidc.StartDeviceAuthorizationInput{
-		StartUrl:     aws.String(as.StartUrl),
-		ClientId:     aws.String(as.ClientData.ClientId),
-		ClientSecret: aws.String(as.ClientData.ClientSecret),
-	}
-	resp, err := as.ssooidc.StartDeviceAuthorization(context.TODO(), &input)
-	if err != nil {
-		return err
-	}
-
-	as.DeviceAuth = storage.StartDeviceAuthData{
-		DeviceCode:              aws.ToString(resp.DeviceCode),
-		UserCode:                aws.ToString(resp.UserCode),
-		VerificationUri:         aws.ToString(resp.VerificationUri),
-		VerificationUriComplete: aws.ToString(resp.VerificationUriComplete),
-		ExpiresIn:               resp.ExpiresIn,
-		Interval:                resp.Interval,
-	}
-	log.Debugf("Created OIDC device code for %s (expires in: %ds)",
-		as.StartUrl, as.DeviceAuth.ExpiresIn)
-
-	return nil
-}
-
-type DeviceAuthInfo struct {
-	VerificationUri         string
-	VerificationUriComplete string
-	UserCode                string
-}
-
-func (as *AWSSSO) GetDeviceAuthInfo() (DeviceAuthInfo, error) {
-	log.Tracef("GetDeviceAuthInfo()")
-	if as.DeviceAuth.VerificationUri == "" {
-		return DeviceAuthInfo{}, fmt.Errorf("No valid verification url is available")
-	}
-
-	info := DeviceAuthInfo{
-		VerificationUri:         as.DeviceAuth.VerificationUri,
-		VerificationUriComplete: as.DeviceAuth.VerificationUriComplete,
-		UserCode:                as.DeviceAuth.UserCode,
-	}
-	return info, nil
-}
-
-// Blocks until we have a token
-func (as *AWSSSO) CreateToken() error {
-	log.Tracef("CreateToken()")
-	err := as.store.GetCreateTokenResponse(as.StoreKey(), &as.Token)
-	if err == nil && !as.Token.Expired() {
-		log.Info("Using CreateToken cache")
-		return nil
-	}
-
-	input := ssooidc.CreateTokenInput{
-		ClientId:     aws.String(as.ClientData.ClientId),
-		ClientSecret: aws.String(as.ClientData.ClientSecret),
-		DeviceCode:   aws.String(as.DeviceAuth.DeviceCode),
-		GrantType:    aws.String(awsSSOGrantType),
-	}
-
-	// figure out our timings
-	var slowDown = SLOW_DOWN_SEC * time.Second
-	var retryInterval = RETRY_INTERVAL * time.Second
-	if as.DeviceAuth.Interval > 0 {
-		retryInterval = time.Duration(as.DeviceAuth.Interval) * time.Second
-	}
-
-	var resp *ssooidc.CreateTokenOutput
-
-	for {
-		resp, err = as.ssooidc.CreateToken(context.TODO(), &input)
-		if err == nil {
-			break
-		}
-
-		var sde *oidctypes.SlowDownException
-		var ape *oidctypes.AuthorizationPendingException
-
-		if errors.As(err, &sde) {
-			log.Debugf("Slowing down CreateToken()")
-			retryInterval += slowDown
-			time.Sleep(retryInterval)
-		} else if errors.As(err, &ape) {
-			time.Sleep(retryInterval)
-		} else {
-			return err
-		}
-	}
-
-	secs, _ := time.ParseDuration(fmt.Sprintf("%ds", resp.ExpiresIn)) // seconds
-	as.Token = storage.CreateTokenResponse{
-		AccessToken:  aws.ToString(resp.AccessToken),
-		ExpiresIn:    resp.ExpiresIn,
-		ExpiresAt:    time.Now().Add(secs).Unix(),
-		IdToken:      aws.ToString(resp.IdToken),
-		RefreshToken: aws.ToString(resp.RefreshToken), // per AWS docs, not currently implemented
-		TokenType:    aws.ToString(resp.TokenType),
-	}
-	err = as.store.SaveCreateTokenResponse(as.StoreKey(), as.Token)
-	if err != nil {
-		log.WithError(err).Errorf("Unable to save CreateTokenResponse")
-	}
-
-	return nil
 }
 
 type RoleInfo struct {
@@ -325,7 +121,16 @@ func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 	}
 	output, err := as.sso.ListAccountRoles(context.TODO(), &input)
 	if err != nil {
-		return as.Roles[account.AccountId], err
+		// sometimes our AccessToken is invalid even though it has not expired
+		// so retry once
+		log.Debugf("Unexpected AccessToken failure.  Refreshing...")
+		if err = as.reauthenticate(); err != nil {
+			return as.Roles[account.AccountId], err
+		}
+		input.AccessToken = aws.String(as.Token.AccessToken)
+		if output, err = as.sso.ListAccountRoles(context.TODO(), &input); err != nil {
+			return as.Roles[account.AccountId], err
+		}
 	}
 	for i, r := range output.RoleList {
 		var via string
@@ -401,7 +206,15 @@ func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {
 	}
 	output, err := as.sso.ListAccounts(context.TODO(), &input)
 	if err != nil {
-		return as.Accounts, err
+		// sometimes our AccessToken is invalid so try a new one once?
+		log.Debugf("Unexpected AccessToken failure.  Refreshing...")
+		if err = as.reauthenticate(); err != nil {
+			return as.Accounts, err
+		}
+		input.AccessToken = aws.String(as.Token.AccessToken)
+		if output, err = as.sso.ListAccounts(context.TODO(), &input); err != nil {
+			return as.Accounts, err
+		}
 	}
 	for i, r := range output.AccountList {
 		as.Accounts = append(as.Accounts, AccountInfo{
