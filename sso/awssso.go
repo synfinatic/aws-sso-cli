@@ -78,10 +78,6 @@ func NewAWSSSO(s *SSOConfig, store *storage.SecureStorage) *AWSSSO {
 	return &as
 }
 
-func (as *AWSSSO) StoreKey() string {
-	return fmt.Sprintf("%s|%s", as.SsoRegion, as.StartUrl)
-}
-
 type RoleInfo struct {
 	Id           int    `yaml:"Id" json:"Id" header:"Id"`
 	Arn          string `yaml:"-" json:"-" header:"Arn"`
