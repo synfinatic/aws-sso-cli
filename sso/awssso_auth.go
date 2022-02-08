@@ -66,6 +66,11 @@ func (as *AWSSSO) Authenticate(urlAction, browser string) error {
 	return as.reauthenticate()
 }
 
+// StoreKey returns the key in the cache for this AWSSSO instance
+func (as *AWSSSO) StoreKey() string {
+	return fmt.Sprintf("%s|%s", as.SsoRegion, as.StartUrl)
+}
+
 // reauthenticate talks to AWS SSO to generate a new AWS SSO AccessToken
 func (as *AWSSSO) reauthenticate() error {
 	log.Tracef("reauthenticate()")
