@@ -62,7 +62,7 @@ func (cc *ProcessCmd) Run(ctx *RunContext) error {
 		}
 	}
 
-	if role != "" || account == 0 {
+	if role == "" || account == 0 {
 		return fmt.Errorf("Please specify --arn or --account and --role")
 	}
 
