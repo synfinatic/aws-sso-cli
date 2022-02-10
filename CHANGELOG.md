@@ -1,5 +1,13 @@
 # AWS SSO CLI Changelog
 
+## [Unreleased]
+
+## [v1.7.3] - 2022-02-10
+
+### Bug Fixes
+
+ * Fix argument parsing with `process` command which broke the command #286
+
 ## [v1.7.2] - 2022-02-05
 
 ### Bug Fixes
@@ -244,8 +252,9 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.7.2...main
-[v1.7.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.1
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.7.3...main
+[v1.7.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.3
+[v1.7.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.2
 [v1.7.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.1
 [v1.7.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.0
 [v1.6.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.6.1
