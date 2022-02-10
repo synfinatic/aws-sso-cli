@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Bug Fixes
+
+ * Fix crash when users have many roles or accounts in AWS SSO
+ * Fix crash opening empty json store files
+
+### Changes
+
+ * Add unit tests for AWS SSO API calls
+
 ## [v1.7.3] - 2022-02-10
 
 ### Bug Fixes

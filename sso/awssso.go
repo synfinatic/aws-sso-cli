@@ -28,6 +28,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sso"
+	"github.com/aws/aws-sdk-go-v2/service/sso/types"
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/davecgh/go-spew/spew"
@@ -37,9 +38,22 @@ import (
 	"github.com/synfinatic/gotable"
 )
 
+// Necessary for mocking
+type SsoOidcApi interface {
+	RegisterClient(context.Context, *ssooidc.RegisterClientInput, ...func(*ssooidc.Options)) (*ssooidc.RegisterClientOutput, error)
+	StartDeviceAuthorization(context.Context, *ssooidc.StartDeviceAuthorizationInput, ...func(*ssooidc.Options)) (*ssooidc.StartDeviceAuthorizationOutput, error)
+	CreateToken(context.Context, *ssooidc.CreateTokenInput, ...func(*ssooidc.Options)) (*ssooidc.CreateTokenOutput, error)
+}
+
+type SsoApi interface {
+	ListAccountRoles(context.Context, *sso.ListAccountRolesInput, ...func(*sso.Options)) (*sso.ListAccountRolesOutput, error)
+	ListAccounts(context.Context, *sso.ListAccountsInput, ...func(*sso.Options)) (*sso.ListAccountsOutput, error)
+	GetRoleCredentials(context.Context, *sso.GetRoleCredentialsInput, ...func(*sso.Options)) (*sso.GetRoleCredentialsOutput, error)
+}
+
 type AWSSSO struct {
-	sso        sso.Client
-	ssooidc    ssooidc.Client
+	sso        SsoApi
+	ssooidc    SsoOidcApi
 	store      storage.SecureStorage
 	ClientName string                      `json:"ClientName"`
 	ClientType string                      `json:"ClientType"`
@@ -65,8 +79,8 @@ func NewAWSSSO(s *SSOConfig, store *storage.SecureStorage) *AWSSSO {
 	ssoSession := sso.NewFromConfig(cfg)
 
 	as := AWSSSO{
-		sso:        *ssoSession,
-		ssooidc:    *oidcSession,
+		sso:        ssoSession,
+		ssooidc:    oidcSession,
 		store:      *store,
 		ClientName: awsSSOClientName,
 		ClientType: awsSSOClientType,
@@ -129,46 +143,53 @@ func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 		}
 	}
 	for i, r := range output.RoleList {
-		var via string
-
-		aId, err := strconv.ParseInt(account.AccountId, 10, 64)
-		if err != nil {
-			return as.Roles[account.AccountId], fmt.Errorf("Unable to parse accountid %s: %s",
-				account.AccountId, err.Error())
+		if err := as.makeRoleInfo(account, i, r); err != nil {
+			return as.Roles[account.AccountId], err
 		}
-		ssoRole, err := as.SSOConfig.GetRole(aId, aws.ToString(r.RoleName))
-		if err != nil && len(ssoRole.Via) > 0 {
-			via = ssoRole.Via
-		}
-		as.Roles[account.AccountId] = append(as.Roles[account.AccountId], RoleInfo{
-			Id:           i,
-			AccountId:    aws.ToString(r.AccountId),
-			RoleName:     aws.ToString(r.RoleName),
-			AccountName:  account.AccountName,
-			EmailAddress: account.EmailAddress,
-			SSORegion:    as.SsoRegion,
-			StartUrl:     as.StartUrl,
-			Via:          via,
-		})
 	}
+
 	for aws.ToString(output.NextToken) != "" {
 		input.NextToken = output.NextToken
-		output, err := as.sso.ListAccountRoles(context.TODO(), &input)
+		output, err = as.sso.ListAccountRoles(context.TODO(), &input)
 		if err != nil {
 			return as.Roles[account.AccountId], err
 		}
-		x := len(as.Roles)
+		roleCount := len(as.Roles[account.AccountId])
 		for i, r := range output.RoleList {
-			as.Roles[account.AccountId] = append(as.Roles[account.AccountId], RoleInfo{
-				Id:           x + i,
-				AccountId:    aws.ToString(r.AccountId),
-				RoleName:     aws.ToString(r.RoleName),
-				AccountName:  account.AccountName,
-				EmailAddress: account.EmailAddress,
-			})
+			x := roleCount + i
+			if err := as.makeRoleInfo(account, x, r); err != nil {
+				return as.Roles[account.AccountId], err
+			}
 		}
 	}
 	return as.Roles[account.AccountId], nil
+}
+
+// makeRoleInfo takes the sso.types.RoleInfo and adds it onto our as.Roles[accountId] list
+func (as *AWSSSO) makeRoleInfo(account AccountInfo, i int, r types.RoleInfo) error {
+	var via string
+
+	aId, err := strconv.ParseInt(account.AccountId, 10, 64)
+	if err != nil {
+		return fmt.Errorf("Unable to parse accountid %s: %s",
+			account.AccountId, err.Error())
+	}
+	ssoRole, err := as.SSOConfig.GetRole(aId, aws.ToString(r.RoleName))
+	if err != nil && len(ssoRole.Via) > 0 {
+		via = ssoRole.Via
+	}
+	as.Roles[account.AccountId] = append(as.Roles[account.AccountId], RoleInfo{
+		Id:           i,
+		AccountId:    aws.ToString(r.AccountId),
+		Arn:          utils.MakeRoleARN(aId, aws.ToString(r.RoleName)),
+		RoleName:     aws.ToString(r.RoleName),
+		AccountName:  account.AccountName,
+		EmailAddress: account.EmailAddress,
+		SSORegion:    as.SsoRegion,
+		StartUrl:     as.StartUrl,
+		Via:          via,
+	})
+	return nil
 }
 
 type AccountInfo struct {
@@ -222,7 +243,7 @@ func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {
 	}
 	for aws.ToString(output.NextToken) != "" {
 		input.NextToken = output.NextToken
-		output, err := as.sso.ListAccounts(context.TODO(), &input)
+		output, err = as.sso.ListAccounts(context.TODO(), &input)
 		if err != nil {
 			return as.Accounts, err
 		}

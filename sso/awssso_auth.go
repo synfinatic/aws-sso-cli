@@ -143,12 +143,12 @@ func (as *AWSSSO) registerClient(force bool) error {
 	}
 
 	as.ClientData = storage.RegisterClientData{
-		// AuthorizationEndpoint: *resp.AuthorizationEndpoint,
+		AuthorizationEndpoint: aws.ToString(resp.AuthorizationEndpoint), // not used?
 		ClientId:              aws.ToString(resp.ClientId),
 		ClientSecret:          aws.ToString(resp.ClientSecret),
 		ClientIdIssuedAt:      resp.ClientIdIssuedAt,
 		ClientSecretExpiresAt: resp.ClientSecretExpiresAt,
-		// TokenEndpoint:         *resp.TokenEndpoint,
+		TokenEndpoint:         aws.ToString(resp.TokenEndpoint), // not used?
 	}
 	err = as.store.SaveRegisterClientData(as.StoreKey(), as.ClientData)
 	if err != nil {
