@@ -70,13 +70,13 @@ type AWSSSO struct {
 }
 
 func NewAWSSSO(s *SSOConfig, store *storage.SecureStorage) *AWSSSO {
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(s.SSORegion))
-	if err != nil {
-		log.Fatalf("Unable to get accounts: %s", err.Error())
-	}
+	oidcSession := ssooidc.New(ssooidc.Options{
+		Region: s.SSORegion,
+	})
 
-	oidcSession := ssooidc.NewFromConfig(cfg)
-	ssoSession := sso.NewFromConfig(cfg)
+	ssoSession := sso.New(sso.Options{
+		Region: s.SSORegion,
+	})
 
 	as := AWSSSO{
 		sso:        ssoSession,

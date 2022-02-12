@@ -10,6 +10,7 @@
 ### Changes
 
  * Add unit tests for AWS SSO API calls
+ * No longer read ~/.aws/credentials via AWS Go SDK for slightly better security #280
 
 ## [v1.7.3] - 2022-02-10
 
