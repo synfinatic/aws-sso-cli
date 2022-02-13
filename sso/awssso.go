@@ -135,6 +135,7 @@ func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 		// so retry once
 		log.Debugf("Unexpected AccessToken failure.  Refreshing...")
 		if err = as.reauthenticate(); err != nil {
+			// failed again... return our cache?
 			return as.Roles[account.AccountId], err
 		}
 		input.AccessToken = aws.String(as.Token.AccessToken)

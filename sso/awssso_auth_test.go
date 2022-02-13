@@ -28,6 +28,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 	"github.com/synfinatic/aws-sso-cli/storage"
 )
@@ -46,29 +47,47 @@ type mockSsoOidcApiResults struct {
 
 func (m *mockSsoOidcApi) RegisterClient(ctx context.Context, params *ssooidc.RegisterClientInput, optFns ...func(*ssooidc.Options)) (*ssooidc.RegisterClientOutput, error) {
 	var x mockSsoOidcApiResults
-	if len(m.Results) == 0 {
-		return &ssooidc.RegisterClientOutput{}, fmt.Errorf("calling RegisterClient too many times")
+	switch {
+	case len(m.Results) == 0:
+		return &ssooidc.RegisterClientOutput{}, fmt.Errorf("calling mocked RegisterClient too many times")
+
+	case m.Results[0].RegisterClient == nil:
+		return &ssooidc.RegisterClientOutput{}, fmt.Errorf("expected RegisterClient, but have: %s", spew.Sdump(m.Results[0]))
+
+	default:
+		x, m.Results = m.Results[0], m.Results[1:]
+		return x.RegisterClient, x.Error
 	}
-	x, m.Results = m.Results[0], m.Results[1:]
-	return x.RegisterClient, x.Error
 }
 
 func (m *mockSsoOidcApi) StartDeviceAuthorization(ctx context.Context, params *ssooidc.StartDeviceAuthorizationInput, optFns ...func(*ssooidc.Options)) (*ssooidc.StartDeviceAuthorizationOutput, error) {
 	var x mockSsoOidcApiResults
-	if len(m.Results) == 0 {
-		return &ssooidc.StartDeviceAuthorizationOutput{}, fmt.Errorf("calling StartDeviceAuthorization too many times")
+	switch {
+	case len(m.Results) == 0:
+		return &ssooidc.StartDeviceAuthorizationOutput{}, fmt.Errorf("calling mocked StartDeviceAuthorization too many times")
+
+	case m.Results[0].StartDeviceAuthorization == nil:
+		return &ssooidc.StartDeviceAuthorizationOutput{}, fmt.Errorf("expected StartDeviceAuthorization, but have: %s", spew.Sdump(m.Results[0]))
+
+	default:
+		x, m.Results = m.Results[0], m.Results[1:]
+		return x.StartDeviceAuthorization, x.Error
 	}
-	x, m.Results = m.Results[0], m.Results[1:]
-	return x.StartDeviceAuthorization, x.Error
 }
 
 func (m *mockSsoOidcApi) CreateToken(ctx context.Context, params *ssooidc.CreateTokenInput, optFns ...func(*ssooidc.Options)) (*ssooidc.CreateTokenOutput, error) {
 	var x mockSsoOidcApiResults
-	if len(m.Results) == 0 {
-		return &ssooidc.CreateTokenOutput{}, fmt.Errorf("calling CreateToken too many times")
+	switch {
+	case len(m.Results) == 0:
+		return &ssooidc.CreateTokenOutput{}, fmt.Errorf("calling mocked CreateToken too many times")
+
+	case m.Results[0].CreateToken == nil:
+		return &ssooidc.CreateTokenOutput{}, fmt.Errorf("expected CreateToken, but have: %s", spew.Sdump(m.Results[0]))
+
+	default:
+		x, m.Results = m.Results[0], m.Results[1:]
+		return x.CreateToken, x.Error
 	}
-	x, m.Results = m.Results[0], m.Results[1:]
-	return x.CreateToken, x.Error
 }
 
 func TestStoreKey(t *testing.T) {
@@ -227,4 +246,100 @@ func TestAuthenticate(t *testing.T) {
 	assert.Equal(t, "id-token", as.Token.IdToken)
 	assert.Equal(t, "refresh-token", as.Token.RefreshToken)
 	assert.Equal(t, "token-type", as.Token.TokenType)
+}
+
+func TestAuthenticateFailure(t *testing.T) {
+	tfile, err := ioutil.TempFile("", "*storage.json")
+	assert.NoError(t, err)
+
+	jstore, err := storage.OpenJsonStore(tfile.Name())
+	assert.NoError(t, err)
+
+	defer os.Remove(tfile.Name())
+
+	as := &AWSSSO{
+		SsoRegion: "us-west-1",
+		StartUrl:  "https://testing.awsapps.com/start",
+		store:     jstore,
+	}
+
+	secs, _ := time.ParseDuration("5s")
+	expires := time.Now().Add(secs).Unix()
+
+	as.ssooidc = &mockSsoOidcApi{
+		Results: []mockSsoOidcApiResults{
+			// first test
+			{
+				RegisterClient: &ssooidc.RegisterClientOutput{},
+				Error:          fmt.Errorf("some error"),
+			},
+			// second test
+			{
+				RegisterClient: &ssooidc.RegisterClientOutput{
+					AuthorizationEndpoint: nil,
+					ClientId:              aws.String("this-is-my-client-id"),
+					ClientSecret:          aws.String("this-is-my-client-secret"),
+					ClientIdIssuedAt:      time.Now().Unix(),
+					ClientSecretExpiresAt: int64(expires),
+					TokenEndpoint:         nil,
+				},
+				Error: nil,
+			},
+			{
+				StartDeviceAuthorization: &ssooidc.StartDeviceAuthorizationOutput{},
+				Error:                    fmt.Errorf("some error"),
+			},
+			{ // reauthenticate() retries RegisterClient() after StartDeviceAuthorization failure
+				RegisterClient: &ssooidc.RegisterClientOutput{
+					AuthorizationEndpoint: nil,
+					ClientId:              aws.String("this-is-my-client-id"),
+					ClientSecret:          aws.String("this-is-my-client-secret"),
+					ClientIdIssuedAt:      time.Now().Unix(),
+					ClientSecretExpiresAt: int64(expires),
+					TokenEndpoint:         nil,
+				},
+				Error: nil,
+			},
+			{
+				StartDeviceAuthorization: &ssooidc.StartDeviceAuthorizationOutput{},
+				Error:                    fmt.Errorf("some error"),
+			},
+			// third test
+			{
+				RegisterClient: &ssooidc.RegisterClientOutput{
+					AuthorizationEndpoint: nil,
+					ClientId:              aws.String("this-is-my-client-id"),
+					ClientSecret:          aws.String("this-is-my-client-secret"),
+					ClientIdIssuedAt:      time.Now().Unix(),
+					ClientSecretExpiresAt: int64(expires),
+					TokenEndpoint:         nil,
+				},
+				Error: nil,
+			},
+			{
+				StartDeviceAuthorization: &ssooidc.StartDeviceAuthorizationOutput{
+					DeviceCode:              aws.String("device-code"),
+					UserCode:                aws.String("user-code"),
+					VerificationUri:         aws.String("verification-uri"),
+					VerificationUriComplete: aws.String("verification-uri-complete"),
+					ExpiresIn:               int32(expires),
+					Interval:                5,
+				},
+				Error: nil,
+			},
+			{
+				CreateToken: &ssooidc.CreateTokenOutput{},
+				Error:       fmt.Errorf("some error"),
+			},
+		},
+	}
+
+	err = as.Authenticate("print", "fake-browser")
+	assert.Contains(t, err.Error(), "some error")
+
+	err = as.Authenticate("print", "fake-browser")
+	assert.Contains(t, err.Error(), "some error")
+
+	err = as.Authenticate("print", "fake-browser")
+	assert.Contains(t, err.Error(), "some error")
 }

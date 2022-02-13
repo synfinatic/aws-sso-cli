@@ -126,10 +126,12 @@ const (
 // RegisterClientData for later steps and saves it to our secret store
 func (as *AWSSSO) registerClient(force bool) error {
 	log.Tracef("registerClient()")
-	err := as.store.GetRegisterClientData(as.StoreKey(), &as.ClientData)
-	if !force && err == nil && !as.ClientData.Expired() {
-		log.Debug("Using RegisterClient cache")
-		return nil
+	if !force {
+		err := as.store.GetRegisterClientData(as.StoreKey(), &as.ClientData)
+		if err == nil && !as.ClientData.Expired() {
+			log.Debug("Using RegisterClient cache")
+			return nil
+		}
 	}
 
 	input := ssooidc.RegisterClientInput{
