@@ -12,6 +12,7 @@
  * [Which SecureStore should I use?](#which-securestore-should-i-use)
  * [Using non-default AWS SSO instances with auto-complete](#using-non-default-aws-sso-instances-with-auto-complete)
  * [Error: Invalid grant provided](#error-invalid-grant-provided)
+ * [Does aws-sso support using AWS FIPS endpoints?](#does-aws-sso-support-using-aws-fips-endpoints)
 
 ### How do I delete all secrets from the macOS keychain?
 
@@ -245,3 +246,10 @@ If you get this error from AWS:
 
 Then the most likely cause is you selected the wrong AWS Region for [SSORegion](
 config.md#ssoregion) in the config file.
+
+### Does aws-sso support using AWS FIPS endpoints?
+
+Yes!  Please set the following environment variable and `aws-sso` will automatically
+select the appropriate AWS FIPS endpoints when communicating with AWS:
+
+`AWS_USE_FIPS_ENDPOINT=true`
