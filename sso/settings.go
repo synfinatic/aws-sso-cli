@@ -34,6 +34,7 @@ import (
 	"github.com/knadh/koanf/providers/file"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/utils"
+	// goyaml "gopkg.in/yaml.v3"
 )
 
 const (
@@ -66,11 +67,11 @@ type Settings struct {
 }
 
 type SSOConfig struct {
-	settings      *Settings             // pointer back up
-	SSORegion     string                `koanf:"SSORegion" yaml:"SSORegion"`
-	StartUrl      string                `koanf:"StartUrl" yaml:"StartUrl"`
-	Accounts      map[int64]*SSOAccount `koanf:"Accounts" yaml:"Accounts,omitempty"`
-	DefaultRegion string                `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
+	settings      *Settings              // pointer back up
+	SSORegion     string                 `koanf:"SSORegion" yaml:"SSORegion"`
+	StartUrl      string                 `koanf:"StartUrl" yaml:"StartUrl"`
+	Accounts      map[string]*SSOAccount `koanf:"Accounts" yaml:"Accounts,omitempty"` // key must be a string to avoid parse errors!
+	DefaultRegion string                 `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
 }
 
 type SSOAccount struct {
@@ -94,9 +95,14 @@ type SSORole struct {
 
 // GetDefaultRegion scans the config settings file to pick the most local DefaultRegion from the tree
 // for the given role
-func (s *Settings) GetDefaultRegion(accountId int64, roleName string, noRegion bool) string {
+func (s *Settings) GetDefaultRegion(id int64, roleName string, noRegion bool) string {
 	if noRegion {
 		return ""
+	}
+
+	accountId, err := utils.AccountIdToString(id)
+	if err != nil {
+		log.WithError(err).Fatalf("Unable to GetDefaultRegion()")
 	}
 
 	currentRegion := os.Getenv("AWS_DEFAULT_REGION")
@@ -332,7 +338,7 @@ func (c *SSOConfig) Refresh(s *Settings) {
 		a.SetParentConfig(c)
 		for roleName, r := range a.Roles {
 			r.SetParentAccount(a)
-			r.ARN = utils.MakeRoleARN(accountId, roleName)
+			r.ARN = utils.MakeRoleARNs(accountId, roleName)
 		}
 	}
 	c.settings = s
@@ -396,13 +402,17 @@ func (s *SSOConfig) GetRoleMatches(tags map[string]string) []*SSORole {
 
 // GetRole returns the matching role if it exists
 func (s *SSOConfig) GetRole(accountId int64, role string) (*SSORole, error) {
-	if a, ok := s.Accounts[accountId]; ok {
+	id, err := utils.AccountIdToString(accountId)
+	if err != nil {
+		return &SSORole{}, err
+	}
+
+	if a, ok := s.Accounts[id]; ok {
 		if r, ok := a.Roles[role]; ok {
 			return r, nil
 		}
 	}
-	a, _ := utils.AccountIdToString(accountId)
-	return &SSORole{}, fmt.Errorf("Unable to find %s:%s", a, role)
+	return &SSORole{}, fmt.Errorf("Unable to find %s:%s", id, role)
 }
 
 // HasRole returns true/false if the given Account has the provided arn

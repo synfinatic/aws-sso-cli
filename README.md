@@ -2,6 +2,9 @@
 ![Tests](https://github.com/synfinatic/aws-sso-cli/workflows/Tests/badge.svg)
 [![Report Card Badge](https://goreportcard.com/badge/github.com/synfinatic/aws-sso-cli)](https://goreportcard.com/report/github.com/synfinatic/aws-sso-cli)
 [![License Badge](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://raw.githubusercontent.com/synfinatic/aws-sso-cli/main/LICENSE)
+<!--
+[![Codecov Badge](https://codecov.io/gh/synfinatic/aws-sso-cli/branch/main/graph/badge.svg?token=F8454GS4HS)](https://codecov.io/gh/synfinatic/aws-sso-cli)
+-->
 
  * [About](#about)
  * [What does AWS SSO CLI do?](#what-does-aws-sso-cli-do)

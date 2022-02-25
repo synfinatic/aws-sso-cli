@@ -108,11 +108,25 @@ func ParseRoleARN(arn string) (int64, string, error) {
 	return aId, role, nil
 }
 
-// Creates an AWS ARN for a role
+// MakeRoleARN create an IAM Role ARN using an int64 for the account
 func MakeRoleARN(account int64, name string) string {
 	a, err := AccountIdToString(account)
 	if err != nil {
 		log.Fatalf("%s", err.Error())
+	}
+	return fmt.Sprintf("arn:aws:iam::%s:role/%s", a, name)
+}
+
+// MakeRoleARNs creates an IAM Role ARN using a string for the account and role
+func MakeRoleARNs(account, name string) string {
+	x, err := AccountIdToInt64(account)
+	if err != nil {
+		log.WithError(err).Fatalf("Unable to AccountIdToInt64 in MakeRoleARNs")
+	}
+
+	a, err := AccountIdToString(x)
+	if err != nil {
+		log.WithError(err).Fatalf("Unable to AccountIdToString in MakeRoleARNs")
 	}
 	return fmt.Sprintf("arn:aws:iam::%s:role/%s", a, name)
 }
@@ -168,10 +182,22 @@ func TimeRemain(expires int64, space bool) (string, error) {
 	return s, nil
 }
 
-// Converts an AWS AccountId to a string
+// AccountIdToString returns a string version of AWS AccountID
 func AccountIdToString(a int64) (string, error) {
 	if a < 0 {
 		return "", fmt.Errorf("Invalid AWS AccountId: %d", a)
 	}
 	return fmt.Sprintf("%012d", a), nil
+}
+
+// AccountIdToInt64 returns an int64 version of AWS AccountID in base10
+func AccountIdToInt64(a string) (int64, error) {
+	x, err := strconv.ParseInt(a, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	if x < 0 {
+		return 0, fmt.Errorf("Invalid AWS AccountId: %s", a)
+	}
+	return x, nil
 }

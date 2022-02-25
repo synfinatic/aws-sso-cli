@@ -42,28 +42,28 @@ func (suite *UtilsTestSuite) TestParseRoleARN() {
 	a, r, err := ParseRoleARN("arn:aws:iam::11111:role/Foo")
 	assert.Equal(t, int64(11111), a)
 	assert.Equal(t, "Foo", r)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	_, _, err = ParseRoleARN("")
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 
 	_, _, err = ParseRoleARN("arnFoo")
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 
 	_, _, err = ParseRoleARN("arn:aws:iam::a:role/Foo")
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 
 	_, _, err = ParseRoleARN("arn:aws:iam::000000011111:role")
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 
 	_, _, err = ParseRoleARN("aws:iam:000000011111:role/Foo")
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 
 	_, _, err = ParseRoleARN("invalid:arn:aws:iam::000000011111:role/Foo")
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 
 	_, _, err = ParseRoleARN("arn:aws:iam::000000011111:role/Foo/Bar")
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func (suite *UtilsTestSuite) TestMakeRoleARN() {
@@ -74,13 +74,22 @@ func (suite *UtilsTestSuite) TestMakeRoleARN() {
 	assert.Equal(t, "arn:aws:iam::000000000000:role/", MakeRoleARN(0, ""))
 }
 
+func (suite *UtilsTestSuite) TestMakeRoleARNs() {
+	t := suite.T()
+
+	assert.Equal(t, "arn:aws:iam::000000011111:role/Foo", MakeRoleARNs("11111", "Foo"))
+	assert.Equal(t, "arn:aws:iam::000000711111:role/Foo", MakeRoleARNs("711111", "Foo"))
+	assert.Equal(t, "arn:aws:iam::000000711111:role/Foo", MakeRoleARNs("000711111", "Foo"))
+	assert.Equal(t, "arn:aws:iam::000000000000:role/", MakeRoleARNs("0", ""))
+}
+
 func (suite *UtilsTestSuite) TestEnsureDirExists() {
 	t := suite.T()
 
 	defer os.RemoveAll("./does_not_exist_dir")
-	assert.Nil(t, EnsureDirExists("./testdata/role_tags.yaml"))
-	assert.Nil(t, EnsureDirExists("./does_not_exist_dir/foo.yaml"))
-	assert.Nil(t, EnsureDirExists("./does_not_exist_dir/bar/baz/foo.yaml"))
+	assert.NoError(t, EnsureDirExists("./testdata/role_tags.yaml"))
+	assert.NoError(t, EnsureDirExists("./does_not_exist_dir/foo.yaml"))
+	assert.NoError(t, EnsureDirExists("./does_not_exist_dir/bar/baz/foo.yaml"))
 }
 
 func (suite *UtilsTestSuite) TestGetHomePath() {
@@ -100,15 +109,15 @@ func (suite *UtilsTestSuite) TestAccountToString() {
 	t := suite.T()
 
 	a, err := AccountIdToString(0)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, "000000000000", a)
 
 	a, err = AccountIdToString(11111)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, "000000011111", a)
 
 	a, err = AccountIdToString(999999999999)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, "999999999999", a)
 
 	_, err = AccountIdToString(-1)
@@ -116,4 +125,25 @@ func (suite *UtilsTestSuite) TestAccountToString() {
 
 	_, err = AccountIdToString(-19999)
 	assert.NotNil(t, err)
+}
+
+func (suite *UtilsTestSuite) TestAccountToInt64() {
+	t := suite.T()
+
+	_, err := AccountIdToInt64("")
+	assert.Error(t, err)
+
+	a, err := AccountIdToInt64("12345")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(12345), a)
+
+	a, err = AccountIdToInt64("0012345")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(12345), a)
+
+	_, err = AccountIdToInt64("0012345678912123344455323423423423424")
+	assert.Error(t, err)
+
+	_, err = AccountIdToInt64("-1")
+	assert.Error(t, err)
 }

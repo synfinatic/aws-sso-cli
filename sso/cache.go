@@ -430,56 +430,60 @@ func (c *Cache) addConfigRoles(r *Roles, config *SSOConfig) error {
 	// The load all the Config file stuff.  Normally this is just adding markup, but
 	// for accounts &roles that are not in SSO, we may be creating them as well!
 	for accountId, account := range config.Accounts {
-		if _, ok := r.Accounts[accountId]; !ok {
-			r.Accounts[accountId] = &AWSAccount{
+		id, err := utils.AccountIdToInt64(accountId)
+		if err != nil {
+			return err
+		}
+		if _, ok := r.Accounts[id]; !ok {
+			r.Accounts[id] = &AWSAccount{
 				Tags:  map[string]string{},
 				Roles: map[string]*AWSRole{},
 			}
 		}
-		r.Accounts[accountId].DefaultRegion = account.DefaultRegion
-		r.Accounts[accountId].Name = account.Name
+		r.Accounts[id].DefaultRegion = account.DefaultRegion
+		r.Accounts[id].Name = account.Name
 
 		// set our account tags
 		for k, v := range config.Accounts[accountId].Tags {
-			r.Accounts[accountId].Tags[k] = v
+			r.Accounts[id].Tags[k] = v
 		}
 
 		// set the AWS SSO tags for all the SSO roles
-		for roleName := range r.Accounts[accountId].Roles {
-			aId, _ := utils.AccountIdToString(accountId)
-			r.Accounts[accountId].Roles[roleName].Tags["AccountID"] = aId
-			r.Accounts[accountId].Roles[roleName].Tags["AccountAlias"] = r.Accounts[accountId].Alias
-			r.Accounts[accountId].Roles[roleName].Tags["Email"] = r.Accounts[accountId].EmailAddress
-			r.Accounts[accountId].Roles[roleName].Tags["Role"] = roleName
-			if r.Accounts[accountId].Name != "" {
-				r.Accounts[accountId].Roles[roleName].Tags["AccountName"] = r.Accounts[accountId].Name
+		for roleName := range r.Accounts[id].Roles {
+			aId, _ := utils.AccountIdToString(id)
+			r.Accounts[id].Roles[roleName].Tags["AccountID"] = aId
+			r.Accounts[id].Roles[roleName].Tags["AccountAlias"] = r.Accounts[id].Alias
+			r.Accounts[id].Roles[roleName].Tags["Email"] = r.Accounts[id].EmailAddress
+			r.Accounts[id].Roles[roleName].Tags["Role"] = roleName
+			if r.Accounts[id].Name != "" {
+				r.Accounts[id].Roles[roleName].Tags["AccountName"] = r.Accounts[id].Name
 			}
-			if r.Accounts[accountId].Roles[roleName].DefaultRegion != "" {
-				r.Accounts[accountId].Roles[roleName].Tags["DefaultRegion"] = r.Accounts[accountId].Roles[roleName].DefaultRegion
+			if r.Accounts[id].Roles[roleName].DefaultRegion != "" {
+				r.Accounts[id].Roles[roleName].Tags["DefaultRegion"] = r.Accounts[id].Roles[roleName].DefaultRegion
 			}
 		}
 
 		// set the tags from the config file
 		for roleName, role := range config.Accounts[accountId].Roles {
-			if _, ok := r.Accounts[accountId].Roles[roleName]; !ok {
-				r.Accounts[accountId].Roles[roleName] = &AWSRole{
+			if _, ok := r.Accounts[id].Roles[roleName]; !ok {
+				r.Accounts[id].Roles[roleName] = &AWSRole{
 					Tags: map[string]string{},
 				}
 			}
-			r.Accounts[accountId].Roles[roleName].Arn = utils.MakeRoleARN(accountId, roleName)
-			r.Accounts[accountId].Roles[roleName].Profile = role.Profile
-			r.Accounts[accountId].Roles[roleName].DefaultRegion = r.Accounts[accountId].DefaultRegion
-			r.Accounts[accountId].Roles[roleName].Via = role.Via
+			r.Accounts[id].Roles[roleName].Arn = utils.MakeRoleARN(id, roleName)
+			r.Accounts[id].Roles[roleName].Profile = role.Profile
+			r.Accounts[id].Roles[roleName].DefaultRegion = r.Accounts[id].DefaultRegion
+			r.Accounts[id].Roles[roleName].Via = role.Via
 			if role.DefaultRegion != "" {
-				r.Accounts[accountId].Roles[roleName].DefaultRegion = role.DefaultRegion
+				r.Accounts[id].Roles[roleName].DefaultRegion = role.DefaultRegion
 			}
 			// Copy the account tags to the role
 			for k, v := range config.Accounts[accountId].Tags {
-				r.Accounts[accountId].Roles[roleName].Tags[k] = v
+				r.Accounts[id].Roles[roleName].Tags[k] = v
 			}
 			// Insert role specific tags (possible overwrite of account level)
 			for k, v := range role.Tags {
-				r.Accounts[accountId].Roles[roleName].Tags[k] = v
+				r.Accounts[id].Roles[roleName].Tags[k] = v
 			}
 		}
 	}

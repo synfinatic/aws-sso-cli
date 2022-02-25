@@ -72,6 +72,10 @@ func (suite *SettingsTestSuite) TestGetSelectedSSO() {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://d-755555555.awsapps.com/start", sso.StartUrl)
 
+	sso, err = suite.settings.GetSelectedSSO("Bug292")
+	assert.NoError(t, err)
+	assert.Equal(t, "https://d-88888888888.awsapps.com/start", sso.StartUrl)
+
 	sso, err = suite.settings.GetSelectedSSO("Foobar")
 	assert.Error(t, err)
 	assert.Equal(t, "", sso.StartUrl)
@@ -131,6 +135,11 @@ func (suite *SettingsTestSuite) TestGetRoles() {
 	for _, role := range TEST_GET_ROLE_ARN {
 		assert.Contains(t, arns, role)
 	}
+
+	// make sure we can parse this yaml
+	sso, _ = suite.settings.GetSelectedSSO("Bug292")
+	roles = sso.GetRoles()
+	assert.Equal(t, 1, len(roles))
 }
 
 func (suite *SettingsTestSuite) TestGetAllTags() {
