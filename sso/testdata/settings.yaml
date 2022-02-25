@@ -48,6 +48,14 @@ SSOConfig:
                     Tags:
                       Test: moocow
                       Bar: baz
+    Bug292:
+      SSORegion: us-east-1
+      StartUrl: https://d-88888888888.awsapps.com/start
+      Accounts:
+        0012345678912:
+          Name: MyTestName
+          Roles:
+            FooBar:
 
 DefaultSSO: Default                       
 Browser: /Applications/Firefox.app

@@ -89,7 +89,7 @@ func TestGetRoles(t *testing.T) {
 		store:     jstore,
 		Roles:     map[string][]RoleInfo{},
 		SSOConfig: &SSOConfig{
-			Accounts: map[int64]*SSOAccount{},
+			Accounts: map[string]*SSOAccount{},
 		},
 		Token: storage.CreateTokenResponse{
 			AccessToken:  "access-token",
