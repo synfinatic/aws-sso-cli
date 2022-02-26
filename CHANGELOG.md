@@ -2,10 +2,13 @@
 
 ## [Unreleased]
 
+## [v1.7.4] - 2022-02-25
+
 ### Bug Fixes
 
  * Fix crash when users have many roles or accounts in AWS SSO
  * Fix crash opening empty json store files
+ * Fix crash with AWS AccountIDs in ~/.aws-sso/config.yaml with leading zeros #292
 
 ### Changes
 
@@ -262,7 +265,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.7.3...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.7.4...main
+[v1.7.4]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.4
 [v1.7.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.3
 [v1.7.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.2
 [v1.7.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.1
