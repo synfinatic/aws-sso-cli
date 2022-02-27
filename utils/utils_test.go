@@ -19,9 +19,12 @@ package utils
  */
 
 import (
+	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -64,6 +67,13 @@ func (suite *UtilsTestSuite) TestParseRoleARN() {
 
 	_, _, err = ParseRoleARN("arn:aws:iam::000000011111:role/Foo/Bar")
 	assert.Error(t, err)
+
+	_, _, err = ParseRoleARN("arn:aws:iam::-000000011111:role/Foo")
+	assert.Error(t, err)
+}
+
+func willPanicMakeRoleARN() {
+	MakeRoleARN(-1, "foo")
 }
 
 func (suite *UtilsTestSuite) TestMakeRoleARN() {
@@ -72,6 +82,12 @@ func (suite *UtilsTestSuite) TestMakeRoleARN() {
 	assert.Equal(t, "arn:aws:iam::000000011111:role/Foo", MakeRoleARN(11111, "Foo"))
 	assert.Equal(t, "arn:aws:iam::000000711111:role/Foo", MakeRoleARN(711111, "Foo"))
 	assert.Equal(t, "arn:aws:iam::000000000000:role/", MakeRoleARN(0, ""))
+
+	assert.Panics(t, willPanicMakeRoleARN)
+}
+
+func willPanicMakeRoleARNs() {
+	MakeRoleARNs("asdfasfdo", "foo")
 }
 
 func (suite *UtilsTestSuite) TestMakeRoleARNs() {
@@ -81,6 +97,8 @@ func (suite *UtilsTestSuite) TestMakeRoleARNs() {
 	assert.Equal(t, "arn:aws:iam::000000711111:role/Foo", MakeRoleARNs("711111", "Foo"))
 	assert.Equal(t, "arn:aws:iam::000000711111:role/Foo", MakeRoleARNs("000711111", "Foo"))
 	assert.Equal(t, "arn:aws:iam::000000000000:role/", MakeRoleARNs("0", ""))
+
+	assert.Panics(t, willPanicMakeRoleARNs)
 }
 
 func (suite *UtilsTestSuite) TestEnsureDirExists() {
@@ -90,6 +108,8 @@ func (suite *UtilsTestSuite) TestEnsureDirExists() {
 	assert.NoError(t, EnsureDirExists("./testdata/role_tags.yaml"))
 	assert.NoError(t, EnsureDirExists("./does_not_exist_dir/foo.yaml"))
 	assert.NoError(t, EnsureDirExists("./does_not_exist_dir/bar/baz/foo.yaml"))
+
+	assert.Error(t, EnsureDirExists("/foo/bar"))
 }
 
 func (suite *UtilsTestSuite) TestGetHomePath() {
@@ -121,10 +141,10 @@ func (suite *UtilsTestSuite) TestAccountToString() {
 	assert.Equal(t, "999999999999", a)
 
 	_, err = AccountIdToString(-1)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 
 	_, err = AccountIdToString(-19999)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func (suite *UtilsTestSuite) TestAccountToInt64() {
@@ -144,6 +164,108 @@ func (suite *UtilsTestSuite) TestAccountToInt64() {
 	_, err = AccountIdToInt64("0012345678912123344455323423423423424")
 	assert.Error(t, err)
 
+	_, err = AccountIdToInt64("abdcefgi")
+	assert.Error(t, err)
+
 	_, err = AccountIdToInt64("-1")
 	assert.Error(t, err)
+}
+
+var checkValue string
+var checkBrowser string
+
+func testUrlOpener(url string) error {
+	checkBrowser = "default browser"
+	checkValue = url
+	return nil
+}
+
+func testUrlOpenerWith(url, browser string) error {
+	checkBrowser = browser
+	checkValue = url
+	return nil
+}
+
+func testClipboardWriter(url string) error {
+	checkValue = url
+	return nil
+}
+
+func testUrlOpenerError(url string) error {
+	return fmt.Errorf("there was an error")
+}
+
+func testUrlOpenerWithError(url, browser string) error {
+	return fmt.Errorf("there was an error")
+}
+
+func (suite *UtilsTestSuite) TestHandleUrl() {
+	t := suite.T()
+
+	assert.Error(t, HandleUrl("foo", "browser", "bar", "pre", "post"))
+
+	// override the print method
+	printWriter = new(bytes.Buffer)
+	assert.NoError(t, HandleUrl("print", "browser", "bar", "pre", "post"))
+	assert.Equal(t, "prebarpost", printWriter.(*bytes.Buffer).String())
+
+	urlOpener = testUrlOpener
+	urlOpenerWith = testUrlOpenerWith
+	clipboardWriter = testClipboardWriter
+
+	assert.NoError(t, HandleUrl("clip", "browser", "url", "pre", "post"))
+	assert.Equal(t, "url", checkValue)
+
+	assert.NoError(t, HandleUrl("open", "other-browser", "other-url", "pre", "post"))
+	assert.Equal(t, "other-browser", checkBrowser)
+	assert.Equal(t, "other-url", checkValue)
+
+	assert.NoError(t, HandleUrl("open", "", "some-url", "pre", "post"))
+	assert.Equal(t, "default browser", checkBrowser)
+	assert.Equal(t, "some-url", checkValue)
+
+	urlOpener = testUrlOpenerError
+	assert.Error(t, HandleUrl("open", "", "url", "pre", "post"))
+
+	urlOpenerWith = testUrlOpenerWithError
+	assert.Error(t, HandleUrl("open", "foo", "url", "pre", "post"))
+
+	clipboardWriter = testUrlOpenerError
+	assert.Error(t, HandleUrl("clip", "", "url", "pre", "post"))
+}
+
+func (suite *UtilsTestSuite) TestParseTimeString() {
+	t := suite.T()
+
+	x, e := ParseTimeString("1970-01-01 00:00:00 +0000 GMT")
+	assert.NoError(t, e)
+	assert.Equal(t, int64(0), x)
+}
+
+func (suite *UtilsTestSuite) TestTimeRemain() {
+	t := suite.T()
+
+	x, e := TimeRemain(0, false)
+	assert.NoError(t, e)
+	assert.Equal(t, "Expired", x)
+
+	d, _ := time.ParseDuration("5m")
+	future := time.Now().Add(d)
+	x, e = TimeRemain(future.Unix(), true)
+	assert.NoError(t, e)
+	assert.Equal(t, "   5m", x)
+
+	x, e = TimeRemain(future.Unix(), false)
+	assert.NoError(t, e)
+	assert.Equal(t, "5m", x)
+
+	d, _ = time.ParseDuration("5h5m")
+	future = time.Now().Add(d)
+	x, e = TimeRemain(future.Unix(), true)
+	assert.NoError(t, e)
+	assert.Equal(t, "5h 5m", x)
+
+	x, e = TimeRemain(future.Unix(), false)
+	assert.NoError(t, e)
+	assert.Equal(t, "5h5m", x)
 }
