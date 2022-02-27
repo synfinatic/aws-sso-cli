@@ -20,6 +20,7 @@ package utils
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -49,25 +50,37 @@ func GetHomePath(path string) string {
 	return filepath.Clean(p)
 }
 
+var printWriter io.Writer = os.Stderr
+
+// these types & variables make our code easier to unit test
+type urlOpenerFunc func(string) error
+type urlOpenerWithFunc func(string, string) error
+type clipboardWriterFunc func(string) error
+
+var urlOpener urlOpenerFunc = open.Run
+var urlOpenerWith urlOpenerWithFunc = open.RunWith
+var clipboardWriter clipboardWriterFunc = clipboard.WriteAll
+
 // Prints, opens or copies to clipboard the given URL
 func HandleUrl(action, browser, url, pre, post string) error {
 	var err error
 	switch action {
 	case "clip":
-		err = clipboard.WriteAll(url)
+		err = clipboardWriter(url)
 		if err == nil {
 			log.Infof("Please open URL copied to clipboard.\n")
 		} else {
 			err = fmt.Errorf("Unable to copy URL to clipboard: %s", err.Error())
 		}
 	case "print":
-		os.Stderr.WriteString(fmt.Sprintf("%s%s%s", pre, url, post))
+		fmt.Fprintf(printWriter, "%s%s%s", pre, url, post)
 	case "open":
-		if len(browser) == 0 {
-			err = open.Run(url)
+		switch browser {
+		case "":
+			err = urlOpener(url)
 			browser = "default browser"
-		} else {
-			err = open.RunWith(url, browser)
+		default:
+			err = urlOpenerWith(url, browser)
 		}
 		if err != nil {
 			err = fmt.Errorf("Unable to open URL with %s: %s", browser, err.Error())
@@ -105,6 +118,9 @@ func ParseRoleARN(arn string) (int64, string, error) {
 	if err != nil {
 		return 0, "", fmt.Errorf("Unable to parse ARN: %s", arn)
 	}
+	if aId < 0 {
+		return 0, "", fmt.Errorf("Invalid AccountID: %d", aId)
+	}
 	return aId, role, nil
 }
 
@@ -112,7 +128,7 @@ func ParseRoleARN(arn string) (int64, string, error) {
 func MakeRoleARN(account int64, name string) string {
 	a, err := AccountIdToString(account)
 	if err != nil {
-		log.Fatalf("%s", err.Error())
+		log.WithError(err).Panicf("Unable to MakeRoleARN")
 	}
 	return fmt.Sprintf("arn:aws:iam::%s:role/%s", a, name)
 }
@@ -121,13 +137,10 @@ func MakeRoleARN(account int64, name string) string {
 func MakeRoleARNs(account, name string) string {
 	x, err := AccountIdToInt64(account)
 	if err != nil {
-		log.WithError(err).Fatalf("Unable to AccountIdToInt64 in MakeRoleARNs")
+		log.WithError(err).Panicf("Unable to AccountIdToInt64 in MakeRoleARNs")
 	}
 
-	a, err := AccountIdToString(x)
-	if err != nil {
-		log.WithError(err).Fatalf("Unable to AccountIdToString in MakeRoleARNs")
-	}
+	a, _ := AccountIdToString(x)
 	return fmt.Sprintf("arn:aws:iam::%s:role/%s", a, name)
 }
 
@@ -154,6 +167,7 @@ func EnsureDirExists(filename string) error {
 	return nil
 }
 
+// ParseTimeString converts a standard time string to Unix Epoch
 func ParseTimeString(t string) (int64, error) {
 	i, err := time.Parse("2006-01-02 15:04:05 -0700 MST", t)
 	if err != nil {
@@ -162,7 +176,7 @@ func ParseTimeString(t string) (int64, error) {
 	return i.Unix(), nil
 }
 
-// Returns the MMm or HHhMMm
+// Returns the MMm or HHhMMm or 'Expired' if no time remains
 func TimeRemain(expires int64, space bool) (string, error) {
 	d := time.Until(time.Unix(expires, 0))
 	if d <= 0 {
