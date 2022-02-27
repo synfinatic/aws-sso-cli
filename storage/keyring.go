@@ -42,11 +42,25 @@ const (
 
 // Implements SecureStorage
 type KeyringStore struct {
-	keyring keyring.Keyring
+	keyring KeyringApi
 	config  keyring.Config
 }
 
 var NewPassword string = ""
+
+// KeyringApi is the subset of the Keyring API we use so we can do unit testing
+type KeyringApi interface {
+	// Returns an Item matching the key or ErrKeyNotFound
+	Get(key string) (keyring.Item, error)
+	// Returns the non-secret parts of an Item
+	// GetMetadata(key string) (Metadata, error)
+	// Stores an Item on the keyring
+	Set(item keyring.Item) error
+	// Removes the item with matching key
+	Remove(key string) error
+	// Provides a slice of all keys stored on the keyring
+	// Keys() ([]string, error)
+}
 
 func NewKeyringConfig(name, configDir string) (*keyring.Config, error) {
 	securePath := path.Join(configDir, "secure")
@@ -146,6 +160,10 @@ func NewStorageData() StorageData {
 	}
 }
 
+type Unmarshaler func([]byte, interface{}) error
+
+var storageDataUnmarshal Unmarshaler = json.Unmarshal
+
 // loads the entire StorageData into memory
 func (kr *KeyringStore) getStorageData(s *StorageData) error {
 	data, err := kr.keyring.Get(RECORD_KEY)
@@ -154,7 +172,7 @@ func (kr *KeyringStore) getStorageData(s *StorageData) error {
 		*s = NewStorageData()
 		return nil
 	}
-	if err = json.Unmarshal(data.Data, s); err != nil {
+	if err = storageDataUnmarshal(data.Data, s); err != nil {
 		return err
 	}
 	return nil
@@ -162,11 +180,8 @@ func (kr *KeyringStore) getStorageData(s *StorageData) error {
 
 // saves the entire StorageData into our KeyringStore
 func (kr *KeyringStore) saveStorageData(s StorageData) error {
-	jdata, err := json.Marshal(s)
-	if err != nil {
-		return err
-	}
-	err = kr.keyring.Set(keyring.Item{
+	jdata, _ := json.Marshal(s)
+	err := kr.keyring.Set(keyring.Item{
 		Key:         RECORD_KEY,
 		Data:        jdata,
 		Label:       KEYRING_ID,

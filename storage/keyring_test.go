@@ -19,10 +19,15 @@ package storage
  */
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"os"
+	"path"
 	"testing"
 	"time"
 
+	"github.com/99designs/keyring"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -45,6 +50,26 @@ func TestKeyringSuite(t *testing.T) {
 	s.store, err = OpenKeyring(c)
 	assert.NoError(t, err)
 	suite.Run(t, &s)
+}
+
+func TestKeyringSuiteFails(t *testing.T) {
+	d, err := os.MkdirTemp("", "test-keyring")
+	assert.NoError(t, err)
+	defer os.RemoveAll(d)
+
+	in, err := ioutil.ReadFile("./testdata/bad_store.json")
+	assert.NoError(t, err)
+
+	err = ioutil.WriteFile(path.Join(d, "store.json"), in, 0600)
+	assert.NoError(t, err)
+
+	os.Setenv(ENV_SSO_FILE_PASSWORD, "justapassword")
+	c, err := NewKeyringConfig("json", d)
+	assert.NoError(t, err)
+
+	s := KeyringSuite{}
+	s.store, err = OpenKeyring(c)
+	assert.Error(t, err)
 }
 
 func (suite *KeyringSuite) TestRegisterClientData() {
@@ -79,6 +104,12 @@ func (suite *KeyringSuite) TestRegisterClientData() {
 
 	err = suite.store.GetRegisterClientData("cow", &rcd2)
 	assert.Error(t, err)
+
+	err = suite.store.DeleteRegisterClientData("bar")
+	assert.NoError(t, err)
+
+	err = suite.store.DeleteCreateTokenResponse("what")
+	assert.Error(t, err)
 }
 
 func (suite *KeyringSuite) TestCreateTokenResponse() {
@@ -111,6 +142,12 @@ func (suite *KeyringSuite) TestCreateTokenResponse() {
 	assert.Equal(t, ctr, ctr2)
 
 	err = suite.store.GetCreateTokenResponse("cow", &ctr2)
+	assert.Error(t, err)
+
+	err = suite.store.DeleteCreateTokenResponse("bar")
+	assert.NoError(t, err)
+
+	err = suite.store.DeleteRoleCredentials("what")
 	assert.Error(t, err)
 }
 
@@ -145,4 +182,136 @@ func (suite *KeyringSuite) TestRoleCredentials() {
 
 	err = suite.store.GetRoleCredentials("cow", &rc2)
 	assert.Error(t, err)
+
+	err = suite.store.DeleteRoleCredentials("bar")
+	assert.NoError(t, err)
+
+	err = suite.store.DeleteRoleCredentials("what")
+	assert.Error(t, err)
+}
+
+func TestGetStorageData(t *testing.T) {
+	d, err := os.MkdirTemp("", "test-keyring")
+	assert.NoError(t, err)
+	defer os.RemoveAll(d)
+
+	os.Setenv(ENV_SSO_FILE_PASSWORD, "justapassword")
+	c, err := NewKeyringConfig("file", d)
+	assert.NoError(t, err)
+
+	s := KeyringSuite{}
+	s.store, err = OpenKeyring(c)
+	assert.NoError(t, err)
+	suite.Run(t, &s)
+}
+
+type mockKeyringApi struct{}
+
+func (m *mockKeyringApi) Get(key string) (keyring.Item, error) {
+	return keyring.Item{}, fmt.Errorf("Unable to get %s", key)
+}
+
+func (m *mockKeyringApi) Set(item keyring.Item) error {
+	return fmt.Errorf("Unable to set item")
+}
+
+func (m *mockKeyringApi) Remove(key string) error {
+	return fmt.Errorf("Unable to remove %s", key)
+}
+
+func TestKeyringErrors(t *testing.T) {
+	d, err := os.MkdirTemp("", "test-keyring")
+	assert.NoError(t, err)
+	defer os.RemoveAll(d)
+
+	os.Setenv(ENV_SSO_FILE_PASSWORD, "justapassword")
+	c, err := NewKeyringConfig("file", d)
+	assert.NoError(t, err)
+
+	ks := &KeyringStore{
+		keyring: &mockKeyringApi{},
+		config:  *c,
+	}
+
+	err = ks.getStorageData(&StorageData{})
+	assert.NoError(t, err)
+
+	err = ks.saveStorageData(StorageData{})
+	assert.Error(t, err)
+
+	// RegisterClientData
+	err = ks.GetRegisterClientData("region", &RegisterClientData{})
+	assert.Error(t, err)
+
+	err = ks.SaveRegisterClientData("region", RegisterClientData{})
+	assert.Error(t, err)
+
+	err = ks.DeleteRegisterClientData("region")
+	assert.Error(t, err)
+
+	// RoleCredentials
+	err = ks.GetRoleCredentials("foo", &RoleCredentials{})
+	assert.Error(t, err)
+
+	err = ks.SaveRoleCredentials("foo", RoleCredentials{})
+	assert.Error(t, err)
+
+	err = ks.DeleteRoleCredentials("bar")
+	assert.Error(t, err)
+
+	// CreateTokenResponse
+	err = ks.GetCreateTokenResponse("key", &CreateTokenResponse{})
+	assert.Error(t, err)
+
+	err = ks.SaveCreateTokenResponse("key", CreateTokenResponse{})
+	assert.Error(t, err)
+
+	err = ks.DeleteCreateTokenResponse("key")
+	assert.Error(t, err)
+}
+
+func (suite *KeyringSuite) TestCreateKeys() {
+	t := suite.T()
+
+	assert.Equal(t, "token-response:mykey", suite.store.CreateTokenResponseKey("mykey"))
+	assert.Equal(t, "client-data:mykey", suite.store.RegisterClientKey("mykey"))
+}
+
+func UnmarshalFailure(s []byte, i interface{}) error {
+	return fmt.Errorf("unmarshal failure")
+}
+
+func (suite *KeyringSuite) TestUnmarshalFailure() {
+	t := suite.T()
+
+	storageDataUnmarshal = UnmarshalFailure
+
+	err := suite.store.SaveRegisterClientData("region", RegisterClientData{})
+	assert.Error(t, err)
+
+	err = suite.store.GetRegisterClientData("region", &RegisterClientData{})
+	assert.Error(t, err)
+
+	err = suite.store.DeleteRegisterClientData("region")
+	assert.Error(t, err)
+
+	err = suite.store.SaveCreateTokenResponse("key", CreateTokenResponse{})
+	assert.Error(t, err)
+
+	err = suite.store.GetCreateTokenResponse("key", &CreateTokenResponse{})
+	assert.Error(t, err)
+
+	err = suite.store.DeleteCreateTokenResponse("key")
+	assert.Error(t, err)
+
+	err = suite.store.SaveRoleCredentials("arn", RoleCredentials{})
+	assert.Error(t, err)
+
+	err = suite.store.GetRoleCredentials("arn", &RoleCredentials{})
+	assert.Error(t, err)
+
+	err = suite.store.DeleteRoleCredentials("arn")
+	assert.Error(t, err)
+
+	storageDataUnmarshal = json.Unmarshal
 }
