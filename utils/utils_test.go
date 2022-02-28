@@ -43,9 +43,14 @@ func (suite *UtilsTestSuite) TestParseRoleARN() {
 	t := suite.T()
 
 	a, r, err := ParseRoleARN("arn:aws:iam::11111:role/Foo")
+	assert.NoError(t, err)
 	assert.Equal(t, int64(11111), a)
 	assert.Equal(t, "Foo", r)
+
+	a, r, err = ParseRoleARN("000000011111:Foo")
 	assert.NoError(t, err)
+	assert.Equal(t, int64(11111), a)
+	assert.Equal(t, "Foo", r)
 
 	_, _, err = ParseRoleARN("")
 	assert.Error(t, err)
@@ -72,10 +77,6 @@ func (suite *UtilsTestSuite) TestParseRoleARN() {
 	assert.Error(t, err)
 }
 
-func willPanicMakeRoleARN() {
-	MakeRoleARN(-1, "foo")
-}
-
 func (suite *UtilsTestSuite) TestMakeRoleARN() {
 	t := suite.T()
 
@@ -83,11 +84,7 @@ func (suite *UtilsTestSuite) TestMakeRoleARN() {
 	assert.Equal(t, "arn:aws:iam::000000711111:role/Foo", MakeRoleARN(711111, "Foo"))
 	assert.Equal(t, "arn:aws:iam::000000000000:role/", MakeRoleARN(0, ""))
 
-	assert.Panics(t, willPanicMakeRoleARN)
-}
-
-func willPanicMakeRoleARNs() {
-	MakeRoleARNs("asdfasfdo", "foo")
+	assert.Panics(t, func() { MakeRoleARN(-1, "foo") })
 }
 
 func (suite *UtilsTestSuite) TestMakeRoleARNs() {
@@ -98,7 +95,7 @@ func (suite *UtilsTestSuite) TestMakeRoleARNs() {
 	assert.Equal(t, "arn:aws:iam::000000711111:role/Foo", MakeRoleARNs("000711111", "Foo"))
 	assert.Equal(t, "arn:aws:iam::000000000000:role/", MakeRoleARNs("0", ""))
 
-	assert.Panics(t, willPanicMakeRoleARNs)
+	assert.Panics(t, func() { MakeRoleARNs("asdfasfdo", "foo") })
 }
 
 func (suite *UtilsTestSuite) TestEnsureDirExists() {
@@ -106,8 +103,15 @@ func (suite *UtilsTestSuite) TestEnsureDirExists() {
 
 	defer os.RemoveAll("./does_not_exist_dir")
 	assert.NoError(t, EnsureDirExists("./testdata/role_tags.yaml"))
-	assert.NoError(t, EnsureDirExists("./does_not_exist_dir/foo.yaml"))
 	assert.NoError(t, EnsureDirExists("./does_not_exist_dir/bar/baz/foo.yaml"))
+
+	f, _ := os.OpenFile("./does_not_exist_dir/foo.yaml", os.O_WRONLY|os.O_CREATE, 0644)
+	fmt.Fprintf(f, "data")
+	f.Close()
+	assert.Error(t, EnsureDirExists("./does_not_exist_dir/foo.yaml/bar"))
+
+	_ = os.MkdirAll("./does_not_exist_dir/invalid", 0000)
+	assert.Error(t, EnsureDirExists("./does_not_exist_dir/invalid/foo"))
 
 	assert.Error(t, EnsureDirExists("/foo/bar"))
 }
@@ -240,6 +244,9 @@ func (suite *UtilsTestSuite) TestParseTimeString() {
 	x, e := ParseTimeString("1970-01-01 00:00:00 +0000 GMT")
 	assert.NoError(t, e)
 	assert.Equal(t, int64(0), x)
+
+	_, e = ParseTimeString("00:00:00 +0000 GMT")
+	assert.Error(t, e)
 }
 
 func (suite *UtilsTestSuite) TestTimeRemain() {

@@ -98,11 +98,12 @@ func HandleUrl(action, browser, url, pre, post string) error {
 func ParseRoleARN(arn string) (int64, string, error) {
 	s := strings.Split(arn, ":")
 	var accountid, role string
-	if len(s) == 2 {
+	switch len(s) {
+	case 2:
 		// short account:Role format
 		accountid = s[0]
 		role = s[1]
-	} else if len(s) == 6 {
+	case 6:
 		// long format for arn:aws:iam::XXXXXXXXXX:role/YYYYYYYY
 		accountid = s[4]
 		s = strings.Split(s[5], "/")
@@ -110,7 +111,7 @@ func ParseRoleARN(arn string) (int64, string, error) {
 			return 0, "", fmt.Errorf("Unable to parse ARN: %s", arn)
 		}
 		role = s[1]
-	} else {
+	default:
 		return 0, "", fmt.Errorf("Unable to parse ARN: %s", arn)
 	}
 
@@ -157,6 +158,7 @@ func EnsureDirExists(filename string) error {
 	} else if err != nil {
 		return err
 	}
+	log.Infof("opened %s", storeDir)
 	info, err := f.Stat()
 	if err != nil {
 		return fmt.Errorf("Unable to stat %s: %s", storeDir, err.Error())
