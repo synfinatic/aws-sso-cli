@@ -24,14 +24,14 @@ AWS SSO CLI includes a simple setup wizard to aid in configuration.  This
 wizard will automatically run anytime you run `aws-sso` and have a missing
 `~/.aws-sso/config.yaml` file and it will ask the following questions:
 
- * SSO Instance Name ([DefaultSSO](docs/config.md#defaultsso))
- * SSO Start URL ([StartUrl](docs/config.md#starturl))
- * AWS SSO Region ([SSORegion](docs/config.md#ssoregion))
- * Default region for connecting to AWS ([DefaultRegion](docs/config.md#defaultregion))
- * Default action to take with URls ([UrlAction](docs/config.md#browser--urlaction))
- * Maximum number of History items to keep ([HistoryLimit](docs/config.md#historylimit))
- * Number of minutes to keep items in History ([HistoryMinutes](docs/config.md#historyminutes))
- * Log Level ([LogLevel](docs/config.md#loglevel--loglines))
+ * SSO Instance Name ([DefaultSSO](config.md#defaultsso))
+ * SSO Start URL ([StartUrl](config.md#starturl))
+ * AWS SSO Region ([SSORegion](config.md#ssoregion))
+ * Default region for connecting to AWS ([DefaultRegion](config.md#defaultregion))
+ * Default action to take with URls ([UrlAction](config.md#browser--urlaction))
+ * Maximum number of History items to keep ([HistoryLimit](config.md#historylimit))
+ * Number of minutes to keep items in History ([HistoryMinutes](config.md#historyminutes))
+ * Log Level ([LogLevel](config.md#loglevel--loglines))
 
 For more information about configuring `aws-sso` read the
 [configuration guide](config.md).
