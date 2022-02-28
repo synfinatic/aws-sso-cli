@@ -1,0 +1,5 @@
+{
+  "RegisterClient": "foobar",
+  "CreateTokenResponse": "baz",
+  "RoleCredentials": "illegal"
+}
