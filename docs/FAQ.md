@@ -201,7 +201,7 @@ prompt you for your password.  This is probably the best option for Linux
 jumphosts.  In these cases, I suggest using the `eval` or `exec` command to
 load the resulting AWS API credentials into your shell so that you don't have
 to keep typing in your password contantly.  Of course, you can also set the
-`$AWS_SSO_FILE_PASSPHRASE` environment variable in your shell to avoid typing
+`$AWS_SSO_FILE_PASSWORD` environment variable in your shell to avoid typing
 it in, but please make sure you are aware of the security implications of
 doing so.
 
