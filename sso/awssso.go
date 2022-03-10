@@ -170,11 +170,7 @@ func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 func (as *AWSSSO) makeRoleInfo(account AccountInfo, i int, r types.RoleInfo) error {
 	var via string
 
-	aId, err := strconv.ParseInt(account.AccountId, 10, 64)
-	if err != nil {
-		return fmt.Errorf("Unable to parse accountid %s: %s",
-			account.AccountId, err.Error())
-	}
+	aId, _ := strconv.ParseInt(account.AccountId, 10, 64)
 	ssoRole, err := as.SSOConfig.GetRole(aId, aws.ToString(r.RoleName))
 	if err != nil && len(ssoRole.Via) > 0 {
 		via = ssoRole.Via
@@ -208,7 +204,10 @@ func (ai AccountInfo) GetHeader(fieldName string) (string, error) {
 func (ai AccountInfo) GetAccountId64() int64 {
 	i64, err := strconv.ParseInt(ai.AccountId, 10, 64)
 	if err != nil {
-		log.WithError(err).Fatalf("Invalid AWS AccountID from AWS SSO: %s", ai.AccountId)
+		log.WithError(err).Panicf("Invalid AWS AccountID from AWS SSO: %s", ai.AccountId)
+	}
+	if i64 < 0 {
+		log.WithError(err).Panicf("AWS AccountID must be >= 0: %s", ai.AccountId)
 	}
 	return i64
 }

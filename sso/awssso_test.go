@@ -29,6 +29,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sso"
 	"github.com/aws/aws-sdk-go-v2/service/sso/types"
+	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	"github.com/stretchr/testify/assert"
 	"github.com/synfinatic/aws-sso-cli/storage"
 )
@@ -72,6 +73,55 @@ func (m *mockSsoApi) GetRoleCredentials(ctx context.Context, params *sso.GetRole
 	return x.GetRoleCredentials, x.Error
 }
 
+func TestNewAWSSSO(t *testing.T) {
+	var jstore storage.SecureStorage
+	tfile, err := ioutil.TempFile("", "*storage.json")
+	assert.NoError(t, err)
+
+	jstore, err = storage.OpenJsonStore(tfile.Name())
+	assert.NoError(t, err)
+
+	defer os.Remove(tfile.Name())
+
+	c := SSOConfig{
+		StartUrl:  "https://starturl.com/start",
+		SSORegion: "us-east-1",
+	}
+
+	s := NewAWSSSO(&c, &jstore)
+
+	assert.NotNil(t, s)
+	assert.Equal(t, jstore, s.store)
+	assert.Equal(t, awsSSOClientName, s.ClientName)
+	assert.Equal(t, awsSSOClientType, s.ClientType)
+	assert.Equal(t, "us-east-1", s.SsoRegion)
+	assert.Equal(t, c.StartUrl, s.StartUrl)
+	assert.Empty(t, s.Roles)
+	assert.Equal(t, &c, s.SSOConfig)
+}
+
+func TestRoleARN(t *testing.T) {
+	ri := RoleInfo{
+		AccountId: "1111111",
+		RoleName:  "FooBar",
+	}
+	assert.Equal(t, "arn:aws:iam::000001111111:role/FooBar", ri.RoleArn())
+}
+
+func TestGetFieldNameRoleInfo(t *testing.T) {
+	ri := RoleInfo{
+		AccountId: "1111111",
+		RoleName:  "FooBar",
+	}
+
+	s, err := ri.GetHeader("AccountId")
+	assert.NoError(t, err)
+	assert.Equal(t, "AccountId", s)
+
+	_, err = ri.GetHeader("AccountIdDoesntExist")
+	assert.Error(t, err)
+}
+
 func TestGetRoles(t *testing.T) {
 	tfile, err := ioutil.TempFile("", "*storage.json")
 	assert.NoError(t, err)
@@ -91,6 +141,7 @@ func TestGetRoles(t *testing.T) {
 		SSOConfig: &SSOConfig{
 			Accounts: map[string]*SSOAccount{},
 		},
+		urlAction: "print",
 		Token: storage.CreateTokenResponse{
 			AccessToken:  "access-token",
 			ExpiresIn:    42,
@@ -137,62 +188,210 @@ func TestGetRoles(t *testing.T) {
 		},
 	}
 
-	for i := 0; i < 2; i++ {
-		aInfo := AccountInfo{
-			Id:           0,
-			AccountId:    "000001111111",
-			AccountName:  "MyAccount",
-			EmailAddress: "foo@bar.com",
-		}
-		rinfo, err := as.GetRoles(aInfo)
-		assert.NoError(t, err)
-		assert.Equal(t, 3, len(rinfo))
-		assert.Equal(t, RoleInfo{
-			Id:           0,
-			Arn:          "arn:aws:iam::000001111111:role/FooBar",
-			RoleName:     "FooBar",
-			AccountId:    "000001111111",
-			AccountName:  "MyAccount",
-			EmailAddress: "foo@bar.com",
-			SSORegion:    "us-west-1",
-			StartUrl:     "https://testing.awsapps.com/start",
-		}, rinfo[0])
-		assert.Equal(t, rinfo[0], as.Roles["000001111111"][0])
-
-		assert.Equal(t, RoleInfo{
-			Id:           1,
-			Arn:          "arn:aws:iam::000001111111:role/HappyClam",
-			RoleName:     "HappyClam",
-			AccountId:    "000001111111",
-			AccountName:  "MyAccount",
-			EmailAddress: "foo@bar.com",
-			SSORegion:    "us-west-1",
-			StartUrl:     "https://testing.awsapps.com/start",
-		}, rinfo[1])
-		assert.Equal(t, rinfo[1], as.Roles["000001111111"][1])
-
-		assert.Equal(t, RoleInfo{
-			Id:           2,
-			Arn:          "arn:aws:iam::000001111111:role/MooCow",
-			RoleName:     "MooCow",
-			AccountId:    "000001111111",
-			AccountName:  "MyAccount",
-			EmailAddress: "foo@bar.com",
-			SSORegion:    "us-west-1",
-			StartUrl:     "https://testing.awsapps.com/start",
-		}, rinfo[2])
-		assert.Equal(t, rinfo[2], as.Roles["000001111111"][2])
-
-		// account doesn't exist
-		aInfo = AccountInfo{
-			Id:           0,
-			AccountId:    "00000888888",
-			AccountName:  "MyAccount",
-			EmailAddress: "foo@bar.com",
-		}
-		_, err = as.GetRoles(aInfo)
-		assert.Error(t, err)
+	aInfo := AccountInfo{
+		Id:           0,
+		AccountId:    "000001111111",
+		AccountName:  "MyAccount",
+		EmailAddress: "foo@bar.com",
 	}
+	rinfo, err := as.GetRoles(aInfo)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, len(rinfo))
+
+	assert.Equal(t, RoleInfo{
+		Id:           0,
+		Arn:          "arn:aws:iam::000001111111:role/FooBar",
+		RoleName:     "FooBar",
+		AccountId:    "000001111111",
+		AccountName:  "MyAccount",
+		EmailAddress: "foo@bar.com",
+		SSORegion:    "us-west-1",
+		StartUrl:     "https://testing.awsapps.com/start",
+	}, rinfo[0])
+	assert.Equal(t, rinfo[0], as.Roles["000001111111"][0])
+
+	assert.Equal(t, RoleInfo{
+		Id:           1,
+		Arn:          "arn:aws:iam::000001111111:role/HappyClam",
+		RoleName:     "HappyClam",
+		AccountId:    "000001111111",
+		AccountName:  "MyAccount",
+		EmailAddress: "foo@bar.com",
+		SSORegion:    "us-west-1",
+		StartUrl:     "https://testing.awsapps.com/start",
+	}, rinfo[1])
+	assert.Equal(t, rinfo[1], as.Roles["000001111111"][1])
+
+	assert.Equal(t, RoleInfo{
+		Id:           2,
+		Arn:          "arn:aws:iam::000001111111:role/MooCow",
+		RoleName:     "MooCow",
+		AccountId:    "000001111111",
+		AccountName:  "MyAccount",
+		EmailAddress: "foo@bar.com",
+		SSORegion:    "us-west-1",
+		StartUrl:     "https://testing.awsapps.com/start",
+	}, rinfo[2])
+	assert.Equal(t, rinfo[2], as.Roles["000001111111"][2])
+
+	// account doesn't exist
+	aInfo = AccountInfo{
+		Id:           0,
+		AccountId:    "00000888888",
+		AccountName:  "MyAccount",
+		EmailAddress: "foo@bar.com",
+	}
+	_, err = as.GetRoles(aInfo)
+	assert.Error(t, err)
+
+	// another code path
+	as.ssooidc = &mockSsoOidcApi{
+		Results: []mockSsoOidcApiResults{
+			{
+				RegisterClient: &ssooidc.RegisterClientOutput{
+					AuthorizationEndpoint: nil,
+					ClientId:              aws.String("this-is-my-client-id"),
+					ClientSecret:          aws.String("this-is-my-client-secret"),
+					ClientIdIssuedAt:      int64(42),
+					ClientSecretExpiresAt: int64(4200),
+					TokenEndpoint:         nil,
+				},
+				Error: nil,
+			},
+			{
+				StartDeviceAuthorization: &ssooidc.StartDeviceAuthorizationOutput{
+					DeviceCode:              aws.String("device-code"),
+					UserCode:                aws.String("user-code"),
+					VerificationUri:         aws.String("verification-uri"),
+					VerificationUriComplete: aws.String("verification-uri-complete"),
+					ExpiresIn:               42,
+					Interval:                5,
+				},
+				Error: nil,
+			},
+			{
+				CreateToken: &ssooidc.CreateTokenOutput{
+					AccessToken:  aws.String("access-token"),
+					ExpiresIn:    42,
+					IdToken:      aws.String("id-token"),
+					RefreshToken: aws.String("refresh-token"),
+					TokenType:    aws.String("token-type"),
+				},
+				Error: nil,
+			},
+		},
+	}
+
+	as.sso = &mockSsoApi{
+		Results: []mockSsoApiResults{
+			{
+				Error: fmt.Errorf("Force a new token"),
+			},
+			{
+				ListAccountRoles: &sso.ListAccountRolesOutput{
+					NextToken: aws.String("next-token"),
+					RoleList: []types.RoleInfo{
+						{
+							AccountId: aws.String("000001111111"),
+							RoleName:  aws.String("FooBar"),
+						},
+						{
+							AccountId: aws.String("000001111111"),
+							RoleName:  aws.String("HappyClam"),
+						},
+					},
+				},
+				Error: nil,
+			},
+			{
+				ListAccountRoles: &sso.ListAccountRolesOutput{
+					NextToken: aws.String(""),
+					RoleList: []types.RoleInfo{
+						{
+							AccountId: aws.String("000001111111"),
+							RoleName:  aws.String("MooCow"),
+						},
+					},
+				},
+				Error: nil,
+			},
+			{
+				Error: fmt.Errorf("Due to caching, this error shouldn't happen"),
+			},
+		},
+	}
+
+	aInfo = AccountInfo{
+		Id:           0,
+		AccountId:    "000001111111",
+		AccountName:  "MyAccount",
+		EmailAddress: "foo@bar.com",
+	}
+	rinfo, err = as.GetRoles(aInfo)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, len(rinfo))
+
+	// yet another code path
+	as.Roles = map[string][]RoleInfo{} // flush cache
+	as.SSOConfig = &SSOConfig{
+		Accounts: map[string]*SSOAccount{},
+	}
+	as.ssooidc = &mockSsoOidcApi{
+		Results: []mockSsoOidcApiResults{
+			{
+				RegisterClient: &ssooidc.RegisterClientOutput{
+					AuthorizationEndpoint: nil,
+					ClientId:              aws.String("this-is-my-client-id"),
+					ClientSecret:          aws.String("this-is-my-client-secret"),
+					ClientIdIssuedAt:      int64(42),
+					ClientSecretExpiresAt: int64(4200),
+					TokenEndpoint:         nil,
+				},
+				Error: nil,
+			},
+			{
+				StartDeviceAuthorization: &ssooidc.StartDeviceAuthorizationOutput{
+					DeviceCode:              aws.String("device-code"),
+					UserCode:                aws.String("user-code"),
+					VerificationUri:         aws.String("verification-uri"),
+					VerificationUriComplete: aws.String("verification-uri-complete"),
+					ExpiresIn:               42,
+					Interval:                5,
+				},
+				Error: nil,
+			},
+			{
+				CreateToken: &ssooidc.CreateTokenOutput{
+					AccessToken:  aws.String("access-token"),
+					ExpiresIn:    42,
+					IdToken:      aws.String("id-token"),
+					RefreshToken: aws.String("refresh-token"),
+					TokenType:    aws.String("token-type"),
+				},
+				Error: nil,
+			},
+		},
+	}
+
+	as.sso = &mockSsoApi{
+		Results: []mockSsoApiResults{
+			{
+				Error: fmt.Errorf("Force a new token"),
+			},
+			{
+				Error: fmt.Errorf("failure after re-auth"),
+			},
+		},
+	}
+
+	aInfo = AccountInfo{
+		Id:           0,
+		AccountId:    "000001111111",
+		AccountName:  "MyAccount",
+		EmailAddress: "foo@bar.com",
+	}
+	_, err = as.GetRoles(aInfo)
+	assert.Error(t, err)
 }
 
 func TestGetAccounts(t *testing.T) {
@@ -289,6 +488,60 @@ func TestGetAccounts(t *testing.T) {
 		}, aInfo[2])
 		assert.Equal(t, aInfo[2], as.Accounts[2])
 	}
+
+	// verify we handle more complex error situations
+	as.Accounts = []AccountInfo{} // flush cash
+
+	as.sso = &mockSsoApi{
+		Results: []mockSsoApiResults{
+			{
+				Error: fmt.Errorf("This error is handled internally"),
+			},
+			{
+				Error: fmt.Errorf("This error is returned"),
+			},
+		},
+	}
+
+	as.ssooidc = &mockSsoOidcApi{
+		Results: []mockSsoOidcApiResults{
+			{
+				RegisterClient: &ssooidc.RegisterClientOutput{
+					AuthorizationEndpoint: nil,
+					ClientId:              aws.String("this-is-my-client-id"),
+					ClientSecret:          aws.String("this-is-my-client-secret"),
+					ClientIdIssuedAt:      int64(42),
+					ClientSecretExpiresAt: int64(4200),
+					TokenEndpoint:         nil,
+				},
+				Error: nil,
+			},
+			{
+				StartDeviceAuthorization: &ssooidc.StartDeviceAuthorizationOutput{
+					DeviceCode:              aws.String("device-code"),
+					UserCode:                aws.String("user-code"),
+					VerificationUri:         aws.String("verification-uri"),
+					VerificationUriComplete: aws.String("verification-uri-complete"),
+					ExpiresIn:               42,
+					Interval:                5,
+				},
+				Error: nil,
+			},
+			{
+				CreateToken: &ssooidc.CreateTokenOutput{
+					AccessToken:  aws.String("access-token"),
+					ExpiresIn:    42,
+					IdToken:      aws.String("id-token"),
+					RefreshToken: aws.String("refresh-token"),
+					TokenType:    aws.String("token-type"),
+				},
+				Error: nil,
+			},
+		},
+	}
+
+	_, err = as.GetAccounts()
+	assert.Error(t, err)
 }
 
 func TestGetRoleCredentials(t *testing.T) {
@@ -368,4 +621,33 @@ func TestGetRoleCredentials(t *testing.T) {
 
 	_, err = as.GetRoleCredentials(int64(000001111111), "FooBar")
 	assert.Error(t, err)
+}
+
+func TestGetFieldNameAccountInfo(t *testing.T) {
+	ai := AccountInfo{
+		AccountId:   "1111111",
+		AccountName: "FooBar",
+	}
+
+	a, err := ai.GetHeader("AccountId")
+	assert.NoError(t, err)
+	assert.Equal(t, "AccountId", a)
+
+	_, err = ai.GetHeader("AccountIdDoesntExist")
+	assert.Error(t, err)
+}
+
+func TestGetAccountId64(t *testing.T) {
+	ai := AccountInfo{
+		AccountId:   "1111111",
+		AccountName: "FooBar",
+	}
+
+	assert.Equal(t, int64(1111111), ai.GetAccountId64())
+
+	ai.AccountId = "-1"
+	assert.Panics(t, func() { ai.GetAccountId64() })
+
+	ai.AccountId = "InvalidAccountId"
+	assert.Panics(t, func() { ai.GetAccountId64() })
 }
