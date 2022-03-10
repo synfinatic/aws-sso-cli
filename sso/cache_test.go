@@ -41,6 +41,7 @@ type CacheTestSuite struct {
 	suite.Suite
 	cache     *Cache
 	cacheFile string
+	settings  *Settings
 }
 
 type ProfileTests map[string]Roles
@@ -70,6 +71,7 @@ func TestCacheTestSuite(t *testing.T) {
 	s := &CacheTestSuite{
 		cache:     c,
 		cacheFile: f.Name(),
+		settings:  settings,
 	}
 	suite.Run(t, s)
 }
@@ -312,4 +314,27 @@ func (suite *CacheTestSuite) TestCheckProfiles() {
 	r = tests["Valid3"]
 	err = r.checkProfiles(&badSettings)
 	assert.Error(t, err)
+}
+
+func (suite *CacheTestSuite) TestGetEnvVarTags() {
+	t := suite.T()
+	roles := suite.cache.SSO[suite.cache.ssoName].Roles
+	flat, err := roles.GetRoleByProfile("audit-admin", suite.settings)
+	assert.NoError(t, err)
+
+	settings := Settings{
+		EnvVarTags: []string{
+			"Role",
+			"Email",
+			"AccountName",
+			"FooBar", // doesn't exist
+		},
+	}
+
+	x := map[string]string{
+		"AWS_SSO_TAG_ROLE":        "AWSAdministratorAccess",
+		"AWS_SSO_TAG_EMAIL":       "control-tower-dev-aws+audit@ourcompany.com",
+		"AWS_SSO_TAG_ACCOUNTNAME": "Audit",
+	}
+	assert.Equal(t, x, flat.GetEnvVarTags(&settings))
 }
