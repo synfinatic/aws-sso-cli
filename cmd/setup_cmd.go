@@ -27,6 +27,7 @@ import (
 	"github.com/manifoldco/promptui"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
+	"github.com/synfinatic/aws-sso-cli/utils"
 )
 
 // https://docs.aws.amazon.com/general/latest/gr/sso.html
@@ -78,9 +79,8 @@ func setupWizard(ctx *RunContext) error {
 	var hLimit, hMinutes int64
 
 	if ctx.Cli.Setup.UrlAction != "" {
-		if err := urlActionValidate(ctx.Cli.Setup.UrlAction); err != nil {
-			log.Fatalf("Invalid value for --default-url-action %s", ctx.Cli.Setup.UrlAction)
-		}
+		utils.NewHandleUrl(ctx.Cli.Setup.UrlAction, "", "")
+		urlAction = ctx.Cli.Setup.UrlAction
 	}
 
 	if ctx.Cli.Setup.DefaultLevel != "" {
@@ -170,12 +170,6 @@ func setupWizard(ctx *RunContext) error {
 	}
 
 	// UrlAction
-	if len(ctx.Cli.Setup.UrlAction) > 0 {
-		if err := urlActionValidate(ctx.Cli.Setup.UrlAction); err == nil {
-			urlAction = ctx.Cli.Setup.UrlAction
-		}
-	}
-
 	if len(urlAction) == 0 {
 		// How should we deal with URLs?
 		label = "Default action to take with URLs (UrlAction)"

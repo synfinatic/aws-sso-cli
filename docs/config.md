@@ -33,7 +33,12 @@ DefaultRegion: <AWS_DEFAULT_REGION>
 DefaultSSO: <name of AWS SSO>
 
 Browser: <path to web browser>
-UrlAction: [print|open|clip]
+UrlAction: [clip|exec|print|printurl|open]
+UrlActionExec:
+    - <command>
+    - <arg 1>
+    - <arg N>
+    - "%s"
 ConsoleDuration: <minutes>
 
 LogLevel: [error|warn|info|debug|trace]
@@ -160,16 +165,34 @@ If you only have a single AWS SSO instance, then it doesn't really matter what y
 but if you have two or more, than `Default` is automatically selected unless you manually
 specify it here, on the CLI (`--sso`), or via the `AWS_SSO` environment variable.
 
-## Browser / UrlAction
+## Browser / UrlAction / UrlActionExec
 
 `UrlAction` gives you control over how AWS SSO and AWS Console URLs are opened in a browser:
 
- * `print` -- Prints the URL in your terminal
- * `open` -- Opens the URL in your default browser or the browser you specified via `--browser` or `Browser`
  * `clip` -- Copies the URL to your clipboard
+ * `exec` -- Execute the command provided in `UrlActionExec`
+ * `open` -- Opens the URL in your default browser or the browser you specified via `--browser` or `Browser`
+ * `print` -- Prints the URL with a message in your terminal to stderr
+ * `printurl` -- Prints only the URL in your terminal to stderr
 
-If `Browser` is not set, then your default browser will be used.  Note that
-your browser needs to support Javascript for the AWS SSO user interface.
+If `Browser` is not set, then your default browser will be used and that
+your browser needs to support JavaScript for the AWS SSO user interface.
+
+`UrlActionExec` allows you to execute arbitrary commands to handle the URL.  The command and arguments
+should be specified as a list, with the URL to open specified as the format string `%s`.  Only one instance
+of `%s` is allowed.  Note that YAML requires quotes around strings which start with a [reserved indicator](
+https://yaml.org/spec/1.2-old/spec.html#id2774228) like `%`.
+
+Example:
+
+```yaml
+UrlActionExec:
+    - open
+    - -a
+    - /Applications/Brave Browser.app
+    - --args
+    - "%s"
+```
 
 ## LogLevel / LogLines
 
@@ -352,6 +375,6 @@ using the `eval` or `exec` commands.
 **Note:** These environment variables are considered completely owned and
 controlled by `aws-sso` so any existing value will be overwritten.
 
-**Note:** This feature is not compatible when using roles using the 
+**Note:** This feature is not compatible when using roles using the
 `$AWS_PROFILE` via the `config` command.
 

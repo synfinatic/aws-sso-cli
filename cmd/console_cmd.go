@@ -291,7 +291,8 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials, durat
 	}
 	url := login.GetUrl()
 
-	return utils.HandleUrl(ctx.Settings.UrlAction, ctx.Settings.Browser, url,
+	urlOpener := utils.NewHandleUrl(ctx.Settings.UrlAction, ctx.Settings.Browser, ctx.Settings.UrlExecCommand)
+	return urlOpener.Open(url,
 		"Please open the following URL in your browser:\n\n", "\n\n")
 }
 

@@ -34,7 +34,6 @@ import (
 	"github.com/knadh/koanf/providers/file"
 	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/utils"
-	// goyaml "gopkg.in/yaml.v3"
 )
 
 const (
@@ -54,6 +53,7 @@ type Settings struct {
 	JsonStore         string                 `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
 	UrlAction         string                 `koanf:"UrlAction" yaml:"UrlAction,omitempty"`
 	Browser           string                 `koanf:"Browser" yaml:"Browser,omitempty"`
+	UrlExecCommand    interface{}            `koanf:"UrlExecCommand" yaml:"UrlExecCommand,omitempty"` // string or list
 	ProfileFormat     string                 `koanf:"ProfileFormat" yaml:"ProfileFormat,omitempty"`
 	AccountPrimaryTag []string               `koanf:"AccountPrimaryTag" yaml:"AccountPrimaryTag,omitempty"`
 	PromptColors      PromptColors           `koanf:"PromptColors" yaml:"PromptColors,omitempty"` // go-prompt colors

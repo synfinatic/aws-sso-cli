@@ -96,7 +96,9 @@ func (as *AWSSSO) reauthenticate() error {
 		return fmt.Errorf("Unable to get device auth info from AWS SSO: %s", err.Error())
 	}
 
-	err = utils.HandleUrl(as.urlAction, as.browser, auth.VerificationUriComplete,
+	urlOpener := utils.NewHandleUrl(as.urlAction, as.browser, as.urlExecCommand)
+
+	err = urlOpener.Open(auth.VerificationUriComplete,
 		"Please open the following URL in your browser:\n\n", "\n\n")
 	if err != nil {
 		return err

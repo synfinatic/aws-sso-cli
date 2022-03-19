@@ -79,6 +79,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"ListFields":                                []string{"AccountId", "AccountAlias", "RoleName", "ExpiresStr"},
 	"ConsoleDuration":                           60,
 	"UrlAction":                                 "open",
+	"UrlExecCommand":                            "",
 	"LogLevel":                                  "warn",
 	"DefaultSSO":                                "Default",
 }
@@ -89,7 +90,7 @@ type CLI struct {
 	ConfigFile string `kong:"name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
 	Lines      bool   `kong:"help='Print line number in logs'"`
 	LogLevel   string `kong:"short='L',name='level',help='Logging level [error|warn|info|debug|trace] (default: warn)'"`
-	UrlAction  string `kong:"short='u',help='How to handle URLs [open|print|clip] (default: open)'"`
+	UrlAction  string `kong:"short='u',help='How to handle URLs [clip|exec|open|print|printurl] (default: open)'"`
 	SSO        string `kong:"short='S',help='Override default AWS SSO Instance',env='AWS_SSO',predictor='sso'"`
 	STSRefresh bool   `kong:"help='Force refresh of STS Token Credentials'"`
 
@@ -114,10 +115,6 @@ func main() {
 	cli := CLI{}
 	ctx, override := parseArgs(&cli)
 	var err error
-
-	if err := urlActionValidate(cli.UrlAction); err != nil {
-		log.Fatalf("%s", err.Error())
-	}
 
 	if err := logLevelValidate(cli.LogLevel); err != nil {
 		log.Fatalf("%s", err.Error())
@@ -324,12 +321,4 @@ func logLevelValidate(level string) error {
 		return nil
 	}
 	return fmt.Errorf("Invalid value for --level: %s", level)
-}
-
-func urlActionValidate(action string) error {
-	switch action {
-	case "open", "print", "clip", "":
-		return nil
-	}
-	return fmt.Errorf("Invalid value for --url-action: %s", action)
 }
