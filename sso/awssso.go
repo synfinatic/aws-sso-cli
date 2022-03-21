@@ -52,21 +52,22 @@ type SsoApi interface {
 }
 
 type AWSSSO struct {
-	sso        SsoApi
-	ssooidc    SsoOidcApi
-	store      storage.SecureStorage
-	ClientName string                      `json:"ClientName"`
-	ClientType string                      `json:"ClientType"`
-	SsoRegion  string                      `json:"ssoRegion"`
-	StartUrl   string                      `json:"startUrl"`
-	ClientData storage.RegisterClientData  `json:"RegisterClient"`
-	DeviceAuth storage.StartDeviceAuthData `json:"StartDeviceAuth"`
-	Token      storage.CreateTokenResponse `json:"TokenResponse"`
-	Accounts   []AccountInfo               `json:"Accounts"`
-	Roles      map[string][]RoleInfo       `json:"Roles"`
-	SSOConfig  *SSOConfig                  `json:"SSOConfig"`
-	urlAction  string                      // cache for future calls
-	browser    string                      // cache for future calls
+	sso            SsoApi
+	ssooidc        SsoOidcApi
+	store          storage.SecureStorage
+	ClientName     string                      `json:"ClientName"`
+	ClientType     string                      `json:"ClientType"`
+	SsoRegion      string                      `json:"ssoRegion"`
+	StartUrl       string                      `json:"startUrl"`
+	ClientData     storage.RegisterClientData  `json:"RegisterClient"`
+	DeviceAuth     storage.StartDeviceAuthData `json:"StartDeviceAuth"`
+	Token          storage.CreateTokenResponse `json:"TokenResponse"`
+	Accounts       []AccountInfo               `json:"Accounts"`
+	Roles          map[string][]RoleInfo       `json:"Roles"`
+	SSOConfig      *SSOConfig                  `json:"SSOConfig"`
+	urlAction      string                      // cache for future calls
+	browser        string                      // cache for future calls
+	urlExecCommand interface{}                 // cache for future calls
 }
 
 func NewAWSSSO(s *SSOConfig, store *storage.SecureStorage) *AWSSSO {
@@ -79,15 +80,18 @@ func NewAWSSSO(s *SSOConfig, store *storage.SecureStorage) *AWSSSO {
 	})
 
 	as := AWSSSO{
-		sso:        ssoSession,
-		ssooidc:    oidcSession,
-		store:      *store,
-		ClientName: awsSSOClientName,
-		ClientType: awsSSOClientType,
-		SsoRegion:  s.SSORegion,
-		StartUrl:   s.StartUrl,
-		Roles:      map[string][]RoleInfo{},
-		SSOConfig:  s,
+		sso:            ssoSession,
+		ssooidc:        oidcSession,
+		store:          *store,
+		ClientName:     awsSSOClientName,
+		ClientType:     awsSSOClientType,
+		SsoRegion:      s.SSORegion,
+		StartUrl:       s.StartUrl,
+		Roles:          map[string][]RoleInfo{},
+		SSOConfig:      s,
+		urlAction:      s.settings.UrlAction,
+		browser:        s.settings.Browser,
+		urlExecCommand: s.settings.UrlExecCommand,
 	}
 	return &as
 }

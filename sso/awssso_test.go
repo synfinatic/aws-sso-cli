@@ -86,6 +86,7 @@ func TestNewAWSSSO(t *testing.T) {
 	c := SSOConfig{
 		StartUrl:  "https://starturl.com/start",
 		SSORegion: "us-east-1",
+		settings:  &Settings{},
 	}
 
 	s := NewAWSSSO(&c, &jstore)
@@ -418,6 +419,7 @@ func TestGetAccounts(t *testing.T) {
 			RefreshToken: "refresh-token",
 			TokenType:    "token-type",
 		},
+		urlAction: "print",
 	}
 
 	as.sso = &mockSsoApi{
