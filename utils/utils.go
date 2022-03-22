@@ -30,7 +30,6 @@ import (
 	"time"
 
 	"github.com/atotto/clipboard"
-	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open" // default opener
 )
 
@@ -248,7 +247,6 @@ func EnsureDirExists(filename string) error {
 	} else if err != nil {
 		return err
 	}
-	log.Infof("opened %s", storeDir)
 	info, err := f.Stat()
 	if err != nil {
 		return fmt.Errorf("Unable to stat %s: %s", storeDir, err.Error())

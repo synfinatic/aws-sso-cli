@@ -25,7 +25,6 @@ import (
 	"runtime"
 
 	"github.com/c-bata/go-prompt"
-	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/synfinatic/aws-sso-cli/utils"
 )

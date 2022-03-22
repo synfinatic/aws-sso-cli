@@ -29,7 +29,6 @@ import (
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
-	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/utils"
 )
 

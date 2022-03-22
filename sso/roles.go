@@ -28,7 +28,6 @@ import (
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/davecgh/go-spew/spew"
-	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/utils"
 	"github.com/synfinatic/gotable"
 )

@@ -27,7 +27,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	oidctypes "github.com/aws/aws-sdk-go-v2/service/ssooidc/types"
-	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/storage"
 	"github.com/synfinatic/aws-sso-cli/utils"
 )

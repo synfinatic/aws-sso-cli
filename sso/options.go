@@ -23,7 +23,6 @@ import (
 	"reflect"
 
 	"github.com/c-bata/go-prompt"
-	log "github.com/sirupsen/logrus"
 )
 
 type PromptColors struct {

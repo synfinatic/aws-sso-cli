@@ -27,7 +27,6 @@ import (
 	"time"
 
 	// "github.com/davecgh/go-spew/spew"
-	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/utils"
 )
 
@@ -195,24 +194,34 @@ func (c *Cache) deleteOldHistory() {
 	cache := c.GetSSO()
 
 	newHistoryItems := []string{}
+
+	// iteratate over each ARN in our History list
 	for _, arn := range cache.History {
 		id, role, err := utils.ParseRoleARN(arn)
 		if err != nil {
-			log.Errorf("Unable to parse History ARN %s: %s", arn, err.Error())
+			log.Debugf("Unable to parse History ARN %s: %s", arn, err.Error())
 			continue
 		}
 
+		// for the given ARN, lookup the History tag
 		if a, ok := cache.Roles.Accounts[id]; ok {
 			if r, ok := a.Roles[role]; ok {
 				// figure out if this history item has expired
-				values := strings.SplitN(r.Tags["History"], ",", 2)
+				history, ok := r.Tags["History"]
+				if !ok || history == "" {
+					// doesn't have anything to expires
+					log.Debugf("%s is in history list without a History tag in cache?", arn)
+					continue
+				}
+
+				values := strings.SplitN(history, ",", 2)
 				if len(values) != 2 {
-					log.Errorf("Too few fields for %s History Tag: '%s'", r.Arn, r.Tags["History"])
+					log.Debugf("Too few fields for %s History Tag: '%s'", r.Arn, history)
 					continue
 				}
 				lastTime, err := strconv.ParseInt(values[1], 10, 64)
 				if err != nil {
-					log.Errorf("Unable to parse %s History Tag '%s': %s", r.Arn, r.Tags["History"], err.Error())
+					log.Debugf("Unable to parse %s History Tag '%s': %s", r.Arn, history, err.Error())
 					continue
 				}
 
@@ -221,14 +230,20 @@ func (c *Cache) deleteOldHistory() {
 					// keep current entries in our list
 					newHistoryItems = append(newHistoryItems, arn)
 				} else {
-					// else, delete the tag
+					// else, delete the tag and remove the item from History by
+					// not appending it to newHistoryItems
 					delete(r.Tags, "History")
+					log.Debugf("Removed expired history role: %s", r.Arn)
 				}
+			} else {
+				log.Debugf("History contains %s, but no role by that name", arn)
 			}
+		} else {
+			log.Debugf("History contains %s, but no account by that name", arn)
 		}
 	}
 
-	cache.History = newHistoryItems
+	c.GetSSO().History = newHistoryItems
 }
 
 // Refresh updates our cached Roles based on AWS SSO & our Config

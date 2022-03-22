@@ -26,7 +26,6 @@ import (
 
 	"github.com/c-bata/go-prompt"
 	//	"github.com/davecgh/go-spew/spew"
-	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/synfinatic/aws-sso-cli/utils"
 )

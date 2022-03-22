@@ -26,7 +26,7 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/posener/complete"
 	// "github.com/davecgh/go-spew/spew"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/synfinatic/aws-sso-cli/storage"
 	"github.com/synfinatic/aws-sso-cli/utils"
@@ -113,8 +113,13 @@ type CLI struct {
 
 func main() {
 	cli := CLI{}
-	ctx, override := parseArgs(&cli)
 	var err error
+
+	log = logrus.New()
+	ctx, override := parseArgs(&cli)
+	sso.SetLogger(log)
+	storage.SetLogger(log)
+	utils.SetLogger(log)
 
 	if err := logLevelValidate(cli.LogLevel); err != nil {
 		log.Fatalf("%s", err.Error())
@@ -217,7 +222,7 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 		LogLines:   cli.Lines,
 	}
 
-	log.SetFormatter(&log.TextFormatter{
+	logrus.SetFormatter(&logrus.TextFormatter{
 		DisableLevelTruncation: true,
 		PadLevelText:           true,
 		DisableTimestamp:       true,
