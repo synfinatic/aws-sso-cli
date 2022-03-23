@@ -18,7 +18,6 @@ package main
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import (
-	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/sso"
 )
 

@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	yaml "github.com/goccy/go-yaml"
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )

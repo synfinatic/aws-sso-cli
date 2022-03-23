@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Bug Fixes
+
+ * No longer generate errors for empty History tag in cache #305
+
 ## [v1.7.4] - 2022-02-25
 
 ### Bug Fixes

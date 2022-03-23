@@ -19,35 +19,17 @@ package main
  */
 
 import (
-	"fmt"
+	"github.com/sirupsen/logrus"
 )
 
-type CacheCmd struct{}
+var log *logrus.Logger
 
-func (cc *CacheCmd) Run(ctx *RunContext) error {
-	log.Info("Refreshing local cache...")
-
-	awssso := doAuth(ctx)
-	s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
-	if err != nil {
-		log.Fatalf("%s", err.Error())
-	}
-
-	ssoName, err := ctx.Settings.GetSelectedSSOName(ctx.Cli.SSO)
-	if err != nil {
-		log.Fatalf(err.Error())
-	}
-
-	err = ctx.Settings.Cache.Refresh(awssso, s, ssoName)
-	if err != nil {
-		return fmt.Errorf("Unable to refresh role cache: %s", err.Error())
-	}
-
-	err = ctx.Settings.Cache.Save(true)
-	if err != nil {
-		return fmt.Errorf("Unable to save role cache: %s", err.Error())
-	}
-
-	log.Info("Cache has been refreshed.")
-	return nil
+/*
+func SetLogger(l *logrus.Logger) {
+	log = l
 }
+
+func GetLogger() *logrus.Logger {
+	return log
+}
+*/

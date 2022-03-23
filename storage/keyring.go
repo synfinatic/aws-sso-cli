@@ -27,7 +27,6 @@ import (
 	"strings"
 
 	"github.com/99designs/keyring"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh/terminal"
 )
 

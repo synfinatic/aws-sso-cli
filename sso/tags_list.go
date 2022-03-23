@@ -24,8 +24,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // TagsList provides the necessary struct finding all the possible tag key/values

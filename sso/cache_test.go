@@ -19,12 +19,17 @@ package sso
  */
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
+	// "github.com/davecgh/go-spew/spew"
 	goyaml "github.com/goccy/go-yaml"
+	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -92,29 +97,212 @@ func (suite *CacheTestSuite) TestAddHistory() {
 	c.SSO["Default"] = &SSOCache{
 		LastUpdate: 2345,
 		History:    []string{},
-		Roles:      &Roles{},
+		Roles: &Roles{
+			Accounts: map[int64]*AWSAccount{
+				123456789012: {
+					Alias: "MyAccount",
+					Roles: map[string]*AWSRole{
+						"Foo": {
+							Arn:  "aws:arn:iam::123456789012:role/Foo",
+							Tags: map[string]string{},
+						},
+						"Bar": {
+							Arn:  "aws:arn:iam::123456789012:role/Bar",
+							Tags: map[string]string{},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	cache := c.GetSSO()
-	c.AddHistory("foo")
-	assert.Len(t, cache.History, 1, 0)
-	assert.Contains(t, cache.History, "foo")
+	assert.Equal(t, []string{}, cache.History)
 
-	c.AddHistory("bar")
-	assert.Len(t, cache.History, 1)
-	assert.Contains(t, cache.History, "bar")
+	c.AddHistory("aws:arn:iam::123456789012:role/Foo")
+	assert.Equal(t, []string{"aws:arn:iam::123456789012:role/Foo"}, cache.History)
+	c.AddHistory("aws:arn:iam::123456789012:role/Foo")
+	assert.Equal(t, []string{"aws:arn:iam::123456789012:role/Foo"}, cache.History)
+
+	c.AddHistory("aws:iam:arn::1234567889012:role/Bar")
+	assert.Equal(t, []string{"aws:iam:arn::1234567889012:role/Bar"}, cache.History)
+	c.AddHistory("aws:iam:arn::1234567889012:role/Bar")
+	assert.Equal(t, []string{"aws:iam:arn::1234567889012:role/Bar"}, cache.History)
 
 	c.settings.HistoryLimit = 2
-	c.AddHistory("foo")
-	assert.Len(t, cache.History, 2)
-	assert.Contains(t, cache.History, "bar")
-	assert.Contains(t, cache.History, "foo")
+	c.AddHistory("aws:arn:iam::123456789012:role/Foo")
+	assert.Equal(t, []string{
+		"aws:arn:iam::123456789012:role/Foo",
+		"aws:iam:arn::1234567889012:role/Bar"}, cache.History)
 
 	// this should be a no-op
-	c.AddHistory("foo")
-	assert.Len(t, cache.History, 2)
-	assert.Contains(t, cache.History, "foo")
-	assert.Contains(t, cache.History, "bar")
+	c.AddHistory("aws:arn:iam::123456789012:role/Foo")
+	assert.Equal(t, []string{
+		"aws:arn:iam::123456789012:role/Foo",
+		"aws:iam:arn::1234567889012:role/Bar"}, cache.History)
+
+	// reorder args
+	c.AddHistory("arn:aws:iam::123456789012:role/Baz")
+	assert.Equal(t, []string{
+		"arn:aws:iam::123456789012:role/Baz",
+		"aws:arn:iam::123456789012:role/Foo"}, cache.History)
+
+	c.AddHistory("aws:arn:iam::123456789012:role/Foo")
+	assert.Equal(t, []string{
+		"aws:arn:iam::123456789012:role/Foo",
+		"arn:aws:iam::123456789012:role/Baz"}, cache.History)
+
+	assert.Contains(t, c.GetSSO().Roles.Accounts[123456789012].Roles["Foo"].Tags, "History")
+}
+
+func (suite *CacheTestSuite) setupDeleteOldHistory() *Cache {
+	c := &Cache{
+		settings: &Settings{
+			HistoryLimit:   2,
+			HistoryMinutes: 5,
+		},
+		ssoName: "Default",
+		SSO:     map[string]*SSOCache{},
+	}
+	now := time.Now().Unix()
+	c.SSO["Default"] = &SSOCache{
+		LastUpdate: now - 5,
+		History: []string{
+			"arn:aws:iam::123456789012:role/Test",
+			"arn:aws:iam::123456789012:role/Foo",
+		},
+		Roles: &Roles{
+			Accounts: map[int64]*AWSAccount{
+				123456789012: {
+					Roles: map[string]*AWSRole{
+						"Test": {
+							Tags: map[string]string{
+								"History": fmt.Sprintf("MyAlias:Test,%d", now-5),
+							},
+						},
+						"Foo": {
+							Tags: map[string]string{
+								"History": fmt.Sprintf("MyOtherAlias:Foo,%d", now-85),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	return c
+}
+
+func (suite *CacheTestSuite) TestDeleteOldHistory() {
+	t := suite.T()
+
+	c := suite.setupDeleteOldHistory()
+
+	// check setup
+	assert.Equal(t, []string{
+		"arn:aws:iam::123456789012:role/Test",
+		"arn:aws:iam::123456789012:role/Foo",
+	}, c.GetSSO().History)
+
+	// no-op because we haven't timed out yet
+	c.deleteOldHistory()
+	assert.Equal(t, []string{
+		"arn:aws:iam::123456789012:role/Test",
+		"arn:aws:iam::123456789012:role/Foo",
+	}, c.GetSSO().History)
+
+	c = suite.setupDeleteOldHistory()
+
+	// no-op when HistoryMinutes <= 0
+	c.settings.HistoryLimit = 1
+	c.settings.HistoryMinutes = 0
+	c.deleteOldHistory()
+	assert.Equal(t, []string{
+		"arn:aws:iam::123456789012:role/Test",
+		"arn:aws:iam::123456789012:role/Foo",
+	}, c.GetSSO().History)
+
+	// remove one due to HistoryLimit
+	c.settings.HistoryMinutes = 1
+	c.deleteOldHistory()
+	assert.Equal(t, []string{
+		"arn:aws:iam::123456789012:role/Test",
+	}, c.GetSSO().History)
+	assert.NotContains(t, "History",
+		c.SSO["Default"].Roles.Accounts[123456789012].Roles["Foo"].Tags)
+
+	// setup logger for tests
+	logger, hook := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+	oldLogger := GetLogger()
+	SetLogger(logger)
+	defer SetLogger(oldLogger)
+
+	// remove one because of HistoryMinutes expires
+	c = suite.setupDeleteOldHistory()
+	c.settings.HistoryMinutes = 1
+	c.deleteOldHistory()
+	assert.NotNil(t, hook.LastEntry())
+	assert.Equal(t, logrus.DebugLevel, hook.LastEntry().Level)
+	assert.Contains(t, hook.LastEntry().Message, "Removed expired history role")
+	assert.Equal(t, []string{"arn:aws:iam::123456789012:role/Test"}, c.GetSSO().History)
+
+	c = suite.setupDeleteOldHistory()
+	c.GetSSO().History = append(c.GetSSO().History, "arn:aws:iam:")
+	c.deleteOldHistory()
+	assert.NotNil(t, hook.LastEntry())
+	assert.Equal(t, logrus.DebugLevel, hook.LastEntry().Level)
+	assert.Contains(t, hook.LastEntry().Message, "Unable to parse History ARN")
+	hook.Reset()
+
+	c = suite.setupDeleteOldHistory()
+	c.GetSSO().History = append(c.GetSSO().History, "arn:aws:iam::123456789012:role/NoHistoryTag")
+	c.deleteOldHistory()
+	assert.NotNil(t, hook.LastEntry())
+	assert.Equal(t, logrus.DebugLevel, hook.LastEntry().Level)
+	assert.Contains(t, hook.LastEntry().Message, "but no role by that name")
+	hook.Reset()
+
+	c = suite.setupDeleteOldHistory()
+	c.GetSSO().History = append(c.GetSSO().History, "arn:aws:iam::1234567890:role/NoHistoryTag")
+	c.deleteOldHistory()
+	assert.NotNil(t, hook.LastEntry())
+	assert.Equal(t, logrus.DebugLevel, hook.LastEntry().Level)
+	assert.Contains(t, hook.LastEntry().Message, "but no account by that name")
+	hook.Reset()
+
+	c = suite.setupDeleteOldHistory()
+	c.GetSSO().History = append(c.GetSSO().History, "arn:aws:iam::123456789012:role/NoHistoryTag")
+	c.GetSSO().Roles.Accounts[123456789012].Roles["NoHistoryTag"] = &AWSRole{}
+	c.deleteOldHistory()
+	assert.NotNil(t, hook.LastEntry())
+	assert.Equal(t, logrus.DebugLevel, hook.LastEntry().Level)
+	assert.Contains(t, hook.LastEntry().Message, "is in history list without a History tag")
+	hook.Reset()
+
+	c = suite.setupDeleteOldHistory()
+	c.GetSSO().History = append(c.GetSSO().History, "arn:aws:iam::123456789012:role/MissingHistoryTag")
+	c.GetSSO().Roles.Accounts[123456789012].Roles["MissingHistoryTag"] = &AWSRole{
+		Tags: map[string]string{
+			"History": "What:Foo",
+		},
+	}
+	c.deleteOldHistory()
+	assert.NotNil(t, hook.LastEntry())
+	assert.Equal(t, logrus.DebugLevel, hook.LastEntry().Level)
+	assert.Contains(t, hook.LastEntry().Message, "Too few fields for")
+
+	c = suite.setupDeleteOldHistory()
+	c.GetSSO().History = append(c.GetSSO().History, "arn:aws:iam::123456789012:role/MissingHistoryTag")
+	c.GetSSO().Roles.Accounts[123456789012].Roles["MissingHistoryTag"] = &AWSRole{
+		Tags: map[string]string{
+			"History": "What:Foo,kkkk",
+		},
+	}
+	c.deleteOldHistory()
+	assert.NotNil(t, hook.LastEntry())
+	assert.Equal(t, logrus.DebugLevel, hook.LastEntry().Level)
+	assert.Contains(t, hook.LastEntry().Message, "Unable to parse")
 }
 
 func (suite *CacheTestSuite) TestExpired() {

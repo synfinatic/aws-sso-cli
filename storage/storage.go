@@ -21,7 +21,6 @@ package storage
 import (
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/utils"
 )
 

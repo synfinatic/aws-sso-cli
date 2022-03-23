@@ -32,7 +32,7 @@ import (
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/file"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/utils"
 )
 
@@ -240,15 +240,15 @@ func (s *Settings) setOverrides(override OverrideSettings) {
 	}
 	switch s.LogLevel {
 	case "trace":
-		log.SetLevel(log.TraceLevel)
+		log.SetLevel(logrus.TraceLevel)
 	case "debug":
-		log.SetLevel(log.DebugLevel)
+		log.SetLevel(logrus.DebugLevel)
 	case "info":
-		log.SetLevel(log.InfoLevel)
+		log.SetLevel(logrus.InfoLevel)
 	case "warn":
-		log.SetLevel(log.WarnLevel)
+		log.SetLevel(logrus.WarnLevel)
 	case "error":
-		log.SetLevel(log.ErrorLevel)
+		log.SetLevel(logrus.ErrorLevel)
 	}
 
 	if override.LogLines {
