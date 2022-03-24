@@ -6,6 +6,10 @@
 
  * No longer generate errors for empty History tag in cache #305
 
+### New Features
+
+ * Add support for --url-action printurl and exec #303
+
 ## [v1.7.4] - 2022-02-25
 
 ### Bug Fixes

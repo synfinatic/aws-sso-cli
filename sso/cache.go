@@ -139,46 +139,51 @@ func (c *Cache) Save(updateTime bool) error {
 	return nil
 }
 
-// adds a role to the History list up to the max number of entries
+// AddHistory adds a role ARN to the History list up to the max number of entries
 // and then removes the History tag from any roles that aren't in our list
 func (c *Cache) AddHistory(item string) {
-	cache := c.GetSSO()
-	// If it's already in the list, remove it
-	for x, h := range cache.History {
-		if h == item {
-			// delete from history
-			cache.History = append(cache.History[:x], cache.History[x+1:]...)
-			break
-		}
-	}
+	// If it's already in the list, remove item
+	c.deleteHistoryItem(item)
 
-	cache.History = append([]string{item}, cache.History...) // push on top
-	for int64(len(cache.History)) > c.settings.HistoryLimit {
+	c.GetSSO().History = append([]string{item}, c.GetSSO().History...) // push on top
+	for int64(len(c.GetSSO().History)) > c.settings.HistoryLimit {
 		// remove the oldest entry
-		cache.History = cache.History[:len(cache.History)-1]
+		c.GetSSO().History = c.GetSSO().History[:len(c.GetSSO().History)-1]
 	}
 
 	// Update our Tags for this new item
 	aId, roleName, _ := utils.ParseRoleARN(item)
-	if a, ok := cache.Roles.Accounts[aId]; ok {
+	if a, ok := c.GetSSO().Roles.Accounts[aId]; ok {
 		if r, ok := a.Roles[roleName]; ok {
 			r.Tags["History"] = fmt.Sprintf("%s:%s,%d", a.Alias, roleName, time.Now().Unix())
 		}
 	}
 
 	// remove any history tags not in our list
-	roles := cache.Roles.MatchingRolesWithTagKey("History")
+	roles := c.GetSSO().Roles.MatchingRolesWithTagKey("History")
+
 	for _, role := range roles {
 		exists := false
-		for _, history := range cache.History {
+		for _, history := range c.GetSSO().History {
 			if history == (*role).Arn {
 				exists = true
 				break
 			}
 		}
+
+		// remove any History tag for roles which don't exist in c.GetSSO().History
 		if !exists {
 			aId, roleName, _ := utils.ParseRoleARN(role.Arn)
-			delete(cache.Roles.Accounts[aId].Roles[roleName].Tags, "History")
+			delete(c.GetSSO().Roles.Accounts[aId].Roles[roleName].Tags, "History")
+		}
+	}
+}
+
+func (c *Cache) deleteHistoryItem(arn string) {
+	for i, value := range c.GetSSO().History {
+		if arn == value {
+			c.GetSSO().History = append(c.GetSSO().History[:i], c.GetSSO().History[i+1:]...)
+			break
 		}
 	}
 }
@@ -200,6 +205,7 @@ func (c *Cache) deleteOldHistory() {
 		id, role, err := utils.ParseRoleARN(arn)
 		if err != nil {
 			log.Debugf("Unable to parse History ARN %s: %s", arn, err.Error())
+			c.deleteHistoryItem(arn)
 			continue
 		}
 
@@ -211,17 +217,20 @@ func (c *Cache) deleteOldHistory() {
 				if !ok || history == "" {
 					// doesn't have anything to expires
 					log.Debugf("%s is in history list without a History tag in cache?", arn)
+					c.deleteHistoryItem(arn)
 					continue
 				}
 
 				values := strings.SplitN(history, ",", 2)
 				if len(values) != 2 {
 					log.Debugf("Too few fields for %s History Tag: '%s'", r.Arn, history)
+					c.deleteHistoryItem(arn)
 					continue
 				}
 				lastTime, err := strconv.ParseInt(values[1], 10, 64)
 				if err != nil {
 					log.Debugf("Unable to parse %s History Tag '%s': %s", r.Arn, history, err.Error())
+					c.deleteHistoryItem(arn)
 					continue
 				}
 
@@ -233,12 +242,15 @@ func (c *Cache) deleteOldHistory() {
 					// else, delete the tag and remove the item from History by
 					// not appending it to newHistoryItems
 					delete(r.Tags, "History")
+					c.deleteHistoryItem(arn)
 					log.Debugf("Removed expired history role: %s", r.Arn)
 				}
 			} else {
+				c.deleteHistoryItem(arn)
 				log.Debugf("History contains %s, but no role by that name", arn)
 			}
 		} else {
+			c.deleteHistoryItem(arn)
 			log.Debugf("History contains %s, but no account by that name", arn)
 		}
 	}
@@ -260,10 +272,7 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string) error {
 		}
 	}
 
-	// zero out our current roles cache entries so they don't get merged
-	c.SSO[ssoName].Roles = &Roles{}
-
-	// save history tags
+	// save existing History tags
 	historyTags := map[string]string{}
 	for _, arn := range c.SSO[ssoName].History {
 		roleFlat, err := c.GetRole(arn)
@@ -274,6 +283,9 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string) error {
 			historyTags[arn] = value
 		}
 	}
+
+	// zero out our current roles cache entries so they don't get merged
+	c.SSO[ssoName].Roles = &Roles{}
 
 	// load our AWSSSO & Config
 	r, err := c.NewRoles(sso, config)

@@ -92,23 +92,31 @@ func (suite *CacheTestSuite) TestAddHistory() {
 			HistoryMinutes: 90,
 		},
 		ssoName: "Default",
-		SSO:     map[string]*SSOCache{},
-	}
-	c.SSO["Default"] = &SSOCache{
-		LastUpdate: 2345,
-		History:    []string{},
-		Roles: &Roles{
-			Accounts: map[int64]*AWSAccount{
-				123456789012: {
-					Alias: "MyAccount",
-					Roles: map[string]*AWSRole{
-						"Foo": {
-							Arn:  "aws:arn:iam::123456789012:role/Foo",
-							Tags: map[string]string{},
-						},
-						"Bar": {
-							Arn:  "aws:arn:iam::123456789012:role/Bar",
-							Tags: map[string]string{},
+		SSO: map[string]*SSOCache{
+			"Default": {
+				name:       "Default",
+				LastUpdate: 2345,
+				History:    []string{},
+				Roles: &Roles{
+					Accounts: map[int64]*AWSAccount{
+						123456789012: {
+							Alias: "MyAccount",
+							Roles: map[string]*AWSRole{
+								"Foo": {
+									Arn: "arn:aws:iam::123456789012:role/Foo",
+									Tags: map[string]string{
+										"AccountAlias": "MyAccount",
+										"RoleName":     "Foo",
+									},
+								},
+								"Bar": {
+									Arn: "arn:aws:iam::123456789012:role/Bar",
+									Tags: map[string]string{
+										"AccountAlias": "MyAccount",
+										"RoleName":     "Bar",
+									},
+								},
+							},
 						},
 					},
 				},
@@ -119,37 +127,51 @@ func (suite *CacheTestSuite) TestAddHistory() {
 	cache := c.GetSSO()
 	assert.Equal(t, []string{}, cache.History)
 
-	c.AddHistory("aws:arn:iam::123456789012:role/Foo")
-	assert.Equal(t, []string{"aws:arn:iam::123456789012:role/Foo"}, cache.History)
-	c.AddHistory("aws:arn:iam::123456789012:role/Foo")
-	assert.Equal(t, []string{"aws:arn:iam::123456789012:role/Foo"}, cache.History)
+	// Basic add
+	c.AddHistory("arn:aws:iam::123456789012:role/Foo")
+	assert.Equal(t, []string{"arn:aws:iam::123456789012:role/Foo"}, cache.History)
+	tag := fmt.Sprintf("MyAccount:Foo,%d", time.Now().Unix())
+	assert.Equal(t, tag, c.GetSSO().Roles.Accounts[123456789012].Roles["Foo"].Tags["History"])
 
-	c.AddHistory("aws:iam:arn::1234567889012:role/Bar")
-	assert.Equal(t, []string{"aws:iam:arn::1234567889012:role/Bar"}, cache.History)
-	c.AddHistory("aws:iam:arn::1234567889012:role/Bar")
-	assert.Equal(t, []string{"aws:iam:arn::1234567889012:role/Bar"}, cache.History)
+	// Add again which should be a no-op
+	c.AddHistory("arn:aws:iam::123456789012:role/Foo")
+	assert.Equal(t, []string{"arn:aws:iam::123456789012:role/Foo"}, cache.History)
+	tag = fmt.Sprintf("MyAccount:Foo,%d", time.Now().Unix())
+	assert.Equal(t, tag, c.GetSSO().Roles.Accounts[123456789012].Roles["Foo"].Tags["History"])
 
+	// Add a new item which expires the previous item
+	c.AddHistory("arn:aws:iam::123456789012:role/Bar")
+	assert.Equal(t, []string{"arn:aws:iam::123456789012:role/Bar"}, cache.History)
+	tag = fmt.Sprintf("MyAccount:Bar,%d", time.Now().Unix())
+	assert.NotContains(t, "History", c.GetSSO().Roles.Accounts[123456789012].Roles["Foo"].Tags)
+	assert.Equal(t, tag, c.GetSSO().Roles.Accounts[123456789012].Roles["Bar"].Tags["History"])
+
+	// Add the same item again
+	c.AddHistory("arn:aws:iam::123456789012:role/Bar")
+	assert.Equal(t, []string{"arn:aws:iam::123456789012:role/Bar"}, cache.History)
+
+	// Basic tests with two items in the History slice
 	c.settings.HistoryLimit = 2
-	c.AddHistory("aws:arn:iam::123456789012:role/Foo")
+	c.AddHistory("arn:aws:iam::123456789012:role/Foo")
 	assert.Equal(t, []string{
-		"aws:arn:iam::123456789012:role/Foo",
-		"aws:iam:arn::1234567889012:role/Bar"}, cache.History)
+		"arn:aws:iam::123456789012:role/Foo",
+		"arn:aws:iam::123456789012:role/Bar"}, cache.History)
 
 	// this should be a no-op
-	c.AddHistory("aws:arn:iam::123456789012:role/Foo")
+	c.AddHistory("arn:aws:iam::123456789012:role/Foo")
 	assert.Equal(t, []string{
-		"aws:arn:iam::123456789012:role/Foo",
-		"aws:iam:arn::1234567889012:role/Bar"}, cache.History)
+		"arn:aws:iam::123456789012:role/Foo",
+		"arn:aws:iam::123456789012:role/Bar"}, cache.History)
 
 	// reorder args
 	c.AddHistory("arn:aws:iam::123456789012:role/Baz")
 	assert.Equal(t, []string{
 		"arn:aws:iam::123456789012:role/Baz",
-		"aws:arn:iam::123456789012:role/Foo"}, cache.History)
+		"arn:aws:iam::123456789012:role/Foo"}, cache.History)
 
-	c.AddHistory("aws:arn:iam::123456789012:role/Foo")
+	c.AddHistory("arn:aws:iam::123456789012:role/Foo")
 	assert.Equal(t, []string{
-		"aws:arn:iam::123456789012:role/Foo",
+		"arn:aws:iam::123456789012:role/Foo",
 		"arn:aws:iam::123456789012:role/Baz"}, cache.History)
 
 	assert.Contains(t, c.GetSSO().Roles.Accounts[123456789012].Roles["Foo"].Tags, "History")
