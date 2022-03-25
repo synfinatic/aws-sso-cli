@@ -170,11 +170,12 @@ func setupWizard(ctx *RunContext) error {
 
 	// UrlAction
 	if len(urlAction) == 0 {
-		// How should we deal with URLs?
+		// How should we deal with URLs?  Note we don't support `exec`
+		// here since that is an "advanced" feature
 		label = "Default action to take with URLs (UrlAction)"
 		sel = promptui.Select{
 			Label:  label,
-			Items:  []string{"open", "print", "clip"},
+			Items:  []string{"open", "print", "printurl", "clip"},
 			Stdout: &bellSkipper{},
 			Templates: &promptui.SelectTemplates{
 				Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),

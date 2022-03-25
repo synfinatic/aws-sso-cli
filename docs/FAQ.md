@@ -13,6 +13,7 @@
  * [Using non-default AWS SSO instances with auto-complete](#using-non-default-aws-sso-instances-with-auto-complete)
  * [Error: Invalid grant provided](#error-invalid-grant-provided)
  * [Does aws-sso support using AWS FIPS endpoints?](#does-aws-sso-support-using-aws-fips-endpoints)
+ * [Error: Unable to save... org.freedesktop.DBus.Properties](#error-unable-to-save-orgfreedesktopdbusproperties)
 
 ### How do I delete all secrets from the macOS keychain?
 
@@ -253,3 +254,19 @@ Yes!  Please set the following environment variable and `aws-sso` will automatic
 select the appropriate AWS FIPS endpoints when communicating with AWS:
 
 `AWS_USE_FIPS_ENDPOINT=true`
+
+### Error: Unable to save... org.freedesktop.DBus.Properties...
+
+On Linux systems or other places that rely on the FreeDesktop [secret-service](
+https://specifications.freedesktop.org/secret-service/latest/re01.html)
+you may sometimes receive an error like:
+
+`ERROR   Unable to save RegisterClientData error="the interface org.freedesktop.DBus.Properties does not exist"`
+
+This apparently happens when the underlying FreeDesktop secret-service crashes.
+Depending on your OS and setup, running:
+
+`gnome-keyring-daemon -r -d`
+
+as your default (non-root) user, but be sure to check the relevant documentation
+with your OS for best practices.
