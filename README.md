@@ -122,7 +122,7 @@ been granted access!
  * `--config <file>` -- Specify alternative config file (`$AWS_SSO_CONFIG`)
  * `--level <level>`, `-L` -- Change default log level: [error|warn|info|debug|trace]
  * `--lines` -- Print file number with logs
- * `--url-action`, `-u` -- Print, open or copy URLs to clipboard
+ * `--url-action`, `-u` -- How to handle URLs for your SSO provider
  * `--sso <name>`, `-S` -- Specify non-default AWS SSO instance to use (`$AWS_SSO`)
  * `--sts-refresh` -- Force refresh of STS Token Credentials
 
@@ -165,23 +165,26 @@ via AWS SSO CLI.
 Flags:
 
  * `--diff` -- Print a diff of changes to the config file instead of modifying it
- * `--open` -- Override how to open URls: [open|clip] (required)
+ * `--open` -- Override how to open URls: [clip|exec|open] (required)
  * `--print` -- Print profile entries instead of modifying config file
 
 This generates a series of [named profile entries](
-https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html) in the
-`~/.aws/config` file which allows you to easily use any AWS SSO role just by setting
-the `$AWS_PROFILE` environment variable.  By default, each profile is named according
-to the [ProfileFormat](docs/config.md#profileformat) config option or overridden by
-the user defined [Profile](docs/config.md#profile) option on a role by role basis.
+https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html)
+in the `~/.aws/config` file which allows you to easily use any AWS SSO role
+ust by setting the `$AWS_PROFILE` environment variable.  By default, each
+profile is named according to the [ProfileFormat](docs/config.md#profileformat)
+onfig option or overridden by the user defined [Profile](docs/config.md#profile)
+option on a role by role basis.
 
 For each profile generated, it will specify a [list of settings](
-https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html) as defined by
-the [ConfigVariables](docs/config.md#configvariables) setting in the `~/.aws-sso/config.yaml`.
+https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html) as defined
+by the [ConfigVariables](docs/config.md#configvariables) setting in the
+`~/.aws-sso/config.yaml`.
 
-**Note:** Due to a limitation in the AWS tooling, `print` is not a supported `--url-action`
-when using the `$AWS_PROFILE` variable with AWS SSO CLI.  Hence, you must use `open` to auto-open
-URLs in your browser (recommended) or `clip` to automatically copy URLs to your clipboard.
+**Note:** Due to a limitation in the AWS tooling, `print` and `printurl` arn not
+supported with `--url-action` when using the `$AWS_PROFILE` variable with AWS
+SSO CLI.  Hence, you must use `open` or `exec` to auto-open URLs in your browser
+(recommended) or `clip` to automatically copy URLs to your clipboard.
 
 **Note:** You should run this command any time your list of AWS roles changes.
 

@@ -59,8 +59,8 @@ type ProfileConfig struct {
 
 type ConfigCmd struct {
 	Diff  bool   `kong:"help='Print a diff of changes to the config file instead of modifying it'"`
-	Open  string `kong:"help='Override how to open URLs: [open|clip]',required"`
-	Print bool   `kong:"help='Print profile entries instead of modifying config file',xor='action'"`
+	Open  string `kong:"help='Override how to open URLs: [clip|exec|open]',required,enum='clip,exec,open'"`
+	Print bool   `kong:"help='Print profile entries instead of modifying config file'"`
 }
 
 func (cc *ConfigCmd) Run(ctx *RunContext) error {
