@@ -5,6 +5,7 @@
 ### Bug Fixes
 
  * No longer generate errors for empty History tag in cache #305
+ * No longer print the federated console url on errors by default #314
 
 ### New Features
 

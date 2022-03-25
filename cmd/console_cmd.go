@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"net/url"
 	"os/user"
+	"regexp"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -268,7 +269,11 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials, durat
 
 	resp, err := http.Get(signin.GetUrl())
 	if err != nil {
-		return fmt.Errorf("Unable to login to AWS: %s", err.Error())
+		log.Debugf(err.Error())
+		// sanitize error and remove sensitive URL from normal output
+		r := regexp.MustCompile(`Get "[^"]+": `)
+		e := r.ReplaceAllString(err.Error(), "")
+		return fmt.Errorf("Unable to login to AWS: %s", e)
 	}
 
 	defer resp.Body.Close()
