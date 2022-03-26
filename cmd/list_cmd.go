@@ -23,6 +23,8 @@ import (
 	"reflect"
 	"sort"
 
+	"github.com/synfinatic/aws-sso-cli/sso"
+	"github.com/synfinatic/aws-sso-cli/storage"
 	"github.com/synfinatic/aws-sso-cli/utils"
 	"github.com/synfinatic/gotable"
 )
@@ -141,7 +143,27 @@ func printRoles(ctx *RunContext, fields []string) {
 		}
 	}
 
-	fmt.Printf("List of AWS roles for SSO Instance: %s\n", ctx.Settings.DefaultSSO)
+	// Determine when our AWS SSO session expires
+	// list doesn't call doAuth() so we have to initialize our global *AwsSSO manually
+	s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
+	if err != nil {
+		log.Fatalf("%s", err.Error())
+	}
+	AwsSSO = sso.NewAWSSSO(s, &ctx.Store)
+
+	expires := ""
+	ctr := storage.CreateTokenResponse{}
+	if err := ctx.Store.GetCreateTokenResponse(AwsSSO.StoreKey(), &ctr); err != nil {
+		log.Debugf("Unable to get SSO session expire time: %s", err.Error())
+	} else {
+		if exp, err := utils.TimeRemain(ctr.ExpiresAt, true); err != nil {
+			log.Errorf("Unable to determine time remain for %d: %s", ctr.ExpiresAt, err)
+		} else {
+			expires = fmt.Sprintf(" [Expires in: %s]", exp)
+		}
+	}
+	fmt.Printf("List of AWS roles for SSO Instance: %s%s\n\n", ctx.Settings.DefaultSSO, expires)
+
 	if err := gotable.GenerateTable(tr, fields); err != nil {
 		log.WithError(err).Fatalf("Unable to generate report")
 	}
