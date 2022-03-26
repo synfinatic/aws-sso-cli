@@ -24,10 +24,13 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/99designs/keyring"
+	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -40,7 +43,10 @@ type KeyringSuite struct {
 func TestKeyringSuite(t *testing.T) {
 	d, err := os.MkdirTemp("", "test-keyring")
 	assert.NoError(t, err)
-	defer os.RemoveAll(d)
+	defer func() {
+		os.RemoveAll(d)
+		os.Unsetenv(ENV_SSO_FILE_PASSWORD)
+	}()
 
 	os.Setenv(ENV_SSO_FILE_PASSWORD, "justapassword")
 	c, err := NewKeyringConfig("file", d)
@@ -52,30 +58,9 @@ func TestKeyringSuite(t *testing.T) {
 	suite.Run(t, &s)
 }
 
-func TestKeyringSuiteFails(t *testing.T) {
-	d, err := os.MkdirTemp("", "test-keyring")
-	assert.NoError(t, err)
-	defer os.RemoveAll(d)
-
-	in, err := ioutil.ReadFile("./testdata/bad_store.json")
-	assert.NoError(t, err)
-
-	err = ioutil.WriteFile(path.Join(d, "store.json"), in, 0600)
-	assert.NoError(t, err)
-
-	os.Setenv(ENV_SSO_FILE_PASSWORD, "justapassword")
-	c, err := NewKeyringConfig("json", d)
-	assert.NoError(t, err)
-
-	s := KeyringSuite{}
-	s.store, err = OpenKeyring(c)
-	assert.Error(t, err)
-}
-
 func (suite *KeyringSuite) TestRegisterClientData() {
 	t := suite.T()
 
-	data := NewStorageData()
 	rcd := RegisterClientData{
 		AuthorizationEndpoint: "https://foobar.com",
 		ClientId:              "ThisIsNotARealClientId",
@@ -84,38 +69,30 @@ func (suite *KeyringSuite) TestRegisterClientData() {
 		ClientSecretExpiresAt: time.Now().Unix() + 1,
 		TokenEndpoint:         "IhavenoideawhatI'mdoing",
 	}
-	data.RegisterClientData["foo"] = rcd
-
-	err := suite.store.saveStorageData(data)
-	assert.NoError(t, err)
-
-	data2 := NewStorageData()
-	err = suite.store.getStorageData(&data2)
-	assert.NoError(t, err)
-	assert.Equal(t, data, data2)
-
-	err = suite.store.SaveRegisterClientData("bar", rcd)
+	err := suite.store.SaveRegisterClientData("foo", rcd)
 	assert.NoError(t, err)
 
 	rcd2 := RegisterClientData{}
-	err = suite.store.GetRegisterClientData("bar", &rcd2)
+	err = suite.store.GetRegisterClientData("foo", &rcd2)
 	assert.NoError(t, err)
 	assert.Equal(t, rcd, rcd2)
+
+	err = suite.store.DeleteRegisterClientData("foo")
+	assert.NoError(t, err)
+
+	err = suite.store.GetRegisterClientData("foo", &rcd2)
+	assert.Error(t, err)
 
 	err = suite.store.GetRegisterClientData("cow", &rcd2)
 	assert.Error(t, err)
 
-	err = suite.store.DeleteRegisterClientData("bar")
-	assert.NoError(t, err)
-
-	err = suite.store.DeleteCreateTokenResponse("what")
+	err = suite.store.DeleteRegisterClientData("cow")
 	assert.Error(t, err)
 }
 
 func (suite *KeyringSuite) TestCreateTokenResponse() {
 	t := suite.T()
 
-	data := NewStorageData()
 	ctr := CreateTokenResponse{
 		AccessToken:  "Foobar",
 		ExpiresIn:    60,
@@ -124,37 +101,27 @@ func (suite *KeyringSuite) TestCreateTokenResponse() {
 		RefreshToken: "just another token",
 		TokenType:    "yes",
 	}
-	data.CreateTokenResponse["foo"] = ctr
-	err := suite.store.saveStorageData(data)
-	assert.NoError(t, err)
-
-	data2 := NewStorageData()
-	err = suite.store.getStorageData(&data2)
-	assert.NoError(t, err)
-	assert.Equal(t, data, data2)
-
-	err = suite.store.SaveCreateTokenResponse("bar", ctr)
+	err := suite.store.SaveCreateTokenResponse("foo", ctr)
 	assert.NoError(t, err)
 
 	ctr2 := CreateTokenResponse{}
-	err = suite.store.GetCreateTokenResponse("bar", &ctr2)
+	err = suite.store.GetCreateTokenResponse("foo", &ctr2)
 	assert.NoError(t, err)
 	assert.Equal(t, ctr, ctr2)
+
+	err = suite.store.DeleteCreateTokenResponse("foo")
+	assert.NoError(t, err)
 
 	err = suite.store.GetCreateTokenResponse("cow", &ctr2)
 	assert.Error(t, err)
 
-	err = suite.store.DeleteCreateTokenResponse("bar")
-	assert.NoError(t, err)
-
-	err = suite.store.DeleteRoleCredentials("what")
+	err = suite.store.DeleteCreateTokenResponse("cow")
 	assert.Error(t, err)
 }
 
 func (suite *KeyringSuite) TestRoleCredentials() {
 	t := suite.T()
 
-	data := NewStorageData()
 	rc := RoleCredentials{
 		RoleName:        "MyRole",
 		AccountId:       234566767,
@@ -163,102 +130,25 @@ func (suite *KeyringSuite) TestRoleCredentials() {
 		SessionToken:    "Another secret string",
 		Expiration:      time.Now().Unix(),
 	}
-	data.RoleCredentials["foo"] = rc
-	err := suite.store.saveStorageData(data)
-	assert.NoError(t, err)
-
-	data2 := NewStorageData()
-	err = suite.store.getStorageData(&data2)
-	assert.NoError(t, err)
-	assert.Equal(t, data, data2)
-
-	err = suite.store.SaveRoleCredentials("bar", rc)
+	err := suite.store.SaveRoleCredentials("foo", rc)
 	assert.NoError(t, err)
 
 	rc2 := RoleCredentials{}
-	err = suite.store.GetRoleCredentials("bar", &rc2)
+	err = suite.store.GetRoleCredentials("foo", &rc2)
 	assert.NoError(t, err)
 	assert.Equal(t, rc, rc2)
+
+	err = suite.store.DeleteRoleCredentials("foo")
+	assert.NoError(t, err)
+
+	err = suite.store.GetRoleCredentials("foo", &rc2)
+	assert.Error(t, err)
 
 	err = suite.store.GetRoleCredentials("cow", &rc2)
 	assert.Error(t, err)
 
-	err = suite.store.DeleteRoleCredentials("bar")
-	assert.NoError(t, err)
-
-	err = suite.store.DeleteRoleCredentials("what")
+	err = suite.store.DeleteRoleCredentials("cow")
 	assert.Error(t, err)
-}
-
-func (suite *KeyringSuite) TestSplitCredentials() {
-	t := suite.T()
-	rc := RoleCredentials{
-		RoleName:        "MyRole",
-		AccountId:       234566767,
-		AccessKeyId:     "some not-so-secret-string",
-		SecretAccessKey: "a string we actually want to keep secret",
-		SessionToken:    "Another secret string",
-		Expiration:      time.Now().Unix(),
-	}
-
-	large_rc := RoleCredentials{
-		RoleName:    "MyRole",
-		AccountId:   234566767,
-		AccessKeyId: "some not-so-secret-string",
-		SecretAccessKey: `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer sollicitudin ligula ac lectus lobortis, sit amet laoreet lacus finibus. Fusce erat nibh, dignissim nec pretium et, rhoncus in felis. Ut maximus id risus id sagittis. Aenean ultrices ipsum vitae quam varius posuere. Nam elit nibh, dapibus et quam ut, vehicula bibendum nunc. Sed id enim quis justo congue fermentum. Aenean vitae nisl velit. Cras fringilla arcu ac quam volutpat, quis pharetra nibh gravida. In porttitor, lorem eu aliquet tristique, arcu ante facilisis sapien, at porttitor eros magna a magna. Nullam sit amet ornare mi. Suspendisse volutpat sollicitudin ligula, id accumsan lorem dictum sit amet. Sed tincidunt sapien et dui placerat, sed pulvinar ante maximus. Donec suscipit malesuada este
-		Nam viverra et urna non semper. Suspendisse scelerisque massa arcu, vitae congue arcu elementum sit amet. Ut nec sagittis odio, sed convallis elit. Aenean nec massa dapibus, hendrerit felis id, ultrices arcu. Sed finibus justo a erat rhoncus molestie. Sed faucibus dictum pharetra. Suspendisse suscipit felis vitae eros placerat scelerisque. Pellentesque vel tellus tellus.
-		Vivamus a ex quis massa porta condimentum tempus ac neque. Praesent lacus risus, ultricies nec convallis id, sollicitudin non diam. Nullam tempus velit quis neque pretium, ut sollicitudin nisl sodales. Duis elementum, magna a maximus sagittis, metus sem tempor orci, at finibus justo libero ut dui. Phasellus condimentum felis rutrum ex ultrices auctor. Maecenas dapibus magna ut eros ornare auctor. Aenean accumsan at ante quis bibendum. Duis nec nulla vel eros vestibulum commodo. Donec faucibus fringilla turpis sit amet vestibulum. Cras consequat mauris erat, non ornare tellus iaculis vel. Aenean ac ex mattis massa egestas aliquam. Morbi eleifend tempor metus, quis accumsan mauris aliquam eu.
-		Vestibulum ultricies dui nisl, non sodales velit mattis molestie. Nullam ac mattis sapien. Fusce orci odio, consectetur nec feugiat sed, ultricies sed ante. Aenean tincidunt dictum interdum. Suspendisse eu tortor nibh. Aliquam egestas, metus eget venenatis auctor, justo ante rhoncus diam, eu cursus augue quam ac ante. Aliquam scelerisque aliquet dolor sit amet ornare.
-		Etiam non sem sit amet magna tincidunt semper. Suspendisse ligula urna, suscipit vel pellentesque ac, porttitor sed erat. Vestibulum ornare quis sem in aliquam. Vivamus in consectetur orci. Integer ut semper velit, eu venenatis elit. Proin sit amet sem rutrum, consectetur urna posuere.
-		`,
-		SessionToken: "Another secret string",
-		Expiration:   time.Now().Unix(),
-	}
-
-	suite.store.setMyGOOS("linux")
-	err := suite.store.SaveRoleCredentials("bar", large_rc)
-	assert.NoError(t, err)
-	rc2 := RoleCredentials{}
-	err = suite.store.GetRoleCredentials("bar", &rc2)
-	assert.NoError(t, err)
-	assert.Equal(t, large_rc, rc2)
-	err = suite.store.DeleteRoleCredentials("bar")
-	assert.NoError(t, err)
-
-	suite.store.setMyGOOS("windows")
-	err = suite.store.SaveRoleCredentials("bar", large_rc)
-	assert.NoError(t, err)
-	rc2 = RoleCredentials{}
-	err = suite.store.GetRoleCredentials("bar", &rc2)
-	assert.NoError(t, err)
-	assert.Equal(t, large_rc, rc2)
-	err = suite.store.DeleteRoleCredentials("bar")
-	assert.NoError(t, err)
-	err = suite.store.SaveRoleCredentials("bar", rc)
-	assert.NoError(t, err)
-	rc2 = RoleCredentials{}
-
-	err = suite.store.GetRoleCredentials("bar", &rc2)
-	assert.NoError(t, err)
-	assert.Equal(t, rc, rc2)
-	err = suite.store.DeleteRoleCredentials("bar")
-	assert.NoError(t, err)
-
-	// Replace a chunk with wrong data
-	err = suite.store.SaveRoleCredentials("bar", large_rc)
-	assert.NoError(t, err)
-	data, err := suite.store.getKeyringData(fmt.Sprintf("%s_%d", RECORD_KEY, 1))
-	assert.NoError(t, err)
-	err = suite.store.setStorageData([]byte{0}, fmt.Sprintf("%s_%d", RECORD_KEY, 1), KEYRING_ID)
-	assert.NoError(t, err)
-	rc2 = RoleCredentials{}
-	err = suite.store.GetRoleCredentials("bar", &rc2)
-	assert.Error(t, err)
-
-	// Restore env
-	suite.store.setMyGOOS("")
-	err = suite.store.setStorageData(data, fmt.Sprintf("%s_%d", RECORD_KEY, 1), KEYRING_ID)
-	assert.NoError(t, err)
 }
 
 func (suite *KeyringSuite) TestErrorReadKeyring() {
@@ -317,12 +207,13 @@ func TestKeyringErrors(t *testing.T) {
 	ks := &KeyringStore{
 		keyring: &mockKeyringApi{},
 		config:  *c,
+		cache:   NewStorageData(),
 	}
 
 	err = ks.getStorageData(&StorageData{})
 	assert.NoError(t, err)
 
-	err = ks.saveStorageData(StorageData{})
+	err = ks.saveStorageData()
 	assert.Error(t, err)
 
 	// RegisterClientData
@@ -363,54 +254,217 @@ func (suite *KeyringSuite) TestCreateKeys() {
 	assert.Equal(t, "client-data:mykey", suite.store.RegisterClientKey("mykey"))
 }
 
-func UnmarshalFailure(s []byte, i interface{}) error {
-	return fmt.Errorf("unmarshal failure")
+func TestNewStorageData(t *testing.T) {
+	s := NewStorageData()
+	assert.Empty(t, s.RegisterClientData)
+	assert.Empty(t, s.CreateTokenResponse)
+	assert.Empty(t, s.RoleCredentials)
 }
 
-func (suite *KeyringSuite) TestUnmarshalFailure() {
-	t := suite.T()
+func TestFileKeyringPassword(t *testing.T) {
+	defer func() {
+		os.Setenv(ENV_SSO_FILE_PASSWORD, "")
+		NewPassword = ""
+	}()
 
-	storageDataUnmarshal = UnmarshalFailure
+	os.Setenv(ENV_SSO_FILE_PASSWORD, "foobar")
+	p, err := fileKeyringPassword("prompt")
+	assert.NoError(t, err)
+	assert.Equal(t, "foobar", p)
 
-	err := suite.store.SaveRegisterClientData("region", RegisterClientData{})
-	assert.Error(t, err)
-
-	err = suite.store.GetRegisterClientData("region", &RegisterClientData{})
-	assert.Error(t, err)
-
-	err = suite.store.DeleteRegisterClientData("region")
-	assert.Error(t, err)
-
-	err = suite.store.SaveCreateTokenResponse("key", CreateTokenResponse{})
-	assert.Error(t, err)
-
-	err = suite.store.GetCreateTokenResponse("key", &CreateTokenResponse{})
-	assert.Error(t, err)
-
-	err = suite.store.DeleteCreateTokenResponse("key")
-	assert.Error(t, err)
-
-	err = suite.store.SaveRoleCredentials("arn", RoleCredentials{})
-	assert.Error(t, err)
-
-	err = suite.store.GetRoleCredentials("arn", &RoleCredentials{})
-	assert.Error(t, err)
-
-	err = suite.store.DeleteRoleCredentials("arn")
-	assert.Error(t, err)
-
-	storageDataUnmarshal = json.Unmarshal
+	os.Unsetenv(ENV_SSO_FILE_PASSWORD)
+	NewPassword = "foobar2"
+	p, err = fileKeyringPassword("prompt")
+	assert.NoError(t, err)
+	assert.Equal(t, "foobar2", p)
 }
 
-func TestManageBytes(t *testing.T) {
-	data := []byte{65, 66, 67, 226, 130, 172}
-	splitted_data := [][]byte{{65, 66}, {67, 226, 130, 172}}
+func getPasswordErrorFunc(p string) (string, error) {
+	return "", fmt.Errorf("error")
+}
 
-	b := joinByteArray(splitted_data)
-	assert.Equal(t, data, b)
+var getPasswords []string = []string{"first", "second", "unused"}
 
-	number := uint64(55555555555)
-	bytes := getBytesFromUINT64(number)
-	cuint64 := getUINT64FromBytes(bytes)
-	assert.Equal(t, number, cuint64)
+func getPasswordDifferentFunc(p string) (string, error) {
+	var x string
+	x, getPasswords = getPasswords[0], getPasswords[1:]
+	return x, nil
+}
+
+var getPasswordErrorDifferentFuncCount int = 0
+
+func getPasswordErrorDifferentFunc(p string) (string, error) {
+	if getPasswordErrorDifferentFuncCount == 0 {
+		getPasswordErrorDifferentFuncCount += 1
+		return "foo", nil
+	} else {
+		return "", fmt.Errorf("error")
+	}
+}
+
+func TestNewKeyringConfig(t *testing.T) {
+	d, err := os.MkdirTemp("", "test-keyring")
+	assert.NoError(t, err)
+
+	err = ioutil.WriteFile(path.Join(d, "aws-sso-cli-records"), []byte("INVALID DATA"), 0600)
+	assert.NoError(t, err)
+
+	defer func() {
+		getPasswordFunc = fileKeyringPassword
+		os.RemoveAll(d)
+	}()
+
+	getPasswordFunc = getPasswordErrorFunc
+	_, err = NewKeyringConfig("file", d)
+	assert.Error(t, err)
+
+	getPasswordFunc = getPasswordDifferentFunc
+	_, err = NewKeyringConfig("file", d)
+	assert.Error(t, err)
+
+	getPasswordFunc = getPasswordErrorDifferentFunc
+	_, err = NewKeyringConfig("file", d)
+	assert.Error(t, err)
+
+	getPasswordFunc = getPasswordDifferentFunc
+	getPasswords = []string{"password", "password"}
+	_, err = NewKeyringConfig("file", d)
+	assert.NoError(t, err)
+	assert.Equal(t, "password", NewPassword)
+}
+
+func TestKeyringSuiteFails(t *testing.T) {
+	d, err := os.MkdirTemp("", "test-keyring")
+	assert.NoError(t, err)
+	err = os.MkdirAll(path.Join(d, "secure"), 0755)
+	assert.NoError(t, err)
+
+	defer func() {
+		os.RemoveAll(d)
+		os.Unsetenv(ENV_SSO_FILE_PASSWORD)
+		storageDataUnmarshal = json.Unmarshal
+	}()
+
+	os.Setenv(ENV_SSO_FILE_PASSWORD, "happy1")
+	c, err := NewKeyringConfig("file", d)
+	assert.NoError(t, err)
+
+	ring, err := keyring.Open(*c)
+	assert.NoError(t, err)
+
+	kr := &KeyringStore{
+		keyring: ring,
+		cache:   NewStorageData(),
+	}
+	storageDataUnmarshal = func(s []byte, i interface{}) error {
+		return fmt.Errorf("unmarshal failure")
+	}
+
+	in, err := ioutil.ReadFile("./testdata/aws-sso-cli-records")
+	assert.NoError(t, err)
+
+	err = ioutil.WriteFile(path.Join(d, "secure", "aws-sso-cli-records"), in, 0600)
+	assert.NoError(t, err)
+
+	err = kr.getStorageData(&kr.cache)
+	assert.Error(t, err)
+	assert.Equal(t, "unmarshal failure", err.Error())
+
+	_, err = OpenKeyring(c)
+	assert.Error(t, err)
+	assert.Equal(t, "unmarshal failure", err.Error())
+}
+
+func TestSplitCredentials(t *testing.T) {
+	d, err := os.MkdirTemp("", "test-keyring")
+	assert.NoError(t, err)
+
+	// setup logger for testing
+	logger, hook := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+	oldLogger := GetLogger()
+	SetLogger(logger)
+
+	defer func() {
+		os.RemoveAll(d)
+		os.Unsetenv(ENV_SSO_FILE_PASSWORD)
+		keyringGOOS = ""
+		SetLogger(oldLogger)
+	}()
+
+	os.Setenv(ENV_SSO_FILE_PASSWORD, "justapassword")
+	c, err := NewKeyringConfig("file", d)
+	assert.NoError(t, err)
+
+	store, err := OpenKeyring(c)
+	assert.NoError(t, err)
+
+	rc := RoleCredentials{
+		RoleName:        "MyRole",
+		AccountId:       234566767,
+		AccessKeyId:     "some not-so-secret-string",
+		SecretAccessKey: "a string we actually want to keep secret",
+		SessionToken:    "Another secret string",
+		Expiration:      time.Now().Unix(),
+	}
+
+	x := make([]string, 50)
+	for i := 0; i < 50; i++ {
+		x = append(x, `Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+		Integer sollicitudin ligula ac lectus lobortis, sit amet laoreet lacus finibus.`)
+	}
+	largeString := strings.Join(x, " ")
+
+	large_rc := RoleCredentials{
+		RoleName:        "MyRole",
+		AccountId:       234566767,
+		AccessKeyId:     "some not-so-secret-string",
+		SecretAccessKey: largeString,
+		SessionToken:    "Another secret string",
+		Expiration:      time.Now().Unix(),
+	}
+
+	keyringGOOS = "linux"
+	err = store.SaveRoleCredentials("bar", large_rc)
+	assert.NoError(t, err)
+	rc2 := RoleCredentials{}
+	err = store.GetRoleCredentials("bar", &rc2)
+	assert.NoError(t, err)
+	assert.Equal(t, large_rc, rc2)
+	err = store.DeleteRoleCredentials("bar")
+	assert.NoError(t, err)
+
+	keyringGOOS = "windows"
+	err = store.SaveRoleCredentials("bar", large_rc)
+	assert.NoError(t, err)
+	rc2 = RoleCredentials{}
+	err = store.GetRoleCredentials("bar", &rc2)
+	assert.NoError(t, err)
+	assert.Equal(t, large_rc, rc2)
+	err = store.DeleteRoleCredentials("bar")
+	assert.NoError(t, err)
+	err = store.SaveRoleCredentials("bar", rc)
+	assert.NoError(t, err)
+	rc2 = RoleCredentials{}
+
+	err = store.GetRoleCredentials("bar", &rc2)
+	assert.NoError(t, err)
+	assert.Equal(t, rc, rc2)
+	err = store.DeleteRoleCredentials("bar")
+	assert.NoError(t, err)
+
+	// Replace a chunk with wrong data
+	err = store.SaveRoleCredentials("bar", large_rc)
+	assert.NoError(t, err)
+	err = store.setStorageData([]byte("hello friend"), fmt.Sprintf("%s_%d", RECORD_KEY, 1), KEYRING_ID)
+	assert.NoError(t, err)
+	_, err = store.joinAndGetKeyringData(RECORD_KEY)
+	assert.Error(t, err)
+
+	// but OpenKeyring is fine, just returns a warning
+	_, err = OpenKeyring(c)
+	assert.NoError(t, err)
+	assert.NotNil(t, hook.LastEntry())
+	assert.Equal(t, logrus.WarnLevel, hook.LastEntry().Level)
+	assert.Contains(t, hook.LastEntry().Message, "Unable to fetch")
 }

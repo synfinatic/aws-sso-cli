@@ -222,7 +222,7 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 		LogLines:   cli.Lines,
 	}
 
-	logrus.SetFormatter(&logrus.TextFormatter{
+	log.SetFormatter(&logrus.TextFormatter{
 		DisableLevelTruncation: true,
 		PadLevelText:           true,
 		DisableTimestamp:       true,
