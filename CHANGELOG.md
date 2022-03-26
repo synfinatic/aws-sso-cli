@@ -12,6 +12,11 @@
  * Add support for --url-action printurl and exec #303
  * `list` command now prints how long until the AWS SSO session expires #313
 
+### Changes
+
+ * Add additional unit tests
+ * Document how using `$AWS_PROFILE` with AWS SSO CLI auto-refreshes credentials #270
+
 ## [v1.7.4] - 2022-02-25
 
 ### Bug Fixes

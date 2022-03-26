@@ -51,7 +51,7 @@ The easiest way to use AWS SSO CLI is to integrate it with your existing
 Role to use [named profiles](
 https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html).
 
-Run: `aws-sso config --open [open|clip]`
+Run: `aws-sso config --open [open|clip|exec]`
 
 This will add the following lines (example) to your `~/.aws/config` file:
 
