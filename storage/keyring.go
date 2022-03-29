@@ -19,6 +19,7 @@ package storage
  */
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -37,6 +38,7 @@ const (
 	REGISTER_CLIENT_DATA_PREFIX  = "client-data"
 	CREATE_TOKEN_RESPONSE_PREFIX = "token-response"
 	ENV_SSO_FILE_PASSWORD        = "AWS_SSO_FILE_PASSWORD" // #nosec
+	WINCRED_MAX_LENGTH           = 2000
 )
 
 // Implements SecureStorage
@@ -46,6 +48,7 @@ type KeyringStore struct {
 }
 
 var NewPassword string = ""
+var myGOOS string = ""
 
 // KeyringApi is the subset of the Keyring API we use so we can do unit testing
 type KeyringApi interface {
@@ -165,34 +168,124 @@ var storageDataUnmarshal Unmarshaler = json.Unmarshal
 
 // loads the entire StorageData into memory
 func (kr *KeyringStore) getStorageData(s *StorageData) error {
-	data, err := kr.keyring.Get(RECORD_KEY)
+	var data []byte
+	var err error
+
+	switch kr.getMyGOOS() {
+	case "windows":
+		data, err = kr.joinAndGetKeyringData(RECORD_KEY)
+	default:
+		data, err = kr.getKeyringData(RECORD_KEY)
+	}
+
 	if err != nil {
 		// Didn't find anything in our keyring
 		*s = NewStorageData()
 		return nil
 	}
-	if err = storageDataUnmarshal(data.Data, s); err != nil {
+	if err = storageDataUnmarshal(data, s); err != nil {
 		return err
 	}
 	return nil
 }
 
+// reads a single entry of the keyring
+func (kr *KeyringStore) getKeyringData(key string) ([]byte, error) {
+	data, err := kr.keyring.Get(key)
+	if err != nil {
+		return nil, err
+	}
+	return data.Data, nil
+}
+
+// read the chunks stored in windows credential manager
+func (kr *KeyringStore) joinAndGetKeyringData(key string) ([]byte, error) {
+	i := 0
+	data := []byte{}
+	var err error
+	var payload_size int
+	var chunk []byte
+
+	chunk, err = kr.getKeyringData(fmt.Sprintf("%s_%d", key, i))
+	if err != nil {
+		return nil, err
+	}
+	if len(chunk) < 8 {
+		return nil, fmt.Errorf("Invalid stored data in Keyring. There's not enough data")
+	}
+
+	payload_size, chunk = int(getUINT64FromBytes(chunk[:8])), chunk[8:]
+	remaining_bytes := payload_size - len(chunk)
+	data = append(data, chunk...)
+
+	for i = 1; remaining_bytes > 0; i++ {
+		chunk, err = kr.getKeyringData(fmt.Sprintf("%s_%d", key, i))
+		if err != nil {
+			return nil, err
+		}
+		data = append(data, chunk...)
+		remaining_bytes -= len(chunk)
+	}
+
+	if payload_size != len(data) {
+		return nil, fmt.Errorf("Invalid stored data in Keyring.")
+	}
+	return data, nil
+}
+
 // saves the entire StorageData into our KeyringStore
 func (kr *KeyringStore) saveStorageData(s StorageData) error {
+	var err error
 	jdata, _ := json.Marshal(s)
+
+	switch kr.getMyGOOS() {
+	case "windows":
+		err = kr.splitAndSetStorageData(jdata, RECORD_KEY, KEYRING_ID)
+	default:
+		err = kr.setStorageData(jdata, RECORD_KEY, KEYRING_ID)
+	}
+	return err
+}
+
+func (kr *KeyringStore) splitAndSetStorageData(jdata []byte, key string, label string) error {
+	remain := jdata
+	i := 0
+	var chunk []byte
+	payload_size := getBytesFromUINT64(uint64(len(jdata)))
+
+	for len(remain) >= WINCRED_MAX_LENGTH {
+		chunk, remain = remain[:WINCRED_MAX_LENGTH], remain[WINCRED_MAX_LENGTH:]
+		if i == 0 {
+			chunk = append(payload_size, chunk...)
+		}
+		err := kr.setStorageData(chunk, fmt.Sprintf("%s_%d", key, i), label)
+		if err != nil {
+			return err
+		}
+		i++
+	}
+
+	if len(remain) > 0 {
+		if i == 0 {
+			remain = append(payload_size, remain...)
+		}
+		err := kr.setStorageData(remain, fmt.Sprintf("%s_%d", key, i), label)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (kr *KeyringStore) setStorageData(jdata []byte, key string, label string) error {
 	err := kr.keyring.Set(keyring.Item{
-		Key:         RECORD_KEY,
+		Key:         key,
 		Data:        jdata,
-		Label:       KEYRING_ID,
+		Label:       label,
 		Description: "aws-sso secure storage",
 	})
 
-	// Work around bogus errors wincred storage issue.  Sadly doesn't seem
-	// like we can tell if are using windcred, so just key off of the OS
-	// https://github.com/99designs/keyring/issues/99
-	if err != nil && runtime.GOOS == "windows" && err.Error() == "The stub received bad data." {
-		return nil
-	}
 	return err
 }
 
@@ -334,4 +427,35 @@ func (kr *KeyringStore) DeleteRoleCredentials(arn string) error {
 
 func getHomePath(path string) string {
 	return strings.Replace(path, "~", os.Getenv("HOME"), 1)
+}
+
+func joinByteArray(chunks []([]byte)) []byte {
+	var result []byte
+	for _, s := range chunks {
+		result = append(result, s...)
+	}
+	return result
+}
+
+func (kr *KeyringStore) getMyGOOS() string {
+	if myGOOS == "" {
+		return runtime.GOOS
+	}
+	return myGOOS
+}
+
+func (kr *KeyringStore) setMyGOOS(os string) {
+	myGOOS = os
+}
+
+// Create a 8-byte array from uint64
+func getBytesFromUINT64(i uint64) []byte {
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, uint64(i))
+	return b
+}
+
+// Create uint64 from byte array
+func getUINT64FromBytes(b []byte) uint64 {
+	return binary.BigEndian.Uint64(b)
 }
