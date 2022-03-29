@@ -1,11 +1,13 @@
 # AWS SSO CLI Changelog
 
-## [Unreleased]
+## [1.7.5] - 2022-03-29
 
 ### Bug Fixes
 
  * No longer generate errors for empty History tag in cache #305
  * No longer print the federated console url on errors by default #314
+ * Fully delete items from the keyring #320
+ * Fixed error when tried to save more than 2.5Kbytes in wincred #308
 
 ### New Features
 
@@ -16,7 +18,6 @@
 
  * Add additional unit tests
  * Document how using `$AWS_PROFILE` with AWS SSO CLI auto-refreshes credentials #270
- * Fixed error when tried to save more than 2.5Kbytes in wincred #308
 
 ## [v1.7.4] - 2022-02-25
 
@@ -281,7 +282,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.7.4...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.7.5...main
+[v1.7.5]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.5
 [v1.7.4]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.4
 [v1.7.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.3
 [v1.7.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.2
