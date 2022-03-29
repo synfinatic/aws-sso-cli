@@ -14,6 +14,7 @@
  * [Error: Invalid grant provided](#error-invalid-grant-provided)
  * [Does aws-sso support using AWS FIPS endpoints?](#does-aws-sso-support-using-aws-fips-endpoints)
  * [Error: Unable to save... org.freedesktop.DBus.Properties](#error-unable-to-save-orgfreedesktopdbusproperties)
+ * [Are macOS Keychain items synced?](#are-macos-keychain-items-synced)
 
 ### How do I delete all secrets from the macOS keychain?
 
@@ -270,3 +271,8 @@ Depending on your OS and setup, running:
 
 as your default (non-root) user, but be sure to check the relevant documentation
 with your OS for best practices.
+
+### Are macOS Keychain items synced?
+
+No. If you are using the macOS keychain, none of the secrets stored by `aws-sso`
+are synced via iCloud to your other Apple devices.
