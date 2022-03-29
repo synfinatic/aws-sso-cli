@@ -16,6 +16,7 @@
 
  * Add additional unit tests
  * Document how using `$AWS_PROFILE` with AWS SSO CLI auto-refreshes credentials #270
+ * Fixed error when tried to save more than 2.5Kbytes in wincred #308
 
 ## [v1.7.4] - 2022-02-25
 
