@@ -28,6 +28,7 @@ import (
 	"strings"
 
 	"github.com/99designs/keyring"
+	// "github.com/davecgh/go-spew/spew"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -45,10 +46,25 @@ const (
 type KeyringStore struct {
 	keyring KeyringApi
 	config  keyring.Config
+	cache   StorageData
+}
+
+type StorageData struct {
+	RegisterClientData  map[string]RegisterClientData
+	CreateTokenResponse map[string]CreateTokenResponse
+	RoleCredentials     map[string]RoleCredentials
+}
+
+func NewStorageData() StorageData {
+	return StorageData{
+		RegisterClientData:  map[string]RegisterClientData{},
+		CreateTokenResponse: map[string]CreateTokenResponse{},
+		RoleCredentials:     map[string]RoleCredentials{},
+	}
 }
 
 var NewPassword string = ""
-var myGOOS string = ""
+var keyringGOOS string = runtime.GOOS
 
 // KeyringApi is the subset of the Keyring API we use so we can do unit testing
 type KeyringApi interface {
@@ -63,6 +79,10 @@ type KeyringApi interface {
 	// Provides a slice of all keys stored on the keyring
 	// Keys() ([]string, error)
 }
+
+type getPassword func(string) (string, error)
+
+var getPasswordFunc getPassword = fileKeyringPassword
 
 func NewKeyringConfig(name, configDir string) (*keyring.Config, error) {
 	securePath := path.Join(configDir, "secure")
@@ -91,16 +111,16 @@ func NewKeyringConfig(name, configDir string) (*keyring.Config, error) {
 				// new secure store, so we should prompt user twice for password
 				// if ENV var is not set
 				if password := os.Getenv(ENV_SSO_FILE_PASSWORD); password == "" {
-					pass1, err := fileKeyringPassword("Select password")
+					pass1, err := getPasswordFunc("Select password")
 					if err != nil {
 						return &c, fmt.Errorf("Password error: %s", err.Error())
 					}
-					pass2, err := fileKeyringPassword("Verify password")
+					pass2, err := getPasswordFunc("Verify password")
 					if err != nil {
 						return &c, fmt.Errorf("Password error: %s", err.Error())
 					}
 					if pass1 != pass2 {
-						return &c, fmt.Errorf("Password missmatch: %s", err.Error())
+						return &c, fmt.Errorf("Password missmatch")
 					}
 					NewPassword = pass1
 				}
@@ -140,26 +160,18 @@ func OpenKeyring(cfg *keyring.Config) (*KeyringStore, error) {
 	kr := KeyringStore{
 		keyring: ring,
 		config:  *cfg,
+		cache:   NewStorageData(),
 	}
+
+	if err = kr.getStorageData(&kr.cache); err != nil {
+		return nil, err
+	}
+
 	return &kr, nil
 }
 
 func (kr *KeyringStore) RegisterClientKey(ssoRegion string) string {
 	return fmt.Sprintf("%s:%s", REGISTER_CLIENT_DATA_PREFIX, ssoRegion)
-}
-
-type StorageData struct {
-	RegisterClientData  map[string]RegisterClientData
-	CreateTokenResponse map[string]CreateTokenResponse
-	RoleCredentials     map[string]RoleCredentials
-}
-
-func NewStorageData() StorageData {
-	return StorageData{
-		RegisterClientData:  map[string]RegisterClientData{},
-		CreateTokenResponse: map[string]CreateTokenResponse{},
-		RoleCredentials:     map[string]RoleCredentials{},
-	}
 }
 
 type Unmarshaler func([]byte, interface{}) error
@@ -171,7 +183,7 @@ func (kr *KeyringStore) getStorageData(s *StorageData) error {
 	var data []byte
 	var err error
 
-	switch kr.getMyGOOS() {
+	switch keyringGOOS {
 	case "windows":
 		data, err = kr.joinAndGetKeyringData(RECORD_KEY)
 	default:
@@ -179,10 +191,12 @@ func (kr *KeyringStore) getStorageData(s *StorageData) error {
 	}
 
 	if err != nil {
+		log.Warn(err)
 		// Didn't find anything in our keyring
 		*s = NewStorageData()
 		return nil
 	}
+
 	if err = storageDataUnmarshal(data, s); err != nil {
 		return err
 	}
@@ -200,45 +214,42 @@ func (kr *KeyringStore) getKeyringData(key string) ([]byte, error) {
 
 // read the chunks stored in windows credential manager
 func (kr *KeyringStore) joinAndGetKeyringData(key string) ([]byte, error) {
-	i := 0
-	data := []byte{}
 	var err error
-	var payload_size int
 	var chunk []byte
 
-	chunk, err = kr.getKeyringData(fmt.Sprintf("%s_%d", key, i))
-	if err != nil {
+	if chunk, err = kr.getKeyringData(fmt.Sprintf("%s_%d", key, 0)); err != nil {
 		return nil, err
 	}
+
 	if len(chunk) < 8 {
-		return nil, fmt.Errorf("Invalid stored data in Keyring. There's not enough data")
+		return nil, fmt.Errorf("Invalid stored data in Keyring. Only %d bytes", len(chunk))
 	}
 
-	payload_size, chunk = int(getUINT64FromBytes(chunk[:8])), chunk[8:]
-	remaining_bytes := payload_size - len(chunk)
-	data = append(data, chunk...)
+	total_bytes, data := binary.BigEndian.Uint64(chunk[:8]), chunk[8:]
+	read_bytes := uint64(len(chunk))
 
-	for i = 1; remaining_bytes > 0; i++ {
-		chunk, err = kr.getKeyringData(fmt.Sprintf("%s_%d", key, i))
-		if err != nil {
-			return nil, err
+	for i := 1; read_bytes < total_bytes; i++ {
+		k := fmt.Sprintf("%s_%d", key, i)
+		if chunk, err = kr.getKeyringData(k); err != nil {
+			return nil, fmt.Errorf("Unable to fetch %s: %s", k, err.Error())
 		}
 		data = append(data, chunk...)
-		remaining_bytes -= len(chunk)
+		read_bytes += uint64(len(chunk))
 	}
 
-	if payload_size != len(data) {
-		return nil, fmt.Errorf("Invalid stored data in Keyring.")
+	if read_bytes != total_bytes {
+		return nil, fmt.Errorf("Invalid stored data in Keyring.  Expected %d bytes, but read %d bytes of data",
+			total_bytes, read_bytes)
 	}
 	return data, nil
 }
 
 // saves the entire StorageData into our KeyringStore
-func (kr *KeyringStore) saveStorageData(s StorageData) error {
+func (kr *KeyringStore) saveStorageData() error {
 	var err error
-	jdata, _ := json.Marshal(s)
+	jdata, _ := json.Marshal(kr.cache)
 
-	switch kr.getMyGOOS() {
+	switch keyringGOOS {
 	case "windows":
 		err = kr.splitAndSetStorageData(jdata, RECORD_KEY, KEYRING_ID)
 	default:
@@ -247,22 +258,22 @@ func (kr *KeyringStore) saveStorageData(s StorageData) error {
 	return err
 }
 
+// splitAndSetStorageData writes all the data in WINCRED_MAX_LENGTH length chunks
 func (kr *KeyringStore) splitAndSetStorageData(jdata []byte, key string, label string) error {
+	var i int
 	remain := jdata
-	i := 0
 	var chunk []byte
-	payload_size := getBytesFromUINT64(uint64(len(jdata)))
+	payload_size := make([]byte, 8)
+	binary.BigEndian.PutUint64(payload_size, uint64(len(jdata)))
 
-	for len(remain) >= WINCRED_MAX_LENGTH {
+	for i = 0; len(remain) >= WINCRED_MAX_LENGTH; i++ {
 		chunk, remain = remain[:WINCRED_MAX_LENGTH], remain[WINCRED_MAX_LENGTH:]
 		if i == 0 {
 			chunk = append(payload_size, chunk...)
 		}
-		err := kr.setStorageData(chunk, fmt.Sprintf("%s_%d", key, i), label)
-		if err != nil {
+		if err := kr.setStorageData(chunk, fmt.Sprintf("%s_%d", key, i), label); err != nil {
 			return err
 		}
-		i++
 	}
 
 	if len(remain) > 0 {
@@ -278,6 +289,7 @@ func (kr *KeyringStore) splitAndSetStorageData(jdata []byte, key string, label s
 	return nil
 }
 
+// setStorageData writes all the data as a single entry
 func (kr *KeyringStore) setStorageData(jdata []byte, key string, label string) error {
 	err := kr.keyring.Set(keyring.Item{
 		Key:         key,
@@ -291,27 +303,17 @@ func (kr *KeyringStore) setStorageData(jdata []byte, key string, label string) e
 
 // Save our RegisterClientData in the key chain
 func (kr *KeyringStore) SaveRegisterClientData(region string, client RegisterClientData) error {
-	storage := StorageData{}
-	if err := kr.getStorageData(&storage); err != nil {
-		return err
-	}
-
 	key := kr.RegisterClientKey(region)
-	storage.RegisterClientData[key] = client
+	kr.cache.RegisterClientData[key] = client
 
-	return kr.saveStorageData(storage)
+	return kr.saveStorageData()
 }
 
 // Get our RegisterClientData from the key chain
 func (kr *KeyringStore) GetRegisterClientData(region string, client *RegisterClientData) error {
-	storage := StorageData{}
-	ok := false
-	if err := kr.getStorageData(&storage); err != nil {
-		return err
-	}
-
+	var ok bool
 	key := kr.RegisterClientKey(region)
-	if *client, ok = storage.RegisterClientData[key]; !ok {
+	if *client, ok = kr.cache.RegisterClientData[key]; !ok {
 		return fmt.Errorf("No RegisterClientData for %s", region)
 	}
 	return nil
@@ -319,19 +321,14 @@ func (kr *KeyringStore) GetRegisterClientData(region string, client *RegisterCli
 
 // Delete the RegisterClientData from the keychain
 func (kr *KeyringStore) DeleteRegisterClientData(region string) error {
-	storage := StorageData{}
-	if err := kr.getStorageData(&storage); err != nil {
-		return err
-	}
-
 	key := kr.RegisterClientKey(region)
-	if _, ok := storage.RegisterClientData[key]; !ok {
+	if _, ok := kr.cache.RegisterClientData[key]; !ok {
 		// return error if key doesn't exist
-		return fmt.Errorf("Missing RegisterClientData for region: %s", region)
+		return fmt.Errorf("Missing RegisterClientData for key: %s", key)
 	}
 
-	delete(storage.RegisterClientData, key)
-	return nil
+	delete(kr.cache.RegisterClientData, key)
+	return kr.saveStorageData()
 }
 
 func (kr *KeyringStore) CreateTokenResponseKey(key string) string {
@@ -340,70 +337,44 @@ func (kr *KeyringStore) CreateTokenResponseKey(key string) string {
 
 // SaveCreateTokenResponse stores the token in the keyring
 func (kr *KeyringStore) SaveCreateTokenResponse(key string, token CreateTokenResponse) error {
-	storage := StorageData{}
-	if err := kr.getStorageData(&storage); err != nil {
-		return err
-	}
-
 	k := kr.CreateTokenResponseKey(key)
-	storage.CreateTokenResponse[k] = token
+	kr.cache.CreateTokenResponse[k] = token
 
-	return kr.saveStorageData(storage)
+	return kr.saveStorageData()
 }
 
 // GetCreateTokenResponse retrieves the CreateTokenResponse from the keyring
 func (kr *KeyringStore) GetCreateTokenResponse(key string, token *CreateTokenResponse) error {
-	storage := StorageData{}
-	ok := false
-	if err := kr.getStorageData(&storage); err != nil {
-		return err
-	}
-
+	var ok bool
 	k := kr.CreateTokenResponseKey(key)
-	if *token, ok = storage.CreateTokenResponse[k]; !ok {
-		return fmt.Errorf("No CreateTokenResponse for %s", key)
+	if *token, ok = kr.cache.CreateTokenResponse[k]; !ok {
+		return fmt.Errorf("No CreateTokenResponse for %s", k)
 	}
 	return nil
 }
 
 // DeleteCreateTokenResponse deletes the CreateTokenResponse from the keyring
 func (kr *KeyringStore) DeleteCreateTokenResponse(key string) error {
-	storage := StorageData{}
-	if err := kr.getStorageData(&storage); err != nil {
-		return err
-	}
-
 	k := kr.CreateTokenResponseKey(key)
-	if _, ok := storage.CreateTokenResponse[k]; !ok {
+	if _, ok := kr.cache.CreateTokenResponse[k]; !ok {
 		// return error if key doesn't exist
-		return fmt.Errorf("Missing CreateTokenResponse for key: %s", key)
+		return fmt.Errorf("Missing CreateTokenResponse for key: %s", k)
 	}
 
-	delete(storage.CreateTokenResponse, k)
-	return nil
+	delete(kr.cache.CreateTokenResponse, k)
+	return kr.saveStorageData()
 }
 
 // SaveRoleCredentials stores the token in the arnring
 func (kr *KeyringStore) SaveRoleCredentials(arn string, token RoleCredentials) error {
-	storage := StorageData{}
-	if err := kr.getStorageData(&storage); err != nil {
-		return fmt.Errorf("Unable to getStorageData: %s", err.Error())
-	}
-
-	storage.RoleCredentials[arn] = token
-
-	return kr.saveStorageData(storage)
+	kr.cache.RoleCredentials[arn] = token
+	return kr.saveStorageData()
 }
 
 // GetRoleCredentials retrieves the RoleCredentials from the Keyring
 func (kr *KeyringStore) GetRoleCredentials(arn string, token *RoleCredentials) error {
-	storage := StorageData{}
-	ok := false
-	if err := kr.getStorageData(&storage); err != nil {
-		return err
-	}
-
-	if *token, ok = storage.RoleCredentials[arn]; !ok {
+	var ok bool
+	if *token, ok = kr.cache.RoleCredentials[arn]; !ok {
 		return fmt.Errorf("No RoleCredentials for %s", arn)
 	}
 	return nil
@@ -411,51 +382,15 @@ func (kr *KeyringStore) GetRoleCredentials(arn string, token *RoleCredentials) e
 
 // DeleteRoleCredentials deletes the RoleCredentials from the Keyring
 func (kr *KeyringStore) DeleteRoleCredentials(arn string) error {
-	storage := StorageData{}
-	if err := kr.getStorageData(&storage); err != nil {
-		return err
-	}
-
-	if _, ok := storage.RoleCredentials[arn]; !ok {
+	if _, ok := kr.cache.RoleCredentials[arn]; !ok {
 		// return error if key doesn't exist
 		return fmt.Errorf("Missing RoleCredentials for arn: %s", arn)
 	}
 
-	delete(storage.RoleCredentials, arn)
-	return nil
+	delete(kr.cache.RoleCredentials, arn)
+	return kr.saveStorageData()
 }
 
 func getHomePath(path string) string {
 	return strings.Replace(path, "~", os.Getenv("HOME"), 1)
-}
-
-func joinByteArray(chunks []([]byte)) []byte {
-	var result []byte
-	for _, s := range chunks {
-		result = append(result, s...)
-	}
-	return result
-}
-
-func (kr *KeyringStore) getMyGOOS() string {
-	if myGOOS == "" {
-		return runtime.GOOS
-	}
-	return myGOOS
-}
-
-func (kr *KeyringStore) setMyGOOS(os string) {
-	myGOOS = os
-}
-
-// Create a 8-byte array from uint64
-func getBytesFromUINT64(i uint64) []byte {
-	b := make([]byte, 8)
-	binary.BigEndian.PutUint64(b, uint64(i))
-	return b
-}
-
-// Create uint64 from byte array
-func getUINT64FromBytes(b []byte) uint64 {
-	return binary.BigEndian.Uint64(b)
 }
