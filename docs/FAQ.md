@@ -15,6 +15,7 @@
  * [Does aws-sso support using AWS FIPS endpoints?](#does-aws-sso-support-using-aws-fips-endpoints)
  * [Error: Unable to save... org.freedesktop.DBus.Properties](#error-unable-to-save-orgfreedesktopdbusproperties)
  * [Are macOS Keychain items synced?](#are-macos-keychain-items-synced)
+ * [How can I say thanks?](#how-can-I-say-thanks)
 
 ### How do I delete all secrets from the macOS keychain?
 
@@ -276,3 +277,13 @@ with your OS for best practices.
 
 No. If you are using the macOS keychain, none of the secrets stored by `aws-sso`
 are synced via iCloud to your other Apple devices.
+
+### How can I say thanks?
+
+Honestly, just send me an email saying thanks or "star" this project in GitHub
+is enough thanks.
+
+Occasionally, someone will ask about giving me a few bucks, but I really don't
+need any money.  If you still would like to throw a few bucks my way, I'd much
+rather you donate to [Second Harvest Food Bank](https://www.shfb.org/) which
+is local to me and could put your money to better work than I would.
