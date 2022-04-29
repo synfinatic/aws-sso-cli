@@ -298,8 +298,14 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials, durat
 		return fmt.Errorf("Error parsing Login response: %s", err.Error())
 	}
 
+	sso, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
+	if err != nil {
+		return err
+	}
+	issuer := sso.StartUrl
+
 	login := LoginUrlParams{
-		Issuer:      "https://github.com/synfinatic/aws-sso-cli",
+		Issuer:      issuer,
 		Destination: fmt.Sprintf("https://console.aws.amazon.com/console/home?region=%s", region),
 		SigninToken: loginResponse.SigninToken,
 	}

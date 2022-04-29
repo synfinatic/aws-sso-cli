@@ -5,6 +5,7 @@
 ### Bug Fixes
 
  * `console` command now works when AWS_PROFILE #332
+ * Fix `console` URL redirect #328
 
 ## [1.7.5] - 2022-03-29
 
