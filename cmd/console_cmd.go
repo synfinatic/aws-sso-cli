@@ -89,7 +89,12 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 	} else if haveAWSEnvVars(ctx) {
 		return consoleViaEnvVars(ctx, duration)
 	} else if ctx.Cli.Console.AwsProfile != "" {
-		return consoleViaSDK(ctx, duration)
+		ssoCache := ctx.Settings.Cache.GetSSO()
+		_, err := ssoCache.Roles.GetRoleByProfile(ctx.Cli.Console.AwsProfile, ctx.Settings)
+		if err == nil {
+			return consoleViaSDK(ctx, duration)
+		}
+		log.Warnf("AWS_PROFILE=%s was not found in our cache.", ctx.Cli.Console.AwsProfile)
 	}
 
 	// default action is to prompt
@@ -103,7 +108,12 @@ func stsSession(ctx *RunContext) (*sts.Client, error) {
 		ctx.Cli.Console.SessionToken,
 	)
 
-	ssoRegion := ctx.Settings.SSO[ctx.Cli.SSO].SSORegion
+	sso, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
+	if err != nil {
+		return &sts.Client{}, err
+	}
+
+	ssoRegion := sso.SSORegion
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion(ssoRegion),
 		config.WithCredentialsProvider(cfgCreds),

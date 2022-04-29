@@ -1,5 +1,11 @@
 # AWS SSO CLI Changelog
 
+## Unreleased
+
+### Bug Fixes
+
+ * `console` command now works when AWS_PROFILE #332
+
 ## [1.7.5] - 2022-03-29
 
 ### Bug Fixes
