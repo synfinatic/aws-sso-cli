@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -162,6 +163,7 @@ func (suite *CacheRolesTestSuite) TestGetRole() {
 	assert.Equal(t, "AWSAdministratorAccess", r.RoleName)
 	assert.Equal(t, "", r.Profile)
 	assert.Equal(t, "us-east-1", r.DefaultRegion)
+	assert.Equal(t, "", r.Via)
 	p, err := r.ProfileName(suite.settings)
 	assert.NoError(t, err)
 	assert.Equal(t, "OurCompany Control Tower Playground/AWSAdministratorAccess", p)
@@ -225,4 +227,72 @@ func (suite *CacheRolesTestSuite) TestGetEnvVarTags() {
 		"AWS_SSO_TAG_ACCOUNTNAME": "Audit",
 	}
 	assert.Equal(t, x, flat.GetEnvVarTags(&settings))
+}
+
+func TestAWSRoleFlatGetHeader(t *testing.T) {
+	f := AWSRoleFlat{}
+	x, err := f.GetHeader("ExpiresStr")
+	assert.NoError(t, err)
+	assert.Equal(t, "Expires", x)
+
+	x, err = f.GetHeader("Expires")
+	assert.NoError(t, err)
+	assert.Equal(t, "ExpiresEpoch", x)
+
+	x, err = f.GetHeader("Id")
+	assert.NoError(t, err)
+	assert.Equal(t, "Id", x)
+
+	x, err = f.GetHeader("Tags")
+	assert.NoError(t, err)
+	assert.Equal(t, "", x)
+}
+
+func TestAWSRoleFlatExpired(t *testing.T) {
+	f := &AWSRoleFlat{
+		Expires: 0,
+	}
+	assert.True(t, f.IsExpired())
+
+	f = &AWSRoleFlat{
+		Expires: 12345455,
+	}
+	assert.True(t, f.IsExpired())
+
+	f = &AWSRoleFlat{
+		Expires: time.Now().Add(time.Minute * 5).Unix(),
+	}
+	assert.False(t, f.IsExpired())
+}
+
+func TestAWSRoleFlatProfileName(t *testing.T) {
+	s := &Settings{
+		ProfileFormat: "{{ what }}",
+	}
+
+	f := &AWSRoleFlat{}
+	_, err := f.ProfileName(s)
+	assert.Error(t, err)
+}
+
+// profile functions
+func TestEmptyString(t *testing.T) {
+	assert.True(t, emptyString(""))
+	assert.False(t, emptyString("foo"))
+}
+
+func TestFirstItem(t *testing.T) {
+	assert.Equal(t, "x", firstItem("x", "b"))
+	assert.Equal(t, "x", firstItem("x"))
+	assert.Equal(t, "x", firstItem("", "x", "b"))
+	assert.Equal(t, "", firstItem())
+}
+
+func TestStringReplace(t *testing.T) {
+	assert.Equal(t, "aaaaa", stringReplace("b", "a", "bbbbb"))
+	assert.Equal(t, "zaaaaax", stringReplace("b", "a", "zbbbbbx"))
+}
+
+func TestStringsJoin(t *testing.T) {
+	assert.Equal(t, "a.b.c", stringsJoin(".", "a", "b", "c"))
 }

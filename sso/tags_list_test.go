@@ -1,8 +1,10 @@
 package sso
 
 import (
+	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	yaml "github.com/goccy/go-yaml"
 	"github.com/stretchr/testify/assert"
@@ -140,4 +142,31 @@ func (suite *TagsListTestSuite) TestUniqueValues() {
 	assert.Equal(t, []string{"value", "value_2", "value_3"}, tl.UniqueValues("tag"))
 	assert.Equal(t, []string{"a_value2", "b_value2", "value2"}, tl.UniqueValues("tag2"))
 	assert.Equal(t, []string{"value3"}, tl.UniqueValues("tag3"))
+}
+
+func (suite *TagsListTestSuite) TestReformatHistory() {
+	t := suite.T()
+
+	// special case, has no timestamp
+	assert.Equal(t, "foo", reformatHistory("foo"))
+
+	invalidTS := []string{
+		"fooo,",
+		"foo,bar",
+	}
+
+	for _, x := range invalidTS {
+		assert.Panics(t, func() { reformatHistory(x) })
+	}
+
+	// valid case
+	ninetyMinAgo := time.Now().Add(time.Minute * -90)
+	x := fmt.Sprintf("foo,%d", ninetyMinAgo.Unix())
+	fmt.Printf("x = %s\n", x)
+	assert.Equal(t, "[1h30m0s] foo", reformatHistory(x))
+
+	thirtyMinAgo := time.Now().Add(time.Minute * -30)
+	x = fmt.Sprintf("foo,%d", thirtyMinAgo.Unix())
+	fmt.Printf("x = %s\n", x)
+	assert.Equal(t, "[0h30m0s] foo", reformatHistory(x))
 }

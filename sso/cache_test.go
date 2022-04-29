@@ -355,8 +355,10 @@ func (suite *CacheTestSuite) TestGetRole() {
 		"Role":         "AWSAdministratorAccess",
 		"Type":         "Sub Account",
 	}
-
 	assert.Equal(t, tags, r.Tags)
+
+	_, err := suite.cache.GetRole("arn:aws:2344:role/missing-colon")
+	assert.Error(t, err)
 }
 
 func (suite *CacheTestSuite) TestAccountIds() {
@@ -519,6 +521,11 @@ func (suite *CacheTestSuite) TestCheckProfiles() {
 	assert.Error(t, err)
 
 	badSettings.ProfileFormat = "{{ .RoleName }}"
+	r = tests["Valid3"]
+	err = r.checkProfiles(&badSettings)
+	assert.Error(t, err)
+
+	badSettings.ProfileFormat = "{{ .InvalidFormat }}"
 	r = tests["Valid3"]
 	err = r.checkProfiles(&badSettings)
 	assert.Error(t, err)

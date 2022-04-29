@@ -101,6 +101,7 @@ func (t *TagsList) UniqueKeys(picked []string) []string {
 }
 
 // reformatHistory modifies the History tag values to their human format for the selector
+// History tag value is: <AccountAlias>:<RoleName>,<epochtime>
 func reformatHistory(value string) string {
 	x := strings.Split(value, ",")
 
@@ -111,7 +112,7 @@ func reformatHistory(value string) string {
 
 	i, err := strconv.ParseInt(x[1], 10, 64)
 	if err != nil {
-		log.WithError(err).Fatalf("Unable to parse: %s", value)
+		log.WithError(err).Panicf("Unable to parse: %s", value)
 	}
 
 	d := time.Since(time.Unix(i, 0)).Truncate(time.Second)
