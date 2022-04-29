@@ -28,7 +28,14 @@ type SecureStorage interface {
 	GetCreateTokenResponse(string, *CreateTokenResponse) error
 	DeleteCreateTokenResponse(string) error
 
+	// Temporary STS creds
 	SaveRoleCredentials(string, RoleCredentials) error
 	GetRoleCredentials(string, *RoleCredentials) error
 	DeleteRoleCredentials(string) error
+
+	// Static API creds
+	SaveStaticCredentials(string, StaticCredentials) error
+	GetStaticCredentials(string, *StaticCredentials) error
+	DeleteStaticCredentials(string) error
+	ListStaticCredentials() []string
 }

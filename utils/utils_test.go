@@ -75,6 +75,12 @@ func (suite *UtilsTestSuite) TestParseRoleARN() {
 
 	_, _, err = ParseRoleARN("arn:aws:iam::-000000011111:role/Foo")
 	assert.Error(t, err)
+
+	// ParseUserARN is just ParseRoleARN...
+	a, r, err = ParseUserARN("arn:aws:iam::22222:user/Foo")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(22222), a)
+	assert.Equal(t, "Foo", r)
 }
 
 func (suite *UtilsTestSuite) TestMakeRoleARN() {
@@ -85,6 +91,16 @@ func (suite *UtilsTestSuite) TestMakeRoleARN() {
 	assert.Equal(t, "arn:aws:iam::000000000000:role/", MakeRoleARN(0, ""))
 
 	assert.Panics(t, func() { MakeRoleARN(-1, "foo") })
+}
+
+func (suite *UtilsTestSuite) TestMakeUserARN() {
+	t := suite.T()
+
+	assert.Equal(t, "arn:aws:iam::000000011111:user/Foo", MakeUserARN(11111, "Foo"))
+	assert.Equal(t, "arn:aws:iam::000000711111:user/Foo", MakeUserARN(711111, "Foo"))
+	assert.Equal(t, "arn:aws:iam::000000000000:user/", MakeUserARN(0, ""))
+
+	assert.Panics(t, func() { MakeUserARN(-1, "foo") })
 }
 
 func (suite *UtilsTestSuite) TestMakeRoleARNs() {
@@ -148,6 +164,9 @@ func (suite *UtilsTestSuite) TestAccountToString() {
 	assert.Error(t, err)
 
 	_, err = AccountIdToString(-19999)
+	assert.Error(t, err)
+
+	_, err = AccountIdToString(1000000000000)
 	assert.Error(t, err)
 }
 

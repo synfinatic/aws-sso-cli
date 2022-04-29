@@ -27,6 +27,7 @@ import (
 	"github.com/posener/complete"
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/sirupsen/logrus"
+	"github.com/synfinatic/aws-sso-cli/awsconfig"
 	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/synfinatic/aws-sso-cli/storage"
 	"github.com/synfinatic/aws-sso-cli/utils"
@@ -104,6 +105,7 @@ type CLI struct {
 	Flush              FlushCmd                     `kong:"cmd,help='Flush AWS SSO/STS credentials from cache'"`
 	List               ListCmd                      `kong:"cmd,help='List all accounts / role (default command)'"`
 	Process            ProcessCmd                   `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
+	Static             StaticCmd                    `kong:"cmd,help='Manage static AWS API credentials'"`
 	Tags               TagsCmd                      `kong:"cmd,help='List tags'"`
 	Time               TimeCmd                      `kong:"cmd,help='Print out much time before current STS Token expires'"`
 	Version            VersionCmd                   `kong:"cmd,help='Print version and exit'"`
@@ -120,6 +122,7 @@ func main() {
 	sso.SetLogger(log)
 	storage.SetLogger(log)
 	utils.SetLogger(log)
+	awsconfig.SetLogger(log)
 
 	if err := logLevelValidate(cli.LogLevel); err != nil {
 		log.Fatalf("%s", err.Error())

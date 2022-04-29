@@ -22,9 +22,17 @@
       "roleName": "AWSAdministratorAccess",
       "accountId": 12344553243,
       "accessKeyId": "not a real access key id",
-      "secretAccessKey": "not a real acess key",
+      "secretAccessKey": "not a real access key",
       "sessionToken": "not a real session token",
       "expiration": 1637444478000
     }
+  },
+  "StaticCredentials": {
+	"arn:aws:iam::123456789012:user/foobar": {
+		"userName": "foobar",
+		"accountId": 123456789012,
+		"accessKeyId": "not a real access key id",
+		"secretAccessKey": "not a real access key"
+	}
   }
 }

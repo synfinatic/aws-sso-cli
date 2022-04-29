@@ -348,7 +348,7 @@ func (r *AWSRoleFlat) ProfileName(s *Settings) (string, error) {
 	log.Tracef("RoleInfo: %s", spew.Sdump(r))
 	log.Tracef("Template: %s", spew.Sdump(templ))
 	if err := templ.Execute(buf, r); err != nil {
-		log.WithError(err).Errorf("Unable to generate AWS_SSO_PROFILE")
+		return "", fmt.Errorf("Unable to generate ProfileName: %s", err.Error())
 	}
 
 	return buf.String(), nil

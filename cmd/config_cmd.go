@@ -29,6 +29,7 @@ import (
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
+	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/synfinatic/aws-sso-cli/utils"
 )
 
@@ -46,17 +47,6 @@ credential_process = {{ $profile.BinaryPath }} -u {{ $profile.Open }} -S "{{ $pr
 `
 )
 
-type ProfileMap map[string]map[string]ProfileConfig
-
-type ProfileConfig struct {
-	Arn             string
-	BinaryPath      string
-	ConfigVariables map[string]interface{}
-	Open            string
-	Profile         string
-	Sso             string
-}
-
 type ConfigCmd struct {
 	Diff  bool   `kong:"help='Print a diff of changes to the config file instead of modifying it'"`
 	Open  string `kong:"help='Override how to open URLs: [clip|exec|open]',required,enum='clip,exec,open'"`
@@ -64,42 +54,13 @@ type ConfigCmd struct {
 }
 
 func (cc *ConfigCmd) Run(ctx *RunContext) error {
-	set := ctx.Settings
-	binaryPath, err := os.Executable()
+	profiles, err := ctx.Settings.GetAllProfiles(ctx.Cli.Config.Open)
 	if err != nil {
 		return err
 	}
 
-	profiles := ProfileMap{}
-	profileUniqueCheck := map[string][]string{} // ProfileName() => Arn
-
-	// Find all the roles across all of the SSO instances
-	for ssoName, s := range set.Cache.SSO {
-		for _, role := range s.Roles.GetAllRoles() {
-			profile, err := role.ProfileName(ctx.Settings)
-			if err != nil {
-				log.Errorf("Unable to generate profile name for %s: %s", role.Arn, err.Error())
-			}
-
-			if match, duplicate := profileUniqueCheck[profile]; duplicate {
-				return fmt.Errorf("Duplicate profile name '%s' for:\n%s: %s\n%s: %s",
-					profile, match[0], match[1], ssoName, role.Arn)
-			}
-			profileUniqueCheck[profile] = []string{ssoName, role.Arn}
-
-			if _, ok := profiles[ssoName]; !ok {
-				profiles[ssoName] = map[string]ProfileConfig{}
-			}
-
-			profiles[ssoName][role.Arn] = ProfileConfig{
-				Arn:             role.Arn,
-				BinaryPath:      binaryPath,
-				ConfigVariables: ctx.Settings.ConfigVariables,
-				Open:            ctx.Cli.Config.Open,
-				Profile:         profile,
-				Sso:             ssoName,
-			}
-		}
+	if err := profiles.UniqueCheck(ctx.Settings); err != nil {
+		return err
 	}
 
 	templ, err := template.New("profile").Parse(CONFIG_TEMPLATE)
@@ -116,7 +77,7 @@ func (cc *ConfigCmd) Run(ctx *RunContext) error {
 }
 
 // updateConfig calculates the diff
-func updateConfig(ctx *RunContext, templ *template.Template, profiles ProfileMap) error {
+func updateConfig(ctx *RunContext, templ *template.Template, profiles *sso.ProfileMap) error {
 	// open our config file
 	configFile := awsConfigFile()
 	input, err := os.Open(configFile)

@@ -108,7 +108,7 @@ func (s *JsonStoreTestSuite) TestRoleCredentials() {
 		RoleName:        "AWSAdministratorAccess",
 		AccountId:       12344553243,
 		AccessKeyId:     "not a real access key id",
-		SecretAccessKey: "not a real acess key",
+		SecretAccessKey: "not a real access key",
 		SessionToken:    "not a real session token",
 		Expiration:      1637444478000,
 	}
@@ -155,4 +155,33 @@ func (s *JsonStoreTestSuite) TestCreateTokenResponse() {
 
 	err = s.json.GetCreateTokenResponse(key, &tr)
 	assert.NotNil(t, err)
+}
+
+func (s *JsonStoreTestSuite) TestStaticCredentials() {
+	t := s.T()
+
+	arn := "arn:aws:iam::123456789012:user/foobar"
+	l := s.json.ListStaticCredentials()
+	assert.Equal(t, []string{arn}, l)
+
+	cr := StaticCredentials{}
+	assert.NoError(t, s.json.GetStaticCredentials("arn:aws:iam::123456789012:user/foobar", &cr))
+
+	cr2 := StaticCredentials{
+		UserName:        "foobar",
+		AccountId:       123456789012,
+		AccessKeyId:     "not a real access key id",
+		SecretAccessKey: "not a real access key",
+	}
+	assert.Equal(t, cr2, cr)
+
+	assert.NoError(t, s.json.DeleteStaticCredentials(arn))
+	assert.Empty(t, s.json.ListStaticCredentials())
+
+	assert.Error(t, s.json.GetStaticCredentials(arn, &cr))
+	assert.Error(t, s.json.DeleteStaticCredentials(arn))
+
+	assert.NoError(t, s.json.SaveStaticCredentials(arn, cr2))
+	assert.NoError(t, s.json.GetStaticCredentials("arn:aws:iam::123456789012:user/foobar", &cr))
+	assert.Equal(t, cr2, cr)
 }

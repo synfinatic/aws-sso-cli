@@ -19,6 +19,7 @@ package sso
  */
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -223,4 +224,54 @@ func (suite *SettingsTestSuite) TestGetEnvVarTags() {
 	}
 	y := suite.settings.GetEnvVarTags()
 	assert.EqualValues(t, x, y)
+}
+
+func (suite *SettingsTestSuite) TestGetAllProfiles() {
+	t := suite.T()
+
+	getExecutable = func() (string, error) { return "", fmt.Errorf("failed") }
+	_, err := suite.settings.GetAllProfiles("open firefox")
+	assert.Error(t, err)
+
+	getExecutable = os.Executable
+
+	profiles, err := suite.settings.GetAllProfiles("open firefox")
+	assert.NoError(t, err)
+
+	assert.Len(t, *profiles, 1)
+	assert.Contains(t, *profiles, "Default")
+
+	p := *profiles
+	d := p["Default"]
+	assert.Len(t, d, 19)
+
+	x, ok := d["arn:aws:iam::833365043586:role/AWSAdministratorAccess"]
+	assert.True(t, ok)
+
+	assert.Equal(t, x.Arn, "arn:aws:iam::833365043586:role/AWSAdministratorAccess")
+	assert.NotEmpty(t, x.BinaryPath)
+	assert.Equal(t, map[string]interface{}(nil), x.ConfigVariables)
+	assert.Equal(t, "open firefox", x.Open)
+	assert.Equal(t, "Log archive/AWSAdministratorAccess", x.Profile)
+	assert.Equal(t, "Default", x.Sso)
+
+	assert.NoError(t, profiles.UniqueCheck(suite.settings))
+
+	assert.False(t, profiles.IsDuplicate("testing"))
+	assert.True(t, profiles.IsDuplicate("Log archive/AWSAdministratorAccess"))
+
+	oldFormat := suite.settings.ProfileFormat
+	// generates duplicates
+	suite.settings.ProfileFormat = "{{ .AccountId }}"
+	assert.Error(t, profiles.UniqueCheck(suite.settings))
+
+	// unable to generate a profile
+	suite.settings.ProfileFormat = "{{ .UniqueCheckFailure }}"
+	assert.Error(t, profiles.UniqueCheck(suite.settings))
+
+	suite.settings.ProfileFormat = "{{ .GetAllProfilesFailure }}"
+	_, err = suite.settings.GetAllProfiles("open firefox")
+	assert.Error(t, err)
+
+	suite.settings.ProfileFormat = oldFormat
 }

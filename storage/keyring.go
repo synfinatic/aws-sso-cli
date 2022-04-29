@@ -25,10 +25,10 @@ import (
 	"os"
 	"path"
 	"runtime"
-	"strings"
 
 	"github.com/99designs/keyring"
 	// "github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/utils"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -53,6 +53,7 @@ type StorageData struct {
 	RegisterClientData  map[string]RegisterClientData
 	CreateTokenResponse map[string]CreateTokenResponse
 	RoleCredentials     map[string]RoleCredentials
+	StaticCredentials   map[string]StaticCredentials
 }
 
 func NewStorageData() StorageData {
@@ -60,6 +61,7 @@ func NewStorageData() StorageData {
 		RegisterClientData:  map[string]RegisterClientData{},
 		CreateTokenResponse: map[string]CreateTokenResponse{},
 		RoleCredentials:     map[string]RoleCredentials{},
+		StaticCredentials:   map[string]StaticCredentials{},
 	}
 }
 
@@ -104,7 +106,7 @@ func NewKeyringConfig(name, configDir string) (*keyring.Config, error) {
 	}
 	if name != "" {
 		c.AllowedBackends = []keyring.BackendType{keyring.BackendType(name)}
-		rolesFile := getHomePath(path.Join(securePath, RECORD_KEY))
+		rolesFile := utils.GetHomePath(path.Join(securePath, RECORD_KEY))
 
 		if name == "file" {
 			if _, err := os.Stat(rolesFile); os.IsNotExist(err) {
@@ -324,7 +326,7 @@ func (kr *KeyringStore) DeleteRegisterClientData(region string) error {
 	key := kr.RegisterClientKey(region)
 	if _, ok := kr.cache.RegisterClientData[key]; !ok {
 		// return error if key doesn't exist
-		return fmt.Errorf("Missing RegisterClientData for key: %s", key)
+		return fmt.Errorf("No RegisterClientData for key: %s", key)
 	}
 
 	delete(kr.cache.RegisterClientData, key)
@@ -358,7 +360,7 @@ func (kr *KeyringStore) DeleteCreateTokenResponse(key string) error {
 	k := kr.CreateTokenResponseKey(key)
 	if _, ok := kr.cache.CreateTokenResponse[k]; !ok {
 		// return error if key doesn't exist
-		return fmt.Errorf("Missing CreateTokenResponse for key: %s", k)
+		return fmt.Errorf("No CreateTokenResponse for key: %s", k)
 	}
 
 	delete(kr.cache.CreateTokenResponse, k)
@@ -375,7 +377,7 @@ func (kr *KeyringStore) SaveRoleCredentials(arn string, token RoleCredentials) e
 func (kr *KeyringStore) GetRoleCredentials(arn string, token *RoleCredentials) error {
 	var ok bool
 	if *token, ok = kr.cache.RoleCredentials[arn]; !ok {
-		return fmt.Errorf("No RoleCredentials for %s", arn)
+		return fmt.Errorf("No RoleCredentials for ARN: %s", arn)
 	}
 	return nil
 }
@@ -384,13 +386,45 @@ func (kr *KeyringStore) GetRoleCredentials(arn string, token *RoleCredentials) e
 func (kr *KeyringStore) DeleteRoleCredentials(arn string) error {
 	if _, ok := kr.cache.RoleCredentials[arn]; !ok {
 		// return error if key doesn't exist
-		return fmt.Errorf("Missing RoleCredentials for arn: %s", arn)
+		return fmt.Errorf("No RoleCredentials for ARN: %s", arn)
 	}
 
 	delete(kr.cache.RoleCredentials, arn)
 	return kr.saveStorageData()
 }
 
-func getHomePath(path string) string {
-	return strings.Replace(path, "~", os.Getenv("HOME"), 1)
+// SaveStaticCredentials stores the token in the arnring
+func (kr *KeyringStore) SaveStaticCredentials(arn string, creds StaticCredentials) error {
+	kr.cache.StaticCredentials[arn] = creds
+	return kr.saveStorageData()
+}
+
+// GetStaticCredentials retrieves the StaticCredentials from the Keyring
+func (kr *KeyringStore) GetStaticCredentials(arn string, creds *StaticCredentials) error {
+	var ok bool
+	if *creds, ok = kr.cache.StaticCredentials[arn]; !ok {
+		return fmt.Errorf("No StaticCredentials for ARN: %s", arn)
+	}
+	return nil
+}
+
+// DeleteStaticCredentials deletes the StaticCredentials from the Keyring
+func (kr *KeyringStore) DeleteStaticCredentials(arn string) error {
+	if _, ok := kr.cache.StaticCredentials[arn]; !ok {
+		// return error if key doesn't exist
+		return fmt.Errorf("No StaticCredentials for ARN: %s", arn)
+	}
+
+	delete(kr.cache.StaticCredentials, arn)
+	return kr.saveStorageData()
+}
+
+func (kr *KeyringStore) ListStaticCredentials() []string {
+	ret := make([]string, len(kr.cache.StaticCredentials))
+	i := 0
+	for k := range kr.cache.StaticCredentials {
+		ret[i] = k
+		i++
+	}
+	return ret
 }

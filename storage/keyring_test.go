@@ -254,6 +254,31 @@ func (suite *KeyringSuite) TestCreateKeys() {
 	assert.Equal(t, "client-data:mykey", suite.store.RegisterClientKey("mykey"))
 }
 
+func (suite *KeyringSuite) TestStaticCredentials() {
+	t := suite.T()
+
+	arn := "arn:aws:iam::123456789012:role/foobar"
+	cr := StaticCredentials{
+		UserName:        "foobar",
+		AccountId:       123456789012,
+		AccessKeyId:     "not a real access key id",
+		SecretAccessKey: "not a real access key",
+	}
+	assert.Empty(t, suite.store.ListStaticCredentials())
+
+	assert.NoError(t, suite.store.SaveStaticCredentials(arn, cr))
+	assert.Equal(t, []string{arn}, suite.store.ListStaticCredentials())
+
+	cr2 := StaticCredentials{}
+	assert.NoError(t, suite.store.GetStaticCredentials(arn, &cr2))
+	assert.Equal(t, cr, cr2)
+
+	assert.NoError(t, suite.store.DeleteStaticCredentials(arn))
+	assert.Empty(t, suite.store.ListStaticCredentials())
+	assert.Error(t, suite.store.GetStaticCredentials(arn, &cr2))
+	assert.Error(t, suite.store.DeleteStaticCredentials(arn))
+}
+
 func TestNewStorageData(t *testing.T) {
 	s := NewStorageData()
 	assert.Empty(t, s.RegisterClientData)

@@ -19,9 +19,11 @@ package storage
  */
 
 import (
+	"reflect"
 	"time"
 
 	"github.com/synfinatic/aws-sso-cli/utils"
+	"github.com/synfinatic/gotable"
 )
 
 // this struct should be cached for long term if possible
@@ -104,6 +106,35 @@ func (r *RoleCredentials) AccountIdStr() string {
 	s, err := utils.AccountIdToString(r.AccountId)
 	if err != nil {
 		log.WithError(err).Fatalf("Unable to parse accountId from AWS role credentials")
+	}
+	return s
+}
+
+type StaticCredentials struct { // Cache and storage
+	Profile         string            `json:"Profile" header:"Profile"`
+	UserName        string            `json:"userName" header:"UserName"`
+	AccountId       int64             `json:"accountId" header:"AccountId"`
+	AccessKeyId     string            `json:"accessKeyId"`
+	SecretAccessKey string            `json:"secretAccessKey"`
+	Tags            map[string]string `json:"Tags" header:"Tags"`
+}
+
+// GetHeader is required for GenerateTable()
+func (sc StaticCredentials) GetHeader(fieldName string) (string, error) {
+	v := reflect.ValueOf(sc)
+	return gotable.GetHeaderTag(v, fieldName)
+}
+
+// RoleArn returns the ARN for the role
+func (sc *StaticCredentials) UserArn() string {
+	return utils.MakeUserARN(sc.AccountId, sc.UserName)
+}
+
+// AccountIdStr returns our AccountId as a string
+func (sc *StaticCredentials) AccountIdStr() string {
+	s, err := utils.AccountIdToString(sc.AccountId)
+	if err != nil {
+		log.WithError(err).Panicf("Invalid AccountId from AWS static credentials: %d", sc.AccountId)
 	}
 	return s
 }

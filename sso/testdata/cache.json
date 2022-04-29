@@ -16,6 +16,7 @@
             "Roles": {
               "AWSAdministratorAccess": {
                 "Arn": "arn:aws:iam::258234615182:role/AWSAdministratorAccess",
+				"DefaultRegion": "us-east-1",
                 "Tags": {
                   "AccountAlias": "OurCompany Control Tower Playground",
                   "AccountID": "258234615182",

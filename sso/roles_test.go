@@ -153,11 +153,15 @@ func (suite *CacheRolesTestSuite) TestGetRole() {
 	t := suite.T()
 	roles := suite.cache.SSO[suite.cache.ssoName].Roles
 
+	_, err := roles.GetRole(58234615182, "AWSAdministratorAccess")
+	assert.Error(t, err)
+
 	r, err := roles.GetRole(258234615182, "AWSAdministratorAccess")
 	assert.NoError(t, err)
 	assert.Equal(t, int64(258234615182), r.AccountId)
 	assert.Equal(t, "AWSAdministratorAccess", r.RoleName)
 	assert.Equal(t, "", r.Profile)
+	assert.Equal(t, "us-east-1", r.DefaultRegion)
 	p, err := r.ProfileName(suite.settings)
 	assert.NoError(t, err)
 	assert.Equal(t, "OurCompany Control Tower Playground/AWSAdministratorAccess", p)
