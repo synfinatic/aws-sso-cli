@@ -162,11 +162,9 @@ func (suite *TagsListTestSuite) TestReformatHistory() {
 	// valid case
 	ninetyMinAgo := time.Now().Add(time.Minute * -90)
 	x := fmt.Sprintf("foo,%d", ninetyMinAgo.Unix())
-	fmt.Printf("x = %s\n", x)
 	assert.Equal(t, "[1h30m0s] foo", reformatHistory(x))
 
 	thirtyMinAgo := time.Now().Add(time.Minute * -30)
 	x = fmt.Sprintf("foo,%d", thirtyMinAgo.Unix())
-	fmt.Printf("x = %s\n", x)
 	assert.Equal(t, "[0h30m0s] foo", reformatHistory(x))
 }

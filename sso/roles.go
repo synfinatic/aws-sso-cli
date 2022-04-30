@@ -193,10 +193,7 @@ func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) 
 func (r *Roles) GetRoleByProfile(profileName string, s *Settings) (*AWSRoleFlat, error) {
 	for aId, account := range r.Accounts {
 		for roleName := range account.Roles {
-			flat, err := r.GetRole(aId, roleName)
-			if err != nil {
-				return &AWSRoleFlat{}, err
-			}
+			flat, _ := r.GetRole(aId, roleName)
 			pName, err := flat.ProfileName(s)
 			if err != nil {
 				log.WithError(err).Warnf(
