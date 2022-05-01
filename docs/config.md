@@ -39,6 +39,7 @@ UrlActionExec:
     - <arg 1>
     - <arg N>
     - "%s"
+FirefoxOpenInContainer: [False|True]
 ConsoleDuration: <minutes>
 
 LogLevel: [error|warn|info|debug|trace]
@@ -165,7 +166,7 @@ If you only have a single AWS SSO instance, then it doesn't really matter what y
 but if you have two or more, than `Default` is automatically selected unless you manually
 specify it here, on the CLI (`--sso`), or via the `AWS_SSO` environment variable.
 
-## Browser / UrlAction / UrlActionExec
+## Browser / UrlAction / UrlActionExec / FirefoxOpenUrlInContainer
 
 `UrlAction` gives you control over how AWS SSO and AWS Console URLs are opened in a browser:
 
@@ -178,20 +179,57 @@ specify it here, on the CLI (`--sso`), or via the `AWS_SSO` environment variable
 If `Browser` is not set, then your default browser will be used and that
 your browser needs to support JavaScript for the AWS SSO user interface.
 
-`UrlActionExec` allows you to execute arbitrary commands to handle the URL.  The command and arguments
-should be specified as a list, with the URL to open specified as the format string `%s`.  Only one instance
-of `%s` is allowed.  Note that YAML requires quotes around strings which start with a [reserved indicator](
-https://yaml.org/spec/1.2-old/spec.html#id2774228) like `%`.
+`UrlActionExec` is used with `UrlAction=exec` and allows you to execute arbitrary
+commands to handle the URL.  The command and arguments should be specified as a list,
+with the URL to open specified as the format string `%s`.  Only one instance
+of `%s` is allowed.  Note that YAML requires quotes around strings which start
+with a [reserved indicator]( https://yaml.org/spec/1.2-old/spec.html#id2774228) like `%`.
 
-Example:
+`FirefoxOpenUrlInContainer` is used with `UrlAction=exec` and [Firefox](
+https://getfirefox.com) with the [Firefox Open URL in Container](
+https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/) plugin.  This causes
+the generated URL to be of the format:
+
+```
+ext+container:name=<ProfileName>&url=<AWS Console URL>
+```
+
+The result is that each account/role has a dedicated Firefox container named after the _ProfileName_
+so that you can be logged in across multiple AWS accounts/roles without getting
+an error from AWS.
+
+**Note:** If your `ProfileFormat` generates a _ProfileName_ with an `&`, then
+`{{ .AccountId }}:{{ .RoleName }}` will be used as the container name instead.
+
+**Note for MacOS users:** This feature does not work with the `open` command, so you should
+specify `/Applications/Firefox.app/Contents/MacOS/firefox` as the command to execute.
+
+
+Examples:
 
 ```yaml
+# Open the AWS Console in your default browser
+UrlAction=open
+```
+
+```yaml
+# Open the AWS Console using Brave on MacOS
+UrlAction=exec
 UrlActionExec:
     - open
     - -a
     - /Applications/Brave Browser.app
     - --args
     - "%s"
+```
+
+```
+# Open the AWS Console in a Firefox container on MacOS
+UrlAction=exec
+FirefoxOpenUrlInContainer: True
+UrlActionExec:
+	- /Applications/Firefox.app/Contents/MacOS/firefox
+	- "%s"
 ```
 
 ## LogLevel / LogLines

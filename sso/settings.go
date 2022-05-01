@@ -42,28 +42,29 @@ const (
 )
 
 type Settings struct {
-	configFile        string                 // name of this file
-	cacheFile         string                 // name of cache file; always passed in via CLI args
-	Cache             *Cache                 `yaml:"-"` // our cache data
-	SSO               map[string]*SSOConfig  `koanf:"SSOConfig" yaml:"SSOConfig,omitempty"`
-	DefaultSSO        string                 `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`   // specify default SSO by key
-	SecureStore       string                 `koanf:"SecureStore" yaml:"SecureStore,omitempty"` // json or keyring
-	DefaultRegion     string                 `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
-	ConsoleDuration   int32                  `koanf:"ConsoleDuration" yaml:"ConsoleDuration,omitempty"`
-	JsonStore         string                 `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
-	UrlAction         string                 `koanf:"UrlAction" yaml:"UrlAction,omitempty"`
-	Browser           string                 `koanf:"Browser" yaml:"Browser,omitempty"`
-	UrlExecCommand    interface{}            `koanf:"UrlExecCommand" yaml:"UrlExecCommand,omitempty"` // string or list
-	ProfileFormat     string                 `koanf:"ProfileFormat" yaml:"ProfileFormat,omitempty"`
-	AccountPrimaryTag []string               `koanf:"AccountPrimaryTag" yaml:"AccountPrimaryTag,omitempty"`
-	PromptColors      PromptColors           `koanf:"PromptColors" yaml:"PromptColors,omitempty"` // go-prompt colors
-	LogLevel          string                 `koanf:"LogLevel" yaml:"LogLevel,omitempty"`
-	LogLines          bool                   `koanf:"LogLines" yaml:"LogLines,omitempty"`
-	HistoryLimit      int64                  `koanf:"HistoryLimit" yaml:"HistoryLimit,omitempty"`
-	HistoryMinutes    int64                  `koanf:"HistoryMinutes" yaml:"HistoryMinutes,omitempty"`
-	ListFields        []string               `koanf:"ListFields" yaml:"ListFields,omitempty"`
-	ConfigVariables   map[string]interface{} `koanf:"ConfigVariables" yaml:"ConfigVariables,omitempty"`
-	EnvVarTags        []string               `koanf:"EnvVarTags" yaml:"EnvVarTags,omitempty"`
+	configFile                string                 // name of this file
+	cacheFile                 string                 // name of cache file; always passed in via CLI args
+	Cache                     *Cache                 `yaml:"-"` // our cache data
+	SSO                       map[string]*SSOConfig  `koanf:"SSOConfig" yaml:"SSOConfig,omitempty"`
+	DefaultSSO                string                 `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`   // specify default SSO by key
+	SecureStore               string                 `koanf:"SecureStore" yaml:"SecureStore,omitempty"` // json or keyring
+	DefaultRegion             string                 `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
+	ConsoleDuration           int32                  `koanf:"ConsoleDuration" yaml:"ConsoleDuration,omitempty"`
+	JsonStore                 string                 `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
+	UrlAction                 string                 `koanf:"UrlAction" yaml:"UrlAction,omitempty"`
+	Browser                   string                 `koanf:"Browser" yaml:"Browser,omitempty"`
+	UrlExecCommand            interface{}            `koanf:"UrlExecCommand" yaml:"UrlExecCommand,omitempty"` // string or list
+	ProfileFormat             string                 `koanf:"ProfileFormat" yaml:"ProfileFormat,omitempty"`
+	AccountPrimaryTag         []string               `koanf:"AccountPrimaryTag" yaml:"AccountPrimaryTag,omitempty"`
+	PromptColors              PromptColors           `koanf:"PromptColors" yaml:"PromptColors,omitempty"` // go-prompt colors
+	LogLevel                  string                 `koanf:"LogLevel" yaml:"LogLevel,omitempty"`
+	LogLines                  bool                   `koanf:"LogLines" yaml:"LogLines,omitempty"`
+	HistoryLimit              int64                  `koanf:"HistoryLimit" yaml:"HistoryLimit,omitempty"`
+	HistoryMinutes            int64                  `koanf:"HistoryMinutes" yaml:"HistoryMinutes,omitempty"`
+	ListFields                []string               `koanf:"ListFields" yaml:"ListFields,omitempty"`
+	ConfigVariables           map[string]interface{} `koanf:"ConfigVariables" yaml:"ConfigVariables,omitempty"`
+	EnvVarTags                []string               `koanf:"EnvVarTags" yaml:"EnvVarTags,omitempty"`
+	FirefoxOpenUrlInContainer bool                   `koanf:"FirefoxOpenUrlInContainer" yaml:"FirefoxOpenUrlInContainer"`
 }
 
 type SSOConfig struct {

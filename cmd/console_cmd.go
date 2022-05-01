@@ -27,6 +27,7 @@ import (
 	"net/url"
 	"os/user"
 	"regexp"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -155,7 +156,7 @@ func consoleViaEnvVars(ctx *RunContext, duration int32) error {
 		SecretAccessKey: ctx.Cli.Console.SecretAccessKey,
 		SessionToken:    ctx.Cli.Console.SessionToken,
 	}
-	return openConsoleAccessKey(ctx, &creds, duration, region)
+	return openConsoleAccessKey(ctx, &creds, duration, region, accountid, role)
 }
 
 func consoleViaSDK(ctx *RunContext, duration int32) error {
@@ -200,7 +201,8 @@ func consoleViaSDK(ctx *RunContext, duration int32) error {
 		SessionToken:    aws.ToString(token.Credentials.SessionToken),
 	}
 
-	return openConsoleAccessKey(ctx, &creds, duration, region)
+	return openConsoleAccessKey(ctx, &creds, duration, region,
+		rFlat.AccountId, rFlat.RoleName)
 }
 
 func consolePrompt(ctx *RunContext) error {
@@ -263,11 +265,12 @@ func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role stri
 
 	creds := GetRoleCredentials(ctx, awssso, accountid, role)
 
-	return openConsoleAccessKey(ctx, creds, duration, region)
+	return openConsoleAccessKey(ctx, creds, duration, region, accountid, role)
 }
 
 // openConsoleAccessKey opens the Frederated Console access URL
-func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials, duration int32, region string) error {
+func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials,
+	duration int32, region string, accountId int64, role string) error {
 	signin := SigninTokenUrlParams{
 		SessionDuration: duration * 60,
 		Session: SessionUrlParams{
@@ -309,10 +312,21 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials, durat
 		Destination: fmt.Sprintf("https://console.aws.amazon.com/console/home?region=%s", region),
 		SigninToken: loginResponse.SigninToken,
 	}
-	url := login.GetUrl()
+	awsUrl := login.GetUrl()
+
+	if ctx.Settings.FirefoxOpenUrlInContainer {
+		rFlat, _ := ctx.Settings.Cache.GetRole(utils.MakeRoleARN(accountId, role))
+		profile, err := rFlat.ProfileName(ctx.Settings)
+		if err != nil && strings.Contains(profile, "&") {
+			profile = fmt.Sprintf("%d:%s", accountId, role)
+		}
+
+		// docs don't say it, but you have to URL escape the url value
+		awsUrl = fmt.Sprintf("ext+container:name=%s&url=%s", profile, url.QueryEscape(awsUrl))
+	}
 
 	urlOpener := utils.NewHandleUrl(ctx.Settings.UrlAction, ctx.Settings.Browser, ctx.Settings.UrlExecCommand)
-	return urlOpener.Open(url,
+	return urlOpener.Open(awsUrl,
 		"Please open the following URL in your browser:\n\n", "\n\n")
 }
 
