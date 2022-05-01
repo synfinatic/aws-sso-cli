@@ -340,3 +340,9 @@ func (suite *UtilsTestSuite) TestTimeRemain() {
 	assert.NoError(t, e)
 	assert.Equal(t, "5h5m", x)
 }
+
+func TestStrListContains(t *testing.T) {
+	x := []string{"yes", "no"}
+	assert.True(t, StrListContains("yes", x))
+	assert.False(t, StrListContains("nope", x))
+}

@@ -321,3 +321,13 @@ func AccountIdToInt64(a string) (int64, error) {
 	}
 	return x, nil
 }
+
+// StrListContains returns if `str` is in the `list`
+func StrListContains(str string, list []string) bool {
+	for _, v := range list {
+		if v == str {
+			return true
+		}
+	}
+	return false
+}

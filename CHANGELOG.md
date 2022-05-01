@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### New Features
+
+ * Add Color and Icon support to Firefox Containers #340
+
 ## [v1.8.0] - 2022-04-30
 
 ### New Features
