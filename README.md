@@ -139,8 +139,7 @@ in the terminal or copied into the Copy & Paste buffer of your computer.
 
 **Note:** Normally, you can only have a single active AWS Console session at
 a time, but multiple session are supported via the [FirefoxOpenUrlInContainer](
-docs/config.md#browser--urlaction--urlactionexec--firefoxopenurlincontainer)
-configuration option.
+docs/config.md#firefoxopenurlincontainer) configuration option.
 
 Flags:
 
