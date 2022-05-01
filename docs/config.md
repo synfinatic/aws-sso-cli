@@ -127,6 +127,31 @@ in AWS.
 List of key / value pairs, used by `aws-sso` in prompt mode.  Any tag placed at
 the account level will be applied to all roles in that account.
 
+Some special tags:
+
+ * **Color** -- Used to specify the color of the Firefox container label.  Valid values are:
+	* blue
+	* turquoise
+	* green
+	* yellow
+	* orange
+	* red
+	* pink
+	* purple
+ * **Icon** -- Used to specify the icon of the Firefox container label.  Valid values are:
+	* fingerprint
+	* briefcase
+	* dollar
+	* cart
+	* gift
+	* vacation
+	* food
+	* fruit
+	* pet
+	* tree
+	* chill
+	* circle
+
 #### Roles
 
 The `Roles` block is optional, except for roles you which to assume via role chaining.
