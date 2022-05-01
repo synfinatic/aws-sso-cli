@@ -209,7 +209,7 @@ your browser needs to support JavaScript for the AWS SSO user interface.
 commands to handle the URL.  The command and arguments should be specified as a list,
 with the URL to open specified as the format string `%s`.  Only one instance
 of `%s` is allowed.  Note that YAML requires quotes around strings which start
-with a [reserved indicator]( https://yaml.org/spec/1.2-old/spec.html#id2774228) like `%`.
+with a [reserved indicator](https://yaml.org/spec/1.2-old/spec.html#id2774228) like `%`.
 
 Examples:
 

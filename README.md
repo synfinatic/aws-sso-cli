@@ -64,9 +64,8 @@ https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_use-resourc
 to your shell environment.
 
 As part of the goal of improving the end-user experience with AWS SSO, it also
-supports using multiple AWS Web Console sessions with Firefox and the [Open URL in
-Container](https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/)
-plugin and many other quality of life improvements!
+supports using [multiple AWS Web Console sessions](docs/quickstart.md#aws-console-access)
+and many other quality of life improvements!
 
 ## Demo
 

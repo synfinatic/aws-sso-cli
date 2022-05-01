@@ -16,7 +16,7 @@
  * [Error: Unable to save... org.freedesktop.DBus.Properties](#error-unable-to-save-orgfreedesktopdbusproperties)
  * [Are macOS Keychain items synced?](#are-macos-keychain-items-synced)
  * [How can I say thanks?](#how-can-I-say-thanks)
- * [Firefox container color/icon doesn't change](#firefox-container-color-icon-doesnt-change)
+ * [Firefox container color/icon doesn't change](#firefox-container-coloricon-doesnt-change)
 
 ### How do I delete all secrets from the macOS keychain?
 
@@ -294,4 +294,7 @@ is local to me and could put your money to better work than I would.
 If you have modified your `Color` or `Icon` tag for an Account/Role and the
 label doesn't change in Firefox, you will need to delete the container
 so that it can be re-created or manually change the color/icon in the
-[Firefox settings](about:preferences#containers).
+Firefox setings `about:preferences#containers`.
+
+![Firefox Container Settings](
+https://user-images.githubusercontent.com/1075352/166166400-beff4928-9831-4270-8133-18727d9ade68.png)
