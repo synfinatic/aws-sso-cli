@@ -83,6 +83,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"UrlExecCommand":                            "",
 	"LogLevel":                                  "warn",
 	"DefaultSSO":                                "Default",
+	"FirefoxOpenUrlInContainer":                 false,
 }
 
 type CLI struct {

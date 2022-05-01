@@ -52,8 +52,8 @@ then this won't work for you.
 ## What does AWS SSO CLI do?
 
 AWS SSO CLI makes it easy to manage your shell environment variables allowing
-you to access the AWS API using CLI tools.  Unlike the official AWS tooling,
-the `aws-sso` command does not require defining named profiles in your
+you to access the AWS API & web console using CLI tools.  Unlike the official
+AWS tooling, the `aws-sso` command does not require defining named profiles in your
 `~/.aws/config` (or anywhere else for that matter) for each and every role you
 wish to assume and use.
 
@@ -62,6 +62,11 @@ via an interactive auto-complete experience with automatic and user-defined
 metadata (tags) and exports the necessary [AWS STS Token credentials](
 https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_use-resources.html#using-temp-creds-sdk-cli)
 to your shell environment.
+
+As part of the goal of improving the end-user experience with AWS SSO, it also
+supports using multiple AWS Web Console sessions with Firefox and the [Open URL in
+Container](https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/)
+plugin and many other quality of life improvements!
 
 ## Demo
 

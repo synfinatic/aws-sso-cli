@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### New Features
+
+ * Add support for Firefox Containers #336
+
 ### Bug Fixes
 
  * `console` command now works when AWS_PROFILE #332
