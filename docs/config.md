@@ -221,7 +221,7 @@ UrlAction: open
 ```yaml
 # Open the AWS Console using Brave on MacOS
 UrlAction: exec
-UrlActionExec:
+UrlExecCommand:
     - open
     - -a
     - /Applications/Brave Browser.app
@@ -257,7 +257,7 @@ Example:
 ```yaml
 # Open the AWS Console in a Firefox container on MacOS
 UrlAction: exec
-UrlActionExec:
+UrlExecCommand:
     - /Applications/Firefox.app/Contents/MacOS/firefox
     - "%s"
 FirefoxOpenUrlInContainer: True
