@@ -2,14 +2,16 @@
 
 ## Unreleased
 
+## [v1.8.0] - 2022-04-30
+
 ### New Features
 
- * Add support for Firefox Containers #336
+ * Add support for Firefox Containers for multiple AWS Console sessions #336
 
 ### Bug Fixes
 
- * `console` command now works when AWS_PROFILE #332
- * Fix `console` URL redirect #328
+ * `console` command now works when `AWS_PROFILE` is set to static creds #332
+ * Fix `console` URL redirect to wrong URL #328
 
 ## [1.7.5] - 2022-03-29
 
@@ -293,7 +295,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.7.5...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.8.0...main
+[v1.8.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.8.0
 [v1.7.5]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.5
 [v1.7.4]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.4
 [v1.7.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.3
