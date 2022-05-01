@@ -106,7 +106,7 @@ type CLI struct {
 	Flush              FlushCmd                     `kong:"cmd,help='Flush AWS SSO/STS credentials from cache'"`
 	List               ListCmd                      `kong:"cmd,help='List all accounts / role (default command)'"`
 	Process            ProcessCmd                   `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
-	Static             StaticCmd                    `kong:"cmd,help='Manage static AWS API credentials'"`
+	Static             StaticCmd                    `kong:"cmd,help='Manage static AWS API credentials',hidden"`
 	Tags               TagsCmd                      `kong:"cmd,help='List tags'"`
 	Time               TimeCmd                      `kong:"cmd,help='Print out much time before current STS Token expires'"`
 	Version            VersionCmd                   `kong:"cmd,help='Print version and exit'"`
