@@ -209,12 +209,12 @@ Examples:
 
 ```yaml
 # Open the AWS Console in your default browser
-UrlAction=open
+UrlAction: open
 ```
 
 ```yaml
 # Open the AWS Console using Brave on MacOS
-UrlAction=exec
+UrlAction: exec
 UrlActionExec:
     - open
     - -a
@@ -223,13 +223,13 @@ UrlActionExec:
     - "%s"
 ```
 
-```
+```yaml
 # Open the AWS Console in a Firefox container on MacOS
-UrlAction=exec
+UrlAction: exec
 FirefoxOpenUrlInContainer: True
 UrlActionExec:
-	- /Applications/Firefox.app/Contents/MacOS/firefox
-	- "%s"
+    - /Applications/Firefox.app/Contents/MacOS/firefox
+    - "%s"
 ```
 
 ## LogLevel / LogLines

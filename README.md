@@ -137,6 +137,11 @@ Console generates a URL which will grant you access to the AWS Console in your
 web browser.  The URL can be sent directly to the browser (default), printed
 in the terminal or copied into the Copy & Paste buffer of your computer.
 
+**Note:** Normally, you can only have a single active AWS Console session at
+a time, but multiple session are supported via the [FirefoxOpenUrlInContainer](
+docs/config.md#browser--urlaction--urlactionexec--firefoxopenurlincontainer)
+configuration option.
+
 Flags:
 
  * `--region <region>`, `-r` -- Specify the `$AWS_DEFAULT_REGION` to use
