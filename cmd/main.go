@@ -84,17 +84,20 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"LogLevel":                                  "warn",
 	"DefaultSSO":                                "Default",
 	"FirefoxOpenUrlInContainer":                 false,
+	"AutoConfigCheck":                           false,
+	"ConfigUrlAction":                           "",
 }
 
 type CLI struct {
 	// Common Arguments
-	Browser    string `kong:"short='b',help='Path to browser to open URLs with',env='AWS_SSO_BROWSER'"`
-	ConfigFile string `kong:"name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
-	Lines      bool   `kong:"help='Print line number in logs'"`
-	LogLevel   string `kong:"short='L',name='level',help='Logging level [error|warn|info|debug|trace] (default: warn)'"`
-	UrlAction  string `kong:"short='u',help='How to handle URLs [clip|exec|open|print|printurl] (default: open)'"`
-	SSO        string `kong:"short='S',help='Override default AWS SSO Instance',env='AWS_SSO',predictor='sso'"`
-	STSRefresh bool   `kong:"help='Force refresh of STS Token Credentials'"`
+	Browser       string `kong:"short='b',help='Path to browser to open URLs with',env='AWS_SSO_BROWSER'"`
+	ConfigFile    string `kong:"name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
+	Lines         bool   `kong:"help='Print line number in logs'"`
+	LogLevel      string `kong:"short='L',name='level',help='Logging level [error|warn|info|debug|trace] (default: warn)'"`
+	UrlAction     string `kong:"short='u',help='How to handle URLs [clip|exec|open|print|printurl] (default: open)'"`
+	SSO           string `kong:"short='S',help='Override default AWS SSO Instance',env='AWS_SSO',predictor='sso'"`
+	STSRefresh    bool   `kong:"help='Force refresh of STS Token Credentials'"`
+	NoConfigCheck bool   `kong:"help='Disable automatic ~/.aws/config updates'"`
 
 	// Commands
 	Cache              CacheCmd                     `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
@@ -310,6 +313,7 @@ func doAuth(ctx *RunContext) *sso.AWSSSO {
 		log.WithError(err).Fatalf("Unable to authenticate")
 	}
 	if err = ctx.Settings.Cache.Expired(s); err != nil {
+		log.Infof("Refreshing AWS SSO role cache, please wait...")
 		ssoName, err := ctx.Settings.GetSelectedSSOName(ctx.Cli.SSO)
 		if err != nil {
 			log.Fatalf(err.Error())
@@ -319,6 +323,28 @@ func doAuth(ctx *RunContext) *sso.AWSSSO {
 		}
 		if err = ctx.Settings.Cache.Save(true); err != nil {
 			log.WithError(err).Errorf("Unable to save cache")
+		}
+
+		// should we update our config??
+		if !ctx.Cli.NoConfigCheck &&
+			ctx.Settings.AutoConfigCheck &&
+			utils.StrListContains(ctx.Settings.ConfigUrlAction, VALID_CONIFG_OPEN) {
+			cfgFile := utils.GetHomePath("~/.aws/config")
+
+			profiles, err := ctx.Settings.GetAllProfiles(ctx.Settings.ConfigUrlAction)
+			if err != nil {
+				log.Warnf("Unable to update %s: %s", cfgFile, err.Error())
+				return AwsSSO
+			}
+
+			if err = profiles.UniqueCheck(ctx.Settings); err != nil {
+				log.Errorf("Unable to update %s: %s", cfgFile, err.Error())
+				return AwsSSO
+			}
+			if err = updateConfig(ctx, configTemplate(), profiles); err != nil {
+				log.Errorf("Unable to update %s: %s", cfgFile, err.Error())
+				return AwsSSO
+			}
 		}
 	}
 	return AwsSSO

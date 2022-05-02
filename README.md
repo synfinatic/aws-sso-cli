@@ -167,40 +167,47 @@ Priority is given to:
 
 ### config
 
-Modifies the `~/.aws/config` file to contain a profile for every role accessible
-via AWS SSO CLI.
+Modifies the `~/.aws/config` file to contain a [named profile](
+https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html)
+for every role accessible via AWS SSO CLI.
 
 Flags:
 
  * `--diff` -- Print a diff of changes to the config file instead of modifying it
- * `--open` -- Override how to open URls: [clip|exec|open] (required)
+ * `--open` -- Specify how to open URls: [clip|exec|open]
  * `--print` -- Print profile entries instead of modifying config file
+ * `--force` -- Write a new config file without prompting
 
-This generates a series of [named profile entries](
-https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html)
-in the `~/.aws/config` file which allows you to easily use any AWS SSO role
-just by setting the `$AWS_PROFILE` environment variable.  By default, each
-profile is named according to the [ProfileFormat](docs/config.md#profileformat)
-onfig option or overridden by the user defined [Profile](docs/config.md#profile)
-option on a role by role basis.
+
+By default, each profile is named according to the [ProfileFormat](
+docs/config.md#profileformat) config option or overridden by the user defined
+[Profile](docs/config.md#profile) option on a role by role basis.
 
 For each profile generated, it will specify a [list of settings](
 https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html) as defined
 by the [ConfigVariables](docs/config.md#configvariables) setting in the
 `~/.aws-sso/config.yaml`.
 
+For more information on this feature, [read the Quickstart Guide](
+docs/quickstart.md#integrating-with-the-aws-profile-variable).
+
 Unlike with other ways to use AWS SSO CLI, the AWS IAM STS credentials will
 _automatically refresh_.  This means, if you do not have a valid AWS SSO token,
 you will be prompted to authentiate via your SSO provider and subsequent
 requests to obtain new IAM STS credentials will automatically happen as needed.
 
-**Note:** Due to a limitation in the AWS tooling, `print` and `printurl` arn not
-supported with `--url-action` when using the `$AWS_PROFILE` variable with AWS
-SSO CLI.  Hence, you must use `open` or `exec` to auto-open URLs in your browser
-(recommended) or `clip` to automatically copy URLs to your clipboard.
+**Note:** Due to a limitation in the AWS tooling, `print` and `printurl` are not
+supported values for `--url-action`.  Hence, you must use `open` or `exec` to
+auto-open URLs in your browser (recommended) or `clip` to automatically copy
+URLs to your clipboard.  _No user prompting is possible._
 
 **Note:** You should run this command any time your list of AWS roles changes
-in order to update the `~/.aws/config` file.
+in order to update the `~/.aws/config` file or enable [AutoConfigCheck](
+docs/config.md#AutoConfigCheck) and [ConfigUrlAction](
+docs/config.md#ConfigUrlAction).
+
+**Note:** If `ConfigUrlAction` is set, then `--open` is optional, otherwise it
+is required.
 
 **Note:** It is important that you do _NOT_ remove the `# BEGIN_AWS_SSO_CLI` and
 `# END_AWS_SSO_CLI` lines from your config file!  These markers are used to track

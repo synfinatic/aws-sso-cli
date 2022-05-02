@@ -34,12 +34,15 @@ DefaultSSO: <name of AWS SSO>
 
 Browser: <path to web browser>
 UrlAction: [clip|exec|print|printurl|open]
-UrlActionExec:
+UrlExecCommand:
     - <command>
     - <arg 1>
     - <arg N>
     - "%s"
 FirefoxOpenInContainer: [False|True]
+AutoConfigCheck: [False|True]
+ConfigUrlAction: [clip|exec|open]
+
 ConsoleDuration: <minutes>
 
 LogLevel: [error|warn|info|debug|trace]
@@ -191,13 +194,13 @@ If you only have a single AWS SSO instance, then it doesn't really matter what y
 but if you have two or more, than `Default` is automatically selected unless you manually
 specify it here, on the CLI (`--sso`), or via the `AWS_SSO` environment variable.
 
-## Browser / UrlAction / UrlActionExec
+## Browser / UrlAction / UrlExecCommand
 
 
 `UrlAction` gives you control over how AWS SSO and AWS Console URLs are opened in a browser:
 
  * `clip` -- Copies the URL to your clipboard
- * `exec` -- Execute the command provided in `UrlActionExec`
+ * `exec` -- Execute the command provided in `UrlExecCommand`
  * `open` -- Opens the URL in your default browser or the browser you specified via `--browser` or `Browser`
  * `print` -- Prints the URL with a message in your terminal to stderr
  * `printurl` -- Prints only the URL in your terminal to stderr
@@ -205,7 +208,7 @@ specify it here, on the CLI (`--sso`), or via the `AWS_SSO` environment variable
 If `Browser` is not set, then your default browser will be used and that
 your browser needs to support JavaScript for the AWS SSO user interface.
 
-`UrlActionExec` is used with `UrlAction: exec` and allows you to execute arbitrary
+`UrlExecCommand` is used with `UrlAction: exec` and allows you to execute arbitrary
 commands to handle the URL.  The command and arguments should be specified as a list,
 with the URL to open specified as the format string `%s`.  Only one instance
 of `%s` is allowed.  Note that YAML requires quotes around strings which start
@@ -262,6 +265,20 @@ UrlExecCommand:
     - "%s"
 FirefoxOpenUrlInContainer: True
 ```
+
+## AutoConfigCheck / ConfigUrlAction
+
+These two options when used together enable automatically updating your `~/.aws/config` file
+any time your list of AWS SSO roles change.
+
+When `AutoConfigCheck` must be set to `True` and `ConfigUrlAction` must be set to one of:
+
+ * `clip`
+ * `exec`
+ * `open`
+
+to enable the feature.  You can disable this feature on the command line via the `--no-config-check`
+flag.  `ConfigUrlAction` is also the default action when manually running `aws-sso config`.
 
 ## LogLevel / LogLines
 

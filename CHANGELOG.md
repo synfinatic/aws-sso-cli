@@ -5,6 +5,12 @@
 ### New Features
 
  * Add Color and Icon support to Firefox Containers #340
+ * Auto detect new roles and auto-update ~/.aws/config #341
+ * Firefox container support is now handled by guided setup
+
+### Bug Fixes
+
+ * Fix documentation for `UrlExecCommand` config option (was listed as `UrlActionExec`)
 
 ## [v1.8.0] - 2022-04-30
 

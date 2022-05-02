@@ -261,10 +261,6 @@ func promptHistoryLimit(defaultValue int64) (int64, error) {
 	var limit string
 	var err error
 
-	if defaultValue >= 0 {
-		return defaultValue, nil
-	}
-
 	prompt := promptui.Prompt{
 		Label:    "Maximum number of History items to keep (HistoryLimit)",
 		Validate: validateInteger,
@@ -348,6 +344,46 @@ func validateBinary(input string) error {
 		}
 	}
 	return fmt.Errorf("not a valid valid")
+}
+
+func promptAutoConfigCheck(flag bool, action string) (bool, string, error) {
+	var val string
+	var err error
+
+	label := fmt.Sprintf("Auto update %s (AutoConfigCheck)", utils.GetHomePath("~/.aws.config"))
+	sel := promptui.Select{
+		Label:        label,
+		Items:        []string{"Yes", "No"},
+		HideSelected: false,
+		Stdout:       &bellSkipper{},
+		Templates: &promptui.SelectTemplates{
+			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
+		},
+	}
+	if _, val, err = sel.Run(); err != nil {
+		return false, "", err
+	}
+
+	if val == "No" {
+		return false, "", nil
+	}
+
+	label = "How to open URLs via $AWS_PROFILE (ConfigUrlAction)"
+	sel = promptui.Select{
+		Label:        label,
+		Items:        VALID_CONIFG_OPEN,
+		HideSelected: false,
+		Stdout:       &bellSkipper{},
+		Templates: &promptui.SelectTemplates{
+			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
+		},
+	}
+
+	if _, val, err = sel.Run(); err != nil {
+		return false, "", err
+	}
+
+	return true, val, nil
 }
 
 var ssoHostnameRegexp *regexp.Regexp
