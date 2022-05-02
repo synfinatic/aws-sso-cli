@@ -92,8 +92,8 @@ type CLI struct {
 	// Common Arguments
 	Browser       string `kong:"short='b',help='Path to browser to open URLs with',env='AWS_SSO_BROWSER'"`
 	ConfigFile    string `kong:"name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
-	Lines         bool   `kong:"help='Print line number in logs'"`
 	LogLevel      string `kong:"short='L',name='level',help='Logging level [error|warn|info|debug|trace] (default: warn)'"`
+	Lines         bool   `kong:"help='Print line number in logs'"`
 	UrlAction     string `kong:"short='u',help='How to handle URLs [clip|exec|open|print|printurl] (default: open)'"`
 	SSO           string `kong:"short='S',help='Override default AWS SSO Instance',env='AWS_SSO',predictor='sso'"`
 	STSRefresh    bool   `kong:"help='Force refresh of STS Token Credentials'"`
@@ -102,16 +102,16 @@ type CLI struct {
 	// Commands
 	Cache              CacheCmd                     `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
 	Config             ConfigCmd                    `kong:"cmd,help='Update ~/.aws/config with AWS SSO profiles from the cache'"`
-	Console            ConsoleCmd                   `kong:"cmd,help='Open AWS Console using specificed AWS Role/profile'"`
+	Console            ConsoleCmd                   `kong:"cmd,help='Open AWS Console using specificed AWS role/profile'"`
 	Default            DefaultCmd                   `kong:"cmd,hidden,default='1'"` // list command without args
-	Eval               EvalCmd                      `kong:"cmd,help='Print AWS Environment vars for use with eval $(aws-sso eval ...)'"`
-	Exec               ExecCmd                      `kong:"cmd,help='Execute command using specified IAM Role'"`
+	Eval               EvalCmd                      `kong:"cmd,help='Print AWS environment vars for use with eval $(aws-sso eval ...)'"`
+	Exec               ExecCmd                      `kong:"cmd,help='Execute command using specified IAM role in a new shell'"`
 	Flush              FlushCmd                     `kong:"cmd,help='Flush AWS SSO/STS credentials from cache'"`
-	List               ListCmd                      `kong:"cmd,help='List all accounts / role (default command)'"`
+	List               ListCmd                      `kong:"cmd,help='List all accounts / roles (default command)'"`
 	Process            ProcessCmd                   `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
 	Static             StaticCmd                    `kong:"cmd,help='Manage static AWS API credentials',hidden"`
 	Tags               TagsCmd                      `kong:"cmd,help='List tags'"`
-	Time               TimeCmd                      `kong:"cmd,help='Print out much time before current STS Token expires'"`
+	Time               TimeCmd                      `kong:"cmd,help='Print how much time before current STS Token expires'"`
 	Version            VersionCmd                   `kong:"cmd,help='Print version and exit'"`
 	InstallCompletions kongplete.InstallCompletions `kong:"cmd,help='Install shell completions'"`
 	Setup              SetupCmd                     `kong:"cmd,hidden"` // need this so variables are visisble.

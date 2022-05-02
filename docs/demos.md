@@ -36,3 +36,15 @@ to assume and is especially useful if you don't remember the role specifics.
 
 <!-- exec -->
 [![asciicast](https://asciinema.org/a/462167.svg)](https://asciinema.org/a/462167)
+
+---
+
+### Using the `console` command 
+
+The `console` command allows you to open the AWS Console in your browser for a
+given AWS SSO role.  If you have enabled [FirefoxOpenUrlInContainer](
+config.md#firefoxopenurlincontainer) then multiple active sessions are possible
+as shown here:
+
+![FirefoxContainers Demo](
+https://user-images.githubusercontent.com/1075352/166165880-24f7c9af-a037-4e48-aa2d-342f2efe5ad7.gif)
