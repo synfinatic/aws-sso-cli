@@ -4,6 +4,9 @@ By default, `aws-sso` stores it's configuration file in `~/.aws-sso/config.yaml`
 but this can be overridden by setting `$AWS_SSO_CONFIG` in your shell or via the
 `--config` flag.
 
+The first time you run `aws-sso` and it detects there is no configuration file,
+it will prompt you for a number of questions to give you a basic configuration.
+Afterwords, you can edit the file and adjust the settings as desired.
 
 ```yaml
 SSOConfig:
@@ -169,6 +172,8 @@ the [ProfileFormat](#profileformat) config option.
 List of key/value pairs, used by `aws-sso` in prompt mode with `exec`.  Any tag
 placed at the role level will be applied to only that role.
 
+See above for the list of special tags.
+
 ##### Via
 
 Impliments the concept of [role chaining](
@@ -236,24 +241,26 @@ UrlExecCommand:
 
 `FirefoxOpenUrlInContainer` is used with `UrlAction: exec` and [Firefox](
 https://getfirefox.com) with the [Firefox Open URL in Container](
-https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/) v1.0.3 plugin.  This causes
-the generated URL to be of the format:
+https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/) v1.0.3
+plugin.  This causes the generated URL to be of the format:
 
 ```
 ext+container:name=<ProfileName>&url=<AWS Console URL>
 ```
 
-The result is that each account/role has a dedicated Firefox container named after the _ProfileName_
-so that you can be logged in across multiple AWS accounts/roles without getting
-an error from AWS.
+The result is that each account/role has a dedicated Firefox container named
+after the _ProfileName_ so that you can be logged in across multiple AWS
+accounts/roles without getting an error from AWS.
 
 **Note:** If your `ProfileFormat` generates a _ProfileName_ with an `&`, then
 `{{ .AccountId }}:{{ .RoleName }}` will be used as the container name instead.
 
-**Note:** You can control the color and icon of the container label using [Tags](#tags).
+**Note:** You can control the color and icon of the container label using
+[Tags](#tags).
 
-**Note for MacOS users:** This feature does not work with the `open` command, so you should
-specify `/Applications/Firefox.app/Contents/MacOS/firefox` as the command to execute.
+**Note for MacOS users:** This feature does not work with the bundle directory,
+so you should specify `/Applications/Firefox.app/Contents/MacOS/firefox` as the
+command to execute.
 
 Example:
 
@@ -268,22 +275,24 @@ FirefoxOpenUrlInContainer: True
 
 ## AutoConfigCheck / ConfigUrlAction
 
-These two options when used together enable automatically updating your `~/.aws/config` file
-any time your list of AWS SSO roles change.
+These two options when used together enable automatically updating your
+`~/.aws/config` file any time your list of AWS SSO roles change.
 
-When `AutoConfigCheck` must be set to `True` and `ConfigUrlAction` must be set to one of:
+When `AutoConfigCheck` must be set to `True` and `ConfigUrlAction` must be set
+to one of:
 
  * `clip`
  * `exec`
  * `open`
 
-to enable the feature.  You can disable this feature on the command line via the `--no-config-check`
-flag.  `ConfigUrlAction` is also the default action when manually running `aws-sso config`.
+to enable the feature.  You can disable this feature on the command line via
+the `--no-config-check` flag.  `ConfigUrlAction` is also the default action
+when manually running `aws-sso config`.
 
 ## LogLevel / LogLines
 
-By default, the `LogLevel` is 'warn'.  You can override it here or via `--log-level` with one
-of the following values:
+By default, the `LogLevel` is 'warn'.  You can override it here or via
+`--log-level` with one of the following values:
 
  * `error`
  * `warn`
@@ -291,13 +300,14 @@ of the following values:
  * `debug`
  * `trace`
 
-`LogLines` includes the file name/line and module name with each log for advanced debugging.
+`LogLines` includes the file name/line and module name with each log for
+advanced debugging.
 
 ## ConsoleDuration
 
-By default, the `console` command opens AWS Console sessions which are valid for 60 minutes.
-If you wish to override the default session duration, you can specify the number of minutes here
-or with the `--duration` flag.
+By default, the `console` command opens AWS Console sessions which are valid
+for 60 minutes.  If you wish to override the default session duration, you
+can specify the number of minutes here or with the `--duration` flag.
 
 ## SecureStore / JsonStore
 
@@ -309,7 +319,8 @@ or with the `--duration` flag.
  * `pass` - [pass](https://www.passwordstore.org)
  * `secret-service` - Freedesktop.org [Secret Service](https://specifications.freedesktop.org/secret-service/latest/re01.html)
  * `wincred` - Windows [Credential Manager](https://support.microsoft.com/en-us/windows/accessing-credential-manager-1b5c916a-6a16-889f-8581-fc16e8165ac0) (default on Windows)
- * `json` - Cleartext JSON file (very insecure and not recommended).  Location can be overridden with `JsonStore`
+ * `json` - Cleartext JSON file (very insecure and not recommended).  Location
+    can be overridden with `JsonStore`
 
 ## ProfileFormat
 
@@ -337,8 +348,8 @@ The following variables are accessible from the `AWSRoleFlat` struct:
 
 By default, `ProfileFormat` is set to `{{ AccountIdStr .AccountId }}:{{ .RoleName }}`.
 
-AWS SSO CLI uses [sprig](http://masterminds.github.io/sprig/) for most of its functions,
-but a few custom functions are available:
+AWS SSO CLI uses [sprig](http://masterminds.github.io/sprig/) for most of its
+functions, but a few custom functions are available:
 
  * `AccountIdStr(x)` -- Converts an AWS Account ID to a string
  * `EmptyString(x)` -- Returns true/false if the value `x` is an empty string
@@ -352,8 +363,10 @@ For more information, [see the FAQ](FAQ.md#how-to-configure-profileformat).
 
 ## ConfigVariables
 
-Define a set of [config settings](https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html)
-for each profile in your `~/.aws/config` file generated via the [config](../README.md#config) command.
+Define a set of [config settings](
+https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html)
+for each profile in your `~/.aws/config` file generated via the [config](
+../README.md#config) command.
 
 Some examples to consider:
 
@@ -362,10 +375,11 @@ Some examples to consider:
 
 ## AccountPrimaryTag
 
-When selecting a role, if you first select by role name (via the `Role` tag) you will
-be presented with a list of matching ARNs to select. The `AccountPrimaryTag` automatically
-includes another tag name and value as the description to aid in role selection.  By default
-the following tags are searched (first match is used):
+When selecting a role, if you first select by role name (via the `Role` tag) yo
+will be presented with a list of matching ARNs to select. The
+`AccountPrimaryTag` automatically includes another tag name and value as the
+description to aid in role selection.  By default the following tags are
+searched (first match is used):
 
  * `AccountName`
  * `AccountAlias`
@@ -375,10 +389,11 @@ Set `AccountPrimaryTag` to an empty list to disable this feature.
 
 ## PromptColors
 
-`PromptColors` takes a map of prompt options and color options allowing you to have
-complete control of how AWS SSO CLI looks.  You only need to specify the options you wish
-to override, but do not include the `PromptColors` if you have no options.  More information
-about the meaning and use of the options below, [refer to the go-prompt docs](
+`PromptColors` takes a map of prompt options and color options allowing you to
+have complete control of how AWS SSO CLI looks.  You only need to specify the
+options you wish to override, but do not include the `PromptColors` if you have
+no options.  More information about the meaning and use of the options below,
+[refer to the go-prompt docs](
 https://pkg.go.dev/github.com/c-bata/go-prompt#Option).
 
 Valid options:
@@ -463,4 +478,3 @@ controlled by `aws-sso` so any existing value will be overwritten.
 
 **Note:** This feature is not compatible when using roles using the
 `$AWS_PROFILE` via the `config` command.
-

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [v1.8.1] - 2022-05-02
+
 ### New Features
 
  * Add Color and Icon support to Firefox Containers #340
@@ -27,7 +29,7 @@
  * `console` command now works when `AWS_PROFILE` is set to static creds #332
  * Fix `console` URL redirect to wrong URL #328
 
-## [1.7.5] - 2022-03-29
+## [v1.7.5] - 2022-03-29
 
 ### Bug Fixes
 
@@ -309,7 +311,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.8.0...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.8.1...main
+[v1.8.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.8.1
 [v1.8.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.8.0
 [v1.7.5]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.5
 [v1.7.4]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.4

@@ -12,7 +12,7 @@
     * [process](#process) -- Generate JSON for `credential_process` in ~/.aws/config
     * [tags](#tags) -- List tags
     * [time](#time) -- Print how much time before current STS Token expires
-    * [version](#version) -- Print version and exit
+    * `version` -- Print version and exit
     * [install-completions](#install-completions) -- Install shell completions
  * [Environment Variables](#environment-variables)
 

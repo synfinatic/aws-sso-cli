@@ -61,11 +61,17 @@ and many other quality of life improvements!
 ### Key Features
 
  * Enhanced security over stock AWS tooling
- * Auto-discover your AWS SSO roles and manage your `~/.aws/config` file
+ * Auto-discover your AWS SSO roles and [manage](docs/commands.md#config)
+     your `~/.aws/config` file
  * Support selecting an IAM role via `$AWS_PROFILE`, CLI (with auto-completion)
     or interactive search
- * Ability to select roles based on user-defined and auto-discovered tags
- * Support for multiple active AWS Console sessions
+ * Ability to select roles based on [user-defined](docs/config.md#tags)
+    and auto-discovered tags
+ * Support for [multiple active AWS Console sessions](docs/config.md#firefoxopenurlincontainer)
+ * Guided setup to help you configure `aws-sso` the first time you run
+ * Advanced configuration available to [adjust colors](docs/config.md#PromptColors)
+    and generate [named profiles via templates](docs/config.md#ProfileFormat)
+ * Easily see how much longer your STS credentials [are valid for](docs/commands.md#time)
  * Written in GoLang, so only need to install a single binary (no dependencies)
  * Supports Linux, MacOS, and Windows
 
