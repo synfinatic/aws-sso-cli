@@ -65,6 +65,8 @@ type Settings struct {
 	ConfigVariables           map[string]interface{} `koanf:"ConfigVariables" yaml:"ConfigVariables,omitempty"`
 	EnvVarTags                []string               `koanf:"EnvVarTags" yaml:"EnvVarTags,omitempty"`
 	FirefoxOpenUrlInContainer bool                   `koanf:"FirefoxOpenUrlInContainer" yaml:"FirefoxOpenUrlInContainer"`
+	AutoConfigCheck           bool                   `koanf:"AutoConfigCheck" yaml:"AutoConfigCheck"`
+	ConfigUrlAction           string                 `koanf:"ConfigUrlAction" yaml:"ConfigUrlAction"`
 }
 
 type SSOConfig struct {

@@ -20,15 +20,16 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"text/template"
 
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
+	"github.com/manifoldco/promptui"
 	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/synfinatic/aws-sso-cli/utils"
 )
@@ -47,14 +48,30 @@ credential_process = {{ $profile.BinaryPath }} -u {{ $profile.Open }} -S "{{ $pr
 `
 )
 
+var VALID_CONIFG_OPEN []string = []string{
+	"clip",
+	"exec",
+	"open",
+}
+
 type ConfigCmd struct {
 	Diff  bool   `kong:"help='Print a diff of changes to the config file instead of modifying it'"`
-	Open  string `kong:"help='Override how to open URLs: [clip|exec|open]',required,enum='clip,exec,open'"`
+	Open  string `kong:"help='Specify how to open URLs: [clip|exec|open]'"`
 	Print bool   `kong:"help='Print profile entries instead of modifying config file'"`
+	Force bool   `kong:"help='Write a new config file without prompting'"`
 }
 
 func (cc *ConfigCmd) Run(ctx *RunContext) error {
-	profiles, err := ctx.Settings.GetAllProfiles(ctx.Cli.Config.Open)
+	open := ctx.Settings.ConfigUrlAction
+	if utils.StrListContains(ctx.Cli.Config.Open, VALID_CONIFG_OPEN) {
+		open = ctx.Cli.Config.Open
+	}
+
+	if len(open) == 0 {
+		return fmt.Errorf("Please specify --open [clip|exec|open]")
+	}
+
+	profiles, err := ctx.Settings.GetAllProfiles(open)
 	if err != nil {
 		return err
 	}
@@ -63,52 +80,40 @@ func (cc *ConfigCmd) Run(ctx *RunContext) error {
 		return err
 	}
 
-	templ, err := template.New("profile").Parse(CONFIG_TEMPLATE)
-	if err != nil {
-		return err
-	}
+	templ := configTemplate()
 
 	if ctx.Cli.Config.Print {
-		if err := templ.Execute(os.Stdout, profiles); err != nil {
-			return err
-		}
+		return templ.Execute(os.Stdout, profiles)
 	}
 	return updateConfig(ctx, templ, profiles)
 }
 
-// updateConfig calculates the diff
-func updateConfig(ctx *RunContext, templ *template.Template, profiles *sso.ProfileMap) error {
-	// open our config file
-	configFile := awsConfigFile()
-	input, err := os.Open(configFile)
-	if err != nil {
-		return err
-	}
-
-	// open a temp file
-	output, err := os.CreateTemp("", "config.*")
-	if err != nil {
-		return err
-	}
-	tempFileName := output.Name()
-	defer os.Remove(tempFileName)
-
-	w := bufio.NewWriter(output)
+// generateNewFile generates the contents of a new config file
+func generateNewFile(ctx *RunContext, templ *template.Template, profiles *sso.ProfileMap) ([]byte, error) {
+	var output bytes.Buffer
+	w := bufio.NewWriter(&output)
 
 	// read & write up to the prefix
+	configFile := awsConfigFile()
+	input, err := os.Open(configFile) // output/tempFile is now the input!
+	if err != nil {
+		return []byte{}, err
+	}
+	defer input.Close()
+
 	r := bufio.NewReader(input)
 
 	line, err := r.ReadString('\n')
 	for err == nil && line != fmt.Sprintf("%s\n", CONFIG_PREFIX) {
 		if _, err = w.WriteString(line); err != nil {
-			return err
+			return []byte{}, err
 		}
 		line, err = r.ReadString('\n')
 	}
 
 	endOfFile := false
 	if err != nil && err != io.EOF {
-		return err
+		return []byte{}, err
 	} else if err == io.EOF {
 		// Reached EOF before finding our CONFIG_PREFIX
 		endOfFile = true
@@ -116,7 +121,7 @@ func updateConfig(ctx *RunContext, templ *template.Template, profiles *sso.Profi
 
 	// write our template out
 	if err = templ.Execute(w, profiles); err != nil {
-		return err
+		return []byte{}, err
 	}
 
 	if !endOfFile {
@@ -132,20 +137,44 @@ func updateConfig(ctx *RunContext, templ *template.Template, profiles *sso.Profi
 			line, err = r.ReadString('\n')
 			for err == nil {
 				if _, err = w.WriteString(line); err != nil {
-					return err
+					return []byte{}, err
 				}
 				line, err = r.ReadString('\n')
 			}
 			if err != io.EOF {
-				return err
+				return []byte{}, err
 			}
 		}
 	}
 	w.Flush()
-	output.Close()
-	input.Close()
 
-	diff, err := generateDiff(configFile, tempFileName)
+	return output.Bytes(), nil
+}
+
+func configTemplate() *template.Template {
+	templ, err := template.New("profile").Parse(CONFIG_TEMPLATE)
+	if err != nil {
+		log.Panicf("Unable to parse config template: %s", err.Error())
+	}
+
+	return templ
+}
+
+// updateConfig calculates the diff
+func updateConfig(ctx *RunContext, templ *template.Template, profiles *sso.ProfileMap) error {
+	// open our config file
+	configFile := awsConfigFile()
+	inputBytes, err := os.ReadFile(configFile)
+	if err != nil {
+		return err
+	}
+
+	outputBytes, err := generateNewFile(ctx, templ, profiles)
+	if err != nil {
+		return err
+	}
+
+	diff, err := diffBytes(inputBytes, outputBytes, configFile, "new_config.yaml")
 	if err != nil {
 		return err
 	}
@@ -161,17 +190,32 @@ func updateConfig(ctx *RunContext, templ *template.Template, profiles *sso.Profi
 		return nil
 	}
 
-	// copy file into place
-	input, err = os.Open(tempFileName) // output/tempFile is now the input!
-	if err != nil {
-		return err
+	if !ctx.Cli.Config.Force {
+		fmt.Printf("The following changes are proposed to %s:\n%s\n\n",
+			utils.GetHomePath("~/.aws/config"), diff)
+		label := "Modify config file with proposed changes?"
+		sel := promptui.Select{
+			Label:        label,
+			Items:        []string{"No", "Yes"},
+			HideSelected: false,
+			Stdout:       &bellSkipper{},
+			Templates: &promptui.SelectTemplates{
+				Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
+			},
+		}
+
+		_, val, err := sel.Run()
+		if err != nil {
+			return err
+		}
+
+		if val != "Yes" {
+			fmt.Printf("Aborting.")
+			return nil
+		}
 	}
-	output, err = os.OpenFile(configFile, os.O_RDWR|os.O_CREATE, 0600) // ~/.aws/config is now the output
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(output, input)
-	return err
+
+	return os.WriteFile(configFile, outputBytes, 0600)
 }
 
 // awsConfigFile returns the path the the users ~/.aws/config
@@ -185,19 +229,10 @@ func awsConfigFile() string {
 	return path
 }
 
-// generateDiff generates a diff between two files.  Takes two file names as inputs
-func generateDiff(aFile, bFile string) (string, error) {
-	// open the files fresh for the diff
-	aBytes, err := ioutil.ReadFile(aFile)
-	if err != nil {
-		return "", err
-	}
-	bBytes, err := ioutil.ReadFile(bFile)
-	if err != nil {
-		return "", err
-	}
-	edits := myers.ComputeEdits(span.URIFromPath(aFile), string(aBytes), string(bBytes))
-	diff := fmt.Sprintf("%s", gotextdiff.ToUnified(aFile, bFile, string(aBytes), edits))
-	log.Debugf("diff:\n%s", diff)
-	return diff, nil
+// diffBytes generates a diff between two byte arrays
+func diffBytes(aBytes, bBytes []byte, aName, bName string) (string, error) {
+	edits := myers.ComputeEdits(span.URIFromPath(aName), string(aBytes), string(bBytes))
+	diff := gotextdiff.ToUnified(aName, bName, string(aBytes), edits)
+	log.Debugf("diff:\n%v", diff)
+	return fmt.Sprintf("%s", diff), nil
 }

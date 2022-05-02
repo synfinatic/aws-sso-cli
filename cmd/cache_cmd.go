@@ -25,8 +25,6 @@ import (
 type CacheCmd struct{}
 
 func (cc *CacheCmd) Run(ctx *RunContext) error {
-	log.Info("Refreshing local cache...")
-
 	awssso := doAuth(ctx)
 	s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
 	if err != nil {
@@ -48,6 +46,5 @@ func (cc *CacheCmd) Run(ctx *RunContext) error {
 		return fmt.Errorf("Unable to save role cache: %s", err.Error())
 	}
 
-	log.Info("Cache has been refreshed.")
 	return nil
 }

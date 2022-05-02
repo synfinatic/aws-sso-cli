@@ -33,6 +33,8 @@ type SetupCmd struct {
 	DefaultLevel     string `kong:"help='Logging level [error|warn|info|debug|trace]'"`
 	Force            bool   `kong:"help='Force override of existing config file'"`
 	FirefoxPath      string `kong:"help='Path to the Firefox web browser'"`
+	AutoConfigCheck  bool   `kong:"help='Automatically update ~/.aws/config'"`
+	ConfigUrlAction  string `kong:"help='Specify how to open URLs via $AWS_PROFILE: [clip|exec|open]'"`
 	RanSetup         bool   `kong:"hidden"` // track if setup has already run
 }
 
@@ -44,8 +46,9 @@ func (cc *SetupCmd) Run(ctx *RunContext) error {
 func setupWizard(ctx *RunContext) error {
 	var err error
 	var instanceName, startHostname, ssoRegion, awsRegion, urlAction string
-	var logLevel, firefoxBrowserPath, browser string
+	var logLevel, firefoxBrowserPath, browser, configUrlAction string
 	var hLimit, hMinutes int64
+	var autoConfigCheck bool
 	urlExecCommand := []string{}
 	firefoxOpenUrlInContainer := false
 
@@ -100,6 +103,11 @@ func setupWizard(ctx *RunContext) error {
 		}
 	}
 
+	if autoConfigCheck, configUrlAction, err = promptAutoConfigCheck(
+		ctx.Cli.Setup.AutoConfigCheck, ctx.Cli.Setup.ConfigUrlAction); err != nil {
+		return err
+	}
+
 	if hLimit, err = promptHistoryLimit(ctx.Cli.Setup.HistoryLimit); err != nil {
 		return err
 	}
@@ -123,6 +131,8 @@ func setupWizard(ctx *RunContext) error {
 		HistoryLimit:              hLimit,
 		HistoryMinutes:            hMinutes,
 		LogLevel:                  logLevel,
+		AutoConfigCheck:           autoConfigCheck,
+		ConfigUrlAction:           configUrlAction,
 	}
 	s.SSO[instanceName] = &sso.SSOConfig{
 		SSORegion:     ssoRegion,
