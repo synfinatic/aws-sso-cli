@@ -44,7 +44,7 @@ const (
 
 // Implements SecureStorage
 type KeyringStore struct {
-	keyring KeyringApi
+	keyring KeyringAPI
 	config  keyring.Config
 	cache   StorageData
 }
@@ -68,8 +68,8 @@ func NewStorageData() StorageData {
 var NewPassword string = ""
 var keyringGOOS string = runtime.GOOS
 
-// KeyringApi is the subset of the Keyring API we use so we can do unit testing
-type KeyringApi interface {
+// KeyringAPI is the subset of the Keyring API we use so we can do unit testing
+type KeyringAPI interface {
 	// Returns an Item matching the key or ErrKeyNotFound
 	Get(key string) (keyring.Item, error)
 	// Returns the non-secret parts of an Item
@@ -227,21 +227,21 @@ func (kr *KeyringStore) joinAndGetKeyringData(key string) ([]byte, error) {
 		return nil, fmt.Errorf("Invalid stored data in Keyring. Only %d bytes", len(chunk))
 	}
 
-	total_bytes, data := binary.BigEndian.Uint64(chunk[:8]), chunk[8:]
-	read_bytes := uint64(len(chunk))
+	totalBytes, data := binary.BigEndian.Uint64(chunk[:8]), chunk[8:]
+	readBytes := uint64(len(chunk))
 
-	for i := 1; read_bytes < total_bytes; i++ {
+	for i := 1; readBytes < totalBytes; i++ {
 		k := fmt.Sprintf("%s_%d", key, i)
 		if chunk, err = kr.getKeyringData(k); err != nil {
 			return nil, fmt.Errorf("Unable to fetch %s: %s", k, err.Error())
 		}
 		data = append(data, chunk...)
-		read_bytes += uint64(len(chunk))
+		readBytes += uint64(len(chunk))
 	}
 
-	if read_bytes != total_bytes {
+	if readBytes != totalBytes {
 		return nil, fmt.Errorf("Invalid stored data in Keyring.  Expected %d bytes, but read %d bytes of data",
-			total_bytes, read_bytes)
+			totalBytes, readBytes)
 	}
 	return data, nil
 }
@@ -265,13 +265,13 @@ func (kr *KeyringStore) splitAndSetStorageData(jdata []byte, key string, label s
 	var i int
 	remain := jdata
 	var chunk []byte
-	payload_size := make([]byte, 8)
-	binary.BigEndian.PutUint64(payload_size, uint64(len(jdata)))
+	payloadSize := make([]byte, 8)
+	binary.BigEndian.PutUint64(payloadSize, uint64(len(jdata)))
 
 	for i = 0; len(remain) >= WINCRED_MAX_LENGTH; i++ {
 		chunk, remain = remain[:WINCRED_MAX_LENGTH], remain[WINCRED_MAX_LENGTH:]
 		if i == 0 {
-			chunk = append(payload_size, chunk...)
+			chunk = append(payloadSize, chunk...)
 		}
 		if err := kr.setStorageData(chunk, fmt.Sprintf("%s_%d", key, i), label); err != nil {
 			return err
@@ -280,7 +280,7 @@ func (kr *KeyringStore) splitAndSetStorageData(jdata []byte, key string, label s
 
 	if len(remain) > 0 {
 		if i == 0 {
-			remain = append(payload_size, remain...)
+			remain = append(payloadSize, remain...)
 		}
 		err := kr.setStorageData(remain, fmt.Sprintf("%s_%d", key, i), label)
 		if err != nil {

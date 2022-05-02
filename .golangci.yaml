@@ -8,5 +8,22 @@ linters:
     - gofmt
     - gosec
     - misspell
+    - revive
     - whitespace
       # - unparam
+
+linters-settings:
+  revive:
+    rules:
+      - name: var-naming
+        severity: warning
+        disabled: false
+        arguments:
+          - ["ID", "URL", "JSON", "URI"] # AllowList
+          - [""] # DenyList
+
+issues:
+  exclude-rules:
+    - linters:
+        - revive
+      text: ALL_CAPS

@@ -34,19 +34,19 @@ import (
 )
 
 // mock ssooidc
-type mockSsoOidcApi struct {
-	Results []mockSsoOidcApiResults
+type mockSsoOidcAPI struct {
+	Results []mockSsoOidcAPIResults
 }
 
-type mockSsoOidcApiResults struct {
+type mockSsoOidcAPIResults struct {
 	RegisterClient           *ssooidc.RegisterClientOutput
 	StartDeviceAuthorization *ssooidc.StartDeviceAuthorizationOutput
 	CreateToken              *ssooidc.CreateTokenOutput
 	Error                    error
 }
 
-func (m *mockSsoOidcApi) RegisterClient(ctx context.Context, params *ssooidc.RegisterClientInput, optFns ...func(*ssooidc.Options)) (*ssooidc.RegisterClientOutput, error) {
-	var x mockSsoOidcApiResults
+func (m *mockSsoOidcAPI) RegisterClient(ctx context.Context, params *ssooidc.RegisterClientInput, optFns ...func(*ssooidc.Options)) (*ssooidc.RegisterClientOutput, error) {
+	var x mockSsoOidcAPIResults
 	switch {
 	case len(m.Results) == 0:
 		return &ssooidc.RegisterClientOutput{}, fmt.Errorf("calling mocked RegisterClient too many times")
@@ -60,8 +60,8 @@ func (m *mockSsoOidcApi) RegisterClient(ctx context.Context, params *ssooidc.Reg
 	}
 }
 
-func (m *mockSsoOidcApi) StartDeviceAuthorization(ctx context.Context, params *ssooidc.StartDeviceAuthorizationInput, optFns ...func(*ssooidc.Options)) (*ssooidc.StartDeviceAuthorizationOutput, error) {
-	var x mockSsoOidcApiResults
+func (m *mockSsoOidcAPI) StartDeviceAuthorization(ctx context.Context, params *ssooidc.StartDeviceAuthorizationInput, optFns ...func(*ssooidc.Options)) (*ssooidc.StartDeviceAuthorizationOutput, error) {
+	var x mockSsoOidcAPIResults
 	switch {
 	case len(m.Results) == 0:
 		return &ssooidc.StartDeviceAuthorizationOutput{}, fmt.Errorf("calling mocked StartDeviceAuthorization too many times")
@@ -75,8 +75,8 @@ func (m *mockSsoOidcApi) StartDeviceAuthorization(ctx context.Context, params *s
 	}
 }
 
-func (m *mockSsoOidcApi) CreateToken(ctx context.Context, params *ssooidc.CreateTokenInput, optFns ...func(*ssooidc.Options)) (*ssooidc.CreateTokenOutput, error) {
-	var x mockSsoOidcApiResults
+func (m *mockSsoOidcAPI) CreateToken(ctx context.Context, params *ssooidc.CreateTokenInput, optFns ...func(*ssooidc.Options)) (*ssooidc.CreateTokenOutput, error) {
+	var x mockSsoOidcAPIResults
 	switch {
 	case len(m.Results) == 0:
 		return &ssooidc.CreateTokenOutput{}, fmt.Errorf("calling mocked CreateToken too many times")
@@ -114,8 +114,8 @@ func TestAuthenticateSteps(t *testing.T) {
 		store:     jstore,
 	}
 
-	as.ssooidc = &mockSsoOidcApi{
-		Results: []mockSsoOidcApiResults{
+	as.ssooidc = &mockSsoOidcAPI{
+		Results: []mockSsoOidcAPIResults{
 			{
 				RegisterClient: &ssooidc.RegisterClientOutput{
 					AuthorizationEndpoint: nil,
@@ -194,8 +194,8 @@ func TestAuthenticate(t *testing.T) {
 	secs, _ := time.ParseDuration("5s")
 	expires := time.Now().Add(secs).Unix()
 
-	as.ssooidc = &mockSsoOidcApi{
-		Results: []mockSsoOidcApiResults{
+	as.ssooidc = &mockSsoOidcAPI{
+		Results: []mockSsoOidcAPIResults{
 			{
 				RegisterClient: &ssooidc.RegisterClientOutput{
 					AuthorizationEndpoint: nil,
@@ -266,8 +266,8 @@ func TestAuthenticateFailure(t *testing.T) {
 	secs, _ := time.ParseDuration("5s")
 	expires := time.Now().Add(secs).Unix()
 
-	as.ssooidc = &mockSsoOidcApi{
-		Results: []mockSsoOidcApiResults{
+	as.ssooidc = &mockSsoOidcAPI{
+		Results: []mockSsoOidcAPIResults{
 			// first test
 			{
 				RegisterClient: &ssooidc.RegisterClientOutput{},
@@ -365,8 +365,8 @@ func TestReauthenticate(t *testing.T) {
 	secs, _ := time.ParseDuration("5s")
 	expires := time.Now().Add(secs).Unix()
 
-	as.ssooidc = &mockSsoOidcApi{
-		Results: []mockSsoOidcApiResults{
+	as.ssooidc = &mockSsoOidcAPI{
+		Results: []mockSsoOidcAPIResults{
 			{
 				RegisterClient: &ssooidc.RegisterClientOutput{
 					AuthorizationEndpoint: nil,
@@ -401,8 +401,8 @@ func TestReauthenticate(t *testing.T) {
 
 	// valid urlAction, but command is invalid
 	as.urlAction = "exec"
-	as.ssooidc = &mockSsoOidcApi{
-		Results: []mockSsoOidcApiResults{
+	as.ssooidc = &mockSsoOidcAPI{
+		Results: []mockSsoOidcAPIResults{
 			{
 				RegisterClient: &ssooidc.RegisterClientOutput{
 					AuthorizationEndpoint: nil,

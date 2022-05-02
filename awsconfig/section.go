@@ -23,19 +23,19 @@ import (
 )
 
 func HasStaticCreds(s *ini.Section) bool {
-	aws_access_key_id := false
-	aws_secret_access_key := false
+	awsAccessKeyId := false
+	awsSecretAccessKey := false
 	for _, key := range s.KeyStrings() {
 		switch key {
 		case "aws_access_key_id":
-			aws_access_key_id = true
+			awsAccessKeyId = true
 		case "aws_secret_access_key":
-			aws_secret_access_key = true
+			awsSecretAccessKey = true
 		case "mfa_serial":
 			// we don't support prompting for MFA so don't import them
 			log.Infof("Skipping MFA enabled profile: %s", s.Name())
 			return false
 		}
 	}
-	return aws_access_key_id && aws_secret_access_key
+	return awsAccessKeyId && awsSecretAccessKey
 }
