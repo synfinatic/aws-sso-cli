@@ -24,17 +24,31 @@ import (
 	"github.com/willabides/kongplete"
 )
 
-type InstallCmd struct {
+type CompleteCmd struct {
+	Install   bool `kong:"cmd,short='I',help='Install shell completions',xor='action'"`
+	Uninstall bool `kong:"cmd,short='U',help='Uninstall shell completions',xor='action'"`
+	Pre19     bool `kong:"cmd,help='Modify older pre-v1.9 shell completion integration'"`
 }
 
-func (cc *InstallCmd) Run(ctx *RunContext) error {
-	kp := &kongplete.InstallCompletions{}
-	err := kp.Run(ctx.Kctx)
+func (cc *CompleteCmd) Run(ctx *RunContext) error {
 
-	// don't exit
-	if err != nil {
-		fmt.Printf(err.Error())
+	if ctx.Cli.Completions.Install {
+		if ctx.Cli.Completions.Pre19 {
+			kp := &kongplete.InstallCompletions{}
+			return kp.Run(ctx.Kctx)
+		} else {
+			return helper.InstallHelper()
+		}
+	} else if ctx.Cli.Completions.Uninstall {
+		if ctx.Cli.Completions.Pre19 {
+			kp := &kongplete.InstallCompletions{
+				Uninstall: true,
+			}
+			return kp.Run(ctx.Kctx)
+		} else {
+			return helper.UninstallHelper()
+		}
 	}
 
-	return helper.WriteHelper()
+	return fmt.Errorf("Please specify --install or --uninstall")
 }

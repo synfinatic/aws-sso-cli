@@ -19,23 +19,17 @@ package helper
  */
 
 import (
-	"bufio"
-	"bytes"
-	"fmt"
 	"os"
 	"path/filepath"
-	"text/template"
 
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
 const BASH_PROFILE = `# BEGIN_AWS_SSO_CLI
 
-complete -C {{ .Executable }} aws-sso
-
 _aws_sso_profile_complete(){
     local words
-    for i in $(aws-sso -L error list Profile | tail +5 | sed -Ee 's|:|\\\\:|g') ; do
+    for i in $({{ .Executable }} -L error list Profile | tail -n +5 | sed -Ee 's|:|\\\\:|g') ; do
         words="${words} ${i}"
     done
     COMPREPLY=($(compgen -W "${words}" "${COMP_WORDS[1]}"))
@@ -44,63 +38,90 @@ _aws_sso_profile_complete(){
 alias aws-sso-profile='source {{ .HelperScript }}'
 alias aws-sso-clear='eval $(aws-sso -L error eval -c)'
 
+complete -F _aws_sso_profile_complete aws-sso-profile
+complete -C {{ .Executable }} aws-sso
+
 # END_AWS_SSO_CLI
 `
 
 const BASH_HELPER_FILE = "helper-aws-sso-profile"
-const BASH_HELPER = `#!/usr/bin/env bash
+const BASH_HELPER = `# BEGIN_AWS_SSO_CLI
 eval $({{ .Executable }} -L error eval $AWS_SSO_HELPER_ARGS -p $1 $2 $3 $4 $5 $6 $7)
+# END_AWS_SSO_CLI
 `
 
-func writeBashFiles() error {
+func helperPath() string {
+	var exec string
 	var err error
-	var exec, helper string
-	var output bytes.Buffer
 
 	if exec, err = os.Executable(); err != nil {
-		return fmt.Errorf("unable to determine our own executable: %s", err.Error())
+		log.Panicf("unable to determine our own executable: %s", err.Error())
 	}
 
 	exec, err = filepath.Abs(exec)
 	if err != nil {
-		return fmt.Errorf("unable to determine absolute path: %s", err.Error())
+		log.Panicf("unable to determine absolute path: %s", err.Error())
 	}
 
-	helper = filepath.Join(filepath.Dir(exec), BASH_HELPER_FILE)
+	return filepath.Join(filepath.Dir(exec), BASH_HELPER_FILE)
+
+}
+
+func writeBashFiles() error {
+	var err error
+	var exec, helper string
+
+	helper = helperPath()
+	exec, _ = os.Executable()
 
 	args := map[string]string{
 		"Executable":   exec,
 		"HelperScript": helper,
 	}
 
-	templ, err := template.New("bash_profile").Parse(BASH_PROFILE)
+	// write ~/bash_profile
+	f, err := utils.NewFileEdit(BASH_PROFILE, args)
 	if err != nil {
-		log.Panicf("Unable to parse bash_profile template: %s", err.Error())
+		return err
 	}
 
-	f := utils.NewFileEdit(templ, args)
 	path := utils.GetHomePath("~/.bash_profile")
 
-	if err = f.UpdateConfig(true, false, path); err != nil {
+	if err = f.UpdateConfig(false, false, path); err != nil {
 		return err
 	}
 
-	fh, err := os.OpenFile(helper, os.O_CREATE|os.O_TRUNC, 0755)
+	// Now do the helper file
+	f, err = utils.NewFileEdit(BASH_HELPER, args)
 	if err != nil {
-		log.Panicf("Unable to create %s: %s", path, err.Error())
-	}
-
-	templ, err = template.New("helper").Parse(BASH_HELPER)
-	if err != nil {
-		log.Panicf("Unable to parse helper template: %s", err.Error())
-	}
-
-	w := bufio.NewWriter(&output)
-	err = templ.Execute(w, args)
-
-	if _, err = fh.Write(output.Bytes()); err != nil {
 		return err
 	}
-	fh.Close()
+
+	if err = f.UpdateConfig(false, true, helper); err != nil {
+		return err
+	}
+
+	log.Infof("wrote %s", helper)
+	return nil
+}
+
+func uninstallBashFiles() error {
+	helper := helperPath()
+	err := os.Remove(helper)
+	if err != nil {
+		log.Warnf("unable to delete: %s", err.Error())
+	}
+
+	fe, err := utils.NewFileEdit("", "")
+	if err != nil {
+		return nil
+	}
+
+	path := utils.GetHomePath("~/.bash_profile")
+	err = fe.StripConfig(false, false, path)
+	if err != nil {
+		log.Warnf("unable to remove config: %s", err.Error())
+	}
+
 	return nil
 }

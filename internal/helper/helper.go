@@ -20,11 +20,12 @@ package helper
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/riywo/loginshell"
 )
 
-func WriteHelper() error {
+func InstallHelper() error {
 	var shell string
 	var err error
 
@@ -33,12 +34,29 @@ func WriteHelper() error {
 		return err
 	}
 
-	switch shell {
-	case "bash":
+	if strings.HasSuffix(shell, "/bash") {
 		err = writeBashFiles()
-	default:
+	} else {
 		err = fmt.Errorf("unsupported shell: %s", shell)
 	}
 
 	return err
+}
+
+func UninstallHelper() error {
+	var shell string
+	var err error
+
+	shell, err = loginshell.Shell()
+	if err != nil {
+		return err
+	}
+
+	if strings.HasSuffix(shell, "/bash") {
+		err = uninstallBashFiles()
+	} else {
+		err = fmt.Errorf("unsupported shell: %s", shell)
+	}
+
+	return nil
 }

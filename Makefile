@@ -1,4 +1,4 @@
-PROJECT_VERSION := 1.8.2
+PROJECT_VERSION := 1.9.0
 DOCKER_REPO     := synfinatic
 PROJECT_NAME    := aws-sso
 
@@ -60,14 +60,10 @@ INSTALL_PREFIX ?= /usr/local
 
 install: $(DIST_DIR)$(PROJECT_NAME)  ## install binary in $INSTALL_PREFIX
 	install -d $(INSTALL_PREFIX)/bin
-	install -c $(DIST_DIR)$(PROJECT_NAME) scripts/helper-aws-sso-profile $(INSTALL_PREFIX)/bin
-	install -d $(INSTALL_PREFIX)/etc/bash_completion.d
-	install -c scripts/aws-sso-profile-completion.bash $(INSTALL_PREFIX)/etc/bash_completion.d/aws-sso-profile
+	install -c $(DIST_DIR)$(PROJECT_NAME) $(INSTALL_PREFIX)/bin
 
 uninstall:  ## Uninstall binary from $INSTALL_PREFIX
 	rm $(INSTALL_PREFIX)/bin/$(PROJECT_NAME)
-	rm $(INSTALL_PREFIX)/etc/bash_completion.d/aws-sso-role
-	rm $(INSTALL_PREFIX)/bin/helper-aws-sso-role
 
 HOMEBREW := ./homebrew/Formula/aws-sso-cli.rb
 

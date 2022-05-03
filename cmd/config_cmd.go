@@ -21,7 +21,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"text/template"
 
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
@@ -45,10 +44,10 @@ var VALID_CONFIG_OPEN []string = []string{
 }
 
 type ConfigCmd struct {
-	Diff  bool   `kong:"help='Print a diff of changes to the config file instead of modifying it'"`
-	Open  string `kong:"help='Specify how to open URLs: [clip|exec|open]'"`
-	Print bool   `kong:"help='Print profile entries instead of modifying config file'"`
+	Diff  bool   `kong:"help='Print a diff of changes to the config file instead of modifying it',xor='action'"`
 	Force bool   `kong:"help='Write a new config file without prompting'"`
+	Open  string `kong:"help='Specify how to open URLs: [clip|exec|open]'"`
+	Print bool   `kong:"help='Print profile entries instead of modifying config file',xor='action'"`
 }
 
 func (cc *ConfigCmd) Run(ctx *RunContext) error {
@@ -70,24 +69,17 @@ func (cc *ConfigCmd) Run(ctx *RunContext) error {
 		return err
 	}
 
-	templ := configTemplate()
+	f, err := utils.NewFileEdit(CONFIG_TEMPLATE, profiles)
+	if err != nil {
+		return err
+	}
 
 	if ctx.Cli.Config.Print {
-		return templ.Execute(os.Stdout, profiles)
+		return f.Template.Execute(os.Stdout, profiles)
 	}
-	f := utils.NewFileEdit(templ, profiles)
 
 	oldConfig := awsConfigFile()
 	return f.UpdateConfig(ctx.Cli.Config.Diff, ctx.Cli.Config.Force, oldConfig)
-}
-
-func configTemplate() *template.Template {
-	templ, err := template.New("profile").Parse(CONFIG_TEMPLATE)
-	if err != nil {
-		log.Panicf("Unable to parse config template: %s", err.Error())
-	}
-
-	return templ
 }
 
 // awsConfigFile returns the path the the users ~/.aws/config

@@ -101,21 +101,21 @@ type CLI struct {
 	NoConfigCheck bool   `kong:"help='Disable automatic ~/.aws/config updates'"`
 
 	// Commands
-	Cache              CacheCmd   `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
-	Config             ConfigCmd  `kong:"cmd,help='Update ~/.aws/config with AWS SSO profiles from the cache'"`
-	Console            ConsoleCmd `kong:"cmd,help='Open AWS Console using specificed AWS role/profile'"`
-	Default            DefaultCmd `kong:"cmd,hidden,default='1'"` // list command without args
-	Eval               EvalCmd    `kong:"cmd,help='Print AWS environment vars for use with eval $(aws-sso eval ...)'"`
-	Exec               ExecCmd    `kong:"cmd,help='Execute command using specified IAM role in a new shell'"`
-	Flush              FlushCmd   `kong:"cmd,help='Flush AWS SSO/STS credentials from cache'"`
-	List               ListCmd    `kong:"cmd,help='List all accounts / roles (default command)'"`
-	Process            ProcessCmd `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
-	Static             StaticCmd  `kong:"cmd,help='Manage static AWS API credentials',hidden"`
-	Tags               TagsCmd    `kong:"cmd,help='List tags'"`
-	Time               TimeCmd    `kong:"cmd,help='Print how much time before current STS Token expires'"`
-	Version            VersionCmd `kong:"cmd,help='Print version and exit'"`
-	InstallCompletions InstallCmd `kong:"cmd,help='Install shell completions'"`
-	Setup              SetupCmd   `kong:"cmd,hidden"` // need this so variables are visisble.
+	Cache       CacheCmd    `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
+	Config      ConfigCmd   `kong:"cmd,help='Update ~/.aws/config with AWS SSO profiles from the cache'"`
+	Console     ConsoleCmd  `kong:"cmd,help='Open AWS Console using specificed AWS role/profile'"`
+	Default     DefaultCmd  `kong:"cmd,hidden,default='1'"` // list command without args
+	Eval        EvalCmd     `kong:"cmd,help='Print AWS environment vars for use with eval $(aws-sso eval ...)'"`
+	Exec        ExecCmd     `kong:"cmd,help='Execute command using specified IAM role in a new shell'"`
+	Flush       FlushCmd    `kong:"cmd,help='Flush AWS SSO/STS credentials from cache'"`
+	List        ListCmd     `kong:"cmd,help='List all accounts / roles (default command)'"`
+	Process     ProcessCmd  `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
+	Static      StaticCmd   `kong:"cmd,help='Manage static AWS API credentials',hidden"`
+	Tags        TagsCmd     `kong:"cmd,help='List tags'"`
+	Time        TimeCmd     `kong:"cmd,help='Print how much time before current STS Token expires'"`
+	Version     VersionCmd  `kong:"cmd,help='Print version and exit'"`
+	Completions CompleteCmd `kong:"cmd,help='Manage shell completions'"`
+	Setup       SetupCmd    `kong:"cmd,hidden"` // need this so variables are visisble.
 }
 
 func main() {
@@ -342,7 +342,13 @@ func doAuth(ctx *RunContext) *sso.AWSSSO {
 					log.Errorf("Unable to update %s: %s", cfgFile, err.Error())
 					return AwsSSO
 				}
-				f := utils.NewFileEdit(configTemplate(), profiles)
+
+				f, err := utils.NewFileEdit(CONFIG_TEMPLATE, profiles)
+				if err != nil {
+					log.Errorf("%s", err)
+					return AwsSSO
+				}
+
 				if err = f.UpdateConfig(true, false, cfgFile); err != nil {
 					log.Errorf("Unable to update %s: %s", cfgFile, err.Error())
 					return AwsSSO

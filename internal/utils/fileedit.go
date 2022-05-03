@@ -44,49 +44,53 @@ type FileEdit struct {
 	InputVars interface{}
 }
 
-func NewFileEdit(templ *template.Template, vars interface{}) *FileEdit {
+var outTemplate = 0
+
+func NewFileEdit(fileTemplate string, vars interface{}) (*FileEdit, error) {
+	name := fmt.Sprintf("template%d", outTemplate)
+	outTemplate++
+	templ, err := template.New(name).Parse(fileTemplate)
+	if err != nil {
+		return &FileEdit{}, err
+	}
+
 	return &FileEdit{
 		Prefix:    CONFIG_PREFIX,
 		Suffix:    CONFIG_SUFFIX,
 		Template:  templ,
 		InputVars: vars,
-	}
+	}, nil
 }
 
-// updateConfig calculates the diff
-func (f *FileEdit) UpdateConfig(printDiff, force bool, oldFile string) error {
-	// open our config file
-	inputBytes, err := os.ReadFile(oldFile)
+// UpdateConfig does all the heavy lifting of updating (or creating) the file
+// and optionally providing a diff for user to approve/view
+func (f *FileEdit) UpdateConfig(printDiff, force bool, configFile string) error {
+	inputBytes, err := os.ReadFile(configFile)
+	if err != nil {
+		inputBytes = []byte{}
+	}
+
+	outputBytes, err := f.GenerateNewFile(configFile, false)
 	if err != nil {
 		return err
 	}
 
-	outputBytes, err := f.GenerateNewFile(oldFile)
-	if err != nil {
-		return err
-	}
+	newFile := fmt.Sprintf("%s.new", configFile)
 
-	newFile := fmt.Sprintf("%s.new", oldFile)
-
-	diff, err := DiffBytes(inputBytes, outputBytes, oldFile, GetHomePath(newFile))
+	diff, err := DiffBytes(inputBytes, outputBytes, configFile, GetHomePath(newFile))
 	if err != nil {
 		return err
 	}
 
 	if len(diff) == 0 {
 		// do nothing if there is no diff
-		log.Infof("No changes to made to %s", oldFile)
-		return nil
-	}
-
-	if printDiff {
-		fmt.Printf("%s", diff)
+		log.Infof("no changes to made to %s", configFile)
 		return nil
 	}
 
 	if !force {
 		fmt.Printf("The following changes are proposed to %s:\n%s\n\n",
-			GetHomePath(oldFile), diff)
+			GetHomePath(configFile), diff)
 		label := "Modify config file with proposed changes?"
 		sel := promptui.Select{
 			Label:        label,
@@ -104,27 +108,57 @@ func (f *FileEdit) UpdateConfig(printDiff, force bool, oldFile string) error {
 		}
 
 		if val != "Yes" {
-			fmt.Printf("Aborting.")
 			return nil
 		}
+	} else if printDiff {
+		fmt.Printf("%s", diff)
 	}
 
-	return os.WriteFile(oldFile, outputBytes, 0600)
+	return os.WriteFile(configFile, outputBytes, 0600)
+}
+
+/* This function writes 0 bytes to the file????
+// WriteFile writes the contents of our template & args to the given file handle
+func (f *FileEdit) WriteFile(file *os.File) error {
+	var output bytes.Buffer
+	var err error
+
+	w := bufio.NewWriter(&output)
+	if err = f.Template.Execute(w, f.InputVars); err != nil {
+		return err
+	}
+	log.Errorf("%v", output.Bytes())
+
+	if _, err = file.Write(output.Bytes()); err != nil {
+		return err
+	}
+	file.Sync()
+	return nil
+}
+*/
+
+type EmptyReader struct{}
+
+func (er *EmptyReader) Read(p []byte) (int, error) {
+	return 0, nil
 }
 
 // GenerateNewFile generates the contents of a new config file
-func (f *FileEdit) GenerateNewFile(configFile string) ([]byte, error) {
+func (f *FileEdit) GenerateNewFile(configFile string, strip bool) ([]byte, error) {
 	var output bytes.Buffer
+	var r *bufio.Reader
 	w := bufio.NewWriter(&output)
 
 	// read & write up to the prefix
-	input, err := os.Open(configFile) // output/tempFile is now the input!
+	input, err := os.Open(configFile)
 	if err != nil {
-		return []byte{}, err
+		input, err = os.Create(configFile)
+		if err != nil {
+			return []byte{}, err
+		}
 	}
 	defer input.Close()
-
-	r := bufio.NewReader(input)
+	r = bufio.NewReader(input)
 
 	line, err := r.ReadString('\n')
 	for err == nil && line != fmt.Sprintf("%s\n", CONFIG_PREFIX) {
@@ -142,9 +176,11 @@ func (f *FileEdit) GenerateNewFile(configFile string) ([]byte, error) {
 		endOfFile = true
 	}
 
-	// write our template out
-	if err = f.Template.Execute(w, f.InputVars); err != nil {
-		return []byte{}, err
+	if !strip {
+		// write our template out
+		if err = f.Template.Execute(w, f.InputVars); err != nil {
+			return []byte{}, err
+		}
 	}
 
 	if !endOfFile {
@@ -174,10 +210,62 @@ func (f *FileEdit) GenerateNewFile(configFile string) ([]byte, error) {
 	return output.Bytes(), nil
 }
 
+func (f *FileEdit) StripConfig(printDiff, force bool, configFile string) error {
+	inputBytes, err := os.ReadFile(configFile)
+	if err != nil {
+		return err
+	}
+
+	outputBytes, err := f.GenerateNewFile(configFile, false)
+	if err != nil {
+		return err
+	}
+
+	newFile := fmt.Sprintf("%s.new", configFile)
+
+	diff, err := DiffBytes(inputBytes, outputBytes, configFile, GetHomePath(newFile))
+	if err != nil {
+		return err
+	}
+
+	if len(diff) == 0 {
+		// do nothing if there is no diff
+		log.Infof("no changes to made to %s", configFile)
+		return nil
+	}
+
+	if !force {
+		fmt.Printf("The following changes are proposed to %s:\n%s\n\n",
+			GetHomePath(configFile), diff)
+		label := "Modify config file with proposed changes?"
+		sel := promptui.Select{
+			Label:        label,
+			Items:        []string{"No", "Yes"},
+			HideSelected: false,
+			Stdout:       &BellSkipper{},
+			Templates: &promptui.SelectTemplates{
+				Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
+			},
+		}
+
+		_, val, err := sel.Run()
+		if err != nil {
+			return err
+		}
+
+		if val != "Yes" {
+			return nil
+		}
+	} else if printDiff {
+		fmt.Printf("%s", diff)
+	}
+
+	return os.WriteFile(configFile, outputBytes, 0600)
+}
+
 // DiffBytes generates a diff between two byte arrays
 func DiffBytes(aBytes, bBytes []byte, aName, bName string) (string, error) {
 	edits := myers.ComputeEdits(span.URIFromPath(aName), string(aBytes), string(bBytes))
 	diff := gotextdiff.ToUnified(aName, bName, string(aBytes), edits)
-	log.Debugf("diff:\n%v", diff)
 	return fmt.Sprintf("%s", diff), nil
 }
