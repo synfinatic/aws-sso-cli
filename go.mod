@@ -30,6 +30,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.9.0
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.10.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.14.0
+	github.com/riywo/loginshell v0.0.0-20200815045211-7d26008be1ab
 	gopkg.in/ini.v1 v1.66.4
 )
 

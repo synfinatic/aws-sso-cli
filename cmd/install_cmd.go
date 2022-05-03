@@ -17,30 +17,24 @@ package main
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 import (
 	"fmt"
-	"os"
 
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
+	"github.com/synfinatic/aws-sso-cli/internal/helper"
+	"github.com/willabides/kongplete"
 )
 
-type TimeCmd struct{}
+type InstallCmd struct {
+}
 
-func (cc *TimeCmd) Run(ctx *RunContext) error {
-	expires, isset := os.LookupEnv("AWS_SSO_SESSION_EXPIRATION")
-	if !isset {
-		return nil // no output if nothing is set
+func (cc *InstallCmd) Run(ctx *RunContext) error {
+	kp := &kongplete.InstallCompletions{}
+	err := kp.Run(ctx.Kctx)
+
+	// don't exit
+	if err != nil {
+		fmt.Printf(err.Error())
 	}
 
-	t, err := utils.ParseTimeString(expires)
-	if err != nil {
-		return err
-	}
-	exp, err := utils.TimeRemain(t, false)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("%s", exp)
-	return nil
+	return helper.WriteHelper()
 }

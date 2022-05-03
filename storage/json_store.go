@@ -24,7 +24,7 @@ import (
 	"io/ioutil"
 
 	// "github.com/davecgh/go-spew/spew"
-	"github.com/synfinatic/aws-sso-cli/utils"
+	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
 // JsonStore implements SecureStorage insecurely

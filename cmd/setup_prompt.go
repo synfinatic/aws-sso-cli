@@ -27,7 +27,7 @@ import (
 	"strconv"
 
 	"github.com/manifoldco/promptui"
-	"github.com/synfinatic/aws-sso-cli/utils"
+	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
 const (
@@ -117,7 +117,7 @@ func promptAwsSsoRegion(defaultValue string) (string, error) {
 		Items:        AvailableAwsSSORegions,
 		HideSelected: false,
 		CursorPos:    pos,
-		Stdout:       &bellSkipper{},
+		Stdout:       &utils.BellSkipper{},
 		Templates: &promptui.SelectTemplates{
 			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
 		},
@@ -148,7 +148,7 @@ func promptDefaultRegion(defaultValue string) (string, error) {
 		Label:        label,
 		Items:        defaultRegions,
 		HideSelected: false,
-		Stdout:       &bellSkipper{},
+		Stdout:       &utils.BellSkipper{},
 		Templates: &promptui.SelectTemplates{
 			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
 		},
@@ -173,7 +173,7 @@ func promptUseFirefox(defaultValue string) (string, error) {
 		Label:        label,
 		HideSelected: false,
 		Items:        []string{"Yes", "No"},
-		Stdout:       &bellSkipper{},
+		Stdout:       &utils.BellSkipper{},
 		Templates: &promptui.SelectTemplates{
 			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
 		},
@@ -186,7 +186,7 @@ func promptUseFirefox(defaultValue string) (string, error) {
 		fmt.Printf("Ensure that you have the 'Open external links in a container' plugin for Firefox.")
 		prompt := promptui.Prompt{
 			Label:    "Path to Firefox binary",
-			Stdout:   &bellSkipper{},
+			Stdout:   &utils.BellSkipper{},
 			Default:  firefoxDefaultBrowserPath(defaultValue),
 			Pointer:  promptui.PipeCursor,
 			Validate: validateBinary,
@@ -209,7 +209,7 @@ func promptUrlAction() (string, error) {
 	sel := promptui.Select{
 		Label:  label,
 		Items:  []string{"open", "print", "printurl", "clip"},
-		Stdout: &bellSkipper{},
+		Stdout: &utils.BellSkipper{},
 		Templates: &promptui.SelectTemplates{
 			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
 		},
@@ -230,7 +230,7 @@ func promptDefaultBrowser(defaultValue string) (string, error) {
 	sel := promptui.Select{
 		Label:  label,
 		Items:  []string{"No", "Yes"},
-		Stdout: &bellSkipper{},
+		Stdout: &utils.BellSkipper{},
 		Templates: &promptui.SelectTemplates{
 			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
 		},
@@ -246,7 +246,7 @@ func promptDefaultBrowser(defaultValue string) (string, error) {
 	prompt := promptui.Prompt{
 		Label:    "Specify path to browser to use",
 		Default:  defaultValue,
-		Stdout:   &bellSkipper{},
+		Stdout:   &utils.BellSkipper{},
 		Pointer:  promptui.PipeCursor,
 		Validate: validateBinary,
 	}
@@ -315,7 +315,7 @@ func promptLogLevel(defaultValue string) (string, error) {
 		Items:        logLevels,
 		HideSelected: false,
 		CursorPos:    1, // warn
-		Stdout:       &bellSkipper{},
+		Stdout:       &utils.BellSkipper{},
 		Templates: &promptui.SelectTemplates{
 			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
 		},
@@ -355,7 +355,7 @@ func promptAutoConfigCheck(flag bool, action string) (bool, string, error) {
 		Label:        label,
 		Items:        []string{"Yes", "No"},
 		HideSelected: false,
-		Stdout:       &bellSkipper{},
+		Stdout:       &utils.BellSkipper{},
 		Templates: &promptui.SelectTemplates{
 			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
 		},
@@ -371,9 +371,9 @@ func promptAutoConfigCheck(flag bool, action string) (bool, string, error) {
 	label = "How to open URLs via $AWS_PROFILE (ConfigUrlAction)"
 	sel = promptui.Select{
 		Label:        label,
-		Items:        VALID_CONIFG_OPEN,
+		Items:        VALID_CONFIG_OPEN,
 		HideSelected: false,
-		Stdout:       &bellSkipper{},
+		Stdout:       &utils.BellSkipper{},
 		Templates: &promptui.SelectTemplates{
 			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
 		},

@@ -1,4 +1,4 @@
-package main
+package helper
 
 /*
  * AWS SSO CLI
@@ -20,27 +20,25 @@ package main
 
 import (
 	"fmt"
-	"os"
 
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
+	"github.com/riywo/loginshell"
 )
 
-type TimeCmd struct{}
+func WriteHelper() error {
+	var shell string
+	var err error
 
-func (cc *TimeCmd) Run(ctx *RunContext) error {
-	expires, isset := os.LookupEnv("AWS_SSO_SESSION_EXPIRATION")
-	if !isset {
-		return nil // no output if nothing is set
-	}
-
-	t, err := utils.ParseTimeString(expires)
+	shell, err = loginshell.Shell()
 	if err != nil {
 		return err
 	}
-	exp, err := utils.TimeRemain(t, false)
-	if err != nil {
-		return err
+
+	switch shell {
+	case "bash":
+		err = writeBashFiles()
+	default:
+		err = fmt.Errorf("unsupported shell: %s", shell)
 	}
-	fmt.Printf("%s", exp)
-	return nil
+
+	return err
 }

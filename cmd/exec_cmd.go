@@ -25,8 +25,8 @@ import (
 	"runtime"
 
 	"github.com/c-bata/go-prompt"
+	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
-	"github.com/synfinatic/aws-sso-cli/utils"
 )
 
 type ExecCmd struct {

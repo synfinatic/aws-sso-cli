@@ -28,9 +28,10 @@ import (
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/awsconfig"
+	"github.com/synfinatic/aws-sso-cli/internal/helper"
+	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/synfinatic/aws-sso-cli/storage"
-	"github.com/synfinatic/aws-sso-cli/utils"
 	"github.com/willabides/kongplete"
 )
 
@@ -100,21 +101,21 @@ type CLI struct {
 	NoConfigCheck bool   `kong:"help='Disable automatic ~/.aws/config updates'"`
 
 	// Commands
-	Cache              CacheCmd                     `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
-	Config             ConfigCmd                    `kong:"cmd,help='Update ~/.aws/config with AWS SSO profiles from the cache'"`
-	Console            ConsoleCmd                   `kong:"cmd,help='Open AWS Console using specificed AWS role/profile'"`
-	Default            DefaultCmd                   `kong:"cmd,hidden,default='1'"` // list command without args
-	Eval               EvalCmd                      `kong:"cmd,help='Print AWS environment vars for use with eval $(aws-sso eval ...)'"`
-	Exec               ExecCmd                      `kong:"cmd,help='Execute command using specified IAM role in a new shell'"`
-	Flush              FlushCmd                     `kong:"cmd,help='Flush AWS SSO/STS credentials from cache'"`
-	List               ListCmd                      `kong:"cmd,help='List all accounts / roles (default command)'"`
-	Process            ProcessCmd                   `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
-	Static             StaticCmd                    `kong:"cmd,help='Manage static AWS API credentials',hidden"`
-	Tags               TagsCmd                      `kong:"cmd,help='List tags'"`
-	Time               TimeCmd                      `kong:"cmd,help='Print how much time before current STS Token expires'"`
-	Version            VersionCmd                   `kong:"cmd,help='Print version and exit'"`
-	InstallCompletions kongplete.InstallCompletions `kong:"cmd,help='Install shell completions'"`
-	Setup              SetupCmd                     `kong:"cmd,hidden"` // need this so variables are visisble.
+	Cache              CacheCmd   `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
+	Config             ConfigCmd  `kong:"cmd,help='Update ~/.aws/config with AWS SSO profiles from the cache'"`
+	Console            ConsoleCmd `kong:"cmd,help='Open AWS Console using specificed AWS role/profile'"`
+	Default            DefaultCmd `kong:"cmd,hidden,default='1'"` // list command without args
+	Eval               EvalCmd    `kong:"cmd,help='Print AWS environment vars for use with eval $(aws-sso eval ...)'"`
+	Exec               ExecCmd    `kong:"cmd,help='Execute command using specified IAM role in a new shell'"`
+	Flush              FlushCmd   `kong:"cmd,help='Flush AWS SSO/STS credentials from cache'"`
+	List               ListCmd    `kong:"cmd,help='List all accounts / roles (default command)'"`
+	Process            ProcessCmd `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
+	Static             StaticCmd  `kong:"cmd,help='Manage static AWS API credentials',hidden"`
+	Tags               TagsCmd    `kong:"cmd,help='List tags'"`
+	Time               TimeCmd    `kong:"cmd,help='Print how much time before current STS Token expires'"`
+	Version            VersionCmd `kong:"cmd,help='Print version and exit'"`
+	InstallCompletions InstallCmd `kong:"cmd,help='Install shell completions'"`
+	Setup              SetupCmd   `kong:"cmd,hidden"` // need this so variables are visisble.
 }
 
 func main() {
@@ -127,6 +128,7 @@ func main() {
 	storage.SetLogger(log)
 	utils.SetLogger(log)
 	awsconfig.SetLogger(log)
+	helper.SetLogger(log)
 
 	if err := logLevelValidate(cli.LogLevel); err != nil {
 		log.Fatalf("%s", err.Error())
@@ -326,24 +328,25 @@ func doAuth(ctx *RunContext) *sso.AWSSSO {
 		}
 
 		// should we update our config??
-		if !ctx.Cli.NoConfigCheck &&
-			ctx.Settings.AutoConfigCheck &&
-			utils.StrListContains(ctx.Settings.ConfigUrlAction, VALID_CONIFG_OPEN) {
-			cfgFile := utils.GetHomePath("~/.aws/config")
+		if !ctx.Cli.NoConfigCheck && ctx.Settings.AutoConfigCheck {
+			if utils.StrListContains(ctx.Settings.ConfigUrlAction, VALID_CONFIG_OPEN) {
+				cfgFile := utils.GetHomePath("~/.aws/config")
 
-			profiles, err := ctx.Settings.GetAllProfiles(ctx.Settings.ConfigUrlAction)
-			if err != nil {
-				log.Warnf("Unable to update %s: %s", cfgFile, err.Error())
-				return AwsSSO
-			}
+				profiles, err := ctx.Settings.GetAllProfiles(ctx.Settings.ConfigUrlAction)
+				if err != nil {
+					log.Warnf("Unable to update %s: %s", cfgFile, err.Error())
+					return AwsSSO
+				}
 
-			if err = profiles.UniqueCheck(ctx.Settings); err != nil {
-				log.Errorf("Unable to update %s: %s", cfgFile, err.Error())
-				return AwsSSO
-			}
-			if err = updateConfig(ctx, configTemplate(), profiles); err != nil {
-				log.Errorf("Unable to update %s: %s", cfgFile, err.Error())
-				return AwsSSO
+				if err = profiles.UniqueCheck(ctx.Settings); err != nil {
+					log.Errorf("Unable to update %s: %s", cfgFile, err.Error())
+					return AwsSSO
+				}
+				f := utils.NewFileEdit(configTemplate(), profiles)
+				if err = f.UpdateConfig(true, false, cfgFile); err != nil {
+					log.Errorf("Unable to update %s: %s", cfgFile, err.Error())
+					return AwsSSO
+				}
 			}
 		}
 	}

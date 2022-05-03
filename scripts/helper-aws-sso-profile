@@ -1,1 +1,0 @@
-eval $(/usr/local/bin/aws-sso -L error eval $AWS_SSO_HELPER_ARGS -p $1 $2 $3 $4 $5 $6 $7)

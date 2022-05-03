@@ -22,7 +22,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/synfinatic/aws-sso-cli/utils"
+	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/gotable"
 )
 

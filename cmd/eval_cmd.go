@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	// log "github.com/sirupsen/logrus"
-	"github.com/synfinatic/aws-sso-cli/utils"
+	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
 type EvalCmd struct {

@@ -33,7 +33,7 @@ import (
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/sirupsen/logrus"
-	"github.com/synfinatic/aws-sso-cli/utils"
+	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
 const (
