@@ -20,7 +20,6 @@ package helper
 
 import (
 	"os"
-	"path/filepath"
 
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
@@ -28,15 +27,33 @@ import (
 const BASH_PROFILE = `# BEGIN_AWS_SSO_CLI
 
 _aws_sso_profile_complete(){
-    local words
-    for i in $({{ .Executable }} -L error list Profile | tail -n +5 | sed -Ee 's|:|\\\\:|g') ; do
-        words="${words} ${i}"
-    done
-    COMPREPLY=($(compgen -W "${words}" "${COMP_WORDS[1]}"))
+  local words
+  for i in $({{ .Executable }} -L error list --profiles) ; do 
+    if [ -n "$1" ]; then
+      words="${words} ${i}"
+    fi
+  done
+  COMPREPLY=($(compgen -W "${words}" "${COMP_WORDS[1]}"))
 }
 
-alias aws-sso-profile='source {{ .HelperScript }}'
-alias aws-sso-clear='eval $(aws-sso -L error eval -c)'
+aws-sso-profile(){
+  if [ -n "$AWS_PROFILE" ]; then
+     echo "Unable to assume a role while AWS_PROFILE is set"
+     return 1
+  fi
+  eval $({{ .Executable }} -L error eval -p "$1" $AWS_SSO_HELPER_ARGS)
+  if [ "$AWS_SSO_PROFILE" != "$1" ]; then
+    return 1
+  fi
+}
+
+aws-sso-clear(){
+  if [ -z "$AWS_SSO_PROFILE" ]; then
+    echo "AWS_SSO_PROFILE is not set"
+	return 1
+  fi
+  eval $(aws-sso -L error eval -c)
+}
 
 complete -F _aws_sso_profile_complete aws-sso-profile
 complete -C {{ .Executable }} aws-sso
@@ -44,74 +61,32 @@ complete -C {{ .Executable }} aws-sso
 # END_AWS_SSO_CLI
 `
 
-const BASH_HELPER_FILE = "helper-aws-sso-profile"
-const BASH_HELPER = `# BEGIN_AWS_SSO_CLI
-eval $({{ .Executable }} -L error eval $AWS_SSO_HELPER_ARGS -p $1 $2 $3 $4 $5 $6 $7)
-# END_AWS_SSO_CLI
-`
-
-func helperPath() string {
-	var exec string
-	var err error
-
-	if exec, err = os.Executable(); err != nil {
-		log.Panicf("unable to determine our own executable: %s", err.Error())
-	}
-
-	exec, err = filepath.Abs(exec)
-	if err != nil {
-		log.Panicf("unable to determine absolute path: %s", err.Error())
-	}
-
-	return filepath.Join(filepath.Dir(exec), BASH_HELPER_FILE)
-
-}
-
 func writeBashFiles() error {
 	var err error
-	var exec, helper string
+	var exec string
 
-	helper = helperPath()
 	exec, _ = os.Executable()
 
 	args := map[string]string{
-		"Executable":   exec,
-		"HelperScript": helper,
+		"Executable": exec,
 	}
 
 	// write ~/bash_profile
-	f, err := utils.NewFileEdit(BASH_PROFILE, args)
+	fe, err := utils.NewFileEdit(BASH_PROFILE, args)
 	if err != nil {
 		return err
 	}
 
 	path := utils.GetHomePath("~/.bash_profile")
 
-	if err = f.UpdateConfig(false, false, path); err != nil {
+	if err = fe.UpdateConfig(false, false, path); err != nil {
 		return err
 	}
 
-	// Now do the helper file
-	f, err = utils.NewFileEdit(BASH_HELPER, args)
-	if err != nil {
-		return err
-	}
-
-	if err = f.UpdateConfig(false, true, helper); err != nil {
-		return err
-	}
-
-	log.Infof("wrote %s", helper)
 	return nil
 }
 
 func uninstallBashFiles() error {
-	helper := helperPath()
-	err := os.Remove(helper)
-	if err != nil {
-		log.Warnf("unable to delete: %s", err.Error())
-	}
-
 	fe, err := utils.NewFileEdit("", "")
 	if err != nil {
 		return nil

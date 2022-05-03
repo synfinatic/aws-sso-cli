@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strings"
 
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
@@ -47,13 +48,31 @@ var allListFields = map[string]string{
 }
 
 type ListCmd struct {
-	ListFields bool     `kong:"optional,short='f',help='List available fields',xor='fields'"`
+	ListFields bool     `kong:"short='f',help='List available fields',xor='fields'"`
+	Profiles   bool     `kong:"short='p',help='Only list the profile names',xor='fields'"`
 	Fields     []string `kong:"optional,arg,help='Fields to display',env='AWS_SSO_FIELDS',predictor='fieldList',xor='fields'"`
 }
 
 // what should this actually do?
 func (cc *ListCmd) Run(ctx *RunContext) error {
 	var err error
+
+	// If `-p` then just print our profiles
+	if ctx.Cli.List.Profiles {
+		// don't bother to refresh cache, just use it
+		roles := ctx.Settings.Cache.GetSSO().Roles.GetAllRoles()
+		for _, role := range roles {
+			profile, err := role.ProfileName(ctx.Settings)
+			if err != nil {
+				log.Warnf("%s", err.Error())
+			}
+			if strings.Contains(profile, ":") {
+				log.Warnf("Profile %s contains a colon which breaks auto-completion", profile)
+			}
+			fmt.Printf("%s\n", profile)
+		}
+		return nil
+	}
 
 	// If `-f` then print our fields and exit
 	if ctx.Cli.List.ListFields {

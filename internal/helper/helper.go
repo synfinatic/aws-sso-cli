@@ -58,5 +58,5 @@ func UninstallHelper() error {
 		err = fmt.Errorf("unsupported shell: %s", shell)
 	}
 
-	return nil
+	return err
 }
