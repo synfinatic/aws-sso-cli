@@ -25,29 +25,32 @@ import (
 )
 
 type CompleteCmd struct {
-	Install   bool `kong:"short='I',help='Install shell completions',xor='action'"`
-	Uninstall bool `kong:"short='U',help='Uninstall shell completions',xor='action'"`
-	Pre19     bool `kong:"help='Modify older pre-v1.9 shell completion integration'"`
+	Install        bool `kong:"short='I',help='Install shell completions',xor='action'"`
+	Uninstall      bool `kong:"short='U',help='Uninstall shell completions',xor='action'"`
+	UninstallPre19 bool `kong:"help='Uninstall pre-v1.9 shell completion integration',xor='action'"`
 }
 
 func (cc *CompleteCmd) Run(ctx *RunContext) error {
+	var err error
+
 	if ctx.Cli.Completions.Install {
-		if ctx.Cli.Completions.Pre19 {
-			kp := &kongplete.InstallCompletions{}
-			return kp.Run(ctx.Kctx)
-		} else {
-			return helper.InstallHelper()
-		}
+		// install the current auto-complete helper
+		err = helper.InstallHelper()
 	} else if ctx.Cli.Completions.Uninstall {
-		if ctx.Cli.Completions.Pre19 {
-			kp := &kongplete.InstallCompletions{
-				Uninstall: true,
-			}
-			return kp.Run(ctx.Kctx)
-		} else {
-			return helper.UninstallHelper()
+		// uninstall the current auto-complete helper
+		err = helper.UninstallHelper()
+	} else if ctx.Cli.Completions.UninstallPre19 {
+		// install the old kongplete auto-complete helper
+		kp := &kongplete.InstallCompletions{
+			Uninstall: true,
 		}
+		err = kp.Run(ctx.Kctx)
+	} else {
+		err = fmt.Errorf("Please specify a valid flag")
 	}
 
-	return fmt.Errorf("Please specify --install or --uninstall")
+	if err == nil {
+		log.Info("Please restart your shell for the changes to take effect")
+	}
+	return err
 }

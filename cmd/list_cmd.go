@@ -48,31 +48,15 @@ var allListFields = map[string]string{
 }
 
 type ListCmd struct {
-	ListFields bool     `kong:"short='f',help='List available fields',xor='fields'"`
-	Profiles   bool     `kong:"short='p',help='Only list the profile names',xor='fields'"`
-	Fields     []string `kong:"optional,arg,help='Fields to display',env='AWS_SSO_FIELDS',predictor='fieldList',xor='fields'"`
+	ListFields    bool     `kong:"short='f',help='List available fields',xor='fields'"`
+	CSV           bool     `kong:"help='Generate CSV instead of a table',xor='fields'"`
+	ProfilePrefix string   `kong:"short='P',help='Limit profiles to those that have the prefix'"`
+	Fields        []string `kong:"optional,arg,help='Fields to display',env='AWS_SSO_FIELDS',predictor='fieldList',xor='fields'"`
 }
 
 // what should this actually do?
 func (cc *ListCmd) Run(ctx *RunContext) error {
 	var err error
-
-	// If `-p` then just print our profiles
-	if ctx.Cli.List.Profiles {
-		// don't bother to refresh cache, just use it
-		roles := ctx.Settings.Cache.GetSSO().Roles.GetAllRoles()
-		for _, role := range roles {
-			profile, err := role.ProfileName(ctx.Settings)
-			if err != nil {
-				log.Warnf("%s", err.Error())
-			}
-			if strings.Contains(profile, ":") {
-				log.Warnf("Profile %s contains a colon which breaks auto-completion", profile)
-			}
-			fmt.Printf("%s\n", profile)
-		}
-		return nil
-	}
 
 	// If `-f` then print our fields and exit
 	if ctx.Cli.List.ListFields {
@@ -96,9 +80,7 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 		fields = ctx.Cli.List.Fields
 	}
 
-	printRoles(ctx, fields)
-
-	return nil
+	return printRoles(ctx, fields, ctx.Cli.List.CSV, ctx.Cli.List.ProfilePrefix)
 }
 
 // DefaultCmd has no args, and just prints the default fields and exists because
@@ -119,12 +101,12 @@ func (cc *DefaultCmd) Run(ctx *RunContext) error {
 		}
 	}
 
-	printRoles(ctx, ctx.Settings.ListFields)
-	return nil
+	return printRoles(ctx, ctx.Settings.ListFields, false, "")
 }
 
 // Print all our roles
-func printRoles(ctx *RunContext, fields []string) {
+func printRoles(ctx *RunContext, fields []string, csv bool, profilePrefix string) error {
+	var err error
 	roles := ctx.Settings.Cache.GetSSO().Roles
 	tr := []gotable.TableStruct{}
 	idx := 0
@@ -156,6 +138,11 @@ func printRoles(ctx *RunContext, fields []string) {
 			if err == nil {
 				roleFlat.Profile = p
 			}
+
+			if profilePrefix != "" && !strings.HasPrefix(p, profilePrefix) {
+				// skip because not a match
+				continue
+			}
 			roleFlat.Id = idx
 			idx += 1
 			tr = append(tr, *roleFlat)
@@ -170,23 +157,28 @@ func printRoles(ctx *RunContext, fields []string) {
 	}
 	AwsSSO = sso.NewAWSSSO(s, &ctx.Store)
 
-	expires := ""
-	ctr := storage.CreateTokenResponse{}
-	if err := ctx.Store.GetCreateTokenResponse(AwsSSO.StoreKey(), &ctr); err != nil {
-		log.Debugf("Unable to get SSO session expire time: %s", err.Error())
+	if csv {
+		err = gotable.GenerateCSV(tr, fields)
 	} else {
-		if exp, err := utils.TimeRemain(ctr.ExpiresAt, true); err != nil {
-			log.Errorf("Unable to determine time remain for %d: %s", ctr.ExpiresAt, err)
+		expires := ""
+		ctr := storage.CreateTokenResponse{}
+		if err := ctx.Store.GetCreateTokenResponse(AwsSSO.StoreKey(), &ctr); err != nil {
+			log.Debugf("Unable to get SSO session expire time: %s", err.Error())
 		} else {
-			expires = fmt.Sprintf(" [Expires in: %s]", exp)
+			if exp, err := utils.TimeRemain(ctr.ExpiresAt, true); err != nil {
+				log.Errorf("Unable to determine time remain for %d: %s", ctr.ExpiresAt, err)
+			} else {
+				expires = fmt.Sprintf(" [Expires in: %s]", exp)
+			}
 		}
-	}
-	fmt.Printf("List of AWS roles for SSO Instance: %s%s\n\n", ctx.Settings.DefaultSSO, expires)
+		fmt.Printf("List of AWS roles for SSO Instance: %s%s\n\n", ctx.Settings.DefaultSSO, expires)
 
-	if err := gotable.GenerateTable(tr, fields); err != nil {
-		log.WithError(err).Fatalf("Unable to generate report")
+		err = gotable.GenerateTable(tr, fields)
 	}
-	fmt.Printf("\n")
+	if err == nil {
+		fmt.Printf("\n")
+	}
+	return err
 }
 
 // Code to --list-fields

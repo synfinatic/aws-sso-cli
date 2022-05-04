@@ -27,13 +27,13 @@ import (
 const BASH_PROFILE = `# BEGIN_AWS_SSO_CLI
 
 _aws_sso_profile_complete(){
-  local words
-  for i in $({{ .Executable }} -L error list --profiles) ; do 
-    if [ -n "$1" ]; then
-      words="${words} ${i}"
-    fi
-  done
-  COMPREPLY=($(compgen -W "${words}" "${COMP_WORDS[1]}"))
+  COMPREPLY=()
+  local cur
+  _get_comp_words_by_ref -n : cur
+
+  COMPREPLY=($(compgen -W '$({{ .Executable }} -L error list --csv -P "$cur" Profile)' -- ""))
+
+  __ltrim_colon_completions "$cur"
 }
 
 aws-sso-profile(){

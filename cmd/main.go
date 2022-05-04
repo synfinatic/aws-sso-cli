@@ -78,7 +78,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"DefaultRegion":                             "us-east-1",
 	"HistoryLimit":                              10,
 	"HistoryMinutes":                            1440, // 24hrs
-	"ListFields":                                []string{"AccountId", "AccountAlias", "RoleName", "ExpiresStr"},
+	"ListFields":                                []string{"AccountId", "AccountAlias", "RoleName", "Profile", "ExpiresStr"},
 	"ConsoleDuration":                           60,
 	"UrlAction":                                 "open",
 	"UrlExecCommand":                            "",
@@ -87,6 +87,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"FirefoxOpenUrlInContainer":                 false,
 	"AutoConfigCheck":                           false,
 	"ConfigUrlAction":                           "",
+	"ProfileFormat":                             `{{ .AccountId }}_{{ .RoleName }}`,
 }
 
 type CLI struct {
