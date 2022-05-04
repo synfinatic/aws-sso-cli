@@ -19,20 +19,22 @@ package utils
  */
 
 import (
-	"github.com/sirupsen/logrus"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-var log *logrus.Logger
+func TestBellSkipper(t *testing.T) {
+	b := BellSkipper{}
 
-func SetLogger(l *logrus.Logger) {
-	log = l
-}
+	bytes := []byte("this is my buffer")
+	i, err := b.Write(bytes)
+	assert.NoError(t, err)
+	assert.Equal(t, len(bytes), i)
+	assert.NoError(t, b.Close())
 
-func GetLogger() *logrus.Logger {
-	return log
-}
-
-// this is configured by cmd/main.go, but we have this here for unit tests
-func init() {
-	log = logrus.New()
+	bytes = []byte{7}
+	i, err = b.Write(bytes)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, i)
 }

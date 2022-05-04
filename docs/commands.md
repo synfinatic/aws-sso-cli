@@ -306,6 +306,19 @@ for this to take effect.
 For more information about this feature, please read [AWS SSO Shell Completion](
 shell-completion.md).
 
+Flags:
+
+ * `--install` -- Install the new v1.9+ shell completions scripts
+ * `--uninstall` -- Uninstall the new v1.9+ shell completions scripts
+ * `--uninstall-pre-19` -- Uninstall the legacy pre-v1.9 scripts 
+ * `--shell <shell>` -- Override the detected shell
+ * `--shell-script <file>` -- Override the default shell script file to modify
+
+**Note:** You should uninstall the older pre-v1.9 completions before installing
+the new version.  Once the new version is installed, `--uninstall-pre-19` will
+refuse to run so you will have to either manually edit the file or run `--uninstall`,
+then `--uninstall-pre-19` and finally `--install` again.
+
 ## Environment Variables
 
 ### Honored Variables
@@ -349,26 +362,50 @@ The following environment variables are specific to `aws-sso`:
  * `AWS_SSO_PROFILE` -- User customizable varible using the [ProfileFormat](docs/config.md#profileformat) template
  * `AWS_SSO` -- AWS SSO instance name
 
+
+**Note:** AWS SSO does set `$AWS_PROFILE` to avoid problems with the AWS tooling
+and SDK.
+
+---
+
 ## Shell Helpers
 
-These are helper functions installed in your shell as part of the [completions](
+These are optional helper functions installed in your shell as part of the [completions](
 #completions) command.  Currently only bash is supported.  To install these helper
 functions, please see the [shell completions](shell-completions.md) page.
+
+By default, these commands uses your default AWS SSO instance, but you can override
+this by first exporting `AWS_SSO` to the value you want to use.  
+
+If you want to pass specific args to `aws-sso-profile` you can use the 
+`$AWS_SSO_HELPER_ARGS` environment variable.  If nothing is set, then 
+`--level error` is used.
+
+Currently the following shells are supported:
+
+ * `bash`
+ * [zsh - TBD](https://github.com/synfinatic/aws-sso-cli/issues/360)
+ * [fish - TBD](https://github.com/synfinatic/aws-sso-cli/issues/361)
+
+**Note:** Please reach out if you can help with adding support for your favorite shell!
+
+---
 
 ### aws-sso-profile
 
 This shell command enables you to assume an AWS SSO role by the profile name
-_in the current shell and with auto-complete functionality_.
+_in the current shell and with auto-complete functionality_.  Basically it is a
+wrapper around `eval $(aws-sso eval --profile XXXX)` but with auto-complete.
 
-By default, this command uses your default AWS SSO instance, but you can override
-this by first exporting `AWS_SSO` to the value you want to use.
-
-This command will export the same environment variables as the [eval](
-commands.md#eval) command.
+This command will export the same [environment variables](#managed-variables) 
+as the [eval](#eval) command.
 
 **Note:** This command will overwrite existing environment variables, but will
 refuse to run if `AWS_PROFILE` is set.
 
+---
+
 ### aws-sso-clear
 
-Clears all the environment variables set by `aws-sso-profile`.
+Clears all the environment variables set by `aws-sso-profile` or when running
+`eval $(aws-sso env ...)`.
