@@ -74,11 +74,13 @@ func (as *AWSSSO) StoreKey() string {
 func (as *AWSSSO) reauthenticate() error {
 	log.Tracef("reauthenticate()")
 	err := as.registerClient(false)
+	log.Tracef("<- reauthenticate()")
 	if err != nil {
 		return fmt.Errorf("Unable to register client with AWS SSO: %s", err.Error())
 	}
 
 	err = as.startDeviceAuthorization()
+	log.Tracef("<- reauthenticate()")
 	if err != nil {
 		log.Debugf("startDeviceAuthorization failed.  Forcing refresh of registerClient")
 		// startDeviceAuthorization can fail if our cached registerClient token is invalid
@@ -91,6 +93,7 @@ func (as *AWSSSO) reauthenticate() error {
 	}
 
 	auth, err := as.getDeviceAuthInfo()
+	log.Tracef("<- reauthenticate()")
 	if err != nil {
 		return fmt.Errorf("Unable to get device auth info from AWS SSO: %s", err.Error())
 	}

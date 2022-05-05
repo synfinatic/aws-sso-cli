@@ -163,6 +163,7 @@ func promptDefaultRegion(defaultValue string) (string, error) {
 	sel := promptui.Select{
 		Label:        label,
 		Items:        defaultRegions,
+		CursorPos:    index(defaultRegions, defaultValue),
 		HideSelected: false,
 		Stdout:       &utils.BellSkipper{},
 		Templates: &promptui.SelectTemplates{
@@ -180,15 +181,23 @@ func promptDefaultRegion(defaultValue string) (string, error) {
 	return val, nil
 }
 
+// promptUseFirefox asks if the user wants to use firefox containers
+// and if so, returns the path to the Firefox binary
 func promptUseFirefox(defaultValue string) (string, error) {
 	var val, useFirefox string
 	var err error
+	idx := 1
+
+	if defaultValue != "" {
+		idx = 0
+	}
 
 	label := "Use Firefox containers to open URLs?"
 	sel := promptui.Select{
 		Label:        label,
 		HideSelected: false,
 		Items:        []string{"Yes", "No"},
+		CursorPos:    idx,
 		Stdout:       &utils.BellSkipper{},
 		Templates: &promptui.SelectTemplates{
 			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
@@ -215,92 +224,109 @@ func promptUseFirefox(defaultValue string) (string, error) {
 	return val, nil
 }
 
-func promptUrlAction() (string, error) {
+func promptUrlAction(defaultValue string) (string, error) {
 	var val string
 	var err error
+	items := []string{"open", "print", "printurl", "clip"}
 
 	// How should we deal with URLs?  Note we don't support `exec`
 	// here since that is an "advanced" feature
 	label := "Default action to take with URLs (UrlAction)"
 	sel := promptui.Select{
-		Label:  label,
-		Items:  []string{"open", "print", "printurl", "clip"},
-		Stdout: &utils.BellSkipper{},
+		Label:     label,
+		CursorPos: index(items, defaultValue),
+		Items:     items,
+		Stdout:    &utils.BellSkipper{},
 		Templates: &promptui.SelectTemplates{
 			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
 		},
 	}
-	if _, val, err = sel.Run(); err != nil {
-		return "", err
+	_, val, err = sel.Run()
+	return val, err
+}
+
+func promptUrlExecCommand(defaultValue []string) ([]string, error) {
+	var val []string
+	var err error
+	var line string
+	argNum := 1
+
+	fmt.Printf("Please enter one per line, the command and list of arguments for UrlExecCommand\n")
+
+	command := defaultValue[0]
+	prompt := promptui.Prompt{
+		Label:    "Binary to execute to open URLs",
+		Default:  command,
+		Stdout:   &utils.BellSkipper{},
+		Validate: validateBinary,
+		Pointer:  promptui.PipeCursor,
+	}
+	if line, err = prompt.Run(); err != nil {
+		return val, err
 	}
 
+	val = append(val, line)
+
+	// zero out the defaults if we change the command to execute
+	if line != defaultValue[0] {
+		defaultValue = []string{}
+	}
+
+	for line != "" {
+		arg := defaultValue[argNum]
+		prompt = promptui.Prompt{
+			Label:   fmt.Sprintf("Enter argument #%d or empty value to stop:", argNum),
+			Default: arg,
+			Stdout:  &utils.BellSkipper{},
+			Pointer: promptui.PipeCursor,
+		}
+		if line, err = prompt.Run(); err != nil {
+			return val, err
+		}
+		if line != "" {
+			val = append(val, line)
+		}
+	}
 	return val, nil
 }
 
 func promptDefaultBrowser(defaultValue string) (string, error) {
-	var val string
-	var err error
-	override := ""
-
-	label := "Override default browser?"
-	sel := promptui.Select{
-		Label:  label,
-		Items:  []string{"No", "Yes"},
-		Stdout: &utils.BellSkipper{},
-		Templates: &promptui.SelectTemplates{
-			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
-		},
-	}
-	if _, override, err = sel.Run(); err != nil {
-		return "", err
-	}
-
-	if override == "No" {
-		return "", nil
-	}
-
 	prompt := promptui.Prompt{
-		Label:    "Specify path to browser to use",
+		Label:    "Specify path to browser to use. Leave empty to use system default (Browser)",
 		Default:  defaultValue,
 		Stdout:   &utils.BellSkipper{},
 		Pointer:  promptui.PipeCursor,
-		Validate: validateBinary,
+		Validate: validateBinaryOrNone,
 	}
-	if val, err = prompt.Run(); err != nil {
-		return "", err
-	}
-
-	return val, nil
+	return prompt.Run()
 }
 
 func promptHistoryLimit(defaultValue int64) (int64, error) {
-	var limit string
+	var val string
 	var err error
 
 	prompt := promptui.Prompt{
 		Label:    "Maximum number of History items to keep (HistoryLimit)",
 		Validate: validateInteger,
+		Stdout:   &utils.BellSkipper{},
 		Default:  fmt.Sprintf("%d", defaultValue),
 		Pointer:  promptui.PipeCursor,
 	}
-	if limit, err = prompt.Run(); err != nil {
+	if val, err = prompt.Run(); err != nil {
 		return 0, err
 	}
-	return strconv.ParseInt(limit, 10, 64)
+	return strconv.ParseInt(val, 10, 64)
 }
 
 func promptHistoryMinutes(defaultValue int64) (int64, error) {
 	var err error
 	var minutes string
 
-	if defaultValue >= 0 {
-		return defaultValue, nil
-	}
-
 	prompt := promptui.Prompt{
 		Label:    "Number of minutes to keep items in History (HistoryMinutes)",
 		Validate: validateInteger,
-		Default:  "1440",
+		Default:  fmt.Sprintf("%d", defaultValue),
+		Stdout:   &utils.BellSkipper{},
 		Pointer:  promptui.PipeCursor,
 	}
 	if minutes, err = prompt.Run(); err != nil {
@@ -321,27 +347,22 @@ func promptLogLevel(defaultValue string) (string, error) {
 		"trace",
 	}
 
-	if defaultValue != "" && utils.StrListContains(defaultValue, logLevels) {
-		return defaultValue, nil
-	}
-
 	label := "Log Level (LogLevel)"
 	sel := promptui.Select{
 		Label:        label,
 		Items:        logLevels,
+		CursorPos:    index(logLevels, defaultValue),
 		HideSelected: false,
-		CursorPos:    1, // warn
 		Stdout:       &utils.BellSkipper{},
 		Templates: &promptui.SelectTemplates{
 			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
 		},
 	}
-	if _, val, err = sel.Run(); err != nil {
-		return "", err
-	}
-	return val, nil
+	_, val, err = sel.Run()
+	return val, err
 }
 
+// validateBinary ensures the input is a valid binary on the system
 func validateBinary(input string) error {
 	s, err := os.Stat(input)
 	if err != nil {
@@ -362,32 +383,77 @@ func validateBinary(input string) error {
 	return fmt.Errorf("not a valid valid")
 }
 
-func promptAutoConfigCheck(flag bool, action string) (bool, string, error) {
+// validateBinaryOrNone is just like validateBinary(), but we accept
+// an empty string
+func validateBinaryOrNone(input string) error {
+	if input == "" {
+		return nil
+	}
+
+	s, err := os.Stat(input)
+	if err != nil {
+		return err
+	}
+	switch runtime.GOOS {
+	case "windows":
+		// Windows doesn't have file permissions
+		if s.Mode().IsRegular() {
+			return nil
+		}
+	default:
+		// must be a file and user execute bit set
+		if s.Mode().IsRegular() && s.Mode().Perm()&0100 > 0 {
+			return nil
+		}
+	}
+	return fmt.Errorf("not a valid valid")
+}
+
+func yesNo(x bool) int {
+	if x {
+		return 0
+	}
+	return 1
+}
+
+// index returns the slice index of the value.  Useful for CursorPos
+func index(s []string, v string) int {
+	for i, x := range s {
+		if v == x {
+			return i
+		}
+	}
+	return 0
+}
+
+func promptAutoConfigCheck(flag bool) (bool, error) {
 	var val string
 	var err error
 
-	label := fmt.Sprintf("Auto update %s (AutoConfigCheck)", utils.GetHomePath("~/.aws.config"))
+	label := "Auto update AWS SSO cache? (AutoConfigCheck)"
 	sel := promptui.Select{
 		Label:        label,
 		Items:        []string{"Yes", "No"},
+		CursorPos:    yesNo(flag),
 		HideSelected: false,
 		Stdout:       &utils.BellSkipper{},
 		Templates: &promptui.SelectTemplates{
 			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
 		},
 	}
-	if _, val, err = sel.Run(); err != nil {
-		return false, "", err
-	}
+	_, val, err = sel.Run()
+	return val == "Yes", err
+}
 
-	if val == "No" {
-		return false, "", nil
-	}
+func promptConfigUrlAction(defaultValue string) (string, error) {
+	var val string
+	var err error
 
-	label = "How to open URLs via $AWS_PROFILE (ConfigUrlAction)"
-	sel = promptui.Select{
+	label := "How to open URLs via $AWS_PROFILE/aws-sso-profile (ConfigUrlAction)"
+	sel := promptui.Select{
 		Label:        label,
-		Items:        VALID_CONFIG_OPEN,
+		Items:        CONFIG_OPEN_OPTIONS,
+		CursorPos:    index(CONFIG_OPEN_OPTIONS, defaultValue),
 		HideSelected: false,
 		Stdout:       &utils.BellSkipper{},
 		Templates: &promptui.SelectTemplates{
@@ -395,11 +461,8 @@ func promptAutoConfigCheck(flag bool, action string) (bool, string, error) {
 		},
 	}
 
-	if _, val, err = sel.Run(); err != nil {
-		return false, "", err
-	}
-
-	return true, val, nil
+	_, val, err = sel.Run()
+	return val, err
 }
 
 var ssoHostnameRegexp *regexp.Regexp

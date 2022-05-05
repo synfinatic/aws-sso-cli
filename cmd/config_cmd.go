@@ -37,7 +37,7 @@ credential_process = {{ $profile.BinaryPath }} -u {{ $profile.Open }} -S "{{ $pr
 `
 )
 
-var VALID_CONFIG_OPEN []string = []string{
+var CONFIG_OPEN_OPTIONS []string = []string{
 	"clip",
 	"exec",
 	"open",
@@ -52,7 +52,7 @@ type ConfigCmd struct {
 
 func (cc *ConfigCmd) Run(ctx *RunContext) error {
 	open := ctx.Settings.ConfigUrlAction
-	if utils.StrListContains(ctx.Cli.Config.Open, VALID_CONFIG_OPEN) {
+	if utils.StrListContains(ctx.Cli.Config.Open, CONFIG_OPEN_OPTIONS) {
 		open = ctx.Cli.Config.Open
 	}
 

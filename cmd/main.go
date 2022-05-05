@@ -117,6 +117,7 @@ type CLI struct {
 	Time        TimeCmd     `kong:"cmd,help='Print how much time before current STS Token expires'"`
 	Version     VersionCmd  `kong:"cmd,help='Print version and exit'"`
 	Completions CompleteCmd `kong:"cmd,help='Manage shell completions'"`
+	Reconfig    ReconfigCmd `kong:"cmd,help='Re-run the configuration wizard'"`
 	Setup       SetupCmd    `kong:"cmd,hidden"` // need this so variables are visisble.
 }
 
@@ -146,7 +147,7 @@ func main() {
 
 	if _, err := os.Stat(cli.ConfigFile); errors.Is(err, os.ErrNotExist) {
 		log.Warnf("No config file found!  Will now prompt you for a basic config...")
-		if err = setupWizard(&runCtx); err != nil {
+		if err = setupWizard(&runCtx, false, false); err != nil {
 			log.Fatalf("%s", err.Error())
 		}
 	} else if err != nil {
@@ -331,7 +332,7 @@ func doAuth(ctx *RunContext) *sso.AWSSSO {
 
 		// should we update our config??
 		if !ctx.Cli.NoConfigCheck && ctx.Settings.AutoConfigCheck {
-			if utils.StrListContains(ctx.Settings.ConfigUrlAction, VALID_CONFIG_OPEN) {
+			if utils.StrListContains(ctx.Settings.ConfigUrlAction, CONFIG_OPEN_OPTIONS) {
 				cfgFile := utils.GetHomePath("~/.aws/config")
 
 				profiles, err := ctx.Settings.GetAllProfiles(ctx.Settings.ConfigUrlAction)
