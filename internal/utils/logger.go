@@ -28,11 +28,9 @@ func SetLogger(l *logrus.Logger) {
 	log = l
 }
 
-/*
 func GetLogger() *logrus.Logger {
 	return log
 }
-*/
 
 // this is configured by cmd/main.go, but we have this here for unit tests
 func init() {

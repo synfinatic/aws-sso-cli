@@ -2,15 +2,11 @@
 
  * [Installation](#installation)
  * [Guided Configuration](#guided-configuration)
- * [Using Auto Completion on the CLI](#using-auto-completion-on-the-cli)
- * [Integrating with the `$AWS_PROFILE` variable](#integrating-with-the-aws-profile-variable)
-	* [Configuration](#configuration)
-	* [Customize your `$AWS_PROFILE` names](#customize-your-aws-profile-names)
-	* [Using the `$AWS_PROFILE` variable](#using-the-aws-profile-variable)
-	* [Pros and Cons](#pros-and-cons)
- * [Other ways to use AWS SSO CLI](#other-ways-to-use-aws-sso-cli)
-	* [Spawn a new shell with `exec`](#spawn-a-new-shell-with-exec)
-	* [Configure your current shell with `eval`](#configure-your-current-shell-with-eval)
+ * [Enabling Auto Completion on the CLI](#enabling-auto-completion-on-the-cli)
+ * [Use `aws-sso` on the CLI for AWS API calls](#use-aws-sso-on-the-cli-for-aws-calls)
+    * [`aws-sso-profile` helper script](#aws-sso-profile-helper-script)
+    * [Using the `exec` command](#using-the-exec-command)
+    * [Using the `$AWS_PROFILE` variable](#using-the-aws-profile-variable)
  * [AWS Console Access](#aws-console-access)
 
 ## Installation
@@ -53,56 +49,125 @@ wizard will automatically run anytime you run `aws-sso` and have a missing
 For more information about configuring `aws-sso` read the
 [configuration guide](config.md).
 
-## Using Auto Completion on the CLI
+## Enabling Auto Completion on the CLI
 
 After the guided setup, it is worth running:
 
 `aws-sso install-completions`
 
-to [install tab autocomplete](config.md#install-completions) for your shell.
+to [install tab autocomplete](commands.md#install-completions) for your shell.
 
-## Integrating with the `$AWS_PROFILE` variable
+## Use `aws-sso` on the CLI for AWS API calls
 
-### Configuration
+There are three preferred ways of using `aws-sso` to make AWS API calls:
 
-The easiest way to use AWS SSO CLI is to integrate it with your existing
-`~/.aws/config` config file.  This allows you to consistently manage which AWS
-Role to use [named profiles](
-https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html).
+ 1. Use a helper script for selecting profiles by name with auto-complete
+ 1. Use the [exec](commands.md#exec) command for the interactive search
+ 1. Use the `$AWS_PROFILE` variable
+
+### `aws-sso-profile` helper script
+
+The helper script method allows you to run a command to assume an IAM role
+into your current shell.  This method has the advantage of supporting
+auto-complete of AWS Profile names and not requiring forking a new shell
+which can be confusing.
+
+#### Configuration
+
+Assuming you have installed AWS SSO CLI via Homebrew or one of the packages,
+the necessary bash/zsh/fish completion files have already been installed
+or you can find them in the [scripts directory](../scripts).
+
+You will then need to define the following bash aliases (or their
+fish/zsh equivalents) in your `~/.bash_profile`:
+
+```bash
+alias aws-sso-profile='source /usr/bin/helper-aws-sso-profile'
+alias aws-sso-clear='eval $(aws-sso eval -c)'
+```
+
+#### Usage
+
+The above defines two new commands, the first of which (`aws-sso-profile`)
+allows you to easily assume a role in your current shell with auto-complete
+generated AWS Profile names as defined by the [ProfileFormat](
+config.md#profileformat) config variable.
+
+The latter (`aws-sso-clear`), clears all the environment variables
+installed by `aws-sso-profile`.
+
+If you wish to pass additional arguments to the helper script, you can set
+the `$AWS_SSO_HELPER_ARGS` variable.
+
+Pros:
+
+ * Auto-complete makes it easy to use
+ * Doesn't fork a new shell
+
+Cons:
+
+ * More complicated one-time setup
+
+---
+
+### Using the `exec` command
+
+Use the [exec](../README.md#exec) command to create a new shell with the
+necessary AWS STS environment variables set to access AWS.
+
+#### Usage
+
+Just run: `aws-sso exec` to create a new interactive sub-shell or
+`aws-sso exec <command>` to run a command.
+
+Pros:
+
+ * No shell configuration required
+ * Allows picking a role via CLI arguments or via the interactive search feature
+ * Unlike with the config/`$AWS_PROFILE` integration, it supports opening URLs
+    in your browser, printing or copying to your clipboard
+ * Allows you to quickly access any role in any account without remembering the
+    exact `$AWS_PROFILE` name
+
+Cons:
+
+ * Can be confusing when you start nesting shells inside of each other
+
+---
+
+### Using the `$AWS_PROFILE` variable
+
+If you have existing tooling using [named profiles](
+https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html)
+and the `$AWS_PROFILE` environment variable, AWS SSO CLI can support that as well.
+
+#### Configuration
 
 Run: `aws-sso config --open [open|clip|exec]`
 
 This will add the following lines (example) to your `~/.aws/config` file:
 
-```
+```ini
 # BEGIN_AWS_SSO
 
 [profile Name1]
-credential_process = /usr/local/bin/aws-sso -u <open> process --sso <name> --arn <arn1>
+credential_process = /usr/bin/aws-sso -u <open> process --sso <name> --arn <arn1>
 
 [profile Name2]
-credential_process = /usr/local/bin/aws-sso -u <open> process --sso <name> --arn <arn2>
+credential_process = /usr/bin/aws-sso -u <open> process --sso <name> --arn <arn2>
 
 # END_AWS_SSO
 ```
 
-For more information about this feature, see [the documentation](../README.md#config)
-and the [ConfigVariables](config.md#configvariables) config file setting to set
-[AWS global config file settings](
-https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html).
+For more information about this feature, see the following sections of the config
+docs:
 
-### Customize your `$AWS_PROFILE` names
+ * [ProfileFormat](config.md#profileformat) and [Profile](config.md#profile)
+ * [AutoConfigCheck / ConfigUrlAction](config.md#autoconfigcheck-configurlaction)
+ * [ConfigVariables](config.md#configvariables)
 
-By default, each AWS role is given an `$AWS_PROFILE` name matching the
-`<AccountID>:<RoleName>`.  You can change this value in one of two ways:
 
- 1. Set the [ProfileFormat](config.md#profileformat) variable to change
-	the automatically generated value for each role to a template of your
-	choice.
- 1. Set the [Profile](config.md#profile) value for the individual role
-	to any value you wish.
-
-### Using the `$AWS_PROFILE` variable
+#### Usage
 
 Once your `~/.aws/config` file has been modified as described above, you can
 access any AWS SSO role the same way you would access a traditional role defined
@@ -131,8 +196,6 @@ This may (or may not) require human inteaction to authenticate via your SSO
 provider.  Future calls will then use the cached STS credentials until they
 expire or are [flushed](../README.md#flush).
 
-### Pros and Cons
-
 Pros:
 
  * Don't need to learn any new commands once you have it setup
@@ -141,52 +204,8 @@ Pros:
 Cons:
 
  * Does not support printing URLs to the console for the user to paste into a browser
- * Can be difficult to manage with lots of Accounts/Roles
- * Must sometimes open a browser to execute a command which can be confusing
-
-## Other ways to use AWS SSO CLI
-
-There are other ways to use AWS SSO CLI which do not involve modifying
-`~/.aws/config` and setting `$AWS_PROFILE`.  These work great if you are only
-using AWS SSO to manage access to your roles.
-
-### Spawn a new shell with `exec`
-
-Use the [exec](../README.md#exec) command to create a new shell with the
-necessary AWS STS environment variables set to access AWS.
-
-Pros:
-
- * Allows picking a role via CLI arguments or via the interactive search feature
- * Unlike with the config/`$AWS_PROFILE` integration, it supports opening URLs
-    in your browser, printing or copying to your clipboard
- * Allows you to quickly access any role in any account without remembering the
-    exact `$AWS_PROFILE` name
-
-Cons:
-
- * Can be confusing when you start nesting shells inside of each other
- * Can avoid the shell-in-a-shell bit, but is harder to use because every command
-	must be prefixed with `aws-sso ...`
- * Exiting a shell may cause your current working directory or other shell ENV
-	variables to change
-
-### Configure your current shell with `eval`
-
-Use the [eval](../README.md#eval) command to modify the current shell with the
-necessary AWS STS environment variables.
-
-Pros:
-
- * Less confusing to manage your shell-in-a-shell situation that can happen with `exec`
- * Unlike with the config/`$AWS_PROFILE` integration, it supports opening URLs in your
-    browser, printing or copying to your clipboard
-
-Cons:
-
- * Not able to use the interactive search feature found in `exec`
- * Auto-complete functionality doesn't work because bash/etc get confused by the
-    `eval $(aws-sso ...)` bit
+ * `aws-sso` must sometimes open a browser to execute a command which can be confusing
+ * Must remember the name of every named profile
 
 ## AWS Console Access
 
@@ -207,13 +226,14 @@ Using Firefox containers requires a special configuration in your `~/.aws-sso/co
 Regardless if you are using Firefox containers or not, using `aws-sso` to login is straight
 forward:
 
- 1. If you have existing AWS API credentials loaded in your shell, typing `aws-sso console` will
-	generate a URL to log you into the same role.
+ 1. If you have existing AWS API credentials loaded in your shell, typing
+        `aws-sso console` will generate a URL to log you into the same role.
  1. Choosing a role can be done via the same CLI options as `exec`
- 1. If no CLI options are provided _AND_ you don't have AWS API credentials loaded, the
-	tags based search feature will start.
- 1. If you have existing AWS API credentials in your shell and you want to login to a different
-	role via the tag based search feture, use the `-P` / `--prompt` flag.
+ 1. If no CLI options are provided _AND_ you don't have AWS API credentials
+        loaded, the tags based search feature will start.
+ 1. If you have existing AWS API credentials in your shell and you want to login
+        to a different role via the tag based search feture, use the `-P` /
+        `--prompt` flag.
 
 Demo of how this works:
 ![FirefoxContainers Demo](

@@ -23,8 +23,8 @@ import (
 	//	"os"
 	"strings"
 
+	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/storage"
-	"github.com/synfinatic/aws-sso-cli/utils"
 	"gopkg.in/ini.v1"
 )
 

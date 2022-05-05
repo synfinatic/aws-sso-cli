@@ -154,7 +154,6 @@ Some examples:
 	`a-string-like-this` using the [kebabcase function](
 	http://masterminds.github.io/sprig/strings.html#kebabcase).
 
-
 For a full list of available variables, [see here](config.md#profileformat).
 
 To see a list of values across your roles for a given variable, you can use
@@ -232,13 +231,13 @@ first set the `AWS_SSO` environment variable in your shell:
 
 ```bash
 $ export AWS_SSO=OtherInstance
-$ aws eval ...
+$ aws-sso console ...
 ```
 
 Note, the following shorter version of specifying it as a single command does not work:
 
 ```bash
-$ AWS_SSO=OtherInstance aws-sso eval ...
+$ AWS_SSO=OtherInstance aws-sso console ...
 ```
 
 ### Error: Invalid grant provided

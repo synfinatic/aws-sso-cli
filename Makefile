@@ -1,4 +1,4 @@
-PROJECT_VERSION := 1.8.1
+PROJECT_VERSION := 1.9.0
 DOCKER_REPO     := synfinatic
 PROJECT_NAME    := aws-sso
 
@@ -63,8 +63,7 @@ install: $(DIST_DIR)$(PROJECT_NAME)  ## install binary in $INSTALL_PREFIX
 	install -c $(DIST_DIR)$(PROJECT_NAME) $(INSTALL_PREFIX)/bin
 
 uninstall:  ## Uninstall binary from $INSTALL_PREFIX
-	rm /usr/local/bin/$(PROJECT_NAME)
-
+	rm $(INSTALL_PREFIX)/bin/$(PROJECT_NAME)
 
 HOMEBREW := ./homebrew/Formula/aws-sso-cli.rb
 

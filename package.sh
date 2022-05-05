@@ -27,6 +27,14 @@ files:
     file: /root/dist/aws-sso-${VERSION}-linux-${CPU}
     mode: "0755"
     user: "root"
+  "/usr/bin/helper-aws-sso-role":
+    file: /root/scripts/helper-aws-sso-role
+    mode: "0755"
+    user: "root"
+  "/etc/bash_completion.d/aws-sso-role":
+    file: /root/scripts/aws-sso-role-completion.bash
+    mode: "0644"
+    user: "root"
 
 EOF
     pushd /root/dist

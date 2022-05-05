@@ -26,8 +26,8 @@ import (
 
 	"github.com/c-bata/go-prompt"
 	//	"github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
-	"github.com/synfinatic/aws-sso-cli/utils"
 )
 
 type CompleterExec = func(*RunContext, *sso.AWSSSO, int64, string) error

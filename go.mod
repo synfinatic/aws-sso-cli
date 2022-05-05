@@ -16,8 +16,8 @@ require (
 	github.com/posener/complete v1.2.3
 	github.com/sirupsen/logrus v1.7.0
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
-	github.com/stretchr/testify v1.7.0
-	github.com/synfinatic/gotable v0.0.1
+	github.com/stretchr/testify v1.7.1
+	github.com/synfinatic/gotable v0.0.2
 	github.com/willabides/kongplete v0.2.0
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
 )
@@ -30,6 +30,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.9.0
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.10.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.14.0
+	github.com/riywo/loginshell v0.0.0-20200815045211-7d26008be1ab
 	gopkg.in/ini.v1 v1.66.4
 )
 

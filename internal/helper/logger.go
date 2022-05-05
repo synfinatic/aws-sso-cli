@@ -1,4 +1,4 @@
-package main
+package helper
 
 /*
  * AWS SSO CLI
@@ -19,28 +19,22 @@ package main
  */
 
 import (
-	"fmt"
-	"os"
-
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
+	"github.com/sirupsen/logrus"
 )
 
-type TimeCmd struct{}
+var log *logrus.Logger
 
-func (cc *TimeCmd) Run(ctx *RunContext) error {
-	expires, isset := os.LookupEnv("AWS_SSO_SESSION_EXPIRATION")
-	if !isset {
-		return nil // no output if nothing is set
-	}
+func SetLogger(l *logrus.Logger) {
+	log = l
+}
 
-	t, err := utils.ParseTimeString(expires)
-	if err != nil {
-		return err
-	}
-	exp, err := utils.TimeRemain(t, false)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("%s", exp)
-	return nil
+/*
+func GetLogger() *logrus.Logger {
+	return log
+}
+*/
+
+// this is configured by cmd/main.go, but we have this here for unit tests
+func init() {
+	log = logrus.New()
 }

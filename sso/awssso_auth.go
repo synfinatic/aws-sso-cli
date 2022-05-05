@@ -27,8 +27,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	oidctypes "github.com/aws/aws-sdk-go-v2/service/ssooidc/types"
+	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/storage"
-	"github.com/synfinatic/aws-sso-cli/utils"
 )
 
 // Authenticate retrieves an AWS SSO AccessToken from our cache or by

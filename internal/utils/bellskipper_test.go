@@ -1,4 +1,4 @@
-package main
+package utils
 
 /*
  * AWS SSO CLI
@@ -19,28 +19,22 @@ package main
  */
 
 import (
-	"fmt"
-	"os"
+	"testing"
 
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
+	"github.com/stretchr/testify/assert"
 )
 
-type TimeCmd struct{}
+func TestBellSkipper(t *testing.T) {
+	b := BellSkipper{}
 
-func (cc *TimeCmd) Run(ctx *RunContext) error {
-	expires, isset := os.LookupEnv("AWS_SSO_SESSION_EXPIRATION")
-	if !isset {
-		return nil // no output if nothing is set
-	}
+	bytes := []byte("this is my buffer")
+	i, err := b.Write(bytes)
+	assert.NoError(t, err)
+	assert.Equal(t, len(bytes), i)
+	assert.NoError(t, b.Close())
 
-	t, err := utils.ParseTimeString(expires)
-	if err != nil {
-		return err
-	}
-	exp, err := utils.TimeRemain(t, false)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("%s", exp)
-	return nil
+	bytes = []byte{7}
+	i, err = b.Write(bytes)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, i)
 }

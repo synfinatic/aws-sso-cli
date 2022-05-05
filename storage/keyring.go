@@ -28,7 +28,7 @@ import (
 
 	"github.com/99designs/keyring"
 	// "github.com/davecgh/go-spew/spew"
-	"github.com/synfinatic/aws-sso-cli/utils"
+	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"golang.org/x/crypto/ssh/terminal"
 )
 

@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### New Features 
+
+ * Add support for `aws-sso-profile` and `aws-sso-clear` helper functions which 
+	are automatically installed #357
+ * Add `completions` command which supports `--install` and `--uninstall` flags
+ * Enhanced `list` command with CSV output and basic filtering
+
+### Changes
+
+ * `install-completions` is no longer a valid command.  Please see the [FAQ](
+	docs/FAQ.md#managing-shell-completion) for more details.
+ * Added `Profile` to the list of default fields for the `list` command
+
 ## [v1.8.1] - 2022-05-02
 
 ### New Features
