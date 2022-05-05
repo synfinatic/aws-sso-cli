@@ -88,6 +88,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"AutoConfigCheck":                           false,
 	"ConfigUrlAction":                           "",
 	"ProfileFormat":                             `{{ .AccountId }}_{{ .RoleName }}`,
+	"CacheRefresh":                              24, // in hours
 }
 
 type CLI struct {

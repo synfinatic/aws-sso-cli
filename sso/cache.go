@@ -102,8 +102,14 @@ func (c *Cache) Expired(s *SSOConfig) error {
 		return fmt.Errorf("Local cache is out of date; current cache version %d is less than %d", c.Version, CACHE_VERSION)
 	}
 
+	// negative values disable refresh
+	if s.settings.CacheRefresh <= 0 {
+		return nil
+	}
+
+	ttl := s.settings.CacheRefresh * 60 * 60 // convert hours to seconds
 	cache := c.GetSSO()
-	if cache.LastUpdate+CACHE_TTL < time.Now().Unix() {
+	if cache.LastUpdate+ttl < time.Now().Unix() {
 		return fmt.Errorf("Local cache is out of date; TTL has been exceeded.")
 	}
 

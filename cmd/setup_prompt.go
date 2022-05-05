@@ -129,6 +129,22 @@ func promptAwsSsoRegion(defaultValue string) (string, error) {
 	return val, nil
 }
 
+func promptCacheRefresh(defaultValue int64) (int64, error) {
+	var val string
+	var err error
+
+	prompt := promptui.Prompt{
+		Label:    "Number of hours between refreshing AWS SSO cache (0 to disable)",
+		Validate: validateInteger,
+		Default:  fmt.Sprintf("%d", defaultValue),
+		Pointer:  promptui.PipeCursor,
+	}
+	if val, err = prompt.Run(); err != nil {
+		return 0, err
+	}
+	return strconv.ParseInt(val, 10, 64)
+}
+
 func promptDefaultRegion(defaultValue string) (string, error) {
 	var val string
 	var err error
