@@ -38,7 +38,6 @@ import (
 
 const (
 	AWS_SSO_SESSION_EXPIRATION_FORMAT = "2006-01-02 15:04:05 -0700 MST"
-	CACHE_TTL                         = 60 * 60 * 24 // 1 day in seconds
 )
 
 type Settings struct {
@@ -67,6 +66,7 @@ type Settings struct {
 	FirefoxOpenUrlInContainer bool                   `koanf:"FirefoxOpenUrlInContainer" yaml:"FirefoxOpenUrlInContainer"`
 	AutoConfigCheck           bool                   `koanf:"AutoConfigCheck" yaml:"AutoConfigCheck"`
 	ConfigUrlAction           string                 `koanf:"ConfigUrlAction" yaml:"ConfigUrlAction"`
+	CacheRefresh              int64                  `koanf:"CacheRefresh" yaml:"CacheRefresh"`
 }
 
 type SSOConfig struct {

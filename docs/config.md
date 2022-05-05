@@ -34,6 +34,7 @@ SSOConfig:
 # See description below for these options
 DefaultRegion: <AWS_DEFAULT_REGION>
 DefaultSSO: <name of AWS SSO>
+CacheRefresh: <hours>
 
 Browser: <path to web browser>
 UrlAction: [clip|exec|print|printurl|open]
@@ -198,6 +199,12 @@ in order to assume a role with `Via`.
 If you only have a single AWS SSO instance, then it doesn't really matter what you call it,
 but if you have two or more, than `Default` is automatically selected unless you manually
 specify it here, on the CLI (`--sso`), or via the `AWS_SSO` environment variable.
+
+## CacheRefresh
+
+This is the number of hours between automatically refreshing your AWS SSO cache to detect
+any changes in the roles you have been granted access to.  The default is 24 (1 day).  Disable
+this feature by setting to any value <= 0.
 
 ## Browser / UrlAction / UrlExecCommand
 

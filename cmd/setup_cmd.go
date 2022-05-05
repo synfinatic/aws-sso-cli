@@ -28,6 +28,7 @@ type SetupCmd struct {
 	DefaultRegion    string `kong:"help='Default AWS region for running commands (or \"None\")'"`
 	SSOStartHostname string `kong:"help='AWS SSO User Portal Hostname'"`
 	SSORegion        string `kong:"help='AWS SSO Instance Region'"`
+	CacheRefresh     int64  `kong:"help='Number of hours between AWS SSO cache is refreshed'"`
 	HistoryLimit     int64  `kong:"help='Number of items to keep in History',default=-1"`
 	HistoryMinutes   int64  `kong:"help='Number of minutes to keep items in History',default=-1"`
 	DefaultLevel     string `kong:"help='Logging level [error|warn|info|debug|trace]'"`
@@ -47,7 +48,7 @@ func setupWizard(ctx *RunContext) error {
 	var err error
 	var instanceName, startHostname, ssoRegion, awsRegion, urlAction string
 	var logLevel, firefoxBrowserPath, browser, configUrlAction string
-	var hLimit, hMinutes int64
+	var hLimit, hMinutes, cacheRefresh int64
 	var autoConfigCheck bool
 	urlExecCommand := []string{}
 	firefoxOpenUrlInContainer := false
@@ -73,6 +74,10 @@ func setupWizard(ctx *RunContext) error {
 	}
 
 	if ssoRegion, err = promptAwsSsoRegion(ctx.Cli.Setup.SSORegion); err != nil {
+		return err
+	}
+
+	if cacheRefresh, err = promptCacheRefresh(ctx.Cli.Setup.CacheRefresh); err != nil {
 		return err
 	}
 
@@ -124,6 +129,7 @@ func setupWizard(ctx *RunContext) error {
 	s := sso.Settings{
 		DefaultSSO:                instanceName,
 		SSO:                       map[string]*sso.SSOConfig{},
+		CacheRefresh:              cacheRefresh,
 		UrlAction:                 urlAction,
 		UrlExecCommand:            urlExecCommand,
 		FirefoxOpenUrlInContainer: firefoxOpenUrlInContainer,

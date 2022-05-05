@@ -329,7 +329,14 @@ func (suite *CacheTestSuite) TestDeleteOldHistory() {
 
 func (suite *CacheTestSuite) TestExpired() {
 	t := suite.T()
-	assert.Error(t, suite.cache.Expired(nil))
+	s := SSOConfig{
+		settings: &Settings{
+			CacheRefresh: 24,
+		},
+	}
+	assert.Error(t, suite.cache.Expired(&s))
+	s.settings.CacheRefresh = 0
+	assert.NoError(t, suite.cache.Expired(&s))
 }
 
 func (suite *CacheTestSuite) TestGetRole() {
