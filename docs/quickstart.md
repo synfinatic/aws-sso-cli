@@ -2,7 +2,10 @@
 
  * [Installation](#installation)
  * [Guided Configuration](#guided-configuration)
- * [Enabling Auto Completion on the CLI](#enabling-auto-completion-on-the-cli)
+ * [Enabling auto-completion in your shell](#enabling-auto-completion-in-your-shell)
+    * [First time aws-sso users](#first-time-aws-sso-users)
+    * [Upgrading from before v1.9.0](#upgrading-from-before-v190)
+    * [Upgrading from after v1.9.0](#upgrading-from-after-v190)
  * [Use `aws-sso` on the CLI for AWS API calls](#use-aws-sso-on-the-cli-for-aws-calls)
     * [`aws-sso-profile` helper script](#aws-sso-profile-helper-script)
     * [Using the `exec` command](#using-the-exec-command)
@@ -25,8 +28,8 @@
     1. Your binary will be created in the `dist` directory
     1. Run `make install` to install in /usr/local/bin
 
-Note that the release binaries and packages are not officially signed at this time so
-systems may generate warnings.
+Note that the release binaries and packages are not officially signed at this
+time so systems may generate warnings.
 
 ## Guided Configuration
 
@@ -49,13 +52,68 @@ wizard will automatically run anytime you run `aws-sso` and have a missing
 For more information about configuring `aws-sso` read the
 [configuration guide](config.md).
 
-## Enabling Auto Completion on the CLI
+## Enabling auto-completion in your shell
 
-After the guided setup, it is worth running:
+For version 1.9.0, `aws-sso` enhanced it's shell integration and auto-complete
+functionality.  The result is an improved [user experience](
+commands.md#shell-helpers) but requires a change that is not 100% backwards
+compatible.  Please follow the instructions below that match your sitation.
 
-`aws-sso install-completions`
+As always, any time you modify your shell init scripts, you must restart your
+shell for those changes to take effect.
 
-to [install tab autocomplete](commands.md#install-completions) for your shell.
+### First time aws-sso users
+
+Guided setup should of prompted you to install auto-completions, but
+you can always re-run it for a different shell:
+
+`aws-sso completions -I`
+
+or if you wish to uninstall them:
+
+`aws-sso completions -U`
+
+---
+
+### Upgrading from before v1.9.0
+
+First, there is no longer an `install-completions` command as of v1.9.0,
+that functionality (and more) has been moved to `completions`.
+
+You should _first_ uninstall the old completions (sorry) and then install
+the new versions.  This manual uninstall/re-install is a one time thing,
+but necessary.
+
+ 1. `aws-sso completions --uninstall-pre-19`
+ 2. `aws-sso completions -I`
+
+Users of older versions will note that starting in v1.9.0, running
+`completions -I` or `completions -U` will present you a diff of file changes
+for you to accept.
+
+Also, unlike with older versions, only your current shell is modified when
+you run `completions -I` or `completions -U`, but 
+`completions --uninstall-pre-19` uses the original code/library and will
+modify your `bash`, `zsh` and `fish` init scripts.
+
+---
+
+### Upgrading from after 1.9.0
+
+Upgrading from versions 1.9.0 or better is just like installing for
+first time users:
+
+`aws-sso completions -I`
+
+Any changes will be presented to you in diff format and you will be given
+the option to accept or reject the changes.
+
+---
+
+### More information
+
+More information on auto-completion can be found in the documentation
+for the [completions command](commands.md#completions).
 
 ## Use `aws-sso` on the CLI for AWS API calls
 
@@ -72,19 +130,11 @@ into your current shell.  This method has the advantage of supporting
 auto-complete of AWS Profile names and not requiring forking a new shell
 which can be confusing.
 
-#### Configuration
+Full documentation for auto-completion [is available here](
+commands.md#shell-helpers).
 
-Assuming you have installed AWS SSO CLI via Homebrew or one of the packages,
-the necessary bash/zsh/fish completion files have already been installed
-or you can find them in the [scripts directory](../scripts).
-
-You will then need to define the following bash aliases (or their
-fish/zsh equivalents) in your `~/.bash_profile`:
-
-```bash
-alias aws-sso-profile='source /usr/bin/helper-aws-sso-profile'
-alias aws-sso-clear='eval $(aws-sso eval -c)'
-```
+**Note:** Use of this feature requires [enabling auto-completion](
+#enabling-auto-completion-in-your-shell) as described above.
 
 #### Usage
 

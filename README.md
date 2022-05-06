@@ -5,6 +5,7 @@
 [![Codecov Badge](https://codecov.io/gh/synfinatic/aws-sso-cli/branch/main/graph/badge.svg?token=F8454GS4HS)](https://codecov.io/gh/synfinatic/aws-sso-cli)
 
  * [About](#about)
+ * [How to read these docs](#how-to-read-these-docs)
  * [What does AWS SSO CLI do?](#what-does-aws-sso-cli-do)
  * [Demo](#demo)
  * [Security](#security)
@@ -37,6 +38,20 @@ AWS SSO CLI requires your AWS account(s) to be setup with [AWS SSO](
 https://aws.amazon.com/single-sign-on/)!  If your organization is using the
 older SAML integration (typically you will have multiple tiles in OneLogin/Okta)
 then this won't work for you.
+
+## How to read these docs
+
+In general, I do feature development in feature branches and then merge to
+the `main` branch when that feature is stable.  I also tend to try to include
+any documentation changes in those pull requests.  Once a release is ready,
+I tag the tip of `main` and do the release.
+
+What that means is that the documentation you see here (tip of `main`) may
+include features that are not in the latest release.  To view the docs for
+your release, please use the branch selector ![branch selector](
+https://user-images.githubusercontent.com/1075352/167158202-93312c5c-cbb8-403f-9e2b-4eb34e2634f3.png)
+near the top of this page to choose the tag of the version of AWS SSO CLI
+that you are using.
 
 ## What does AWS SSO CLI do?
 

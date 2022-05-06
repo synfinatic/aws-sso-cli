@@ -262,7 +262,7 @@ Flags:
  * `--type`, `-t` -- Type of credentials to flush:
     * `sts` -- Flush temporary STS credentials for IAM roles
     * `sso` -- Flush temporary AWS SSO credentials
-	* `all` -- Flush temporary STS and SSO  credentials
+    * `all` -- Flush temporary STS and SSO  credentials
 
 ---
 
@@ -283,7 +283,7 @@ By default the following key/values are available as tags to your roles:
  * `AccountName` -- Account Name for any role defined in config (see below)
  * `AccountAlias` --- AWS Account Alias defined by account administrator
  * `History` -- Tag tracking if this role was recently used.  See `HistoryLimit`
-                in config.
+        in config.
 
 ---
 
@@ -303,8 +303,8 @@ Configures your appropriate shell configuration file to add auto-complete
 functionality for commands, flags and options.  Must restart your shell
 for this to take effect.
 
-For more information about this feature, please read [AWS SSO Shell Completion](
-shell-completion.md).
+For more information about this feature, please read [the quickstart](
+quickstart.md#enabling-auto-completion-in-your-shell).
 
 Flags:
 
@@ -316,8 +316,8 @@ Flags:
 
 **Note:** You should uninstall the older pre-v1.9 completions before installing
 the new version.  Once the new version is installed, `--uninstall-pre-19` will
-refuse to run so you will have to either manually edit the file or run `--uninstall`,
-then `--uninstall-pre-19` and finally `--install` again.
+refuse to run so you will have to either manually edit the file or run
+`--uninstall`, then `--uninstall-pre-19` and finally `--install` again.
 
 ## Environment Variables
 
@@ -331,7 +331,8 @@ The following environment variables are honored by `aws-sso`:
  * `AWS_SSO` -- Override default AWS SSO instance to use
  * `AWS_SSO_ROLE_NAME` -- Used for `--role`/`-R` with some commands
  * `AWS_SSO_ACCOUNT_ID` -- Used for `--account`/`-A` with some commands
- * `AWS_SSO_ROLE_ARN` -- Used for `--arn`/`-a` with some commands and with `eval --refresh`
+ * `AWS_SSO_ROLE_ARN` -- Used for `--arn`/`-a` with some commands and with
+     `eval --refresh`
 
 The `file` SecureStore will use the `AWS_SSO_FILE_PASSWORD` environment
 variable for the password if it is set. (Not recommended.)
@@ -366,13 +367,14 @@ The following environment variables are specific to `aws-sso`:
 **Note:** AWS SSO does set `$AWS_PROFILE` to avoid problems with the AWS tooling
 and SDK.
 
----
-
 ## Shell Helpers
 
 These are optional helper functions installed in your shell as part of the [completions](
 #completions) command.  Currently only bash is supported.  To install these helper
-functions, please see the [shell completions](shell-completions.md) page.
+functions, please see the [quickstart](quickstart.md) page.
+
+**Important:** Unlike the commands above, these are standalone shell commands
+and you should _NOT_ prefix them with `aws-sso`.
 
 By default, these commands uses your default AWS SSO instance, but you can override
 this by first exporting `AWS_SSO` to the value you want to use.  

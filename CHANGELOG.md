@@ -11,9 +11,11 @@
 
 ### Changes
 
- * `install-completions` is no longer a valid command.  Please see the [FAQ](
-	docs/FAQ.md#managing-shell-completion) for more details.
+ * `install-completions` is no longer a valid command.  Please see the
+    [quickstart](docs/quickstart.md#enabling-auto-completion-in-your-shell)
+    for more details.
  * Added `Profile` to the list of default fields for the `list` command
+ * `list` command can now generate a CSV
 
 ## [v1.8.1] - 2022-05-02
 
