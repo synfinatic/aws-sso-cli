@@ -35,7 +35,7 @@ import (
 const (
 	CONFIG_PREFIX = "# BEGIN_AWS_SSO_CLI"
 	CONFIG_SUFFIX = "# END_AWS_SSO_CLI"
-	FILE_TEMPLATE = "%s\n\n%s\n\n%s\n"
+	FILE_TEMPLATE = "%s\n%s\n%s\n"
 )
 
 type FileEdit struct {
