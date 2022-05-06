@@ -27,14 +27,11 @@ import (
 
 const (
 	AWS_CONFIG_FILE = "~/.aws/config"
-	CONFIG_TEMPLATE = `# BEGIN_AWS_SSO_CLI
-{{ range $sso, $struct := . }}{{ range $arn, $profile := $struct }}
+	CONFIG_TEMPLATE = `{{range $sso, $struct := . }}{{ range $arn, $profile := $struct }}
 [profile {{ $profile.Profile }}]
 credential_process = {{ $profile.BinaryPath }} -u {{ $profile.Open }} -S "{{ $profile.Sso }}" process --arn {{ $profile.Arn }}
 {{ range $key, $value := $profile.ConfigVariables }}{{ $key }} = {{ $value }}
-{{end}}{{end}}{{end}}
-# END_AWS_SSO_CLI
-`
+{{end}}{{end}}{{end}}`
 )
 
 var VALID_CONFIG_OPEN []string = []string{
