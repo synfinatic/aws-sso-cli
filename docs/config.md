@@ -372,8 +372,8 @@ For more information, [see the FAQ](FAQ.md#how-to-configure-profileformat).
 
 Define a set of [config settings](
 https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html)
-for each profile in your `~/.aws/config` file generated via the [config](
-../README.md#config) command.
+for each profile in your `~/.aws/config` file generated via the [config-profiles](
+commands.md#config-profiles) command.
 
 Some examples to consider:
 
