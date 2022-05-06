@@ -55,24 +55,36 @@ var AvailableAwsSSORegions []string = []string{
 	"us-gov-west-1",
 }
 
-func promptSsoInstance(defaultValue string) (string, error) {
+var ssoNameRegexp *regexp.Regexp
+
+func promptSsoInstance(defaultValue string) string {
 	var val string
 	var err error
 
 	// Name our SSO instance
 	prompt := promptui.Prompt{
-		Label:    "SSO Instance Name (DefaultSSO)",
-		Validate: validateSSOName,
-		Default:  defaultValue,
-		Pointer:  promptui.PipeCursor,
+		Label: "SSO Instance Name (DefaultSSO)",
+		Validate: func(input string) error {
+			if ssoNameRegexp == nil {
+				ssoNameRegexp, _ = regexp.Compile(`^[a-zA-Z0-9-_@:]+$`)
+			}
+			if len(input) > 0 && ssoNameRegexp.Match([]byte(input)) {
+				return nil
+			}
+			return fmt.Errorf("SSO Name must be a valid string")
+		},
+		Default: defaultValue,
+		Pointer: promptui.PipeCursor,
 	}
 	if val, err = prompt.Run(); err != nil {
-		return "", err
+		log.Fatal(err)
 	}
-	return val, nil
+	return val
 }
 
-func promptStartUrl(defaultValue string) (string, error) {
+var ssoHostnameRegexp *regexp.Regexp
+
+func promptStartUrl(defaultValue string) string {
 	var val string
 	var err error
 	validFQDN := false
@@ -80,13 +92,21 @@ func promptStartUrl(defaultValue string) (string, error) {
 	for !validFQDN {
 		// Get the hostname of the AWS SSO start URL
 		prompt := promptui.Prompt{
-			Label:    "SSO Start URL Hostname (XXXXXXX.awsapps.com)",
-			Validate: validateSSOHostname,
-			Default:  defaultValue,
-			Pointer:  promptui.PipeCursor,
+			Label: "SSO Start URL Hostname (XXXXXXX.awsapps.com)",
+			Validate: func(input string) error {
+				if ssoHostnameRegexp == nil {
+					ssoHostnameRegexp, _ = regexp.Compile(`^([a-zA-Z0-9-]+)(\.awsapps\.com)?$`)
+				}
+				if len(input) > 0 && len(input) < 64 && ssoHostnameRegexp.Match([]byte(input)) {
+					return nil
+				}
+				return fmt.Errorf("Invalid DNS hostname: %s", input)
+			},
+			Default: defaultValue,
+			Pointer: promptui.PipeCursor,
 		}
 		if val, err = prompt.Run(); err != nil {
-			return "", err
+			log.Fatal(err)
 		}
 
 		if _, err := net.LookupHost(fmt.Sprintf(START_FQDN_FORMAT, val)); err == nil {
@@ -96,10 +116,10 @@ func promptStartUrl(defaultValue string) (string, error) {
 		}
 	}
 
-	return val, nil
+	return val
 }
 
-func promptAwsSsoRegion(defaultValue string) (string, error) {
+func promptAwsSsoRegion(defaultValue string) string {
 	var val string
 	var err error
 
@@ -123,29 +143,13 @@ func promptAwsSsoRegion(defaultValue string) (string, error) {
 		},
 	}
 	if _, val, err = sel.Run(); err != nil {
-		return "", err
+		log.Fatal(err)
 	}
 
-	return val, nil
+	return val
 }
 
-func promptCacheRefresh(defaultValue int64) (int64, error) {
-	var val string
-	var err error
-
-	prompt := promptui.Prompt{
-		Label:    "Number of hours between refreshing AWS SSO cache (0 to disable)",
-		Validate: validateInteger,
-		Default:  fmt.Sprintf("%d", defaultValue),
-		Pointer:  promptui.PipeCursor,
-	}
-	if val, err = prompt.Run(); err != nil {
-		return 0, err
-	}
-	return strconv.ParseInt(val, 10, 64)
-}
-
-func promptDefaultRegion(defaultValue string) (string, error) {
+func promptDefaultRegion(defaultValue string) string {
 	var val string
 	var err error
 
@@ -155,7 +159,7 @@ func promptDefaultRegion(defaultValue string) (string, error) {
 
 	for _, v := range defaultRegions {
 		if v == defaultValue {
-			return v, nil
+			return v
 		}
 	}
 
@@ -171,19 +175,19 @@ func promptDefaultRegion(defaultValue string) (string, error) {
 		},
 	}
 	if _, val, err = sel.Run(); err != nil {
-		return "", err
+		log.Fatal(err)
 	}
 
 	if val == "None" {
 		val = ""
 	}
 
-	return val, nil
+	return val
 }
 
 // promptUseFirefox asks if the user wants to use firefox containers
 // and if so, returns the path to the Firefox binary
-func promptUseFirefox(defaultValue string) (string, error) {
+func promptUseFirefox(defaultValue string) string {
 	var val, useFirefox string
 	var err error
 	idx := 1
@@ -204,7 +208,7 @@ func promptUseFirefox(defaultValue string) (string, error) {
 		},
 	}
 	if _, useFirefox, err = sel.Run(); err != nil {
-		return "", err
+		log.Fatal(err)
 	}
 
 	if useFirefox == "Yes" {
@@ -217,17 +221,17 @@ func promptUseFirefox(defaultValue string) (string, error) {
 			Validate: validateBinary,
 		}
 		if val, err = prompt.Run(); err != nil {
-			return "", err
+			log.Fatal(err)
 		}
 	}
 
-	return val, nil
+	return val
 }
 
-func promptUrlAction(defaultValue string) (string, error) {
+func promptUrlAction(defaultValue string) string {
 	var val string
 	var err error
-	items := []string{"open", "print", "printurl", "clip"}
+	items := []string{"clip", "exec", "open", "print", "printurl"}
 
 	// How should we deal with URLs?  Note we don't support `exec`
 	// here since that is an "advanced" feature
@@ -241,19 +245,22 @@ func promptUrlAction(defaultValue string) (string, error) {
 			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
 		},
 	}
-	_, val, err = sel.Run()
-	return val, err
+	if _, val, err = sel.Run(); err != nil {
+		log.Fatal(err)
+	}
+
+	return val
 }
 
-func promptUrlExecCommand(defaultValue []string) ([]string, error) {
-	var val []string
+func promptUrlExecCommand(defaultValue []interface{}) []interface{} {
+	var val []interface{}
 	var err error
 	var line string
 	argNum := 1
 
 	fmt.Printf("Please enter one per line, the command and list of arguments for UrlExecCommand\n")
 
-	command := defaultValue[0]
+	command := defaultValue[0].(string)
 	prompt := promptui.Prompt{
 		Label:    "Binary to execute to open URLs",
 		Default:  command,
@@ -261,36 +268,44 @@ func promptUrlExecCommand(defaultValue []string) ([]string, error) {
 		Validate: validateBinary,
 		Pointer:  promptui.PipeCursor,
 	}
+
 	if line, err = prompt.Run(); err != nil {
-		return val, err
+		log.Fatal(err)
 	}
 
-	val = append(val, line)
+	val = append(val, interface{}(line))
 
 	// zero out the defaults if we change the command to execute
 	if line != defaultValue[0] {
-		defaultValue = []string{}
+		defaultValue = []interface{}{}
 	}
 
 	for line != "" {
-		arg := defaultValue[argNum]
+		arg := ""
+		if argNum < len(defaultValue) {
+			arg = defaultValue[argNum].(string)
+		}
 		prompt = promptui.Prompt{
-			Label:   fmt.Sprintf("Enter argument #%d or empty value to stop:", argNum),
+			Label:   fmt.Sprintf("Enter argument #%d or empty string to stop", argNum),
 			Default: arg,
 			Stdout:  &utils.BellSkipper{},
 			Pointer: promptui.PipeCursor,
 		}
 		if line, err = prompt.Run(); err != nil {
-			return val, err
+			log.Fatal(err)
 		}
 		if line != "" {
 			val = append(val, line)
 		}
+		argNum++
 	}
-	return val, nil
+	return val
 }
 
-func promptDefaultBrowser(defaultValue string) (string, error) {
+func promptDefaultBrowser(defaultValue string) string {
+	var val string
+	var err error
+
 	prompt := promptui.Prompt{
 		Label:    "Specify path to browser to use. Leave empty to use system default (Browser)",
 		Default:  defaultValue,
@@ -298,10 +313,41 @@ func promptDefaultBrowser(defaultValue string) (string, error) {
 		Pointer:  promptui.PipeCursor,
 		Validate: validateBinaryOrNone,
 	}
-	return prompt.Run()
+
+	if val, err = prompt.Run(); err != nil {
+		log.Fatal(err)
+	}
+
+	return val
 }
 
-func promptHistoryLimit(defaultValue int64) (int64, error) {
+func promptConsoleDuration(defaultValue int32) int32 {
+	var val string
+	var err error
+
+	// https://docs.aws.amazon.com/STS/latest/APIReference/API_GetFederationToken.html
+	prompt := promptui.Prompt{
+		Label: "Number of minutes before AWS Console sessions expire (ConsoleDuration)",
+		Validate: func(input string) error {
+			x, err := strconv.ParseInt(input, 10, 64)
+			if err != nil || x > 2160 || x < 15 {
+				return fmt.Errorf("Value must be a valid integer between 15 and 2160")
+			}
+			return nil
+		},
+		Stdout:  &utils.BellSkipper{},
+		Default: fmt.Sprintf("%d", defaultValue),
+		Pointer: promptui.PipeCursor,
+	}
+	if val, err = prompt.Run(); err != nil {
+		log.Fatal(err)
+	}
+
+	x, _ := strconv.ParseInt(val, 10, 32)
+	return int32(x)
+}
+
+func promptHistoryLimit(defaultValue int64) int64 {
 	var val string
 	var err error
 
@@ -313,14 +359,16 @@ func promptHistoryLimit(defaultValue int64) (int64, error) {
 		Pointer:  promptui.PipeCursor,
 	}
 	if val, err = prompt.Run(); err != nil {
-		return 0, err
+		log.Fatal(err)
 	}
-	return strconv.ParseInt(val, 10, 64)
+
+	x, _ := strconv.ParseInt(val, 10, 64)
+	return x
 }
 
-func promptHistoryMinutes(defaultValue int64) (int64, error) {
+func promptHistoryMinutes(defaultValue int64) int64 {
+	var val string
 	var err error
-	var minutes string
 
 	prompt := promptui.Prompt{
 		Label:    "Number of minutes to keep items in History (HistoryMinutes)",
@@ -329,13 +377,15 @@ func promptHistoryMinutes(defaultValue int64) (int64, error) {
 		Stdout:   &utils.BellSkipper{},
 		Pointer:  promptui.PipeCursor,
 	}
-	if minutes, err = prompt.Run(); err != nil {
-		return 0, err
+	if val, err = prompt.Run(); err != nil {
+		log.Fatal(err)
 	}
-	return strconv.ParseInt(minutes, 10, 64)
+
+	x, _ := strconv.ParseInt(val, 10, 64)
+	return x
 }
 
-func promptLogLevel(defaultValue string) (string, error) {
+func promptLogLevel(defaultValue string) string {
 	var val string
 	var err error
 
@@ -358,8 +408,97 @@ func promptLogLevel(defaultValue string) (string, error) {
 			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
 		},
 	}
-	_, val, err = sel.Run()
-	return val, err
+	if _, val, err = sel.Run(); err != nil {
+		log.Fatal(err)
+	}
+	return val
+}
+
+func yesNo(x bool) int {
+	if x {
+		return 0
+	}
+	return 1
+}
+
+// index returns the slice index of the value.  Useful for CursorPos
+func index(s []string, v string) int {
+	for i, x := range s {
+		if v == x {
+			return i
+		}
+	}
+	return 0
+}
+
+func promptAutoConfigCheck(flag bool) bool {
+	var val string
+	var err error
+
+	label := "Auto update AWS SSO cache? (AutoConfigCheck)"
+	sel := promptui.Select{
+		Label:        label,
+		Items:        []string{"Yes", "No"},
+		CursorPos:    yesNo(flag),
+		HideSelected: false,
+		Stdout:       &utils.BellSkipper{},
+		Templates: &promptui.SelectTemplates{
+			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
+		},
+	}
+	if _, val, err = sel.Run(); err != nil {
+		log.WithError(err).Fatalf("Unable to select AutoConfigCheck")
+	}
+
+	return val == "Yes"
+}
+
+func promptCacheRefresh(defaultValue int64) int64 {
+	var val string
+	var err error
+	prompt := promptui.Prompt{
+		Label:    "Hours between AWS SSO cache refresh. 0 to disable (CacheRefresh)",
+		Validate: validateInteger,
+		Default:  fmt.Sprintf("%d", defaultValue),
+		Pointer:  promptui.PipeCursor,
+	}
+
+	if val, err = prompt.Run(); err != nil {
+		log.Fatal(err)
+	}
+	x, _ := strconv.ParseInt(val, 10, 64)
+	return x
+}
+
+func promptConfigProfilesUrlAction(defaultValue string) string {
+	var val string
+	var err error
+
+	label := "How to open URLs via $AWS_PROFILE (ConfigProfilesUrlAction)"
+	sel := promptui.Select{
+		Label:        label,
+		Items:        CONFIG_OPEN_OPTIONS,
+		CursorPos:    index(CONFIG_OPEN_OPTIONS, defaultValue),
+		HideSelected: false,
+		Stdout:       &utils.BellSkipper{},
+		Templates: &promptui.SelectTemplates{
+			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
+		},
+	}
+
+	if _, val, err = sel.Run(); err != nil {
+		log.Fatal(err)
+	}
+
+	return val
+}
+
+func validateInteger(input string) error {
+	_, err := strconv.ParseInt(input, 10, 64)
+	if err != nil {
+		return fmt.Errorf("Value must be a valid integer")
+	}
+	return nil
 }
 
 // validateBinary ensures the input is a valid binary on the system
@@ -407,97 +546,6 @@ func validateBinaryOrNone(input string) error {
 		}
 	}
 	return fmt.Errorf("not a valid valid")
-}
-
-func yesNo(x bool) int {
-	if x {
-		return 0
-	}
-	return 1
-}
-
-// index returns the slice index of the value.  Useful for CursorPos
-func index(s []string, v string) int {
-	for i, x := range s {
-		if v == x {
-			return i
-		}
-	}
-	return 0
-}
-
-func promptAutoConfigCheck(flag bool) (bool, error) {
-	var val string
-	var err error
-
-	label := "Auto update AWS SSO cache? (AutoConfigCheck)"
-	sel := promptui.Select{
-		Label:        label,
-		Items:        []string{"Yes", "No"},
-		CursorPos:    yesNo(flag),
-		HideSelected: false,
-		Stdout:       &utils.BellSkipper{},
-		Templates: &promptui.SelectTemplates{
-			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
-		},
-	}
-	_, val, err = sel.Run()
-	return val == "Yes", err
-}
-
-func promptConfigUrlAction(defaultValue string) (string, error) {
-	var val string
-	var err error
-
-	label := "How to open URLs via $AWS_PROFILE/aws-sso-profile (ConfigUrlAction)"
-	sel := promptui.Select{
-		Label:        label,
-		Items:        CONFIG_OPEN_OPTIONS,
-		CursorPos:    index(CONFIG_OPEN_OPTIONS, defaultValue),
-		HideSelected: false,
-		Stdout:       &utils.BellSkipper{},
-		Templates: &promptui.SelectTemplates{
-			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
-		},
-	}
-
-	_, val, err = sel.Run()
-	return val, err
-}
-
-var ssoHostnameRegexp *regexp.Regexp
-
-// validateSSOHostname verifies our SSO Start url is in the format of http://xxxxx.awsapps.com/start
-// and the FQDN is valid
-func validateSSOHostname(input string) error {
-	if ssoHostnameRegexp == nil {
-		ssoHostnameRegexp, _ = regexp.Compile(`^([a-zA-Z0-9-]+)(\.awsapps\.com)?$`)
-	}
-	if len(input) > 0 && len(input) < 64 && ssoHostnameRegexp.Match([]byte(input)) {
-		return nil
-	}
-	return fmt.Errorf("Invalid DNS hostname: %s", input)
-}
-
-var ssoNameRegexp *regexp.Regexp
-
-// validateSSOName just makes sure we have some text
-func validateSSOName(input string) error {
-	if ssoNameRegexp == nil {
-		ssoNameRegexp, _ = regexp.Compile(`^[a-zA-Z0-9]+$`)
-	}
-	if len(input) > 0 && ssoNameRegexp.Match([]byte(input)) {
-		return nil
-	}
-	return fmt.Errorf("SSO Name must be a valid string")
-}
-
-func validateInteger(input string) error {
-	_, err := strconv.ParseInt(input, 10, 64)
-	if err != nil {
-		return fmt.Errorf("Value must be a valid integer")
-	}
-	return nil
 }
 
 // returns the default path to the firefox browser

@@ -45,7 +45,7 @@ UrlExecCommand:
     - "%s"
 FirefoxOpenInContainer: [False|True]
 AutoConfigCheck: [False|True]
-ConfigUrlAction: [clip|exec|open]
+ConfigProfilesUrlAction: [clip|exec|open]
 
 ConsoleDuration: <minutes>
 
@@ -168,12 +168,8 @@ The `Roles` block is optional, except for roles you which to assume via role cha
 Define a custom `$AWS_PROFILE` / `$AWS_SSO_PROFILE` value for this role which overrides
 the [ProfileFormat](#profileformat) config option.
 
-##### Tags
-
-List of key/value pairs, used by `aws-sso` in prompt mode with `exec`.  Any tag
-placed at the role level will be applied to only that role.
-
-See above for the list of special tags.
+Roles, just like [Accounts](#accounts) also accept [Tags](#tags) which are
+specific to that role and override any account level tags.
 
 ##### Via
 
@@ -181,10 +177,10 @@ Impliments the concept of [role chaining](
 https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_terms-and-concepts.html).
 
 `Via` defines which role to assume before calling [sts:AssumeRole](
-https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html) in order
-to switch to the specified role.  This allows you to define and assume roles in AWS
-accounts that are not included in your organization's AWS SSO scope or roles that
-were not defined via an [AWS SSO Permission Set](
+https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html) in
+order to switch to the specified role.  This allows you to define and assume
+roles in AWS accounts that are not included in your organization's AWS SSO
+scope or roles that were not defined via an [AWS SSO Permission Set](
 https://docs.aws.amazon.com/singlesignon/latest/userguide/permissionsetsconcept.html).
 
 ##### SourceIdentity
@@ -196,35 +192,42 @@ in order to assume a role with `Via`.
 
 ## DefaultSSO
 
-If you only have a single AWS SSO instance, then it doesn't really matter what you call it,
-but if you have two or more, than `Default` is automatically selected unless you manually
-specify it here, on the CLI (`--sso`), or via the `AWS_SSO` environment variable.
+If you only have a single AWS SSO instance, then it doesn't really matter what
+you call it, but if you have two or more, than `Default` is automatically
+selected unless you manually specify it here, on the CLI (`--sso`), or via
+the `AWS_SSO` environment variable.
 
 ## CacheRefresh
 
-This is the number of hours between automatically refreshing your AWS SSO cache to detect
-any changes in the roles you have been granted access to.  The default is 24 (1 day).  Disable
-this feature by setting to any value <= 0.
+This is the number of hours between automatically refreshing your AWS SSO cache
+to detect any changes in the roles you have been granted access to.  The default
+is 24 (1 day).  Disable this feature by setting to any value <= 0.
+
+**Note:** If this feature is disabled, then [AutoConfigCheck](#autoconfigcheck)
+is also disabled.
 
 ## Browser / UrlAction / UrlExecCommand
 
 
-`UrlAction` gives you control over how AWS SSO and AWS Console URLs are opened in a browser:
+`UrlAction` gives you control over how AWS SSO and AWS Console URLs are opened
+in a browser:
 
  * `clip` -- Copies the URL to your clipboard
  * `exec` -- Execute the command provided in `UrlExecCommand`
- * `open` -- Opens the URL in your default browser or the browser you specified via `--browser` or `Browser`
+ * `open` -- Opens the URL in your default browser or the browser you specified
+    via `--browser` or `Browser`
  * `print` -- Prints the URL with a message in your terminal to stderr
  * `printurl` -- Prints only the URL in your terminal to stderr
 
 If `Browser` is not set, then your default browser will be used and that
 your browser needs to support JavaScript for the AWS SSO user interface.
 
-`UrlExecCommand` is used with `UrlAction: exec` and allows you to execute arbitrary
-commands to handle the URL.  The command and arguments should be specified as a list,
-with the URL to open specified as the format string `%s`.  Only one instance
-of `%s` is allowed.  Note that YAML requires quotes around strings which start
-with a [reserved indicator](https://yaml.org/spec/1.2-old/spec.html#id2774228) like `%`.
+`UrlExecCommand` is used with `UrlAction: exec` and allows you to execute
+arbitrary commands to handle the URL.  The command and arguments should be
+specified as a list, with the URL to open specified as the format string `%s`.
+Only one instance of `%s` is allowed.  Note that YAML requires quotes around
+strings which start with a [reserved indicator](
+https://yaml.org/spec/1.2-old/spec.html#id2774228) like `%`.
 
 Examples:
 
@@ -259,16 +262,6 @@ The result is that each account/role has a dedicated Firefox container named
 after the _ProfileName_ so that you can be logged in across multiple AWS
 accounts/roles without getting an error from AWS.
 
-**Note:** If your `ProfileFormat` generates a _ProfileName_ with an `&`, then
-`{{ .AccountId }}:{{ .RoleName }}` will be used as the container name instead.
-
-**Note:** You can control the color and icon of the container label using
-[Tags](#tags).
-
-**Note for MacOS users:** This feature does not work with the bundle directory,
-so you should specify `/Applications/Firefox.app/Contents/MacOS/firefox` as the
-command to execute.
-
 Example:
 
 ```yaml
@@ -280,21 +273,49 @@ UrlExecCommand:
 FirefoxOpenUrlInContainer: True
 ```
 
-## AutoConfigCheck / ConfigUrlAction
+**Note:** If your `ProfileFormat` generates a _ProfileName_ with an `&`, then
+`{{ .AccountId }}:{{ .RoleName }}` will be used as the container name instead.
 
-These two options when used together enable automatically updating your
-`~/.aws/config` file any time your list of AWS SSO roles change.
+**Note:** You can control the color and icon of the container label using
+[Tags](#tags).
 
-When `AutoConfigCheck` must be set to `True` and `ConfigUrlAction` must be set
-to one of:
+**Note for MacOS users:** This feature does not work with the bundle directory,
+so you should specify `/Applications/Firefox.app/Contents/MacOS/firefox` (
+or as appropriate) as the command to execute.
+
+You can disable this feature on the command line via the `--no-config-check`
+flag.  `ConfigProfilesUrlAction` is also the default action when manually
+running `aws-sso config-profiles`.
+
+## ConfigProfilesUrlAction
+
+This sets your default `--url-action` in your `~/.aws/config` when generating
+named AWS profiles for use with `$AWS_PROFILE` and the default value for the
+[config-profiles]
+
+Due to limitations with the AWS SDK, only the following options are valid:
 
  * `clip`
  * `exec`
  * `open`
 
-to enable the feature.  You can disable this feature on the command line via
-the `--no-config-check` flag.  `ConfigUrlAction` is also the default action
-when manually running `aws-sso config`.
+**Note:** This option is required if you also want to use [AutoConfigCheck](
+#autoconfigcheck).
+
+**Note:** This config option was previously known as `ConfigUrlAction` which
+has been deprecated.
+
+## AutoConfigCheck
+
+When set to `True`, when you AWS SSO roles are automatically refreshed (see
+[CacheRefresh](#cacherefresh)) `aws-sso` will also check to see if any changes
+are warranted in your `~/.aws/config`.
+
+**Note:** This option requires you to also set [ConfigProfilesUrlAction](
+#configprofilesaction).
+
+This option can be disabled temporarily on the command line by passing
+the `--no-config-check` flag.
 
 ## LogLevel / LogLines
 
@@ -312,9 +333,14 @@ advanced debugging.
 
 ## ConsoleDuration
 
-By default, the `console` command opens AWS Console sessions which are valid
-for 60 minutes.  If you wish to override the default session duration, you
-can specify the number of minutes here or with the `--duration` flag.
+Number of minutes an AWS Console session is valid for (default 60).  If you wish
+to override the default session duration, you can specify the number of minutes
+here or with the `--duration` flag.
+
+[Per AWS](
+https://docs.aws.amazon.com/STS/latest/APIReference/API_GetFederationToken.html)
+this value must be betwen 15 and 2160 (36 hours) because `ConsoleDuration`
+is in minutes and not seconds.
 
 ## SecureStore / JsonStore
 
@@ -363,16 +389,17 @@ functions, but a few custom functions are available:
  * `FirstItem([]x)` -- Returns the first item in a list that is not an empty string
  * `StringsJoin(x, []y)` -- Joins the items in `y` with the string `x`
 
-**Note:** Unlike most values stored in the `config.yaml`,  you will need to single-quote
-(`'`) the value because because `ProfileFormat` values often start with a `{`.
+**Note:** Unlike most values stored in the `config.yaml`,  you will need to
+single-quote (`'`) the value because because `ProfileFormat` values often start
+with a `{`.
 
 For more information, [see the FAQ](FAQ.md#how-to-configure-profileformat).
 
 ## ConfigVariables
 
 Define a set of [config settings](
-https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html)
-for each profile in your `~/.aws/config` file generated via the [config-profiles](
+https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html) for each 
+profile in your `~/.aws/config` file generated via the [config-profiles](
 commands.md#config-profiles) command.
 
 Some examples to consider:
@@ -382,7 +409,7 @@ Some examples to consider:
 
 ## AccountPrimaryTag
 
-When selecting a role, if you first select by role name (via the `Role` tag) yo
+When selecting a role, if you first select by role name (via the `Role` tag) you
 will be presented with a list of matching ARNs to select. The
 `AccountPrimaryTag` automatically includes another tag name and value as the
 description to aid in role selection.  By default the following tags are

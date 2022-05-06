@@ -65,6 +65,7 @@ JsonStore: ./testdata/store.json
 ProfileFormat: "{{.AccountName}}/{{.RoleName}}"
 AccountPrimaryTag:
   - AccountAlias
+ConfigUrlAction: open
 LogLevel: warn
 DefaultRegion: us-west-2
 EnvVarTags:

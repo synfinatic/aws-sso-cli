@@ -3,7 +3,6 @@
  * [Common Flags](#common-flags)
  * [Commands](#commands)
     * [cache](#cache) -- Force reload of cached AWS SSO role info and config.yaml
-    * [config-profiles](#config-profiles) -- Update ~/.aws/config with AWS SSO profiles from the cache
     * [console](#console) -- Open AWS Console using specified AWS role/profile
     * [eval](#eval) -- Print AWS environment vars for use with `eval $(aws-sso eval ...)`
     * [exec](#exec) -- Execute command using specified IAM role in a new shell
@@ -12,8 +11,10 @@
     * [process](#process) -- Generate JSON for `credential_process` in ~/.aws/config
     * [tags](#tags) -- List tags
     * [time](#time) -- Print how much time before current STS Token expires
-    * `version` -- Print version and exit
     * [completions](#completions) -- Manage shell completions
+    * [config-profiles](#config-profiles) -- Update ~/.aws/config with AWS SSO profiles from the cache
+	* [reconfig](#reconfig) -- Re-run through the configuration wizard and update your AWS SSO config
+    * `version` -- Print version and exit
  * [Environment Variables](#environment-variables)
  * [Shell Helpers](#shell-helpers)
     * [aws-sso-profile](#aws-sso-profile)
@@ -107,11 +108,11 @@ URLs to your clipboard.  _No user prompting is possible._
 
 **Note:** You should run this command any time your list of AWS roles changes
 in order to update the `~/.aws/config` file or enable [AutoConfigCheck](
-docs/config.md#AutoConfigCheck) and [ConfigUrlAction](
-docs/config.md#ConfigUrlAction).
+docs/config.md#AutoConfigCheck) and [ConfigProfilesUrlAction](
+docs/config.md#ConfigProfilesUrlAction).
 
-**Note:** If `ConfigUrlAction` is set, then `--open` is optional, otherwise it
-is required.
+**Note:** If `ConfigProfilesUrlAction` is set, then `--open` is optional,
+otherwise it is required.
 
 **Note:** It is important that you do _NOT_ remove the `# BEGIN_AWS_SSO_CLI` and
 `# END_AWS_SSO_CLI` lines from your config file!  These markers are used to track
@@ -318,6 +319,12 @@ Flags:
 the new version.  Once the new version is installed, `--uninstall-pre-19` will
 refuse to run so you will have to either manually edit the file or run
 `--uninstall`, then `--uninstall-pre-19` and finally `--install` again.
+
+### reconfig
+
+Allows you to re-run through the configuration wizard and update your AWS SSO CLI
+config file (`~/.aws-sso/config.yaml`).  Useful for taking advantage of some of
+the new settings if you've upgraded from a previous version!
 
 ## Environment Variables
 
