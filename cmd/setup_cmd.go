@@ -19,131 +19,205 @@ package main
  */
 import (
 	"fmt"
+	"io"
+	"os"
+	"time"
 
+	"github.com/manifoldco/promptui"
+	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
+var ranSetup = false
+
 // SetupCmd defines the Kong args for the setup command (which currently doesn't exist)
-type SetupCmd struct {
-	DefaultRegion    string `kong:"help='Default AWS region for running commands (or \"None\")'"`
-	SSOStartHostname string `kong:"help='AWS SSO User Portal Hostname'"`
-	SSORegion        string `kong:"help='AWS SSO Instance Region'"`
-	CacheRefresh     int64  `kong:"help='Number of hours between AWS SSO cache is refreshed'"`
-	HistoryLimit     int64  `kong:"help='Number of items to keep in History',default=-1"`
-	HistoryMinutes   int64  `kong:"help='Number of minutes to keep items in History',default=-1"`
-	DefaultLevel     string `kong:"help='Logging level [error|warn|info|debug|trace]'"`
-	Force            bool   `kong:"help='Force override of existing config file'"`
-	FirefoxPath      string `kong:"help='Path to the Firefox web browser'"`
-	AutoConfigCheck  bool   `kong:"help='Automatically update ~/.aws/config'"`
-	ConfigUrlAction  string `kong:"help='Specify how to open URLs via $AWS_PROFILE: [clip|exec|open]'"`
-	RanSetup         bool   `kong:"hidden"` // track if setup has already run
-}
+type SetupCmd struct{}
 
 // Run executes the setup command
 func (cc *SetupCmd) Run(ctx *RunContext) error {
-	return setupWizard(ctx)
+	return setupWizard(ctx, false, false)
 }
 
-func setupWizard(ctx *RunContext) error {
+type ReconfigCmd struct {
+	AddSSO bool `kong:"help='Add a new AWS SSO instance'"`
+}
+
+func (cc *ReconfigCmd) Run(ctx *RunContext) error {
+	// backup our config file
+	var val string
 	var err error
-	var instanceName, startHostname, ssoRegion, awsRegion, urlAction string
-	var logLevel, firefoxBrowserPath, browser, configUrlAction string
+
+	label := "Backup ~/.aws-sso/config.yaml first?"
+	sel := promptui.Select{
+		Label:        label,
+		Items:        []string{"Yes", "No"},
+		HideSelected: false,
+		Stdout:       &utils.BellSkipper{},
+		Templates: &promptui.SelectTemplates{
+			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
+		},
+	}
+	if _, val, err = sel.Run(); err != nil {
+		return err
+	}
+	if val == "Yes" {
+		src, err := os.Open(utils.GetHomePath("~/.aws-sso/config.yaml"))
+		if err != nil {
+			return err
+		}
+
+		newFile := fmt.Sprintf("~/.aws-sso/config-%s.yaml",
+			time.Now().Format("2006-01-02-15:04:05"))
+		dst, err := os.Create(utils.GetHomePath(newFile))
+		if err != nil {
+			return err
+		}
+		if _, err = io.Copy(dst, src); err != nil {
+			return err
+		}
+
+		src.Close()
+		dst.Close()
+		log.Infof("wrote %s", newFile)
+	}
+
+	return setupWizard(ctx, true, ctx.Cli.Reconfig.AddSSO)
+}
+
+func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
+	var err error
+	var instanceName, startHostname, ssoRegion, defaultRegion, urlAction string
+	var defaultLevel, firefoxBrowserPath, browser, configUrlAction string
 	var hLimit, hMinutes, cacheRefresh int64
 	var autoConfigCheck bool
 	urlExecCommand := []string{}
-	firefoxOpenUrlInContainer := false
 
 	// Don't run setup twice
-	if ctx.Cli.Setup.RanSetup {
+	if ranSetup {
 		return nil
 	}
-	ctx.Cli.Setup.RanSetup = true
+	ranSetup = true
 
-	if ctx.Cli.Setup.DefaultLevel != "" {
-		if err := logLevelValidate(ctx.Cli.Setup.DefaultLevel); err != nil {
-			log.Fatalf("Invalid value for --default-level %s", ctx.Cli.Setup.DefaultLevel)
+	if reconfig {
+		defaultLevel = ctx.Settings.LogLevel
+		cacheRefresh = ctx.Settings.CacheRefresh
+		defaultRegion = ctx.Settings.DefaultRegion
+		urlAction = ctx.Settings.UrlAction
+		urlExecCommand = ctx.Settings.UrlExecCommand.([]string)
+		if ctx.Settings.FirefoxOpenUrlInContainer {
+			firefoxBrowserPath = urlExecCommand[0]
+			ctx.Settings.FirefoxOpenUrlInContainer = true
+		}
+		autoConfigCheck = ctx.Settings.AutoConfigCheck
+		configUrlAction = ctx.Settings.ConfigUrlAction
+		hLimit = ctx.Settings.HistoryLimit
+		hMinutes = ctx.Settings.HistoryMinutes
+		browser = ctx.Settings.Browser
+		// skips:
+		// - SSORegion
+		// - DefaultRegion
+		// - StartUrl/startHostname
+		// - InstanceName
+	} else {
+		hMinutes = 1440
+		hLimit = 10
+		defaultLevel = "warn"
+	}
+
+	if err := logLevelValidate(defaultLevel); err != nil {
+		log.Fatalf("Invalid value for --default-level %s", defaultLevel)
+	}
+
+	if !reconfig {
+		if instanceName, err = promptSsoInstance(""); err != nil {
+			return err
+		}
+
+		if startHostname, err = promptStartUrl(""); err != nil {
+			return err
+		}
+
+		if ssoRegion, err = promptAwsSsoRegion(""); err != nil {
+			return err
+		}
+
+		if defaultRegion, err = promptDefaultRegion(defaultRegion); err != nil {
+			return err
+		}
+
+		ctx.Settings.SSO[instanceName] = &sso.SSOConfig{
+			SSORegion:     ssoRegion,
+			StartUrl:      fmt.Sprintf(START_URL_FORMAT, startHostname),
+			DefaultRegion: defaultRegion,
+		}
+	} else if reconfig {
+		// don't do anything with the SSO for reconfig
+	} else if addSSO {
+		log.Errorf("sorry, not supported yet")
+	}
+
+	if ctx.Settings.AutoConfigCheck, err = promptAutoConfigCheck(autoConfigCheck); err != nil {
+		return err
+	}
+
+	if ctx.Settings.AutoConfigCheck {
+		if ctx.Settings.CacheRefresh, err = promptCacheRefresh(cacheRefresh); err != nil {
+			return err
 		}
 	}
 
-	if instanceName, err = promptSsoInstance(ctx.Cli.SSO); err != nil {
+	// First check if using Firefox w/ Containers
+	if firefoxBrowserPath, err = promptUseFirefox(firefoxBrowserPath); err != nil {
 		return err
 	}
 
-	if startHostname, err = promptStartUrl(ctx.Cli.Setup.SSOStartHostname); err != nil {
-		return err
-	}
-
-	if ssoRegion, err = promptAwsSsoRegion(ctx.Cli.Setup.SSORegion); err != nil {
-		return err
-	}
-
-	if cacheRefresh, err = promptCacheRefresh(ctx.Cli.Setup.CacheRefresh); err != nil {
-		return err
-	}
-
-	if awsRegion, err = promptDefaultRegion(ctx.Cli.Setup.DefaultRegion); err != nil {
-		return err
-	}
-
-	if firefoxBrowserPath, err = promptUseFirefox(ctx.Cli.Setup.FirefoxPath); err != nil {
-		return err
-	}
-
+	// if yes, then configure urlAction = 'exec' and our UrlExecCommand
 	if firefoxBrowserPath != "" {
-		firefoxOpenUrlInContainer = true
-		urlAction = "exec"
-		urlExecCommand = []string{
+		ctx.Settings.FirefoxOpenUrlInContainer = true
+		ctx.Settings.UrlAction = "exec"
+		ctx.Settings.UrlExecCommand = []string{
 			firefoxBrowserPath,
 			`%s`,
 		}
 	} else {
-		if urlAction, err = promptUrlAction(); err != nil {
+		ctx.Settings.FirefoxOpenUrlInContainer = false
+		// otherwise, prompt for our UrlAction and possibly browser
+		if ctx.Settings.UrlAction, err = promptUrlAction(urlAction); err != nil {
 			return err
 		}
 
-		if urlAction == "open" {
-			if browser, err = promptDefaultBrowser(ctx.Cli.Browser); err != nil {
+		switch ctx.Settings.UrlAction {
+		case "open":
+			if ctx.Settings.UrlAction, err = promptDefaultBrowser(browser); err != nil {
+				return err
+			}
+
+		case "exec":
+			if ctx.Settings.UrlExecCommand, err = promptUrlExecCommand(urlExecCommand); err != nil {
 				return err
 			}
 		}
 	}
 
-	if autoConfigCheck, configUrlAction, err = promptAutoConfigCheck(
-		ctx.Cli.Setup.AutoConfigCheck, ctx.Cli.Setup.ConfigUrlAction); err != nil {
+	// Only prompt for ConfigUrlAction is UrlAction is not valid or different
+	if utils.StrListContains(urlAction, CONFIG_OPEN_OPTIONS) || urlAction != configUrlAction {
+		ctx.Settings.ConfigUrlAction = urlAction
+	} else {
+		if ctx.Settings.ConfigUrlAction, err = promptConfigUrlAction(configUrlAction); err != nil {
+			return err
+		}
+	}
+
+	if ctx.Settings.HistoryLimit, err = promptHistoryLimit(hLimit); err != nil {
 		return err
 	}
 
-	if hLimit, err = promptHistoryLimit(ctx.Cli.Setup.HistoryLimit); err != nil {
+	if ctx.Settings.HistoryMinutes, err = promptHistoryMinutes(hMinutes); err != nil {
 		return err
 	}
 
-	if hMinutes, err = promptHistoryMinutes(ctx.Cli.Setup.HistoryMinutes); err != nil {
+	if ctx.Settings.LogLevel, err = promptLogLevel(defaultLevel); err != nil {
 		return err
 	}
-
-	if logLevel, err = promptLogLevel(ctx.Cli.Setup.DefaultLevel); err != nil {
-		return err
-	}
-
-	// write config file
-	s := sso.Settings{
-		DefaultSSO:                instanceName,
-		SSO:                       map[string]*sso.SSOConfig{},
-		CacheRefresh:              cacheRefresh,
-		UrlAction:                 urlAction,
-		UrlExecCommand:            urlExecCommand,
-		FirefoxOpenUrlInContainer: firefoxOpenUrlInContainer,
-		Browser:                   browser,
-		HistoryLimit:              hLimit,
-		HistoryMinutes:            hMinutes,
-		LogLevel:                  logLevel,
-		AutoConfigCheck:           autoConfigCheck,
-		ConfigUrlAction:           configUrlAction,
-	}
-	s.SSO[instanceName] = &sso.SSOConfig{
-		SSORegion:     ssoRegion,
-		StartUrl:      fmt.Sprintf(START_URL_FORMAT, startHostname),
-		DefaultRegion: awsRegion,
-	}
-	return s.Save(ctx.Cli.ConfigFile, false)
+	return ctx.Settings.Save(ctx.Cli.ConfigFile, reconfig)
 }
