@@ -40,17 +40,17 @@ var CONFIG_OPEN_OPTIONS []string = []string{
 	"open",
 }
 
-type ConfigCmd struct {
+type ConfigProfilesCmd struct {
 	Diff  bool   `kong:"help='Print a diff of changes to the config file instead of modifying it',xor='action'"`
 	Force bool   `kong:"help='Write a new config file without prompting'"`
 	Open  string `kong:"help='Specify how to open URLs: [clip|exec|open]'"`
 	Print bool   `kong:"help='Print profile entries instead of modifying config file',xor='action'"`
 }
 
-func (cc *ConfigCmd) Run(ctx *RunContext) error {
+func (cc *ConfigProfilesCmd) Run(ctx *RunContext) error {
 	open := ctx.Settings.ConfigUrlAction
-	if utils.StrListContains(ctx.Cli.Config.Open, CONFIG_OPEN_OPTIONS) {
-		open = ctx.Cli.Config.Open
+	if utils.StrListContains(ctx.Cli.ConfigProfiles.Open, CONFIG_OPEN_OPTIONS) {
+		open = ctx.Cli.ConfigProfiles.Open
 	}
 
 	if len(open) == 0 {
@@ -71,12 +71,12 @@ func (cc *ConfigCmd) Run(ctx *RunContext) error {
 		return err
 	}
 
-	if ctx.Cli.Config.Print {
+	if ctx.Cli.ConfigProfiles.Print {
 		return f.Template.Execute(os.Stdout, profiles)
 	}
 
 	oldConfig := awsConfigFile()
-	return f.UpdateConfig(ctx.Cli.Config.Diff, ctx.Cli.Config.Force, oldConfig)
+	return f.UpdateConfig(ctx.Cli.ConfigProfiles.Diff, ctx.Cli.ConfigProfiles.Force, oldConfig)
 }
 
 // awsConfigFile returns the path the the users ~/.aws/config

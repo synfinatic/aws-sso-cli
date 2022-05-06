@@ -3,7 +3,7 @@
  * [Common Flags](#common-flags)
  * [Commands](#commands)
     * [cache](#cache) -- Force reload of cached AWS SSO role info and config.yaml
-    * [config](#config) -- Update ~/.aws/config with AWS SSO profiles from the cache
+    * [config-profiles](#config-profiles) -- Update ~/.aws/config with AWS SSO profiles from the cache
     * [console](#console) -- Open AWS Console using specified AWS role/profile
     * [eval](#eval) -- Print AWS environment vars for use with `eval $(aws-sso eval ...)`
     * [exec](#exec) -- Execute command using specified IAM role in a new shell
@@ -69,7 +69,7 @@ Priority is given to:
 
 ---
 
-### config
+### config-profiles
 
 Modifies the `~/.aws/config` file to contain a [named profile](
 https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html)
@@ -338,7 +338,7 @@ The `file` SecureStore will use the `AWS_SSO_FILE_PASSWORD` environment
 variable for the password if it is set. (Not recommended.)
 
 Additionally, `$AWS_PROFILE` is honored via the standard AWS tooling when using
-the [config](#config) command to manage your `~/.aws/config` file.
+the [config-profiles](#config-profiles) command to manage your `~/.aws/config` file.
 
 ---
 

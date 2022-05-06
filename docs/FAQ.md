@@ -117,7 +117,8 @@ each role.
     specific roles that you use more often via `Profile` with an easier to
     remember value.  The choice is yours, but remember that every unique Role
     ARN needs a unique value if you wish to use it to select a role to use
-    via `$AWS_PROFILE` and the [config](../README.md#config) command.
+    via `$AWS_PROFILE` and the [config-profiles](commands.md#config-profiles)
+    command.
 
 ### How to configure ProfileFormat
 
@@ -128,7 +129,7 @@ purposes:
     about what AWS Account/Role you have currently assumed by defining the
     `$AWS_SSO_PROFILE` environment variable.
  2. Makes it easy to select a role via the `$AWS_PROFILE` environment variable
-    when you use the [config](../README.md#config) command.
+    when you use the [config-profiles](commands.md#config-profiles) command.
 
 By default, `ProfileFormat` is set to `{{ AccountIdStr .AccountId }}:{{ .RoleName }}`
 which will generate a value like `02345678901:MyRoleName`.

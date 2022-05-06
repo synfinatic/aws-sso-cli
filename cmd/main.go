@@ -103,22 +103,22 @@ type CLI struct {
 	NoConfigCheck bool   `kong:"help='Disable automatic ~/.aws/config updates'"`
 
 	// Commands
-	Cache       CacheCmd    `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
-	Config      ConfigCmd   `kong:"cmd,help='Update ~/.aws/config with AWS SSO profiles from the cache'"`
-	Console     ConsoleCmd  `kong:"cmd,help='Open AWS Console using specificed AWS role/profile'"`
-	Default     DefaultCmd  `kong:"cmd,hidden,default='1'"` // list command without args
-	Eval        EvalCmd     `kong:"cmd,help='Print AWS environment vars for use with eval $(aws-sso eval ...)'"`
-	Exec        ExecCmd     `kong:"cmd,help='Execute command using specified IAM role in a new shell'"`
-	Flush       FlushCmd    `kong:"cmd,help='Flush AWS SSO/STS credentials from cache'"`
-	List        ListCmd     `kong:"cmd,help='List all accounts / roles (default command)'"`
-	Process     ProcessCmd  `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
-	Static      StaticCmd   `kong:"cmd,help='Manage static AWS API credentials',hidden"`
-	Tags        TagsCmd     `kong:"cmd,help='List tags'"`
-	Time        TimeCmd     `kong:"cmd,help='Print how much time before current STS Token expires'"`
-	Version     VersionCmd  `kong:"cmd,help='Print version and exit'"`
-	Completions CompleteCmd `kong:"cmd,help='Manage shell completions'"`
-	Reconfig    ReconfigCmd `kong:"cmd,help='Re-run the configuration wizard'"`
-	Setup       SetupCmd    `kong:"cmd,hidden"` // need this so variables are visisble.
+	Cache          CacheCmd          `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
+	ConfigProfiles ConfigProfilesCmd `kong:"cmd,help='Update ~/.aws/config with AWS SSO profiles from the cache'"`
+	Console        ConsoleCmd        `kong:"cmd,help='Open AWS Console using specificed AWS role/profile'"`
+	Default        DefaultCmd        `kong:"cmd,hidden,default='1'"` // list command without args
+	Eval           EvalCmd           `kong:"cmd,help='Print AWS environment vars for use with eval $(aws-sso eval ...)'"`
+	Exec           ExecCmd           `kong:"cmd,help='Execute command using specified IAM role in a new shell'"`
+	Flush          FlushCmd          `kong:"cmd,help='Flush AWS SSO/STS credentials from cache'"`
+	List           ListCmd           `kong:"cmd,help='List all accounts / roles (default command)'"`
+	Process        ProcessCmd        `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
+	Static         StaticCmd         `kong:"cmd,help='Manage static AWS API credentials',hidden"`
+	Tags           TagsCmd           `kong:"cmd,help='List tags'"`
+	Time           TimeCmd           `kong:"cmd,help='Print how much time before current STS Token expires'"`
+	Reconfig       ReconfigCmd       `kong:"cmd,help='Re-run the configuration wizard'"`
+	Version        VersionCmd        `kong:"cmd,help='Print version and exit'"`
+	Completions    CompleteCmd       `kong:"cmd,help='Manage shell completions'"`
+	Setup          SetupCmd          `kong:"cmd,hidden"` // need this so variables are visisble.
 }
 
 func main() {

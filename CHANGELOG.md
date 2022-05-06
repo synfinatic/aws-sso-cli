@@ -8,6 +8,7 @@
 	are automatically installed #357
  * Add `completions` command which supports `--install` and `--uninstall` flags
  * Enhanced `list` command with CSV output and basic filtering
+ * Added `reconfig` command to run through the setup wizard #354
 
 ### Changes
 
@@ -16,6 +17,7 @@
     for more details.
  * Added `Profile` to the list of default fields for the `list` command
  * `list` command can now generate a CSV
+ * Renamed the `config` command to `config-profiles` to be less confusing
 
 ## [v1.8.1] - 2022-05-02
 
