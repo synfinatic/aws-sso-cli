@@ -74,6 +74,7 @@ type Settings struct {
 
 type SSOConfig struct {
 	settings      *Settings              // pointer back up
+	key           string                 // our key in Settings.SSO[]
 	SSORegion     string                 `koanf:"SSORegion" yaml:"SSORegion"`
 	StartUrl      string                 `koanf:"StartUrl" yaml:"StartUrl"`
 	Accounts      map[string]*SSOAccount `koanf:"Accounts" yaml:"Accounts,omitempty"` // key must be a string to avoid parse errors!
@@ -180,6 +181,11 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 	}
 
 	s.setOverrides(override)
+
+	// set our SSO names
+	for k, v := range s.SSO {
+		v.key = k
+	}
 
 	if _, ok := s.SSO[s.DefaultSSO]; !ok {
 		// Select our SSO Provider

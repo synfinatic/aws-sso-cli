@@ -83,23 +83,30 @@ EnvVarTags:
 
 ## SSOConfig
 
-This is the top level block for your AWS SSO instances.  Typically an organization
-will have a single AWS SSO instance for all of their accounts under a single AWS master
-payer account.  If you have more than one AWS SSO instance, then `Default` will be
-the default unless overridden with `DefaultSSO`.
+This is the top level block for your AWS SSO instances.  Typically an
+organization will have a single AWS SSO instance for all of their accounts
+under a single AWS master payer account.  If you have more than one AWS SSO
+instance, then `Default` will be the default unless overridden with
+`DefaultSSO`.
 
 The `SSOConfig` config block is required.
 
 ### StartUrl
 
-Each AWS SSO instance has a unique start URL hosted by AWS for interacting with your
-SSO provider (Okta/OneLogin/etc).  Should be in the format of `https://xxxxxxx.awsapps.com/start`.
+Each AWS SSO instance start URL hosted by AWS for interacting with your
+SSO provider (Okta/OneLogin/etc).  Should be in the format of
+`https://xxxxxxx.awsapps.com/start`.
+
+**Note:** If you need to authenticate as different users to the same
+AWS SSO Instance, you can specify multiple [SSOConfig](#ssoconfig) blocks
+with the same `StartUrl`.
 
 The `StartUrl` is required.
 
 ### SSORegion
 
-Each AWS SSO instance is configured in a specific AWS region which needs to be set here.
+Each AWS SSO instance is configured in a specific AWS region which needs to be
+set here.
 
 The `SSORegion` is required.
 
