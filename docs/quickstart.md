@@ -33,11 +33,14 @@ time so systems may generate warnings.
 
 ## Guided Configuration
 
-AWS SSO CLI includes a simple setup wizard to aid in a basic configuration.  This
-wizard will automatically run the first time you run `aws-sso`.
+AWS SSO CLI includes a simple setup wizard to aid in a basic configuration.
+This wizard will automatically run the first time you run `aws-sso`.
 
 For more information about configuring `aws-sso` read the
 [configuration guide](config.md).
+
+You can re-run through the configuration wizard at any time by running
+`aws-sso config`.
 
 ## Enabling auto-completion in your shell
 

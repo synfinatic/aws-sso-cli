@@ -94,7 +94,7 @@ func makeSelectTemplate(label string) *promptui.SelectTemplates {
 		Label:    "{{ . }}",
 		Active:   promptui.IconSelect + " {{ .Name | cyan }}",
 		Inactive: "  {{ .Name }}",
-		Selected: promptui.IconGood + fmt.Sprintf(" %s: {{ .Name }}", label),
+		Selected: promptui.IconGood + fmt.Sprintf(" %s {{ .Name }}", label),
 	}
 }
 
@@ -192,12 +192,12 @@ func promptAwsSsoRegion(defaultValue string) string {
 	}
 
 	// Pick our AWS SSO region
-	label := "AWS SSO Region (SSORegion)"
+	label := "AWS SSO Region (SSORegion):"
 	sel := promptui.Select{
 		Label:        label,
 		Items:        items,
 		HideSelected: false,
-		CursorPos:    index(AvailableAwsRegions, defaultValue),
+		CursorPos:    defaultSelect(items, defaultValue),
 		Stdout:       &utils.BellSkipper{},
 		Templates:    makeSelectTemplate(label),
 	}
@@ -209,39 +209,38 @@ func promptAwsSsoRegion(defaultValue string) string {
 }
 
 func promptDefaultRegion(defaultValue string) string {
-	var val string
+	var i int
 	var err error
 
 	fmt.Printf("\n")
 
-	// Pick the default AWS region to use
-	defaultRegions := []string{"None"}
-	defaultRegions = append(defaultRegions, AvailableAwsRegions...)
-
-	for _, v := range defaultRegions {
-		if v == defaultValue {
-			return v
-		}
+	items := []selectOptions{
+		{
+			Name:  "None",
+			Value: "",
+		},
+	}
+	for _, x := range AvailableAwsRegions {
+		items = append(items, selectOptions{
+			Value: x,
+			Name:  x,
+		})
 	}
 
-	label := "Default region for connecting to AWS (DefaultRegion)"
+	label := "Default region for connecting to AWS services (DefaultRegion):"
 	sel := promptui.Select{
 		Label:        label,
-		Items:        defaultRegions,
-		CursorPos:    index(defaultRegions, defaultValue),
+		Items:        items,
+		CursorPos:    defaultSelect(items, defaultValue),
 		HideSelected: false,
 		Stdout:       &utils.BellSkipper{},
 		Templates:    makeSelectTemplate(label),
 	}
-	if _, val, err = sel.Run(); err != nil {
+	if i, _, err = sel.Run(); err != nil {
 		log.Fatal(err)
 	}
 
-	if val == "None" {
-		val = ""
-	}
-
-	return val
+	return items[i].Value
 }
 
 // promptUseFirefox asks if the user wants to use firefox containers
@@ -253,7 +252,7 @@ func promptUseFirefox(defaultValue string) string {
 
 	fmt.Printf("\n")
 
-	label := "Use Firefox containers to open URLs"
+	label := "Use Firefox containers to open URLs?"
 	sel := promptui.Select{
 		Label:        label,
 		HideSelected: false,
@@ -324,7 +323,7 @@ func promptUrlAction(defaultValue string, useFirefox bool) string {
 
 	// How should we deal with URLs?  Note we don't support `exec`
 	// here since that is an "advanced" feature
-	label := "Default action to take with URLs (UrlAction)"
+	label := "Default action to take with URLs (UrlAction):"
 	sel := promptui.Select{
 		Label:     label,
 		CursorPos: defaultSelect(items, defaultValue),
@@ -508,7 +507,7 @@ func promptLogLevel(defaultValue string) string {
 		})
 	}
 
-	label := "Log Level (LogLevel)"
+	label := "Log Level (LogLevel):"
 	sel := promptui.Select{
 		Label:        label,
 		Items:        items,
@@ -604,7 +603,7 @@ func promptConfigProfilesUrlAction(defaultValue string, useFirefox bool) string 
 		},
 	}
 
-	label := "How to open URLs via $AWS_PROFILE (ConfigProfilesUrlAction)"
+	label := "How to open URLs via $AWS_PROFILE? (ConfigProfilesUrlAction)"
 
 	sel := promptui.Select{
 		Label:        label,
