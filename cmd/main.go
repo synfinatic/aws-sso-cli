@@ -41,6 +41,7 @@ var Buildinfos = "unknown"
 var Tag = "NO-TAG"
 var CommitID = "unknown"
 var Delta = ""
+var VALID_LOG_LEVELS = []string{"error", "warn", "info", "debug", "trace"}
 
 type RunContext struct {
 	Kctx     *kong.Context
@@ -364,8 +365,7 @@ func doAuth(ctx *RunContext) *sso.AWSSSO {
 }
 
 func logLevelValidate(level string) error {
-	switch level {
-	case "error", "warn", "info", "debug", "trace", "":
+	if utils.StrListContains(level, VALID_LOG_LEVELS) || level == "" {
 		return nil
 	}
 	return fmt.Errorf("Invalid value for --level: %s", level)

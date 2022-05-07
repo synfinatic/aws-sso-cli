@@ -39,7 +39,7 @@ func (cc *SetupCmd) Run(ctx *RunContext) error {
 }
 
 type ReconfigCmd struct {
-	AddSSO bool `kong:"help='Add a new AWS SSO instance'"`
+	// 	AddSSO bool `kong:"help='Add a new AWS SSO instance'"`
 }
 
 func (cc *ReconfigCmd) Run(ctx *RunContext) error {
@@ -50,12 +50,11 @@ func (cc *ReconfigCmd) Run(ctx *RunContext) error {
 	label := "Backup ~/.aws-sso/config.yaml first?"
 	sel := promptui.Select{
 		Label:        label,
-		Items:        []string{"Yes", "No"},
+		Items:        yesNoItems,
+		CursorPos:    yesNoPos(true),
 		HideSelected: false,
 		Stdout:       &utils.BellSkipper{},
-		Templates: &promptui.SelectTemplates{
-			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
-		},
+		Templates:    makeSelectTemplate(label),
 	}
 	if _, val, err = sel.Run(); err != nil {
 		return err
@@ -81,7 +80,7 @@ func (cc *ReconfigCmd) Run(ctx *RunContext) error {
 		fmt.Printf("Wrote: %s\n\n", newFile)
 	}
 
-	return setupWizard(ctx, true, ctx.Cli.Reconfig.AddSSO)
+	return setupWizard(ctx, true, false) // ctx.Cli.Reconfig.AddSSO)
 }
 
 func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
@@ -98,7 +97,8 @@ func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
 	}
 	ranSetup = true
 
-	fmt.Printf(`**********************************************************************
+	fmt.Printf(`
+**********************************************************************
 * Do you have questions?  Do you like reading docs?  We've got docs! *
 * https://github.com/synfinatic/aws-sso-cli/blob/main/docs/config.md *
 **********************************************************************
@@ -112,7 +112,6 @@ func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
 		urlExecCommand = ctx.Settings.UrlExecCommand.([]interface{})
 		if ctx.Settings.FirefoxOpenUrlInContainer {
 			firefoxBrowserPath = urlExecCommand[0].(string)
-			ctx.Settings.FirefoxOpenUrlInContainer = true
 		}
 		autoConfigCheck = ctx.Settings.AutoConfigCheck
 		cacheRefresh = ctx.Settings.CacheRefresh
@@ -158,10 +157,10 @@ func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
 		log.Errorf("sorry, not supported yet")
 	}
 
-	ctx.Settings.AutoConfigCheck = promptAutoConfigCheck(autoConfigCheck)
+	ctx.Settings.CacheRefresh = promptCacheRefresh(cacheRefresh)
 
-	if ctx.Settings.AutoConfigCheck {
-		ctx.Settings.CacheRefresh = promptCacheRefresh(cacheRefresh)
+	if ctx.Settings.CacheRefresh > 0 {
+		ctx.Settings.AutoConfigCheck = promptAutoConfigCheck(autoConfigCheck)
 	}
 
 	// First check if using Firefox w/ Containers
@@ -176,20 +175,26 @@ func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
 			`%s`,
 		}
 	} else {
+		// Not using firefox containers...
 		ctx.Settings.FirefoxOpenUrlInContainer = false
-		// otherwise, prompt for our UrlAction and possibly browser
-		ctx.Settings.UrlAction = promptUrlAction(urlAction)
+		ctx.Settings.UrlAction = promptUrlAction(urlAction, ctx.Settings.FirefoxOpenUrlInContainer)
+	}
 
-		switch ctx.Settings.UrlAction {
-		case "open":
-			ctx.Settings.Browser = promptDefaultBrowser(browser)
+	ctx.Settings.ConfigProfilesUrlAction = promptConfigProfilesUrlAction(
+		configProfilesUrlAction, ctx.Settings.FirefoxOpenUrlInContainer)
 
-		case "exec":
+	// should we prompt user to override default browser?
+	if ctx.Settings.UrlAction == "open" || ctx.Settings.ConfigProfilesUrlAction == "open" {
+		ctx.Settings.Browser = promptDefaultBrowser(browser)
+	}
+
+	// Does either action call `exec` without firefox containers?
+	if ctx.Settings.UrlAction == "exec" || ctx.Settings.ConfigProfilesUrlAction == "exec" {
+		if !ctx.Settings.FirefoxOpenUrlInContainer {
 			ctx.Settings.UrlExecCommand = promptUrlExecCommand(urlExecCommand)
 		}
 	}
 
-	ctx.Settings.ConfigProfilesUrlAction = promptConfigProfilesUrlAction(configProfilesUrlAction)
 	ctx.Settings.ConsoleDuration = promptConsoleDuration(consoleDuration)
 	ctx.Settings.HistoryLimit = promptHistoryLimit(hLimit)
 	ctx.Settings.HistoryMinutes = promptHistoryMinutes(hMinutes)
