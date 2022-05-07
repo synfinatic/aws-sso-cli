@@ -51,6 +51,7 @@ type SsoAPI interface {
 }
 
 type AWSSSO struct {
+	key            string // key in the settings file that names us
 	sso            SsoAPI
 	ssooidc        SsoOidcAPI
 	store          storage.SecureStorage
@@ -79,6 +80,7 @@ func NewAWSSSO(s *SSOConfig, store *storage.SecureStorage) *AWSSSO {
 	})
 
 	as := AWSSSO{
+		key:            s.key,
 		sso:            ssoSession,
 		ssooidc:        oidcSession,
 		store:          *store,

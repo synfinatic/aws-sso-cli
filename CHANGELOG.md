@@ -18,6 +18,8 @@
  * Added `Profile` to the list of default fields for the `list` command
  * `list` command can now generate a CSV
  * Renamed the `config` command to `config-profiles` to be less confusing
+ * You can now specify the same StartURL in multiple SSOConfig blocks so you
+    can authenticate as different users at the same time.
 
 ## [v1.8.1] - 2022-05-02
 

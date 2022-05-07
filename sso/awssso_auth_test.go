@@ -92,11 +92,12 @@ func (m *mockSsoOidcAPI) CreateToken(ctx context.Context, params *ssooidc.Create
 
 func TestStoreKey(t *testing.T) {
 	as := &AWSSSO{
+		key:       "atest",
 		SsoRegion: "us-west-1",
 		StartUrl:  "https://testing.awsapps.com/start",
 	}
 
-	assert.Equal(t, "us-west-1|https://testing.awsapps.com/start", as.StoreKey())
+	assert.Equal(t, "atest", as.StoreKey())
 }
 
 func TestAuthenticateSteps(t *testing.T) {
