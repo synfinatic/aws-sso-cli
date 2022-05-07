@@ -17,7 +17,7 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/stretchr/testify v1.7.1
-	github.com/synfinatic/gotable v0.0.2
+	github.com/synfinatic/gotable v0.0.3
 	github.com/willabides/kongplete v0.2.0
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
 )
