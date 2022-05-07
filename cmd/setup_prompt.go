@@ -55,15 +55,68 @@ var AvailableAwsSSORegions []string = []string{
 	"us-gov-west-1",
 }
 
+type selectOptions struct {
+	Name  string
+	Value string
+}
+
+var yesNoItems = []selectOptions{
+	{
+		Name:  "No",
+		Value: "No",
+	},
+	{
+		Name:  "Yes",
+		Value: "Yes",
+	},
+}
+
+func yesNoPos(val bool) int {
+	if val {
+		return 1
+	}
+	return 0
+}
+
+func defaultSelect(options []selectOptions, value string) int {
+	var i int = 0
+	for _, v := range options {
+		if v.Value == value {
+			return i
+		}
+		i++
+	}
+	return 0
+}
+
+func makeSelectTemplate(label string) *promptui.SelectTemplates {
+	return &promptui.SelectTemplates{
+		Label:    "{{ . }}",
+		Active:   promptui.IconSelect + " {{ .Name | cyan }}",
+		Inactive: "  {{ .Name }}",
+		Selected: promptui.IconGood + fmt.Sprintf(" %s: {{ .Name }}", label),
+	}
+}
+
+func makePromptTemplate(label string) *promptui.PromptTemplates {
+	return &promptui.PromptTemplates{
+		Prompt:  "{{ . }}",
+		Success: promptui.IconGood + " {{ . }}: ",
+	}
+}
+
 var ssoNameRegexp *regexp.Regexp
 
 func promptSsoInstance(defaultValue string) string {
 	var val string
 	var err error
 
+	fmt.Printf("\n")
+
 	// Name our SSO instance
+	label := "SSO Instance Name (DefaultSSO)"
 	prompt := promptui.Prompt{
-		Label: "SSO Instance Name (DefaultSSO)",
+		Label: label,
 		Validate: func(input string) error {
 			if ssoNameRegexp == nil {
 				ssoNameRegexp, _ = regexp.Compile(`^[a-zA-Z0-9-_@:]+$`)
@@ -73,8 +126,9 @@ func promptSsoInstance(defaultValue string) string {
 			}
 			return fmt.Errorf("SSO Name must be a valid string")
 		},
-		Default: defaultValue,
-		Pointer: promptui.PipeCursor,
+		Default:   defaultValue,
+		Pointer:   promptui.PipeCursor,
+		Templates: makePromptTemplate(label),
 	}
 	if val, err = prompt.Run(); err != nil {
 		log.Fatal(err)
@@ -89,10 +143,13 @@ func promptStartUrl(defaultValue string) string {
 	var err error
 	validFQDN := false
 
+	fmt.Printf("\n")
+
 	for !validFQDN {
 		// Get the hostname of the AWS SSO start URL
+		label := "SSO Start URL Hostname (XXXXXXX.awsapps.com)"
 		prompt := promptui.Prompt{
-			Label: "SSO Start URL Hostname (XXXXXXX.awsapps.com)",
+			Label: label,
 			Validate: func(input string) error {
 				if ssoHostnameRegexp == nil {
 					ssoHostnameRegexp, _ = regexp.Compile(`^([a-zA-Z0-9-]+)(\.awsapps\.com)?$`)
@@ -102,8 +159,9 @@ func promptStartUrl(defaultValue string) string {
 				}
 				return fmt.Errorf("Invalid DNS hostname: %s", input)
 			},
-			Default: defaultValue,
-			Pointer: promptui.PipeCursor,
+			Default:   defaultValue,
+			Pointer:   promptui.PipeCursor,
+			Templates: makePromptTemplate(label),
 		}
 		if val, err = prompt.Run(); err != nil {
 			log.Fatal(err)
@@ -120,38 +178,41 @@ func promptStartUrl(defaultValue string) string {
 }
 
 func promptAwsSsoRegion(defaultValue string) string {
-	var val string
+	var i int
 	var err error
 
-	pos := 0
-	for i, v := range AvailableAwsSSORegions {
-		if v == defaultValue {
-			pos = i
-		}
+	fmt.Printf("\n")
+
+	items := []selectOptions{}
+	for _, x := range AvailableAwsSSORegions {
+		items = append(items, selectOptions{
+			Value: x,
+			Name:  x,
+		})
 	}
 
 	// Pick our AWS SSO region
 	label := "AWS SSO Region (SSORegion)"
 	sel := promptui.Select{
 		Label:        label,
-		Items:        AvailableAwsSSORegions,
+		Items:        items,
 		HideSelected: false,
-		CursorPos:    pos,
+		CursorPos:    index(AvailableAwsRegions, defaultValue),
 		Stdout:       &utils.BellSkipper{},
-		Templates: &promptui.SelectTemplates{
-			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
-		},
+		Templates:    makeSelectTemplate(label),
 	}
-	if _, val, err = sel.Run(); err != nil {
+	if i, _, err = sel.Run(); err != nil {
 		log.Fatal(err)
 	}
 
-	return val
+	return items[i].Value
 }
 
 func promptDefaultRegion(defaultValue string) string {
 	var val string
 	var err error
+
+	fmt.Printf("\n")
 
 	// Pick the default AWS region to use
 	defaultRegions := []string{"None"}
@@ -170,9 +231,7 @@ func promptDefaultRegion(defaultValue string) string {
 		CursorPos:    index(defaultRegions, defaultValue),
 		HideSelected: false,
 		Stdout:       &utils.BellSkipper{},
-		Templates: &promptui.SelectTemplates{
-			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
-		},
+		Templates:    makeSelectTemplate(label),
 	}
 	if _, val, err = sel.Run(); err != nil {
 		log.Fatal(err)
@@ -188,68 +247,96 @@ func promptDefaultRegion(defaultValue string) string {
 // promptUseFirefox asks if the user wants to use firefox containers
 // and if so, returns the path to the Firefox binary
 func promptUseFirefox(defaultValue string) string {
-	var val, useFirefox string
+	var val string
+	var i int
 	var err error
-	idx := 1
 
-	if defaultValue != "" {
-		idx = 0
-	}
+	fmt.Printf("\n")
 
-	label := "Use Firefox containers to open URLs?"
+	label := "Use Firefox containers to open URLs"
 	sel := promptui.Select{
 		Label:        label,
 		HideSelected: false,
-		Items:        []string{"Yes", "No"},
-		CursorPos:    idx,
+		Items:        yesNoItems,
+		CursorPos:    yesNoPos(defaultValue != ""),
 		Stdout:       &utils.BellSkipper{},
-		Templates: &promptui.SelectTemplates{
-			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
-		},
+		Templates:    makeSelectTemplate(label),
 	}
-	if _, useFirefox, err = sel.Run(); err != nil {
+	if i, _, err = sel.Run(); err != nil {
 		log.Fatal(err)
 	}
 
-	if useFirefox == "Yes" {
-		fmt.Printf("Ensure that you have the 'Open external links in a container' plugin for Firefox.")
-		prompt := promptui.Prompt{
-			Label:    "Path to Firefox binary",
-			Stdout:   &utils.BellSkipper{},
-			Default:  firefoxDefaultBrowserPath(defaultValue),
-			Pointer:  promptui.PipeCursor,
-			Validate: validateBinary,
-		}
-		if val, err = prompt.Run(); err != nil {
-			log.Fatal(err)
-		}
+	if yesNoItems[i].Value == "No" {
+		return ""
+	}
+
+	fmt.Printf("\n")
+
+	fmt.Printf("Ensure that you have the 'Open external links in a container' plugin for Firefox.")
+	label = "Path to Firefox binary"
+	prompt := promptui.Prompt{
+		Label:     label,
+		Stdout:    &utils.BellSkipper{},
+		Default:   firefoxDefaultBrowserPath(defaultValue),
+		Pointer:   promptui.PipeCursor,
+		Validate:  validateBinary,
+		Templates: makePromptTemplate(label),
+	}
+	if val, err = prompt.Run(); err != nil {
+		log.Fatal(err)
 	}
 
 	return val
 }
 
-func promptUrlAction(defaultValue string) string {
-	var val string
+func promptUrlAction(defaultValue string, useFirefox bool) string {
+	var i int
 	var err error
-	items := []string{"clip", "exec", "open", "print", "printurl"}
+
+	cmd := "Execute custom command"
+	if useFirefox {
+		cmd = "Open in Firefox"
+	}
+	fmt.Printf("\n")
+
+	items := []selectOptions{
+		{
+			Name:  "Copy to clipboard",
+			Value: "clip",
+		},
+		{
+			Name:  cmd,
+			Value: "exec",
+		},
+		{
+			Name:  "Open in (default) browser",
+			Value: "open",
+		},
+		{
+			Name:  "Print message with URL",
+			Value: "print",
+		},
+		{
+			Name:  "Print just the URL",
+			Value: "printurl",
+		},
+	}
 
 	// How should we deal with URLs?  Note we don't support `exec`
 	// here since that is an "advanced" feature
 	label := "Default action to take with URLs (UrlAction)"
 	sel := promptui.Select{
 		Label:     label,
-		CursorPos: index(items, defaultValue),
+		CursorPos: defaultSelect(items, defaultValue),
 		Items:     items,
 		Stdout:    &utils.BellSkipper{},
-		Templates: &promptui.SelectTemplates{
-			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
-		},
+		Templates: makeSelectTemplate(label),
 	}
-	if _, val, err = sel.Run(); err != nil {
+	if i, _, err = sel.Run(); err != nil {
 		log.Fatal(err)
 	}
 
-	return val
+	return items[i].Value
 }
 
 func promptUrlExecCommand(defaultValue []interface{}) []interface{} {
@@ -258,15 +345,19 @@ func promptUrlExecCommand(defaultValue []interface{}) []interface{} {
 	var line string
 	argNum := 1
 
-	fmt.Printf("Please enter one per line, the command and list of arguments for UrlExecCommand\n")
+	fmt.Printf("\n")
+
+	fmt.Printf("Please enter one per line, the command and list of arguments for UrlExecCommand:\n")
 
 	command := defaultValue[0].(string)
+	label := "Binary to execute to open URLs"
 	prompt := promptui.Prompt{
-		Label:    "Binary to execute to open URLs",
-		Default:  command,
-		Stdout:   &utils.BellSkipper{},
-		Validate: validateBinary,
-		Pointer:  promptui.PipeCursor,
+		Label:     label,
+		Default:   command,
+		Stdout:    &utils.BellSkipper{},
+		Validate:  validateBinary,
+		Pointer:   promptui.PipeCursor,
+		Templates: makePromptTemplate(label),
 	}
 
 	if line, err = prompt.Run(); err != nil {
@@ -285,11 +376,13 @@ func promptUrlExecCommand(defaultValue []interface{}) []interface{} {
 		if argNum < len(defaultValue) {
 			arg = defaultValue[argNum].(string)
 		}
+		label := fmt.Sprintf("Enter argument #%d or empty string to stop", argNum)
 		prompt = promptui.Prompt{
-			Label:   fmt.Sprintf("Enter argument #%d or empty string to stop", argNum),
-			Default: arg,
-			Stdout:  &utils.BellSkipper{},
-			Pointer: promptui.PipeCursor,
+			Label:     label,
+			Default:   arg,
+			Stdout:    &utils.BellSkipper{},
+			Pointer:   promptui.PipeCursor,
+			Templates: makePromptTemplate(label),
 		}
 		if line, err = prompt.Run(); err != nil {
 			log.Fatal(err)
@@ -306,12 +399,16 @@ func promptDefaultBrowser(defaultValue string) string {
 	var val string
 	var err error
 
+	fmt.Printf("\n")
+
+	label := "Specify path to browser to use. Leave empty to use system default (Browser)"
 	prompt := promptui.Prompt{
-		Label:    "Specify path to browser to use. Leave empty to use system default (Browser)",
-		Default:  defaultValue,
-		Stdout:   &utils.BellSkipper{},
-		Pointer:  promptui.PipeCursor,
-		Validate: validateBinaryOrNone,
+		Label:     label,
+		Default:   defaultValue,
+		Stdout:    &utils.BellSkipper{},
+		Pointer:   promptui.PipeCursor,
+		Validate:  validateBinaryOrNone,
+		Templates: makePromptTemplate(label),
 	}
 
 	if val, err = prompt.Run(); err != nil {
@@ -325,9 +422,12 @@ func promptConsoleDuration(defaultValue int32) int32 {
 	var val string
 	var err error
 
+	fmt.Printf("\n")
+
 	// https://docs.aws.amazon.com/STS/latest/APIReference/API_GetFederationToken.html
+	label := "Minutes before AWS Console sessions expire (ConsoleDuration)"
 	prompt := promptui.Prompt{
-		Label: "Number of minutes before AWS Console sessions expire (ConsoleDuration)",
+		Label: label,
 		Validate: func(input string) error {
 			x, err := strconv.ParseInt(input, 10, 64)
 			if err != nil || x > 2160 || x < 15 {
@@ -335,9 +435,10 @@ func promptConsoleDuration(defaultValue int32) int32 {
 			}
 			return nil
 		},
-		Stdout:  &utils.BellSkipper{},
-		Default: fmt.Sprintf("%d", defaultValue),
-		Pointer: promptui.PipeCursor,
+		Stdout:    &utils.BellSkipper{},
+		Default:   fmt.Sprintf("%d", defaultValue),
+		Pointer:   promptui.PipeCursor,
+		Templates: makePromptTemplate(label),
 	}
 	if val, err = prompt.Run(); err != nil {
 		log.Fatal(err)
@@ -351,12 +452,16 @@ func promptHistoryLimit(defaultValue int64) int64 {
 	var val string
 	var err error
 
+	fmt.Printf("\n")
+
+	label := "Maximum number of History items to keep (HistoryLimit)"
 	prompt := promptui.Prompt{
-		Label:    "Maximum number of History items to keep (HistoryLimit)",
-		Validate: validateInteger,
-		Stdout:   &utils.BellSkipper{},
-		Default:  fmt.Sprintf("%d", defaultValue),
-		Pointer:  promptui.PipeCursor,
+		Label:     label,
+		Validate:  validateInteger,
+		Stdout:    &utils.BellSkipper{},
+		Default:   fmt.Sprintf("%d", defaultValue),
+		Pointer:   promptui.PipeCursor,
+		Templates: makePromptTemplate(label),
 	}
 	if val, err = prompt.Run(); err != nil {
 		log.Fatal(err)
@@ -370,12 +475,16 @@ func promptHistoryMinutes(defaultValue int64) int64 {
 	var val string
 	var err error
 
+	fmt.Printf("\n")
+
+	label := "Number of minutes to keep items in History (HistoryMinutes)"
 	prompt := promptui.Prompt{
-		Label:    "Number of minutes to keep items in History (HistoryMinutes)",
-		Validate: validateInteger,
-		Default:  fmt.Sprintf("%d", defaultValue),
-		Stdout:   &utils.BellSkipper{},
-		Pointer:  promptui.PipeCursor,
+		Label:     label,
+		Validate:  validateInteger,
+		Default:   fmt.Sprintf("%d", defaultValue),
+		Stdout:    &utils.BellSkipper{},
+		Pointer:   promptui.PipeCursor,
+		Templates: makePromptTemplate(label),
 	}
 	if val, err = prompt.Run(); err != nil {
 		log.Fatal(err)
@@ -386,39 +495,32 @@ func promptHistoryMinutes(defaultValue int64) int64 {
 }
 
 func promptLogLevel(defaultValue string) string {
-	var val string
+	var i int
 	var err error
 
-	logLevels := []string{
-		"error",
-		"warn",
-		"info",
-		"debug",
-		"trace",
+	fmt.Printf("\n")
+
+	items := []selectOptions{}
+	for _, v := range VALID_LOG_LEVELS {
+		items = append(items, selectOptions{
+			Name:  v,
+			Value: v,
+		})
 	}
 
 	label := "Log Level (LogLevel)"
 	sel := promptui.Select{
 		Label:        label,
-		Items:        logLevels,
-		CursorPos:    index(logLevels, defaultValue),
+		Items:        items,
+		CursorPos:    index(VALID_LOG_LEVELS, defaultValue),
 		HideSelected: false,
 		Stdout:       &utils.BellSkipper{},
-		Templates: &promptui.SelectTemplates{
-			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
-		},
+		Templates:    makeSelectTemplate(label),
 	}
-	if _, val, err = sel.Run(); err != nil {
+	if i, _, err = sel.Run(); err != nil {
 		log.Fatal(err)
 	}
-	return val
-}
-
-func yesNo(x bool) int {
-	if x {
-		return 0
-	}
-	return 1
+	return items[i].Value
 }
 
 // index returns the slice index of the value.  Useful for CursorPos
@@ -432,35 +534,40 @@ func index(s []string, v string) int {
 }
 
 func promptAutoConfigCheck(flag bool) bool {
-	var val string
+	var i int
 	var err error
 
-	label := "Auto update AWS SSO cache? (AutoConfigCheck)"
+	fmt.Printf("\n")
+
+	label := "Auto update ~/.aws/config with latest AWS SSO roles? (AutoConfigCheck)"
 	sel := promptui.Select{
 		Label:        label,
-		Items:        []string{"Yes", "No"},
-		CursorPos:    yesNo(flag),
+		Items:        yesNoItems,
+		CursorPos:    yesNoPos(flag),
 		HideSelected: false,
 		Stdout:       &utils.BellSkipper{},
-		Templates: &promptui.SelectTemplates{
-			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
-		},
+		Templates:    makeSelectTemplate(label),
 	}
-	if _, val, err = sel.Run(); err != nil {
+	if i, _, err = sel.Run(); err != nil {
 		log.WithError(err).Fatalf("Unable to select AutoConfigCheck")
 	}
 
-	return val == "Yes"
+	return yesNoItems[i].Value == "Yes"
 }
 
 func promptCacheRefresh(defaultValue int64) int64 {
 	var val string
 	var err error
+
+	fmt.Printf("\n")
+
+	label := "Hours between AWS SSO cache refresh. 0 to disable. (CacheRefresh)"
 	prompt := promptui.Prompt{
-		Label:    "Hours between AWS SSO cache refresh. 0 to disable (CacheRefresh)",
-		Validate: validateInteger,
-		Default:  fmt.Sprintf("%d", defaultValue),
-		Pointer:  promptui.PipeCursor,
+		Label:     label,
+		Validate:  validateInteger,
+		Default:   fmt.Sprintf("%d", defaultValue),
+		Pointer:   promptui.PipeCursor,
+		Templates: makePromptTemplate(label),
 	}
 
 	if val, err = prompt.Run(); err != nil {
@@ -470,27 +577,49 @@ func promptCacheRefresh(defaultValue int64) int64 {
 	return x
 }
 
-func promptConfigProfilesUrlAction(defaultValue string) string {
-	var val string
+func promptConfigProfilesUrlAction(defaultValue string, useFirefox bool) string {
 	var err error
+	var i int
 
-	label := "How to open URLs via $AWS_PROFILE (ConfigProfilesUrlAction)"
-	sel := promptui.Select{
-		Label:        label,
-		Items:        CONFIG_OPEN_OPTIONS,
-		CursorPos:    index(CONFIG_OPEN_OPTIONS, defaultValue),
-		HideSelected: false,
-		Stdout:       &utils.BellSkipper{},
-		Templates: &promptui.SelectTemplates{
-			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
+	fmt.Printf("\n")
+
+	cmd := "Execute custom command"
+	if useFirefox {
+		cmd = "Open in Firefox"
+	}
+
+	// Must specify these in same order as CONFIG_OPEN_OPTIONS
+	items := []selectOptions{
+		{
+			Name:  "Copy to clipboard",
+			Value: "clip",
+		},
+		{
+			Name:  cmd,
+			Value: "exec",
+		},
+		{
+			Name:  "Open URL in (default) browser",
+			Value: "open",
 		},
 	}
 
-	if _, val, err = sel.Run(); err != nil {
+	label := "How to open URLs via $AWS_PROFILE (ConfigProfilesUrlAction)"
+
+	sel := promptui.Select{
+		Label:        label,
+		Items:        items,
+		CursorPos:    index(CONFIG_OPEN_OPTIONS, defaultValue),
+		HideSelected: false,
+		Stdout:       &utils.BellSkipper{},
+		Templates:    makeSelectTemplate(label),
+	}
+
+	if i, _, err = sel.Run(); err != nil {
 		log.Fatal(err)
 	}
 
-	return val
+	return items[i].Value
 }
 
 func validateInteger(input string) error {
