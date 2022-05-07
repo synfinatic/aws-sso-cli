@@ -9,6 +9,7 @@
  * Add `completions` command which supports `--install` and `--uninstall` flags
  * Enhanced `list` command with CSV output and basic filtering
  * Added `reconfig` command to run through the setup wizard #354
+ * Added more configuration options to the setup wizard
 
 ### Changes
 

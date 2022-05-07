@@ -19,6 +19,8 @@ package sso
  */
 
 import (
+	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -50,23 +52,24 @@ type Settings struct {
 	DefaultRegion             string                 `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
 	ConsoleDuration           int32                  `koanf:"ConsoleDuration" yaml:"ConsoleDuration,omitempty"`
 	JsonStore                 string                 `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
+	FirefoxOpenUrlInContainer bool                   `koanf:"FirefoxOpenUrlInContainer" yaml:"FirefoxOpenUrlInContainer"`
 	UrlAction                 string                 `koanf:"UrlAction" yaml:"UrlAction,omitempty"`
 	Browser                   string                 `koanf:"Browser" yaml:"Browser,omitempty"`
+	AutoConfigCheck           bool                   `koanf:"AutoConfigCheck" yaml:"AutoConfigCheck"`
+	ConfigUrlAction           string                 `koanf:"ConfigUrlAction" yaml:"ConfigUrlAction"` // deprecated
+	ConfigProfilesUrlAction   string                 `koanf:"ConfigProfilesUrlAction" yaml:"ConfigProfilesUrlAction"`
+	CacheRefresh              int64                  `koanf:"CacheRefresh" yaml:"CacheRefresh"`
 	UrlExecCommand            interface{}            `koanf:"UrlExecCommand" yaml:"UrlExecCommand,omitempty"` // string or list
-	ProfileFormat             string                 `koanf:"ProfileFormat" yaml:"ProfileFormat,omitempty"`
-	AccountPrimaryTag         []string               `koanf:"AccountPrimaryTag" yaml:"AccountPrimaryTag,omitempty"`
-	PromptColors              PromptColors           `koanf:"PromptColors" yaml:"PromptColors,omitempty"` // go-prompt colors
 	LogLevel                  string                 `koanf:"LogLevel" yaml:"LogLevel,omitempty"`
 	LogLines                  bool                   `koanf:"LogLines" yaml:"LogLines,omitempty"`
 	HistoryLimit              int64                  `koanf:"HistoryLimit" yaml:"HistoryLimit,omitempty"`
 	HistoryMinutes            int64                  `koanf:"HistoryMinutes" yaml:"HistoryMinutes,omitempty"`
+	ProfileFormat             string                 `koanf:"ProfileFormat" yaml:"ProfileFormat,omitempty"`
+	AccountPrimaryTag         []string               `koanf:"AccountPrimaryTag" yaml:"AccountPrimaryTag,omitempty"`
+	PromptColors              PromptColors           `koanf:"PromptColors" yaml:"PromptColors,omitempty"` // go-prompt colors
 	ListFields                []string               `koanf:"ListFields" yaml:"ListFields,omitempty"`
 	ConfigVariables           map[string]interface{} `koanf:"ConfigVariables" yaml:"ConfigVariables,omitempty"`
 	EnvVarTags                []string               `koanf:"EnvVarTags" yaml:"EnvVarTags,omitempty"`
-	FirefoxOpenUrlInContainer bool                   `koanf:"FirefoxOpenUrlInContainer" yaml:"FirefoxOpenUrlInContainer"`
-	AutoConfigCheck           bool                   `koanf:"AutoConfigCheck" yaml:"AutoConfigCheck"`
-	ConfigUrlAction           string                 `koanf:"ConfigUrlAction" yaml:"ConfigUrlAction"`
-	CacheRefresh              int64                  `koanf:"CacheRefresh" yaml:"CacheRefresh"`
 }
 
 type SSOConfig struct {
@@ -205,6 +208,12 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 
 	s.SSO[s.DefaultSSO].Refresh(s)
 
+	// Upgrade ConfigUrlAction to ConfigProfilesUrlAction because we want to
+	// deprecate ConfigUrlAction.
+	if s.ConfigUrlAction != "" && s.ConfigProfilesUrlAction == "" {
+		s.ConfigProfilesUrlAction = s.ConfigUrlAction
+	}
+
 	// load the cache
 	var err error
 	if s.Cache, err = OpenCache(s.cacheFile, s); err != nil {
@@ -216,13 +225,26 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 
 // Save overwrites the current config file with our settings (not recommended)
 func (s *Settings) Save(configFile string, overwrite bool) error {
-	if _, err := os.Stat(configFile); !errors.Is(err, os.ErrNotExist) && !overwrite {
+	var err error
+
+	if _, err = os.Stat(configFile); !errors.Is(err, os.ErrNotExist) && !overwrite {
 		return fmt.Errorf("Refusing to overwrite %s", configFile)
 	}
 
-	data, err := goyaml.Marshal(s)
-	if err != nil {
+	var output bytes.Buffer
+	w := bufio.NewWriter(&output)
+
+	encoder := goyaml.NewEncoder(w, goyaml.Indent(4), goyaml.IndentSequence(true))
+	if err = encoder.Encode(s); err != nil {
 		return err
+	}
+	if err = encoder.Close(); err != nil {
+		return err
+	}
+	w.Flush()
+	fileBytes := output.Bytes()
+	if len(fileBytes) == 0 {
+		return fmt.Errorf("Refusing to write 0 bytes to config.yaml")
 	}
 
 	configDir := utils.GetHomePath(filepath.Dir(configFile))
@@ -232,7 +254,7 @@ func (s *Settings) Save(configFile string, overwrite bool) error {
 	}
 
 	// need to make directory if not exist
-	return ioutil.WriteFile(configFile, data, 0600)
+	return ioutil.WriteFile(configFile, fileBytes, 0600)
 }
 
 // configure our settings using the overrides

@@ -60,6 +60,7 @@ func (suite *SettingsTestSuite) TestLoadSettings() {
 	t := suite.T()
 
 	assert.Equal(t, TEST_SETTINGS_FILE, suite.settings.ConfigFile())
+	assert.Equal(t, suite.settings.ConfigUrlAction, suite.settings.ConfigProfilesUrlAction)
 }
 
 func (suite *SettingsTestSuite) TestGetSelectedSSO() {

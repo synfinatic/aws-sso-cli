@@ -33,28 +33,15 @@ time so systems may generate warnings.
 
 ## Guided Configuration
 
-AWS SSO CLI includes a simple setup wizard to aid in configuration.  This
-wizard will automatically run anytime you run `aws-sso` and have a missing
-`~/.aws-sso/config.yaml` file and it will ask the following questions:
-
- * SSO Instance Name ([DefaultSSO](config.md#defaultsso))
- * SSO Start URL ([StartUrl](config.md#starturl))
- * AWS SSO Region ([SSORegion](config.md#ssoregion))
- * Default region for connecting to AWS ([DefaultRegion](config.md#defaultregion))
- * How to handle URLs:
-	* Open URLs in a Firefox container? ([FirefoxOpenUrlInContainer](config.md#firefoxopenurlincontainer))
-	* Default action to take with URls ([UrlAction](config.md#browser--urlaction))
-	* Override default browser with `UrlAction: open` ([Browser](config.md#browser))
- * Maximum number of History items to keep ([HistoryLimit](config.md#historylimit))
- * Number of minutes to keep items in History ([HistoryMinutes](config.md#historyminutes))
- * Log Level ([LogLevel](config.md#loglevel--loglines))
+AWS SSO CLI includes a simple setup wizard to aid in a basic configuration.  This
+wizard will automatically run the first time you run `aws-sso`.
 
 For more information about configuring `aws-sso` read the
 [configuration guide](config.md).
 
 ## Enabling auto-completion in your shell
 
-For version 1.9.0, `aws-sso` enhanced it's shell integration and auto-complete
+As of v1.9.0, `aws-sso` enhanced it's shell integration and auto-complete
 functionality.  The result is an improved [user experience](
 commands.md#shell-helpers) but requires a change that is not 100% backwards
 compatible.  Please follow the instructions below that match your sitation.

@@ -78,19 +78,19 @@ func (cc *ReconfigCmd) Run(ctx *RunContext) error {
 
 		src.Close()
 		dst.Close()
-		log.Infof("wrote %s", newFile)
+		fmt.Printf("Wrote: %s\n\n", newFile)
 	}
 
 	return setupWizard(ctx, true, ctx.Cli.Reconfig.AddSSO)
 }
 
 func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
-	var err error
 	var instanceName, startHostname, ssoRegion, defaultRegion, urlAction string
-	var defaultLevel, firefoxBrowserPath, browser, configUrlAction string
+	var defaultLevel, firefoxBrowserPath, browser, configProfilesUrlAction string
 	var hLimit, hMinutes, cacheRefresh int64
+	var consoleDuration int32
 	var autoConfigCheck bool
-	urlExecCommand := []string{}
+	urlExecCommand := []interface{}{}
 
 	// Don't run setup twice
 	if ranSetup {
@@ -98,21 +98,34 @@ func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
 	}
 	ranSetup = true
 
+	fmt.Printf(`**********************************************************************
+* Do you have questions?  Do you like reading docs?  We've got docs! *
+* https://github.com/synfinatic/aws-sso-cli/blob/main/docs/config.md *
+**********************************************************************
+
+`)
+
 	if reconfig {
 		defaultLevel = ctx.Settings.LogLevel
-		cacheRefresh = ctx.Settings.CacheRefresh
 		defaultRegion = ctx.Settings.DefaultRegion
 		urlAction = ctx.Settings.UrlAction
-		urlExecCommand = ctx.Settings.UrlExecCommand.([]string)
+		urlExecCommand = ctx.Settings.UrlExecCommand.([]interface{})
 		if ctx.Settings.FirefoxOpenUrlInContainer {
-			firefoxBrowserPath = urlExecCommand[0]
+			firefoxBrowserPath = urlExecCommand[0].(string)
 			ctx.Settings.FirefoxOpenUrlInContainer = true
 		}
 		autoConfigCheck = ctx.Settings.AutoConfigCheck
-		configUrlAction = ctx.Settings.ConfigUrlAction
+		cacheRefresh = ctx.Settings.CacheRefresh
 		hLimit = ctx.Settings.HistoryLimit
 		hMinutes = ctx.Settings.HistoryMinutes
 		browser = ctx.Settings.Browser
+		consoleDuration = ctx.Settings.ConsoleDuration
+
+		// upgrade deprecated config option
+		configProfilesUrlAction = ctx.Settings.ConfigProfilesUrlAction
+		if ctx.Settings.ConfigUrlAction != "" && configProfilesUrlAction == "" {
+			configProfilesUrlAction = ctx.Settings.ConfigUrlAction
+		}
 		// skips:
 		// - SSORegion
 		// - DefaultRegion
@@ -129,21 +142,10 @@ func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
 	}
 
 	if !reconfig {
-		if instanceName, err = promptSsoInstance(""); err != nil {
-			return err
-		}
-
-		if startHostname, err = promptStartUrl(""); err != nil {
-			return err
-		}
-
-		if ssoRegion, err = promptAwsSsoRegion(""); err != nil {
-			return err
-		}
-
-		if defaultRegion, err = promptDefaultRegion(defaultRegion); err != nil {
-			return err
-		}
+		instanceName = promptSsoInstance("")
+		startHostname = promptStartUrl("")
+		ssoRegion = promptAwsSsoRegion("")
+		defaultRegion = promptDefaultRegion(defaultRegion)
 
 		ctx.Settings.SSO[instanceName] = &sso.SSOConfig{
 			SSORegion:     ssoRegion,
@@ -156,20 +158,14 @@ func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
 		log.Errorf("sorry, not supported yet")
 	}
 
-	if ctx.Settings.AutoConfigCheck, err = promptAutoConfigCheck(autoConfigCheck); err != nil {
-		return err
-	}
+	ctx.Settings.AutoConfigCheck = promptAutoConfigCheck(autoConfigCheck)
 
 	if ctx.Settings.AutoConfigCheck {
-		if ctx.Settings.CacheRefresh, err = promptCacheRefresh(cacheRefresh); err != nil {
-			return err
-		}
+		ctx.Settings.CacheRefresh = promptCacheRefresh(cacheRefresh)
 	}
 
 	// First check if using Firefox w/ Containers
-	if firefoxBrowserPath, err = promptUseFirefox(firefoxBrowserPath); err != nil {
-		return err
-	}
+	firefoxBrowserPath = promptUseFirefox(firefoxBrowserPath)
 
 	// if yes, then configure urlAction = 'exec' and our UrlExecCommand
 	if firefoxBrowserPath != "" {
@@ -182,42 +178,22 @@ func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
 	} else {
 		ctx.Settings.FirefoxOpenUrlInContainer = false
 		// otherwise, prompt for our UrlAction and possibly browser
-		if ctx.Settings.UrlAction, err = promptUrlAction(urlAction); err != nil {
-			return err
-		}
+		ctx.Settings.UrlAction = promptUrlAction(urlAction)
 
 		switch ctx.Settings.UrlAction {
 		case "open":
-			if ctx.Settings.UrlAction, err = promptDefaultBrowser(browser); err != nil {
-				return err
-			}
+			ctx.Settings.Browser = promptDefaultBrowser(browser)
 
 		case "exec":
-			if ctx.Settings.UrlExecCommand, err = promptUrlExecCommand(urlExecCommand); err != nil {
-				return err
-			}
+			ctx.Settings.UrlExecCommand = promptUrlExecCommand(urlExecCommand)
 		}
 	}
 
-	// Only prompt for ConfigUrlAction is UrlAction is not valid or different
-	if utils.StrListContains(urlAction, CONFIG_OPEN_OPTIONS) || urlAction != configUrlAction {
-		ctx.Settings.ConfigUrlAction = urlAction
-	} else {
-		if ctx.Settings.ConfigUrlAction, err = promptConfigUrlAction(configUrlAction); err != nil {
-			return err
-		}
-	}
-
-	if ctx.Settings.HistoryLimit, err = promptHistoryLimit(hLimit); err != nil {
-		return err
-	}
-
-	if ctx.Settings.HistoryMinutes, err = promptHistoryMinutes(hMinutes); err != nil {
-		return err
-	}
-
-	if ctx.Settings.LogLevel, err = promptLogLevel(defaultLevel); err != nil {
-		return err
-	}
+	ctx.Settings.ConfigProfilesUrlAction = promptConfigProfilesUrlAction(configProfilesUrlAction)
+	ctx.Settings.ConsoleDuration = promptConsoleDuration(consoleDuration)
+	ctx.Settings.HistoryLimit = promptHistoryLimit(hLimit)
+	ctx.Settings.HistoryMinutes = promptHistoryMinutes(hMinutes)
+	ctx.Settings.LogLevel = promptLogLevel(defaultLevel)
+	fmt.Printf("\nAwesome!  Saving the new %s\n", ctx.Cli.ConfigFile)
 	return ctx.Settings.Save(ctx.Cli.ConfigFile, reconfig)
 }

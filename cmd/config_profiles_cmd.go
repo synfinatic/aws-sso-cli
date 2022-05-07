@@ -48,7 +48,7 @@ type ConfigProfilesCmd struct {
 }
 
 func (cc *ConfigProfilesCmd) Run(ctx *RunContext) error {
-	open := ctx.Settings.ConfigUrlAction
+	open := ctx.Settings.ConfigProfilesUrlAction
 	if utils.StrListContains(ctx.Cli.ConfigProfiles.Open, CONFIG_OPEN_OPTIONS) {
 		open = ctx.Cli.ConfigProfiles.Open
 	}

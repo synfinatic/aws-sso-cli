@@ -86,7 +86,8 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"DefaultSSO":                                "Default",
 	"FirefoxOpenUrlInContainer":                 false,
 	"AutoConfigCheck":                           false,
-	"ConfigUrlAction":                           "",
+	"ConfigProfilesUrlAction":                   "",
+	"ConfigUrlAction":                           "", // deprecated
 	"ProfileFormat":                             `{{ .AccountId }}_{{ .RoleName }}`,
 	"CacheRefresh":                              24, // in hours
 }
@@ -104,7 +105,6 @@ type CLI struct {
 
 	// Commands
 	Cache          CacheCmd          `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
-	ConfigProfiles ConfigProfilesCmd `kong:"cmd,help='Update ~/.aws/config with AWS SSO profiles from the cache'"`
 	Console        ConsoleCmd        `kong:"cmd,help='Open AWS Console using specificed AWS role/profile'"`
 	Default        DefaultCmd        `kong:"cmd,hidden,default='1'"` // list command without args
 	Eval           EvalCmd           `kong:"cmd,help='Print AWS environment vars for use with eval $(aws-sso eval ...)'"`
@@ -115,9 +115,10 @@ type CLI struct {
 	Static         StaticCmd         `kong:"cmd,help='Manage static AWS API credentials',hidden"`
 	Tags           TagsCmd           `kong:"cmd,help='List tags'"`
 	Time           TimeCmd           `kong:"cmd,help='Print how much time before current STS Token expires'"`
+	Completions    CompleteCmd       `kong:"cmd,help='Manage shell completions'"`
+	ConfigProfiles ConfigProfilesCmd `kong:"cmd,help='Update ~/.aws/config with AWS SSO profiles from the cache'"`
 	Reconfig       ReconfigCmd       `kong:"cmd,help='Re-run the configuration wizard'"`
 	Version        VersionCmd        `kong:"cmd,help='Print version and exit'"`
-	Completions    CompleteCmd       `kong:"cmd,help='Manage shell completions'"`
 	Setup          SetupCmd          `kong:"cmd,hidden"` // need this so variables are visisble.
 }
 
@@ -332,10 +333,10 @@ func doAuth(ctx *RunContext) *sso.AWSSSO {
 
 		// should we update our config??
 		if !ctx.Cli.NoConfigCheck && ctx.Settings.AutoConfigCheck {
-			if utils.StrListContains(ctx.Settings.ConfigUrlAction, CONFIG_OPEN_OPTIONS) {
+			if utils.StrListContains(ctx.Settings.ConfigProfilesUrlAction, CONFIG_OPEN_OPTIONS) {
 				cfgFile := utils.GetHomePath("~/.aws/config")
 
-				profiles, err := ctx.Settings.GetAllProfiles(ctx.Settings.ConfigUrlAction)
+				profiles, err := ctx.Settings.GetAllProfiles(ctx.Settings.ConfigProfilesUrlAction)
 				if err != nil {
 					log.Warnf("Unable to update %s: %s", cfgFile, err.Error())
 					return AwsSSO
