@@ -2,13 +2,15 @@
 
 ## Unreleased
 
+## [v1.9.0] - 2022-05-08
+
 ### New Features 
 
  * Add support for `aws-sso-profile` and `aws-sso-clear` helper functions which 
 	are automatically installed #357
  * Add `completions` command which supports `--install` and `--uninstall` flags
  * Enhanced `list` command with CSV output and basic filtering
- * Added `reconfig` command to run through the setup wizard #354
+ * Added `config` command to run through the setup wizard #354
  * Added more configuration options to the setup wizard
 
 ### Changes
@@ -331,7 +333,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.8.1...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.9.0...main
+[v1.9.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.0
 [v1.8.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.8.1
 [v1.8.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.8.0
 [v1.7.5]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.7.5

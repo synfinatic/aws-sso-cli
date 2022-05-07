@@ -89,7 +89,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"AutoConfigCheck":                           false,
 	"ConfigProfilesUrlAction":                   "",
 	"ConfigUrlAction":                           "", // deprecated
-	"ProfileFormat":                             `{{ .AccountId }}_{{ .RoleName }}`,
+	"ProfileFormat":                             `{{ .AccountId }}:{{ .RoleName }}`,
 	"CacheRefresh":                              24, // in hours
 }
 
@@ -118,7 +118,7 @@ type CLI struct {
 	Time           TimeCmd           `kong:"cmd,help='Print how much time before current STS Token expires'"`
 	Completions    CompleteCmd       `kong:"cmd,help='Manage shell completions'"`
 	ConfigProfiles ConfigProfilesCmd `kong:"cmd,help='Update ~/.aws/config with AWS SSO profiles from the cache'"`
-	Reconfig       ReconfigCmd       `kong:"cmd,help='Re-run the configuration wizard'"`
+	Config         ConfigCmd         `kong:"cmd,help='Run the configuration wizard'"`
 	Version        VersionCmd        `kong:"cmd,help='Print version and exit'"`
 	Setup          SetupCmd          `kong:"cmd,hidden"` // need this so variables are visisble.
 }

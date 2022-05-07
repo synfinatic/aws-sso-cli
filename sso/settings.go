@@ -52,13 +52,13 @@ type Settings struct {
 	DefaultRegion             string                 `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
 	ConsoleDuration           int32                  `koanf:"ConsoleDuration" yaml:"ConsoleDuration,omitempty"`
 	JsonStore                 string                 `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
+	CacheRefresh              int64                  `koanf:"CacheRefresh" yaml:"CacheRefresh,omitempty"`
+	AutoConfigCheck           bool                   `koanf:"AutoConfigCheck" yaml:"AutoConfigCheck"`
 	FirefoxOpenUrlInContainer bool                   `koanf:"FirefoxOpenUrlInContainer" yaml:"FirefoxOpenUrlInContainer"`
 	UrlAction                 string                 `koanf:"UrlAction" yaml:"UrlAction,omitempty"`
 	Browser                   string                 `koanf:"Browser" yaml:"Browser,omitempty"`
-	AutoConfigCheck           bool                   `koanf:"AutoConfigCheck" yaml:"AutoConfigCheck"`
-	ConfigUrlAction           string                 `koanf:"ConfigUrlAction" yaml:"ConfigUrlAction"` // deprecated
-	ConfigProfilesUrlAction   string                 `koanf:"ConfigProfilesUrlAction" yaml:"ConfigProfilesUrlAction"`
-	CacheRefresh              int64                  `koanf:"CacheRefresh" yaml:"CacheRefresh"`
+	ConfigUrlAction           string                 `koanf:"ConfigUrlAction" yaml:"ConfigUrlAction,omitempty"` // deprecated
+	ConfigProfilesUrlAction   string                 `koanf:"ConfigProfilesUrlAction" yaml:"ConfigProfilesUrlAction,omitempty"`
 	UrlExecCommand            interface{}            `koanf:"UrlExecCommand" yaml:"UrlExecCommand,omitempty"` // string or list
 	LogLevel                  string                 `koanf:"LogLevel" yaml:"LogLevel,omitempty"`
 	LogLines                  bool                   `koanf:"LogLines" yaml:"LogLines,omitempty"`
@@ -218,6 +218,7 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 	// deprecate ConfigUrlAction.
 	if s.ConfigUrlAction != "" && s.ConfigProfilesUrlAction == "" {
 		s.ConfigProfilesUrlAction = s.ConfigUrlAction
+		s.ConfigUrlAction = ""
 	}
 
 	// load the cache

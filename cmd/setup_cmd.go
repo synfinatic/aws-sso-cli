@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
+	"strings"
 	"time"
 
 	"github.com/manifoldco/promptui"
@@ -38,16 +40,16 @@ func (cc *SetupCmd) Run(ctx *RunContext) error {
 	return setupWizard(ctx, false, false)
 }
 
-type ReconfigCmd struct {
+type ConfigCmd struct {
 	// 	AddSSO bool `kong:"help='Add a new AWS SSO instance'"`
 }
 
-func (cc *ReconfigCmd) Run(ctx *RunContext) error {
+func (cc *ConfigCmd) Run(ctx *RunContext) error {
 	// backup our config file
-	var val string
+	var i int
 	var err error
 
-	label := "Backup ~/.aws-sso/config.yaml first?"
+	label := fmt.Sprintf("Backup %s first?", ctx.Cli.ConfigFile)
 	sel := promptui.Select{
 		Label:        label,
 		Items:        yesNoItems,
@@ -56,18 +58,33 @@ func (cc *ReconfigCmd) Run(ctx *RunContext) error {
 		Stdout:       &utils.BellSkipper{},
 		Templates:    makeSelectTemplate(label),
 	}
-	if _, val, err = sel.Run(); err != nil {
+	if i, _, err = sel.Run(); err != nil {
 		return err
 	}
-	if val == "Yes" {
-		src, err := os.Open(utils.GetHomePath("~/.aws-sso/config.yaml"))
+
+	if yesNoItems[i].Value == "Yes" {
+		sourcePath := utils.GetHomePath(ctx.Cli.ConfigFile)
+		src, err := os.Open(sourcePath)
 		if err != nil {
 			return err
 		}
 
-		newFile := fmt.Sprintf("~/.aws-sso/config-%s.yaml",
-			time.Now().Format("2006-01-02-15:04:05"))
-		dst, err := os.Create(utils.GetHomePath(newFile))
+		dir := path.Dir(sourcePath)
+		fileName := path.Base(sourcePath)
+		fileparts := strings.Split(fileName, ".")
+		ext := "yaml"
+		if len(fileparts) > 1 {
+			ext = fileparts[len(fileparts)-1]
+			fileparts = fileparts[:len(fileparts)-1]
+		}
+
+		fileparts = append(fileparts, time.Now().Format("2006-01-02-15:04:05"))
+		fileparts = append(fileparts, ext)
+
+		newFile := strings.Join(fileparts, ".")
+		newFile = path.Join(dir, newFile)
+
+		dst, err := os.Create(newFile)
 		if err != nil {
 			return err
 		}
@@ -80,7 +97,7 @@ func (cc *ReconfigCmd) Run(ctx *RunContext) error {
 		fmt.Printf("Wrote: %s\n\n", newFile)
 	}
 
-	return setupWizard(ctx, true, false) // ctx.Cli.Reconfig.AddSSO)
+	return setupWizard(ctx, true, false) // ctx.Cli.Config.AddSSO)
 }
 
 func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
@@ -124,6 +141,7 @@ func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
 		configProfilesUrlAction = ctx.Settings.ConfigProfilesUrlAction
 		if ctx.Settings.ConfigUrlAction != "" && configProfilesUrlAction == "" {
 			configProfilesUrlAction = ctx.Settings.ConfigUrlAction
+			ctx.Settings.ConfigUrlAction = ""
 		}
 		// skips:
 		// - SSORegion
@@ -146,11 +164,21 @@ func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
 		ssoRegion = promptAwsSsoRegion("")
 		defaultRegion = promptDefaultRegion(defaultRegion)
 
+		ctx.Settings = &sso.Settings{}
+		ctx.Settings.SSO = map[string]*sso.SSOConfig{}
+
 		ctx.Settings.SSO[instanceName] = &sso.SSOConfig{
 			SSORegion:     ssoRegion,
 			StartUrl:      fmt.Sprintf(START_URL_FORMAT, startHostname),
 			DefaultRegion: defaultRegion,
 		}
+		consoleDuration = 60
+		cacheRefresh = 168
+		autoConfigCheck = false
+		hLimit = 10
+		hMinutes = 1440
+		urlAction = "open"
+		defaultLevel = "error"
 	} else if reconfig {
 		// don't do anything with the SSO for reconfig
 	} else if addSSO {

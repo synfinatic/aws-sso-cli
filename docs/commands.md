@@ -13,7 +13,7 @@
     * [time](#time) -- Print how much time before current STS Token expires
     * [completions](#completions) -- Manage shell completions
     * [config-profiles](#config-profiles) -- Update ~/.aws/config with AWS SSO profiles from the cache
-	* [reconfig](#reconfig) -- Re-run through the configuration wizard and update your AWS SSO config
+	* [config](#econfig) -- Run through the configuration wizard and update your AWS SSO config
     * `version` -- Print version and exit
  * [Environment Variables](#environment-variables)
  * [Shell Helpers](#shell-helpers)
@@ -320,9 +320,9 @@ the new version.  Once the new version is installed, `--uninstall-pre-19` will
 refuse to run so you will have to either manually edit the file or run
 `--uninstall`, then `--uninstall-pre-19` and finally `--install` again.
 
-### reconfig
+### config
 
-Allows you to re-run through the configuration wizard and update your AWS SSO CLI
+Allows you to run through the configuration wizard and update your AWS SSO CLI
 config file (`~/.aws-sso/config.yaml`).  Useful for taking advantage of some of
 the new settings if you've upgraded from a previous version!
 
