@@ -1,22 +1,39 @@
 # Frequently Asked Questions
 
- * [How do I delete all secrets from the macOS Keychain?](#how-do-i-delete-all-secrets-from-the-macos-keychain)
- * [How good is the Windows support?](#how-good-is-the-windows-support)
+##### Advanced Features
+
  * [Does AWS SSO CLI support Role Chaining?](#does-aws-sso-cli-support-role-chaining)
  * [How does AWS SSO CLI manage the $AWS\_DEFAULT\_REGION?](#how-does-aws-sso-cli-manage-the-aws_default_region)
+ * [Example of multiple AWS SSO instances](#example-of-multiple-aws-sso-instances)
+ * [Using non-default AWS SSO instances with auto-complete](#using-non-default-aws-sso-instances-with-auto-complete)
+ * [Firefox container color/icon doesn't change](#firefox-container-coloricon-doesnt-change)
+ * [Multiple AWS SSO Instances](#multiple-aws-sso-instances)
+
+##### Profiles and Tags
+
+ * [What are the purpose of the Tags?](#what-are-the-purpose-of-the-tags)
  * [AccountAlias vs AccountName](#accountalias-vs-accountname)
  * [Defining $AWS\_PROFILE and $AWS\_SSO\_PROFILE variable names](#defining-aws_profile-and-aws_sso_profile-variable-names)
  * [How to configure ProfileFormat](#how-to-configure-profileformat)
- * [Example of multiple AWS SSO instances](#example-of-multiple-aws-sso-instances)
- * [What are the purpose of the Tags?](#what-are-the-purpose-of-the-tags)
- * [Which SecureStore should I use?](#which-securestore-should-i-use)
- * [Using non-default AWS SSO instances with auto-complete](#using-non-default-aws-sso-instances-with-auto-complete)
- * [Error: Invalid grant provided](#error-invalid-grant-provided)
- * [Does aws-sso support using AWS FIPS endpoints?](#does-aws-sso-support-using-aws-fips-endpoints)
- * [Error: Unable to save... org.freedesktop.DBus.Properties](#error-unable-to-save-orgfreedesktopdbusproperties)
+
+##### Security
+
  * [Are macOS Keychain items synced?](#are-macos-keychain-items-synced)
+ * [How do I delete all secrets from the macOS Keychain?](#how-do-i-delete-all-secrets-from-the-macos-keychain)
+ * [Which SecureStore should I use?](#which-securestore-should-i-use)
+ * [Does aws-sso support using AWS FIPS endpoints?](#does-aws-sso-support-using-aws-fips-endpoints)
+
+##### Errors and their meaning
+
+ * [Error: Unable to save... org.freedesktop.DBus.Properties](#error-unable-to-save-orgfreedesktopdbusproperties)
+ * [Error: Invalid grant provided](#error-invalid-grant-provided)
+
+##### Misc
+
+ * [How good is the Windows support?](#how-good-is-the-windows-support)
  * [How can I say thanks?](#how-can-I-say-thanks)
- * [Firefox container color/icon doesn't change](#firefox-container-coloricon-doesnt-change)
+
+---
 
 ### How do I delete all secrets from the macOS keychain?
 
@@ -298,3 +315,18 @@ Firefox setings `about:preferences#containers`.
 
 ![Firefox Container Settings](
 https://user-images.githubusercontent.com/1075352/166166400-beff4928-9831-4270-8133-18727d9ade68.png)
+
+### Multiple AWS SSO Instances
+
+If you are using multiple AWS SSO Instances (multiple [SSOConfig](
+config.md#SSOCOnfig) blocks) then a few comments:
+
+1. You _really_ want to use the Firefox Containers plugin described above.  You
+    will have a horrible time without this because you need to have different
+    browser sessions/cookies for each AWS SSO Instance.
+1. Choosing your [DefaultSSO](config.md#DefaultSSO) is important because
+    auto-complete almost always will pick the DefaultSSO.
+1. To override the `DefaultSSO` with auto-complete, you can't use the `-S`
+    or `--sso` flag because of a [limitation with how shell completion works](
+    https://github.com/synfinatic/aws-sso-cli/issues/382).  Instead you must
+    first `export AWS_SSO=<name>` and then run the command.

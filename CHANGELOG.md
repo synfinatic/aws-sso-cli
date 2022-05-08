@@ -4,7 +4,7 @@
 
 ## [v1.9.0] - 2022-05-08
 
-### New Features 
+### New Features
 
  * Support assuming roles bash without forking a shell _and_ with
     auto-completion support of AWS Profile names. #357
@@ -23,7 +23,7 @@
 ### Changes
 
  * Added `Profile` to the list of default fields for the `list` command
- * Replaced the command `install-completions` with a more poweful `completions` 
+ * Replaced the command `install-completions` with a more poweful `completions`
  * Renamed the `config` command to update `~/.aws/config` to be `config-profiles`
      which is hopefully more clear
  * `config` command now runs the configuration wizard
@@ -36,6 +36,8 @@
  * Fixed setup wizard layout to be less ugly and more consistent.
  * `ConsoleDuration` and the `--duration` flag for `aws-sso console` are now
     correctly limited to 12hrs/720min #379
+ * Multiple AWS SSO Instances are now properly supported (only) with
+    Firefox Containers
 
 ## [v1.8.1] - 2022-05-02
 
@@ -111,7 +113,7 @@
 
 ### Changes
 
- * `console -P` is now `console -p` to force prompting 
+ * `console -P` is now `console -p` to force prompting
  * Update to AWS Go SDK v2
 
 ### New Features
