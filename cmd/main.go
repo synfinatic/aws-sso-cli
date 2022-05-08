@@ -29,6 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/awsconfig"
 	"github.com/synfinatic/aws-sso-cli/internal/helper"
+	"github.com/synfinatic/aws-sso-cli/internal/predictor"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/synfinatic/aws-sso-cli/storage"
@@ -82,13 +83,11 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"ListFields":                                []string{"AccountId", "AccountAlias", "RoleName", "Profile", "ExpiresStr"},
 	"ConsoleDuration":                           60,
 	"UrlAction":                                 "open",
-	"UrlExecCommand":                            "",
+	"ConfigProfilesUrlAction":                   "open",
 	"LogLevel":                                  "warn",
 	"DefaultSSO":                                "Default",
 	"FirefoxOpenUrlInContainer":                 false,
 	"AutoConfigCheck":                           false,
-	"ConfigProfilesUrlAction":                   "",
-	"ConfigUrlAction":                           "", // deprecated
 	"ProfileFormat":                             `{{ .AccountId }}:{{ .RoleName }}`,
 	"CacheRefresh":                              24, // in hours
 }
@@ -134,6 +133,7 @@ func main() {
 	utils.SetLogger(log)
 	awsconfig.SetLogger(log)
 	helper.SetLogger(log)
+	predictor.SetLogger(log)
 
 	if err := logLevelValidate(cli.LogLevel); err != nil {
 		log.Fatalf("%s", err.Error())
@@ -209,7 +209,7 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 		vars,
 	)
 
-	p := NewPredictor(utils.GetHomePath(INSECURE_CACHE_FILE), utils.GetHomePath(CONFIG_FILE))
+	p := predictor.NewPredictor(utils.GetHomePath(INSECURE_CACHE_FILE), utils.GetHomePath(CONFIG_FILE))
 
 	kongplete.Complete(parser,
 		kongplete.WithPredictors(

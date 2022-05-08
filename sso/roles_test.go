@@ -296,3 +296,75 @@ func TestStringReplace(t *testing.T) {
 func TestStringsJoin(t *testing.T) {
 	assert.Equal(t, "a.b.c", stringsJoin(".", "a", "b", "c"))
 }
+
+func TestAWSRoleFlatHasPrefix(t *testing.T) {
+	f := &AWSRoleFlat{
+		Id:            10,
+		AccountId:     555555,
+		AccountName:   "testing account",
+		AccountAlias:  "testing",
+		EmailAddress:  "testing+aws@company.com",
+		Arn:           "arn:aws:iam::555555:role/Testing",
+		RoleName:      "Testing",
+		DefaultRegion: "us-east-1",
+		Profile:       "Testing",
+		SSO:           "Main",
+		SSORegion:     "us-west-2",
+		StartUrl:      "https://test.awsapps.com/start",
+		Via:           "arn:aws:iam::555555:role/Foobar",
+	}
+
+	// invalid key
+	invalid := map[string]string{
+		"X":          "test",
+		"Expires":    "foo",
+		"ExpiresStr": "bar",
+		"Tags":       "baz",
+	}
+	for k, v := range invalid {
+		_, err := f.HasPrefix(k, v)
+		assert.Error(t, err)
+	}
+
+	valid := map[string]string{
+		"Id":            "1",
+		"AccountId":     "55",
+		"AccountName":   "testing",
+		"AccountAlias":  "test",
+		"EmailAddress":  "testing+aws@company.",
+		"Arn":           "arn:aws",
+		"RoleName":      "Test",
+		"DefaultRegion": "us-",
+		"Profile":       "T",
+		"SSO":           "Ma",
+		"SSORegion":     "us-we",
+		"StartUrl":      "https",
+		"Via":           "arn:",
+	}
+
+	for k, v := range valid {
+		if k == "Via" {
+			log.Errorf("%s = %s", k, v)
+		}
+		ret, err := f.HasPrefix(k, v)
+		assert.NoError(t, err)
+		assert.True(t, ret)
+	}
+
+	falseValues := map[string]string{
+		"Id":           "55",
+		"EmailAddress": "bingo",
+		"SSO":          "wtf?",
+		"StartUrl":     "123344",
+	}
+
+	for k, v := range falseValues {
+		ret, err := f.HasPrefix(k, v)
+		assert.NoError(t, err)
+		assert.False(t, ret)
+	}
+
+	v, err := f.HasPrefix("Via", "x")
+	assert.NoError(t, err)
+	assert.False(t, v)
+}

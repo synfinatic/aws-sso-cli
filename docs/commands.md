@@ -301,8 +301,8 @@ in your shell via [eval](#eval) or [exec](#exec).
 ### completions
 
 Configures your appropriate shell configuration file to add auto-complete
-functionality for commands, flags and options.  Must restart your shell
-for this to take effect.
+and [shell helper](#shell-helper) functionality for commands, flags and
+options.  Must restart your shell for this to take effect.
 
 For more information about this feature, please read [the quickstart](
 quickstart.md#enabling-auto-completion-in-your-shell).
@@ -390,7 +390,7 @@ If you want to pass specific args to `aws-sso-profile` you can use the
 `$AWS_SSO_HELPER_ARGS` environment variable.  If nothing is set, then 
 `--level error` is used.
 
-Currently the following shells are supported:
+Currently the following shells are fully supported:
 
  * `bash`
  * [zsh - TBD](https://github.com/synfinatic/aws-sso-cli/issues/360)

@@ -27,6 +27,7 @@ import (
 	"strconv"
 
 	"github.com/manifoldco/promptui"
+	"github.com/synfinatic/aws-sso-cli/internal/predictor"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
@@ -34,26 +35,6 @@ const (
 	START_URL_FORMAT  = "https://%s.awsapps.com/start"
 	START_FQDN_FORMAT = "%s.awsapps.com"
 )
-
-// https://docs.aws.amazon.com/general/latest/gr/sso.html
-var AvailableAwsSSORegions []string = []string{
-	"us-east-1",
-	"us-east-2",
-	"us-west-2",
-	"ap-south-1",
-	"ap-northeast-2",
-	"ap-southeast-1",
-	"ap-southeast-2",
-	"ap-northeast-1",
-	"ca-central-1",
-	"eu-central-1",
-	"eu-west-1",
-	"eu-west-2",
-	"eu-west-3",
-	"eu-north-1",
-	"sa-east-1",
-	"us-gov-west-1",
-}
 
 type selectOptions struct {
 	Name  string
@@ -184,7 +165,7 @@ func promptAwsSsoRegion(defaultValue string) string {
 	fmt.Printf("\n")
 
 	items := []selectOptions{}
-	for _, x := range AvailableAwsSSORegions {
+	for _, x := range predictor.AvailableAwsSSORegions {
 		items = append(items, selectOptions{
 			Value: x,
 			Name:  x,
@@ -220,7 +201,7 @@ func promptDefaultRegion(defaultValue string) string {
 			Value: "",
 		},
 	}
-	for _, x := range AvailableAwsRegions {
+	for _, x := range predictor.AvailableAwsRegions {
 		items = append(items, selectOptions{
 			Value: x,
 			Name:  x,

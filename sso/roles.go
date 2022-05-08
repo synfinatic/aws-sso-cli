@@ -127,7 +127,7 @@ func (r *Roles) GetRoleTags() *RoleTags {
 func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) {
 	account, ok := r.Accounts[accountId]
 	if !ok {
-		return &AWSRoleFlat{}, fmt.Errorf("Invalid AWS AccountID: %d", accountId)
+		return &AWSRoleFlat{}, fmt.Errorf("invalid AWS AccountID: %d", accountId)
 	}
 	for thisRoleName, role := range account.Roles {
 		if thisRoleName == roleName {
@@ -186,7 +186,7 @@ func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) 
 			return &flat, nil
 		}
 	}
-	return &AWSRoleFlat{}, fmt.Errorf("Unable to find role %d:%s", accountId, roleName)
+	return &AWSRoleFlat{}, fmt.Errorf("unable to find role %d:%s", accountId, roleName)
 }
 
 // GetRoleByProfile is just like GetRole(), but selects the role based on the Profile
@@ -197,14 +197,14 @@ func (r *Roles) GetRoleByProfile(profileName string, s *Settings) (*AWSRoleFlat,
 			pName, err := flat.ProfileName(s)
 			if err != nil {
 				log.WithError(err).Warnf(
-					"Unable to generate Profile for %s", utils.MakeRoleARN(aId, roleName))
+					"unable to generate Profile for %s", utils.MakeRoleARN(aId, roleName))
 			}
 			if pName == profileName {
 				return flat, nil
 			}
 		}
 	}
-	return &AWSRoleFlat{}, fmt.Errorf("Unable to locate role with Profile: %s", profileName)
+	return &AWSRoleFlat{}, fmt.Errorf("unable to locate role with Profile: %s", profileName)
 }
 
 // GetRoleChain figures out the AssumeRole chain required to assume the given role
@@ -213,17 +213,17 @@ func (r *Roles) GetRoleChain(accountId int64, roleName string) []*AWSRoleFlat {
 
 	f, err := r.GetRole(accountId, roleName)
 	if err != nil {
-		log.WithError(err).Fatalf("Unable to get role: %s", utils.MakeRoleARN(accountId, roleName))
+		log.WithError(err).Fatalf("unable to get role: %s", utils.MakeRoleARN(accountId, roleName))
 	}
 	ret = append(ret, f)
 	for f.Via != "" {
 		aId, rName, err := utils.ParseRoleARN(f.Via)
 		if err != nil {
-			log.WithError(err).Fatalf("Unable to parse '%s'", f.Via)
+			log.WithError(err).Fatalf("unable to parse '%s'", f.Via)
 		}
 		f, err = r.GetRole(aId, rName)
 		if err != nil {
-			log.WithError(err).Fatalf("Unable to get role: %s", utils.MakeRoleARN(aId, rName))
+			log.WithError(err).Fatalf("unable to get role: %s", utils.MakeRoleARN(aId, rName))
 		}
 		ret = append([]*AWSRoleFlat{f}, ret...) // prepend
 	}
@@ -345,7 +345,7 @@ func (r *AWSRoleFlat) ProfileName(s *Settings) (string, error) {
 	log.Tracef("RoleInfo: %s", spew.Sdump(r))
 	log.Tracef("Template: %s", spew.Sdump(templ))
 	if err := templ.Execute(buf, r); err != nil {
-		return "", fmt.Errorf("Unable to generate ProfileName: %s", err.Error())
+		return "", fmt.Errorf("unable to generate ProfileName: %s", err.Error())
 	}
 
 	return buf.String(), nil
@@ -393,4 +393,66 @@ func (r *AWSRoleFlat) GetEnvVarTags(s *Settings) map[string]string {
 		}
 	}
 	return ret
+}
+
+// HasPrefix determines if the given field starts with the value
+// Tags, Expires and ExpiresStr are invalid
+func (r *AWSRoleFlat) HasPrefix(field, prefix string) (bool, error) {
+	switch field {
+	case "Id":
+		if strings.HasPrefix(fmt.Sprintf("%d", r.Id), prefix) {
+			return true, nil
+		}
+	case "AccountId":
+		if strings.HasPrefix(fmt.Sprintf("%d", r.AccountId), prefix) {
+			return true, nil
+		}
+	case "AccountName":
+		if strings.HasPrefix(r.AccountName, prefix) {
+			return true, nil
+		}
+	case "AccountAlias":
+		if strings.HasPrefix(r.AccountAlias, prefix) {
+			return true, nil
+		}
+	case "EmailAddress":
+		if strings.HasPrefix(r.EmailAddress, prefix) {
+			return true, nil
+		}
+	case "Arn":
+		if strings.HasPrefix(r.Arn, prefix) {
+			return true, nil
+		}
+	case "RoleName":
+		if strings.HasPrefix(r.RoleName, prefix) {
+			return true, nil
+		}
+	case "DefaultRegion":
+		if strings.HasPrefix(r.DefaultRegion, prefix) {
+			return true, nil
+		}
+	case "Profile":
+		if strings.HasPrefix(r.Profile, prefix) {
+			return true, nil
+		}
+	case "SSO":
+		if strings.HasPrefix(r.SSO, prefix) {
+			return true, nil
+		}
+	case "SSORegion":
+		if strings.HasPrefix(r.SSORegion, prefix) {
+			return true, nil
+		}
+	case "StartUrl":
+		if strings.HasPrefix(r.StartUrl, prefix) {
+			return true, nil
+		}
+	case "Via":
+		if strings.HasPrefix(r.Via, prefix) {
+			return true, nil
+		}
+	default: // Expires, ExpiresStr & Tags
+		return false, fmt.Errorf("invalid field: %s", field)
+	}
+	return false, nil
 }

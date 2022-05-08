@@ -1,0 +1,72 @@
+SSOConfig:
+    Default:
+        SSORegion: us-east-1
+        StartUrl: https://d-754545454.awsapps.com/start
+        DefaultRegion: us-east-1
+        Accounts:
+            258234615182:
+                Name: OurCompany Control Tower Playground
+                DefaultRegion: eu-west-1
+                Tags:
+                  Type: Main Account
+                Roles:
+                  AWSAdministratorAccess:
+                    DefaultRegion: ca-central-1
+                    Tags:
+                      Test: value
+                      Foo: Bar
+                  LimitedAccess:
+                    Tags:
+                      Test: value
+                      Foo: Moo
+            833365043586:
+                Name: Log archive
+                Tags:
+                  Type: Sub Account
+                Roles:
+                  AWSAdministratorAccess:
+                    Tags:
+                      Test: logs
+                      Foo: Bar
+                      Can: Man
+            502470824893:
+                Name: Audit
+                Tags:
+                  Type: Sub Account
+            707513610766:
+                Name: Dev Account
+                Tags:
+                  Type: Sub Account
+    Another:
+        SSORegion: us-east-1
+        StartUrl: https://d-755555555.awsapps.com/start
+        Accounts:
+            182347455:
+                Name: Whatever
+                Roles:
+                  AWSAdministratorAccess:
+                    Tags:
+                      Test: moocow
+                      Bar: baz
+    Bug292:
+      SSORegion: us-east-1
+      StartUrl: https://d-88888888888.awsapps.com/start
+      Accounts:
+        0012345678912:
+          Name: MyTestName
+
+DefaultSSO: Default                       
+Browser: /Applications/Firefox.app
+UrlAction: print
+SecureStore: json
+JsonStore: ./testdata/store.json
+ProfileFormat: "{{.AccountName}}/{{.RoleName}}"
+AccountPrimaryTag:
+  - AccountAlias
+ConfigUrlAction: open
+LogLevel: warn
+DefaultRegion: us-west-2
+EnvVarTags:
+  - Role 
+  - Arn
+  - Foo

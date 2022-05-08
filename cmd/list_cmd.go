@@ -24,28 +24,12 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/synfinatic/aws-sso-cli/internal/predictor"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/synfinatic/aws-sso-cli/storage"
 	"github.com/synfinatic/gotable"
 )
-
-// keys match AWSRoleFlat header and value is the description
-var allListFields = map[string]string{
-	"Id":            "Column Index",
-	"Arn":           "AWS Role Resource Name",
-	"AccountId":     "AWS AccountID",
-	"AccountName":   "Configured Account Name",
-	"AccountAlias":  "AWS Account Alias",
-	"DefaultRegion": "Default AWS Region",
-	"EmailAddress":  "Root Email for AWS account",
-	"ExpiresStr":    "Time until STS creds expire",
-	"Expires":       "Unix Epoch when STS creds expire",
-	"RoleName":      "AWS Role Name",
-	"SSO":           "AWS SSO Instance Name",
-	"Via":           "Role Chain Via",
-	"Profile":       "AWS_SSO_PROFILE / AWS_PROFILE",
-}
 
 type ListCmd struct {
 	ListFields    bool     `kong:"short='f',help='List available fields',xor='fields'"`
@@ -196,7 +180,7 @@ func (cfn ConfigFieldNames) GetHeader(fieldName string) (string, error) {
 // listAllFields generates a table with all the AWSRoleFlat fields we can print
 func listAllFields() {
 	names := []string{}
-	for k := range allListFields {
+	for k := range predictor.AllListFields {
 		names = append(names, k)
 	}
 	sort.Strings(names)
@@ -204,7 +188,7 @@ func listAllFields() {
 	for _, k := range names {
 		ts = append(ts, ConfigFieldNames{
 			Field:       k,
-			Description: allListFields[k],
+			Description: predictor.AllListFields[k],
 		})
 	}
 
