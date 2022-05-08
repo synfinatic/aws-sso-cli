@@ -429,8 +429,8 @@ func promptConsoleDuration(defaultValue int32) int32 {
 		Label: label,
 		Validate: func(input string) error {
 			x, err := strconv.ParseInt(input, 10, 64)
-			if err != nil || x > 2160 || x < 15 {
-				return fmt.Errorf("Value must be a valid integer between 15 and 2160")
+			if err != nil || x > 720 || x < 15 {
+				return fmt.Errorf("Value must be a valid integer between 15 and 720")
 			}
 			return nil
 		},

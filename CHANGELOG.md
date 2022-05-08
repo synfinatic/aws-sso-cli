@@ -34,6 +34,8 @@
 ### Bugs
 
  * Fixed setup wizard layout to be less ugly and more consistent.
+ * `ConsoleDuration` and the `--duration` flag for `aws-sso console` are now
+    correctly limited to 12hrs/720min #379
 
 ## [v1.8.1] - 2022-05-02
 
