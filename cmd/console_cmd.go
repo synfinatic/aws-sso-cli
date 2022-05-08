@@ -42,35 +42,6 @@ import (
 
 const AWS_FEDERATED_URL = "https://signin.aws.amazon.com/federation"
 
-// taken from https://github.com/honsiorovskyi/open-url-in-container/blob/1.0.3/launcher.sh
-var FIREFOX_PLUGIN_COLORS []string = []string{
-	"blue",
-	"turquoise",
-	"green",
-	"yellow",
-	"orange",
-	"red",
-	"pink",
-	"purple",
-	// "toolbar",  not a valid input, even if it is user selectable
-}
-
-var FIREFOX_PLUGIN_ICONS []string = []string{
-	"fingerprint",
-	"briefcase",
-	"dollar",
-	"cart",
-	"gift",
-	"vacation",
-	"food",
-	"fruit",
-	"pet",
-	"tree",
-	"chill",
-	"circle",
-	// "fence",  not a valid input, even if it is user selectable
-}
-
 type ConsoleCmd struct {
 	// Console actually should honor the --region flag
 	Region   string `kong:"help='AWS Region',env='AWS_DEFAULT_REGION',predictor='region'"`
@@ -364,27 +335,11 @@ func firefoxContainerUrl(ctx *RunContext, accountId int64, role, awsUrl string) 
 	if err != nil && strings.Contains(profile, "&") {
 		profile = fmt.Sprintf("%d:%s", accountId, role)
 	}
-	prefix := fmt.Sprintf("ext+container:name=%s", profile)
 
-	// Firefox Open URL in Container plugin supports color & icon
-	if v, ok := rFlat.Tags["Color"]; ok {
-		if utils.StrListContains(v, FIREFOX_PLUGIN_COLORS) {
-			prefix = fmt.Sprintf("%s&color=%s", prefix, v)
-		} else {
-			log.Errorf("Invalid tag value: Color: %s", v)
-		}
-	}
+	color := rFlat.Tags["Color"]
+	icon := rFlat.Tags["Icon"]
 
-	if v, ok := rFlat.Tags["Icon"]; ok {
-		if utils.StrListContains(v, FIREFOX_PLUGIN_ICONS) {
-			prefix = fmt.Sprintf("%s&icon=%s", prefix, v)
-		} else {
-			log.Errorf("Invalid tag value: Icon: %s", v)
-		}
-	}
-
-	// docs don't say it, but you have to URL escape the url value
-	return fmt.Sprintf("%s&url=%s", prefix, url.QueryEscape(awsUrl))
+	return utils.FirefoxContainerUrl(awsUrl, profile, color, icon)
 }
 
 type LoginResponse struct {

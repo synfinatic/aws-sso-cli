@@ -141,6 +141,7 @@ func TestGetRoles(t *testing.T) {
 		Roles:     map[string][]RoleInfo{},
 		SSOConfig: &SSOConfig{
 			Accounts: map[string]*SSOAccount{},
+			settings: &Settings{},
 		},
 		urlAction: "print",
 		Token: storage.CreateTokenResponse{
@@ -336,6 +337,7 @@ func TestGetRoles(t *testing.T) {
 	as.Roles = map[string][]RoleInfo{} // flush cache
 	as.SSOConfig = &SSOConfig{
 		Accounts: map[string]*SSOAccount{},
+		settings: &Settings{},
 	}
 	as.ssooidc = &mockSsoOidcAPI{
 		Results: []mockSsoOidcAPIResults{
@@ -410,7 +412,9 @@ func TestGetAccounts(t *testing.T) {
 		StartUrl:  "https://testing.awsapps.com/start",
 		store:     jstore,
 		Roles:     map[string][]RoleInfo{},
-		SSOConfig: &SSOConfig{},
+		SSOConfig: &SSOConfig{
+			settings: &Settings{},
+		},
 		Token: storage.CreateTokenResponse{
 			AccessToken:  "access-token",
 			ExpiresIn:    42,
@@ -584,7 +588,9 @@ func TestGetRoleCredentials(t *testing.T) {
 				},
 			},
 		},
-		SSOConfig: &SSOConfig{},
+		SSOConfig: &SSOConfig{
+			settings: &Settings{},
+		},
 		Token: storage.CreateTokenResponse{
 			AccessToken:  "access-token",
 			ExpiresIn:    42,

@@ -72,7 +72,7 @@ func (as *AWSSSO) StoreKey() string {
 
 // reauthenticate talks to AWS SSO to generate a new AWS SSO AccessToken
 func (as *AWSSSO) reauthenticate() error {
-	log.Tracef("reauthenticate()")
+	log.Tracef("reauthenticate() for %s", as.StoreKey())
 	err := as.registerClient(false)
 	log.Tracef("<- reauthenticate()")
 	if err != nil {
@@ -98,9 +98,14 @@ func (as *AWSSSO) reauthenticate() error {
 		return fmt.Errorf("Unable to get device auth info from AWS SSO: %s", err.Error())
 	}
 
+	awsUrl := auth.VerificationUriComplete
+	if as.SSOConfig.settings.FirefoxOpenUrlInContainer {
+		awsUrl = utils.FirefoxContainerUrl(awsUrl, as.StoreKey(), "blue", "fingerprint")
+	}
+
 	urlOpener := utils.NewHandleUrl(as.urlAction, as.browser, as.urlExecCommand)
 
-	err = urlOpener.Open(auth.VerificationUriComplete,
+	err = urlOpener.Open(awsUrl,
 		"Please open the following URL in your browser:\n\n", "\n\n")
 	if err != nil {
 		return err
@@ -133,7 +138,7 @@ func (as *AWSSSO) registerClient(force bool) error {
 	if !force {
 		err := as.store.GetRegisterClientData(as.StoreKey(), &as.ClientData)
 		if err == nil && !as.ClientData.Expired() {
-			log.Debug("Using RegisterClient cache")
+			log.Debugf("Using RegisterClient cache for %s", as.StoreKey())
 			return nil
 		}
 	}
@@ -158,7 +163,7 @@ func (as *AWSSSO) registerClient(force bool) error {
 	}
 	err = as.store.SaveRegisterClientData(as.StoreKey(), as.ClientData)
 	if err != nil {
-		log.WithError(err).Errorf("Unable to save RegisterClientData")
+		log.WithError(err).Errorf("Unable to save RegisterClientData for %s", as.StoreKey())
 	}
 	return nil
 }
@@ -166,7 +171,7 @@ func (as *AWSSSO) registerClient(force bool) error {
 // startDeviceAuthorization makes the call to AWS to initiate the OIDC auth
 // to the SSO provider.
 func (as *AWSSSO) startDeviceAuthorization() error {
-	log.Tracef("startDeviceAuthorization()")
+	log.Tracef("startDeviceAuthorization() for %s", as.StoreKey())
 	input := ssooidc.StartDeviceAuthorizationInput{
 		StartUrl:     aws.String(as.StartUrl),
 		ClientId:     aws.String(as.ClientData.ClientId),
@@ -186,7 +191,7 @@ func (as *AWSSSO) startDeviceAuthorization() error {
 		Interval:                resp.Interval,
 	}
 	log.Debugf("Created OIDC device code for %s (expires in: %ds)",
-		as.StartUrl, as.DeviceAuth.ExpiresIn)
+		as.StoreKey(), as.DeviceAuth.ExpiresIn)
 
 	return nil
 }
@@ -201,7 +206,7 @@ type DeviceAuthInfo struct {
 func (as *AWSSSO) getDeviceAuthInfo() (DeviceAuthInfo, error) {
 	log.Tracef("getDeviceAuthInfo()")
 	if as.DeviceAuth.VerificationUri == "" {
-		return DeviceAuthInfo{}, fmt.Errorf("No valid verification url is available")
+		return DeviceAuthInfo{}, fmt.Errorf("No valid verification url is available for %s", as.StoreKey())
 	}
 
 	info := DeviceAuthInfo{
