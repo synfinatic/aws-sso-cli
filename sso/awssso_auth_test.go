@@ -95,6 +95,9 @@ func TestStoreKey(t *testing.T) {
 		key:       "atest",
 		SsoRegion: "us-west-1",
 		StartUrl:  "https://testing.awsapps.com/start",
+		SSOConfig: &SSOConfig{
+			settings: &Settings{},
+		},
 	}
 
 	assert.Equal(t, "atest", as.StoreKey())
@@ -113,6 +116,9 @@ func TestAuthenticateSteps(t *testing.T) {
 		SsoRegion: "us-west-1",
 		StartUrl:  "https://testing.awsapps.com/start",
 		store:     jstore,
+		SSOConfig: &SSOConfig{
+			settings: &Settings{},
+		},
 	}
 
 	as.ssooidc = &mockSsoOidcAPI{
@@ -190,6 +196,9 @@ func TestAuthenticate(t *testing.T) {
 		SsoRegion: "us-west-1",
 		StartUrl:  "https://testing.awsapps.com/start",
 		store:     jstore,
+		SSOConfig: &SSOConfig{
+			settings: &Settings{},
+		},
 	}
 
 	secs, _ := time.ParseDuration("5s")
@@ -262,6 +271,9 @@ func TestAuthenticateFailure(t *testing.T) {
 		SsoRegion: "us-west-1",
 		StartUrl:  "https://testing.awsapps.com/start",
 		store:     jstore,
+		SSOConfig: &SSOConfig{
+			settings: &Settings{},
+		},
 	}
 
 	secs, _ := time.ParseDuration("5s")
@@ -361,6 +373,9 @@ func TestReauthenticate(t *testing.T) {
 		urlAction:      "invalid",
 		browser:        "no-such-browser",
 		urlExecCommand: []interface{}{"/dev/null"},
+		SSOConfig: &SSOConfig{
+			settings: &Settings{},
+		},
 	}
 
 	secs, _ := time.ParseDuration("5s")

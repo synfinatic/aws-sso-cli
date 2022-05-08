@@ -21,16 +21,11 @@ package utils
 import (
 	// "bytes"
 	"fmt"
-	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/atotto/clipboard"
-	"github.com/skratchdot/open-golang/open" // default opener
 )
 
 const MAX_AWS_ACCOUNTID = 999999999999
@@ -51,138 +46,6 @@ func GetHomePath(path string) string {
 		p = strings.Replace(p, "~", home, 1)
 	}
 	return filepath.Clean(p)
-}
-
-var printWriter io.Writer = os.Stderr
-
-func execWithUrl(command interface{}, url string) error {
-	var cmd *exec.Cmd
-	var cmdStr string
-
-	switch command.(type) {
-	case []interface{}:
-		program := ""
-		x := []string{}
-		for _, iface := range command.([]interface{}) {
-			v := iface.(string)
-			if strings.Contains(v, "%s") {
-				if program == "" {
-					program = fmt.Sprintf(v, url)
-				} else {
-					x = append(x, fmt.Sprintf(v, url))
-				}
-			} else {
-				if program == "" {
-					program = v
-				} else {
-					x = append(x, v)
-				}
-			}
-		}
-		cmdStr = fmt.Sprintf("%s %s", program, strings.Join(x, " "))
-		log.Debugf("exec command as array: %s", cmdStr)
-		cmd = exec.Command(program, x...)
-	default:
-		return fmt.Errorf("Invalid UrlExecCommand type: %v", command)
-	}
-
-	//	var stderr bytes.Buffer
-	//	cmd.Stderr = &stderr
-	err := cmd.Run()
-	if err != nil {
-		err = fmt.Errorf("Unable to exec `%s`: %s", cmdStr, err)
-	}
-	return err
-}
-
-// these types & variables make our code easier to unit test
-type urlOpenerFunc func(string) error
-type urlOpenerWithFunc func(string, string) error
-type clipboardWriterFunc func(string) error
-
-var urlOpener urlOpenerFunc = open.Run
-var urlOpenerWith urlOpenerWithFunc = open.RunWith
-var clipboardWriter clipboardWriterFunc = clipboard.WriteAll
-
-type UrlAction int
-
-const (
-	UrlActionClip     UrlAction = iota // copy to clipboard
-	UrlActionPrint                     // print message & url to stderr
-	UrlActionPrintUrl                  // print only the  url to stderr
-	UrlActionExec                      // Exec comand
-	UrlActionOpen                      // auto-open in default or specified browser
-)
-
-type HandleUrl struct {
-	Action  UrlAction
-	ExecCmd interface{}
-	Browser string
-	Url     string
-	PreMsg  string
-	PostMsg string
-}
-
-func NewHandleUrl(action, browser string, command interface{}) *HandleUrl {
-	var a UrlAction
-
-	switch action {
-	case "clip":
-		a = UrlActionClip
-	case "print":
-		a = UrlActionPrint
-	case "printurl":
-		a = UrlActionPrintUrl
-	case "exec":
-		a = UrlActionExec
-	case "open":
-		a = UrlActionOpen
-	default:
-		log.Panicf("invalid --url-action: %s", action)
-	}
-
-	h := &HandleUrl{
-		Action:  a,
-		Browser: browser,
-		ExecCmd: command,
-	}
-	return h
-}
-
-// Prints, opens or copies to clipboard the given URL
-func (h *HandleUrl) Open(url, pre, post string) error {
-	var err error
-	switch h.Action {
-	case UrlActionClip:
-		err = clipboardWriter(url)
-		if err == nil {
-			log.Infof("Please open URL copied to clipboard.\n")
-		} else {
-			err = fmt.Errorf("Unable to copy URL to clipboard: %s", err.Error())
-		}
-	case UrlActionExec:
-		err = execWithUrl(h.ExecCmd, url)
-	case UrlActionPrint:
-		fmt.Fprintf(printWriter, "%s%s%s", pre, url, post)
-	case UrlActionPrintUrl:
-		fmt.Fprintf(printWriter, "%s\n", url)
-	case UrlActionOpen:
-		var browser string
-		switch h.Browser {
-		case "":
-			err = urlOpener(url)
-			browser = "default browser"
-		default:
-			err = urlOpenerWith(url, h.Browser)
-		}
-		if err != nil {
-			err = fmt.Errorf("Unable to open URL with %s: %s", browser, err.Error())
-		} else {
-			log.Infof("Opening URL in %s.\n", browser)
-		}
-	}
-
-	return err
 }
 
 // ParseRoleARN parses an ARN representing a role in long or short format

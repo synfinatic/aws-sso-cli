@@ -19,7 +19,6 @@ package utils
  */
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -192,114 +191,6 @@ func (suite *UtilsTestSuite) TestAccountToInt64() {
 
 	_, err = AccountIdToInt64("-1")
 	assert.Error(t, err)
-}
-
-var checkValue string
-var checkBrowser string
-
-func testUrlOpener(url string) error {
-	checkBrowser = "default browser"
-	checkValue = url
-	return nil
-}
-
-func testUrlOpenerWith(url, browser string) error {
-	checkBrowser = browser
-	checkValue = url
-	return nil
-}
-
-func testClipboardWriter(url string) error {
-	checkValue = url
-	return nil
-}
-
-func testUrlOpenerError(url string) error {
-	return fmt.Errorf("there was an error")
-}
-
-func testUrlOpenerWithError(url, browser string) error {
-	return fmt.Errorf("there was an error")
-}
-
-func (suite *UtilsTestSuite) TestHandleUrl() {
-	t := suite.T()
-
-	assert.Panics(t, func() { NewHandleUrl("foo", "browser", "") })
-
-	// override the print method
-	printWriter = new(bytes.Buffer)
-	h := NewHandleUrl("print", "browser", "")
-	assert.NotNil(t, h)
-	assert.NoError(t, h.Open("bar", "pre", "post"))
-	assert.Equal(t, "prebarpost", printWriter.(*bytes.Buffer).String())
-
-	// new print method for printurl
-	printWriter = new(bytes.Buffer)
-	h = NewHandleUrl("printurl", "browser", "")
-	assert.NotNil(t, h)
-	assert.NoError(t, h.Open("bar", "pre", "post"))
-	assert.Equal(t, "bar\n", printWriter.(*bytes.Buffer).String())
-
-	// Clipboard tests
-	urlOpener = testUrlOpener
-	urlOpenerWith = testUrlOpenerWith
-	clipboardWriter = testClipboardWriter
-
-	h = NewHandleUrl("clip", "browser", "")
-	assert.NotNil(t, h)
-	assert.NoError(t, h.Open("url", "pre", "post"))
-	assert.Equal(t, "url", checkValue)
-
-	h = NewHandleUrl("open", "other-browser", "")
-	assert.NotNil(t, h)
-	assert.NoError(t, h.Open("other-url", "pre", "post"))
-	assert.Equal(t, "other-browser", checkBrowser)
-	assert.Equal(t, "other-url", checkValue)
-
-	h = NewHandleUrl("open", "", "")
-	assert.NotNil(t, h)
-	assert.NoError(t, h.Open("some-url", "pre", "post"))
-	assert.Equal(t, "default browser", checkBrowser)
-	assert.Equal(t, "some-url", checkValue)
-
-	urlOpener = testUrlOpenerError
-	assert.Error(t, h.Open("url", "pre", "post"))
-
-	urlOpenerWith = testUrlOpenerWithError
-	h = NewHandleUrl("open", "foo", "")
-	assert.NotNil(t, h)
-	assert.Error(t, h.Open("url", "pre", "post"))
-
-	clipboardWriter = testUrlOpenerError
-	h = NewHandleUrl("clip", "", "")
-	assert.NotNil(t, h)
-	assert.Error(t, h.Open("url", "pre", "post"))
-
-	// Exec tests
-	h = NewHandleUrl("exec", "", []interface{}{"echo", "foo", "%s"})
-	assert.NotNil(t, h)
-	assert.NoError(t, h.Open("url", "pre", "post"))
-
-	h = NewHandleUrl("exec", "", []interface{}{"%s"})
-	assert.NotNil(t, h)
-	assert.NoError(t, h.Open("sh", "pre", "post"))
-
-	h = NewHandleUrl("exec", "", []interface{}{"/dev/null", "%s"})
-	assert.NotNil(t, h)
-	assert.Error(t, h.Open("url", "pre", "post"))
-
-	h = NewHandleUrl("exec", "", []interface{}{"/dev/null"})
-	assert.NotNil(t, h)
-	assert.Error(t, h.Open("url", "pre", "post"))
-
-	h = NewHandleUrl("exec", "", []interface{}{"%s"})
-	assert.NotNil(t, h)
-	assert.Error(t, h.Open("url", "pre", "post"))
-
-	h = NewHandleUrl("exec", "", "")
-	assert.NotNil(t, h)
-	assert.Error(t, h.Open("url", "pre", "post"))
 }
 
 func (suite *UtilsTestSuite) TestParseTimeString() {

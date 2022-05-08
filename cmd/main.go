@@ -320,8 +320,8 @@ func doAuth(ctx *RunContext) *sso.AWSSSO {
 		log.WithError(err).Fatalf("Unable to authenticate")
 	}
 	if err = ctx.Settings.Cache.Expired(s); err != nil {
-		log.Infof("Refreshing AWS SSO role cache, please wait...")
 		ssoName, err := ctx.Settings.GetSelectedSSOName(ctx.Cli.SSO)
+		log.Infof("Refreshing AWS SSO role cache for %s, please wait...", ssoName)
 		if err != nil {
 			log.Fatalf(err.Error())
 		}

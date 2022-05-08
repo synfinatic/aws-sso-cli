@@ -88,7 +88,7 @@ func NewAWSSSO(s *SSOConfig, store *storage.SecureStorage) *AWSSSO {
 		ClientType:     awsSSOClientType,
 		SsoRegion:      s.SSORegion,
 		StartUrl:       s.StartUrl,
-		Roles:          map[string][]RoleInfo{},
+		Roles:          map[string][]RoleInfo{}, // key is AccountId
 		SSOConfig:      s,
 		urlAction:      s.settings.UrlAction,
 		browser:        s.settings.Browser,
