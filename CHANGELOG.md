@@ -6,23 +6,34 @@
 
 ### New Features 
 
- * Add support for `aws-sso-profile` and `aws-sso-clear` helper functions which 
-	are automatically installed #357
+ * Support assuming roles bash without forking a shell _and_ with
+    auto-completion support of AWS Profile names. #357
  * Add `completions` command which supports `--install` and `--uninstall` flags
+    Please see the [quickstart](
+    docs/quickstart.md#enabling-auto-completion-in-your-shell) for more details.
  * Enhanced `list` command with CSV output and basic filtering
- * Added `config` command to run through the setup wizard #354
- * Added more configuration options to the setup wizard
+ * Add `config` command to re-run through the setup wizard #354
+ * Added many more configuration options to the setup wizard
+ * `list` command can now generate a CSV via `--csv` flag
+ * You can now specify the same StartURL in multiple SSOConfig blocks so you
+    can authenticate as different users at the same time.
+ * Users can now specify their AWS SSO roles `CacheRefresh` interval instead
+    of the hard coded 24hrs. #355
 
 ### Changes
 
- * `install-completions` is no longer a valid command.  Please see the
-    [quickstart](docs/quickstart.md#enabling-auto-completion-in-your-shell)
-    for more details.
  * Added `Profile` to the list of default fields for the `list` command
- * `list` command can now generate a CSV
- * Renamed the `config` command to `config-profiles` to be less confusing
- * You can now specify the same StartURL in multiple SSOConfig blocks so you
-    can authenticate as different users at the same time.
+ * Replaced the command `install-completions` with a more poweful `completions` 
+ * Renamed the `config` command to update `~/.aws/config` to be `config-profiles`
+     which is hopefully more clear
+ * `config` command now runs the configuration wizard
+ * Deprecated `ConfigUrlAction` option.  Will be automatically upgraded by
+    the `aws-sso config` wizard.
+ * `ConfigProfilesUrlAction` replaces `ConfigUrlAction`
+
+### Bugs
+
+ * Fixed setup wizard layout to be less ugly and more consistent.
 
 ## [v1.8.1] - 2022-05-02
 
