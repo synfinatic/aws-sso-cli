@@ -34,6 +34,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/c-bata/go-prompt"
+	// "github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/synfinatic/aws-sso-cli/storage"
@@ -89,8 +90,13 @@ type ConsoleCmd struct {
 
 func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 	duration := ctx.Settings.ConsoleDuration
+
 	if ctx.Cli.Console.Duration > 0 {
 		duration = ctx.Cli.Console.Duration
+	}
+
+	if duration > 0 && (duration < 15 || duration > 720) {
+		return fmt.Errorf("Invalid --duration %d.  Must be between 15 and 720", duration)
 	}
 
 	if ctx.Cli.Console.Prompt {
@@ -293,7 +299,6 @@ func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role stri
 	}
 
 	creds := GetRoleCredentials(ctx, awssso, accountid, role)
-
 	return openConsoleAccessKey(ctx, creds, duration, region, accountid, role)
 }
 

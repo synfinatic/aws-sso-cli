@@ -344,10 +344,12 @@ Number of minutes an AWS Console session is valid for (default 60).  If you wish
 to override the default session duration, you can specify the number of minutes
 here or with the `--duration` flag.
 
-[Per AWS](
+Note that even though [AWS documents](
 https://docs.aws.amazon.com/STS/latest/APIReference/API_GetFederationToken.html)
-this value must be betwen 15 and 2160 (36 hours) because `ConsoleDuration`
-is in minutes and not seconds.
+the API call to get a Console URL to be between 15 minutes and 36 hours, the
+real limit is 12 hours (720 minutes) because AWS SSO sessions [are limited to
+12 hours maximum](
+https://docs.aws.amazon.com/singlesignon/latest/userguide/howtosessionduration.html).
 
 ## SecureStore / JsonStore
 
@@ -405,7 +407,7 @@ For more information, [see the FAQ](FAQ.md#how-to-configure-profileformat).
 ## ConfigVariables
 
 Define a set of [config settings](
-https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html) for each 
+https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html) for each
 profile in your `~/.aws/config` file generated via the [config-profiles](
 commands.md#config-profiles) command.
 
