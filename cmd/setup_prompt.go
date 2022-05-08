@@ -252,7 +252,7 @@ func promptUseFirefox(defaultValue string) string {
 
 	fmt.Printf("\n")
 
-	label := "Use Firefox containers to open URLs?"
+	label := "Use Firefox containers to open URLs? (FirefoxOpenInContainer)"
 	sel := promptui.Select{
 		Label:        label,
 		HideSelected: false,
@@ -272,7 +272,7 @@ func promptUseFirefox(defaultValue string) string {
 	fmt.Printf("\n")
 
 	fmt.Printf("Ensure that you have the 'Open external links in a container' plugin for Firefox.")
-	label = "Path to Firefox binary"
+	label = "Path to Firefox binary (UrlExecCommand)"
 	prompt := promptui.Prompt{
 		Label:     label,
 		Stdout:    &utils.BellSkipper{},
@@ -349,7 +349,7 @@ func promptUrlExecCommand(defaultValue []interface{}) []interface{} {
 	fmt.Printf("Please enter one per line, the command and list of arguments for UrlExecCommand:\n")
 
 	command := defaultValue[0].(string)
-	label := "Binary to execute to open URLs"
+	label := "Binary to execute to open URLs (UrlExecCommand)"
 	prompt := promptui.Prompt{
 		Label:     label,
 		Default:   command,
