@@ -106,7 +106,7 @@ func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
 	var hLimit, hMinutes, cacheRefresh int64
 	var consoleDuration int32
 	var autoConfigCheck bool
-	urlExecCommand := []interface{}{}
+	var urlExecCommand []string
 
 	// Don't run setup twice
 	if ranSetup {
@@ -126,9 +126,9 @@ func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
 		defaultLevel = ctx.Settings.LogLevel
 		defaultRegion = ctx.Settings.DefaultRegion
 		urlAction = ctx.Settings.UrlAction
-		urlExecCommand = ctx.Settings.UrlExecCommand.([]interface{})
+		urlExecCommand = ctx.Settings.UrlExecCommand
 		if ctx.Settings.FirefoxOpenUrlInContainer {
-			firefoxBrowserPath = urlExecCommand[0].(string)
+			firefoxBrowserPath = urlExecCommand[0]
 		}
 		autoConfigCheck = ctx.Settings.AutoConfigCheck
 		cacheRefresh = ctx.Settings.CacheRefresh

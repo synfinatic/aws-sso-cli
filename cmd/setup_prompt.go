@@ -338,8 +338,8 @@ func promptUrlAction(defaultValue string, useFirefox bool) string {
 	return items[i].Value
 }
 
-func promptUrlExecCommand(defaultValue []interface{}) []interface{} {
-	var val []interface{}
+func promptUrlExecCommand(defaultValue []string) []string {
+	var val []string
 	var err error
 	var line string
 	argNum := 1
@@ -348,7 +348,7 @@ func promptUrlExecCommand(defaultValue []interface{}) []interface{} {
 
 	fmt.Printf("Please enter one per line, the command and list of arguments for UrlExecCommand:\n")
 
-	command := defaultValue[0].(string)
+	command := defaultValue[0]
 	label := "Binary to execute to open URLs (UrlExecCommand)"
 	prompt := promptui.Prompt{
 		Label:     label,
@@ -363,17 +363,17 @@ func promptUrlExecCommand(defaultValue []interface{}) []interface{} {
 		log.Fatal(err)
 	}
 
-	val = append(val, interface{}(line))
+	val = append(val, line)
 
 	// zero out the defaults if we change the command to execute
 	if line != defaultValue[0] {
-		defaultValue = []interface{}{}
+		defaultValue = []string{}
 	}
 
 	for line != "" {
 		arg := ""
 		if argNum < len(defaultValue) {
-			arg = defaultValue[argNum].(string)
+			arg = defaultValue[argNum]
 		}
 		label := fmt.Sprintf("Enter argument #%d or empty string to stop", argNum)
 		prompt = promptui.Prompt{

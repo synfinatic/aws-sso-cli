@@ -1,6 +1,11 @@
 # AWS SSO CLI Changelog
 
-## Unreleased
+## [v1.9.1] - 2022-05-09
+
+## Bugs
+
+ * Fix `config` command when user has no `UrlExecCommand` defined #385
+ * `console` no longer warns when a role is missing the Color or Icon tag 
 
 ## [v1.9.0] - 2022-05-08
 

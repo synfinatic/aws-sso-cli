@@ -59,7 +59,7 @@ type Settings struct {
 	Browser                   string                 `koanf:"Browser" yaml:"Browser,omitempty"`
 	ConfigUrlAction           string                 `koanf:"ConfigUrlAction" yaml:"ConfigUrlAction,omitempty"` // deprecated
 	ConfigProfilesUrlAction   string                 `koanf:"ConfigProfilesUrlAction" yaml:"ConfigProfilesUrlAction,omitempty"`
-	UrlExecCommand            interface{}            `koanf:"UrlExecCommand" yaml:"UrlExecCommand,omitempty"` // string or list
+	UrlExecCommand            []string               `koanf:"UrlExecCommand" yaml:"UrlExecCommand,omitempty"` // string or list
 	LogLevel                  string                 `koanf:"LogLevel" yaml:"LogLevel,omitempty"`
 	LogLines                  bool                   `koanf:"LogLines" yaml:"LogLines,omitempty"`
 	HistoryLimit              int64                  `koanf:"HistoryLimit" yaml:"HistoryLimit,omitempty"`
