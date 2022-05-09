@@ -67,7 +67,7 @@ type AWSSSO struct {
 	SSOConfig      *SSOConfig                  `json:"SSOConfig"`
 	urlAction      string                      // cache for future calls
 	browser        string                      // cache for future calls
-	urlExecCommand interface{}                 // cache for future calls
+	urlExecCommand []string                    // cache for future calls
 }
 
 func NewAWSSSO(s *SSOConfig, store *storage.SecureStorage) *AWSSSO {

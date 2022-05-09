@@ -57,18 +57,19 @@ func testUrlOpenerWithError(url, browser string) error {
 func (suite *UtilsTestSuite) TestHandleUrl() {
 	t := suite.T()
 
-	assert.Panics(t, func() { NewHandleUrl("foo", "browser", "") })
+	noCommand := []string{}
+	assert.Panics(t, func() { NewHandleUrl("foo", "browser", noCommand) })
 
 	// override the print method
 	printWriter = new(bytes.Buffer)
-	h := NewHandleUrl("print", "browser", "")
+	h := NewHandleUrl("print", "browser", noCommand)
 	assert.NotNil(t, h)
 	assert.NoError(t, h.Open("bar", "pre", "post"))
 	assert.Equal(t, "prebarpost", printWriter.(*bytes.Buffer).String())
 
 	// new print method for printurl
 	printWriter = new(bytes.Buffer)
-	h = NewHandleUrl("printurl", "browser", "")
+	h = NewHandleUrl("printurl", "browser", noCommand)
 	assert.NotNil(t, h)
 	assert.NoError(t, h.Open("bar", "pre", "post"))
 	assert.Equal(t, "bar\n", printWriter.(*bytes.Buffer).String())
@@ -78,18 +79,18 @@ func (suite *UtilsTestSuite) TestHandleUrl() {
 	urlOpenerWith = testUrlOpenerWith
 	clipboardWriter = testClipboardWriter
 
-	h = NewHandleUrl("clip", "browser", "")
+	h = NewHandleUrl("clip", "browser", noCommand)
 	assert.NotNil(t, h)
 	assert.NoError(t, h.Open("url", "pre", "post"))
 	assert.Equal(t, "url", checkValue)
 
-	h = NewHandleUrl("open", "other-browser", "")
+	h = NewHandleUrl("open", "other-browser", noCommand)
 	assert.NotNil(t, h)
 	assert.NoError(t, h.Open("other-url", "pre", "post"))
 	assert.Equal(t, "other-browser", checkBrowser)
 	assert.Equal(t, "other-url", checkValue)
 
-	h = NewHandleUrl("open", "", "")
+	h = NewHandleUrl("open", "", noCommand)
 	assert.NotNil(t, h)
 	assert.NoError(t, h.Open("some-url", "pre", "post"))
 	assert.Equal(t, "default browser", checkBrowser)
@@ -99,37 +100,41 @@ func (suite *UtilsTestSuite) TestHandleUrl() {
 	assert.Error(t, h.Open("url", "pre", "post"))
 
 	urlOpenerWith = testUrlOpenerWithError
-	h = NewHandleUrl("open", "foo", "")
+	h = NewHandleUrl("open", "foo", noCommand)
 	assert.NotNil(t, h)
 	assert.Error(t, h.Open("url", "pre", "post"))
 
 	clipboardWriter = testUrlOpenerError
-	h = NewHandleUrl("clip", "", "")
+	h = NewHandleUrl("clip", "", noCommand)
 	assert.NotNil(t, h)
 	assert.Error(t, h.Open("url", "pre", "post"))
 
 	// Exec tests
-	h = NewHandleUrl("exec", "", []interface{}{"echo", "foo", "%s"})
+	h = NewHandleUrl("exec", "", []string{"echo", "foo", "%s"})
 	assert.NotNil(t, h)
 	assert.NoError(t, h.Open("url", "pre", "post"))
 
-	h = NewHandleUrl("exec", "", []interface{}{"%s"})
+	h = NewHandleUrl("exec", "", []string{})
 	assert.NotNil(t, h)
-	assert.NoError(t, h.Open("sh", "pre", "post"))
+	assert.Error(t, h.Open("sh", "pre", "post"))
 
-	h = NewHandleUrl("exec", "", []interface{}{"/dev/null", "%s"})
+	h = NewHandleUrl("exec", "", []string{"%s"})
 	assert.NotNil(t, h)
-	assert.Error(t, h.Open("url", "pre", "post"))
+	assert.Error(t, h.Open("sh", "pre", "post"))
 
-	h = NewHandleUrl("exec", "", []interface{}{"/dev/null"})
-	assert.NotNil(t, h)
-	assert.Error(t, h.Open("url", "pre", "post"))
-
-	h = NewHandleUrl("exec", "", []interface{}{"%s"})
+	h = NewHandleUrl("exec", "", []string{"/dev/null", "%s"})
 	assert.NotNil(t, h)
 	assert.Error(t, h.Open("url", "pre", "post"))
 
-	h = NewHandleUrl("exec", "", "")
+	h = NewHandleUrl("exec", "", []string{"/dev/null"})
+	assert.NotNil(t, h)
+	assert.Error(t, h.Open("url", "pre", "post"))
+
+	h = NewHandleUrl("exec", "", []string{"%s"})
+	assert.NotNil(t, h)
+	assert.Error(t, h.Open("url", "pre", "post"))
+
+	h = NewHandleUrl("exec", "", noCommand)
 	assert.NotNil(t, h)
 	assert.Error(t, h.Open("url", "pre", "post"))
 }
@@ -140,4 +145,28 @@ func TestFirefoxContainersUrl(t *testing.T) {
 
 	assert.Equal(t, "ext+container:name=Test&url=https%3A%2F%2Fsynfin.net&color=blue&icon=fingerprint",
 		FirefoxContainerUrl("https://synfin.net", "Test", "Bad", "Value"))
+}
+
+func TestCommandBuilder(t *testing.T) {
+	_, _, err := commandBuilder([]string{}, "url")
+	assert.Error(t, err)
+
+	_, _, err = commandBuilder([]string{"foo"}, "url")
+	assert.Error(t, err)
+
+	_, _, err = commandBuilder([]string{"%s"}, "url")
+	assert.Error(t, err)
+
+	_, _, err = commandBuilder([]string{"foo", "bar"}, "url")
+	assert.Error(t, err)
+
+	cmd, l, err := commandBuilder([]string{"foo", "%s"}, "url")
+	assert.NoError(t, err)
+	assert.Equal(t, "foo", cmd)
+	assert.Equal(t, []string{"url"}, l)
+
+	cmd, l, err = commandBuilder([]string{"foo", "bar", "%s"}, "url")
+	assert.NoError(t, err)
+	assert.Equal(t, "foo", cmd)
+	assert.Equal(t, []string{"bar", "url"}, l)
 }

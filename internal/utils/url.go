@@ -64,12 +64,16 @@ const FIREFOX_CONTAINER_FORMAT = "ext+container:name=%s&url=%s&color=%s&icon=%s"
 // FirefoxContainerUrl generates a URL for Firefox Containers
 func FirefoxContainerUrl(target, name, color, icon string) string {
 	if !StrListContains(color, FIREFOX_PLUGIN_COLORS) {
-		log.Warnf("Invalid Firefox Container color: %s", color)
+		if color != "" {
+			log.Warnf("Invalid Firefox Container color: %s", color)
+		}
 		color = FIREFOX_PLUGIN_COLORS[0]
 	}
 
 	if !StrListContains(icon, FIREFOX_PLUGIN_ICONS) {
-		log.Warnf("Invalid Firefox Container icon: %s", icon)
+		if icon != "" {
+			log.Warnf("Invalid Firefox Container icon: %s", icon)
+		}
 		icon = FIREFOX_PLUGIN_ICONS[0]
 	}
 
@@ -78,44 +82,53 @@ func FirefoxContainerUrl(target, name, color, icon string) string {
 
 var printWriter io.Writer = os.Stderr
 
-func execWithUrl(command interface{}, url string) error {
-	var cmd *exec.Cmd
-	var cmdStr string
+// used by execWithUrl to build our actual command
+func commandBuilder(command []string, url string) (string, []string, error) {
+	var program string
+	cmdList := []string{}
+	replaced := false
 
-	switch command.(type) {
-	case []interface{}:
-		program := ""
-		x := []string{}
-		for _, iface := range command.([]interface{}) {
-			v := iface.(string)
-			if strings.Contains(v, "%s") {
-				if program == "" {
-					program = fmt.Sprintf(v, url)
-				} else {
-					x = append(x, fmt.Sprintf(v, url))
-				}
-			} else {
-				if program == "" {
-					program = v
-				} else {
-					x = append(x, v)
-				}
-			}
-		}
-		cmdStr = fmt.Sprintf("%s %s", program, strings.Join(x, " "))
-		log.Debugf("exec command as array: %s", cmdStr)
-		cmd = exec.Command(program, x...)
-	default:
-		return fmt.Errorf("Invalid UrlExecCommand type: %v", command)
+	if len(command) < 2 {
+		return program, cmdList, fmt.Errorf("Invalid UrlExecCommand has fewer than 2 arguments")
 	}
+
+	for i, v := range command {
+		if i == 0 {
+			program = v
+			continue
+		} else if strings.Contains(v, "%s") {
+			replaced = true
+			v = fmt.Sprintf(v, url)
+		}
+		cmdList = append(cmdList, v)
+	}
+
+	if !replaced {
+		return program, cmdList, fmt.Errorf("Invalid UrlExecCommand has no `%%s` for URL")
+	}
+
+	return program, cmdList, nil
+}
+
+func execWithUrl(command []string, url string) error {
+	var cmd *exec.Cmd
+
+	program, cmdList, err := commandBuilder(command, url)
+	if err != nil {
+		return err
+	}
+
+	cmdStr := fmt.Sprintf("%s %s", program, strings.Join(cmdList, " "))
+	log.Debugf("exec command as array: %s", cmdStr)
+	cmd = exec.Command(program, cmdList...)
 
 	//	var stderr bytes.Buffer
 	//	cmd.Stderr = &stderr
-	err := cmd.Start()
+	err = cmd.Start() // Don't use Run() because sometimes firefox does bad things?
 	if err != nil {
 		err = fmt.Errorf("Unable to exec `%s`: %s", cmdStr, err)
 	}
-	log.Debugf("Opened our URL with %s", command.([]interface{})[0])
+	log.Debugf("Opened our URL with %s", command[0])
 	return err
 }
 
@@ -140,14 +153,14 @@ const (
 
 type HandleUrl struct {
 	Action  UrlAction
-	ExecCmd interface{}
+	ExecCmd []string
 	Browser string
 	Url     string
 	PreMsg  string
 	PostMsg string
 }
 
-func NewHandleUrl(action, browser string, command interface{}) *HandleUrl {
+func NewHandleUrl(action, browser string, command []string) *HandleUrl {
 	var a UrlAction
 
 	switch action {

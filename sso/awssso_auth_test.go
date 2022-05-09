@@ -372,7 +372,7 @@ func TestReauthenticate(t *testing.T) {
 		store:          jstore,
 		urlAction:      "invalid",
 		browser:        "no-such-browser",
-		urlExecCommand: []interface{}{"/dev/null"},
+		urlExecCommand: []string{"/dev/null", "%s"},
 		SSOConfig: &SSOConfig{
 			settings: &Settings{},
 		},
