@@ -5,7 +5,7 @@
  * [Feature Comparison](#feature-comparison)
 
 Note: I believe this page to be accurate as of `aws-vault` v6.3.1 and
-`aws-sso` v1.7.1. If you believe anything on this page is in error, please [let me know](
+`aws-sso` v1.9.0. If you believe anything on this page is in error, please [let me know](
 https://github.com/synfinatic/aws-sso-cli/issues/new?title=Documentation+error:)!
 
 I get asked a lot why you should use AWS SSO CLI over [AWS Vault](
@@ -141,8 +141,9 @@ and configured!
 | Role chaining           | Yes       | Yes       | Yes        |
 | CLI auto-complete       | Yes       | Yes       | Yes        |
 | EC2/ECS Metadata server | Yes       | No *      | No         |
-| AWS Session tags        | Yes       | No *      | Yes        |
-| AWS Transitive tags     | Yes       | No *      | Yes        |
+| AWS Session tags        | Yes       | No        | Yes        |
+| AWS Transitive tags     | Yes       | No        | Yes        |
+| Firefox Containers      | No        | Yes       | No         |
 | Exec new shell with AWS creds    | Yes  | Yes   | No     |
 | Detect $AWS\_PROFILE collision   | No   | Yes   | Yes    |
 | Add AWS creds into current shell | No   | Yes   | No     |
@@ -154,6 +155,5 @@ and configured!
 | Tags                 | No        | Yes     | No         |
 | Role ARN             | No        | Yes     | No         |
 | AccountId & RoleName | No        | Yes     | No         |
-
 
 **Note:** Items above marked with a `*` are on the `aws-sso` feature roadmap.

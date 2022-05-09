@@ -22,6 +22,7 @@
  * [How do I delete all secrets from the macOS Keychain?](#how-do-i-delete-all-secrets-from-the-macos-keychain)
  * [Which SecureStore should I use?](#which-securestore-should-i-use)
  * [Does aws-sso support using AWS FIPS endpoints?](#does-aws-sso-support-using-aws-fips-endpoints)
+ * [How can I stop typing my password all the time?](#how-can-i-stop-typing-my-password-all-the-time)
 
 ##### Errors and their meaning
 
@@ -330,3 +331,16 @@ config.md#SSOCOnfig) blocks) then a few comments:
     or `--sso` flag because of a [limitation with how shell completion works](
     https://github.com/synfinatic/aws-sso-cli/issues/382).  Instead you must
     first `export AWS_SSO=<name>` and then run the command.
+
+### How can I stop typing my password all the time?
+
+Choosing a [SecureStore](config.md#securestore-jsonstore) is important from
+a usability & security perspective.  The default options for MacOS and Windows
+should generally be the best, but Linux users default to `file` for compatibility
+sake.
+
+Unfortunately, the `file` option requires you to enter your password pretty much
+every time you use `aws-sso`.  For that reason, I recommend using the [pass](
+https://www.passwordstore.org) option which uses GPG and optionally the `gpg-agent`
+for caching of your GPG passphrase.  Please note that configuring pass, GPG
+and the gpg-agent are outside of the scope of this documentation.
