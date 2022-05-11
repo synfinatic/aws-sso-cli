@@ -9,6 +9,8 @@
  * Add zsh support for shell helpers #360
  * Firefox container name color & icon will be pseudo-randomized if you don't
     specify a Color/Icon tag #392
+ * `config` wizard now intelligently selects a default value for
+    `ConfigProfilesUrlAction` #387
 
 ### Bugs
 

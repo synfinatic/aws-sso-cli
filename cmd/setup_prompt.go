@@ -557,7 +557,7 @@ func promptCacheRefresh(defaultValue int64) int64 {
 	return x
 }
 
-func promptConfigProfilesUrlAction(defaultValue string, useFirefox bool) string {
+func promptConfigProfilesUrlAction(defaultValue, urlAction string, useFirefox bool) string {
 	var err error
 	var i int
 
@@ -585,6 +585,13 @@ func promptConfigProfilesUrlAction(defaultValue string, useFirefox bool) string 
 	}
 
 	label := "How to open URLs via $AWS_PROFILE? (ConfigProfilesUrlAction)"
+	if defaultValue == "" {
+		if utils.StrListContains(urlAction, []string{"clip", "exec", "open"}) {
+			defaultValue = urlAction
+		} else {
+			defaultValue = "open"
+		}
+	}
 
 	sel := promptui.Select{
 		Label:        label,

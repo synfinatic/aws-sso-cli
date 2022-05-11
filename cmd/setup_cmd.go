@@ -209,7 +209,7 @@ func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
 	}
 
 	ctx.Settings.ConfigProfilesUrlAction = promptConfigProfilesUrlAction(
-		configProfilesUrlAction, ctx.Settings.FirefoxOpenUrlInContainer)
+		configProfilesUrlAction, ctx.Settings.UrlAction, ctx.Settings.FirefoxOpenUrlInContainer)
 
 	// should we prompt user to override default browser?
 	if ctx.Settings.UrlAction == "open" || ctx.Settings.ConfigProfilesUrlAction == "open" {
