@@ -73,6 +73,18 @@ https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_terms-and-concepts.htm
 
 For more information on this, see the [Via](config.md#Via) configuration option.
 
+You can also use the standard [aws config definition](
+https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-role.html#cli-role-overview):
+
+```ini
+[profile RoleToAssumeViaRoleChaining]
+role_arn = arn:aws:iam::2373474565:role/SomeRoleToAsssume
+source_profile = NameOfAwsSsoCliProfile
+```
+
+And generate the necessary AWS SSO CLI profile entries via
+[aws-sso config-profiles](commands.md#config-profiles) command.
+
 ### How does AWS SSO CLI manage the $AWS\_DEFAULT\_REGION?
 
 AWS SSO will leave the `$AWS_DEFAULT_REGION` environment variable alone

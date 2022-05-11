@@ -30,6 +30,7 @@
  * `--url-action`, `-u` -- How to handle URLs for your SSO provider
  * `--sso <name>`, `-S` -- Specify non-default AWS SSO instance to use (`$AWS_SSO`)
  * `--sts-refresh` -- Force refresh of STS Token Credentials
+ * `--no-config-check` -- Disable automatic updating of `~/.aws/config`
 
 ## Commands
 
@@ -131,6 +132,12 @@ used to refresh existing AWS credentials or by specifying the appropriate argume
 
 Suggested use (bash): `eval $(aws-sso eval <args>)`
 
+or if you are using [VSCode environment variables](
+https://code.visualstudio.com/remote/advancedcontainers/environment-variables#_option-2-use-an-env-file)
+you can write the variable to a file:
+
+`aws-sso eval <args> >~/.devcontainer/devcontainer.env`
+
 Flags:
 
  * `--arn <arn>`, `-a` -- ARN of role to assume
@@ -188,7 +195,8 @@ Priority is given to:
 
 You can not run `exec` inside of another `exec` shell.
 
-See [Environment Variables](#environment-variables) for more information about what varibles are set.
+See [Environment Variables](#environment-variables) for more information about
+what varibles are set.
 
 ---
 
@@ -211,33 +219,38 @@ Priority is given to:
  * `--arn`
  * `--account` and `--role`
 
-**Note:** The `process` command does not honor the `$AWS_SSO_ROLE_ARN`, `$AWS_SSO_ACCOUNT_ID`, or
-`$AWS_SSO_ROLE_NAME` environment variables.
+**Note:** The `process` command does not honor the `$AWS_SSO_ROLE_ARN`,
+`$AWS_SSO_ACCOUNT_ID`, or `$AWS_SSO_ROLE_NAME` environment variables.
 
-**Note:** Due to a limitation of the AWS tooling, setting `--url-action print` will cause an error
-because of a limitation of the AWS tooling which prevents it from working.
+**Note:** Due to a limitation of the AWS tooling, setting `--url-action print`
+will cause an error because of a limitation of the AWS tooling which prevents
+it from working.
 
 ---
 
 ### cache
 
-AWS SSO CLI caches information about your AWS Accounts, Roles and Tags for better
-perfomance.  By default it will refresh this information after 24 hours, but you
-can force this data to be refreshed immediately.
+AWS SSO CLI caches information about your AWS Accounts, Roles and Tags for
+better perfomance.  By default it will refresh this information after 24
+hours, but you can force this data to be refreshed immediately.
 
-Cache data is also automatically updated anytime the `config.yaml` file is modified.
+Cache data is also automatically updated anytime the `config.yaml` file is
+modified.
 
 ---
 
 ### list
 
-List will list all of the AWS Roles you can assume with the metadata/tags available
-to be used for interactive selection with `exec`.  You can control which fields are
-printed by specifying the field names as arguments.
+List will list all of the AWS Roles you can assume with the metadata/tags
+available to be used for interactive selection with `exec`.  You can control
+which fields are printed by specifying the field names as arguments.
 
 Flags:
 
  * `--list-fields`, `-f` -- List the available fields to print
+ * `--prefix <Field>=<Prefix>`, `-P` -- Filter results by the given field 
+    value & prefix value
+ * `--csv` -- Generate results in CSV format
 
 Arguments: `[<field> ...]`
 
@@ -263,7 +276,7 @@ Flags:
  * `--type`, `-t` -- Type of credentials to flush:
     * `sts` -- Flush temporary STS credentials for IAM roles
     * `sso` -- Flush temporary AWS SSO credentials
-    * `all` -- Flush temporary STS and SSO  credentials
+    * `all` -- Flush temporary STS and SSO credentials
 
 ---
 
@@ -358,16 +371,19 @@ are automatically set by `aws-sso`:
  * `AWS_ACCESS_KEY_ID` -- Authentication identifier required by AWS
  * `AWS_SECRET_ACCESS_KEY` -- Authentication secret required by AWS
  * `AWS_SESSION_TOKEN` -- Authentication secret required by AWS
- * `AWS_DEFAULT_REGION` -- Region to use AWS with (will never override an existing value)
+ * `AWS_DEFAULT_REGION` -- Region to use AWS with (will never override an
+    existing value)
 
 The following environment variables are specific to `aws-sso`:
 
  * `AWS_SSO_ACCOUNT_ID` -- The AccountID for your IAM role
  * `AWS_SSO_ROLE_NAME` -- The name of the IAM role
  * `AWS_SSO_ROLE_ARN` -- The full ARN of the IAM role
- * `AWS_SSO_SESSION_EXPIRATION`  -- The date and time when the IAM role credentials will expire
+ * `AWS_SSO_SESSION_EXPIRATION`  -- The date and time when the IAM role
+    credentials will expire
  * `AWS_SSO_DEFAULT_REGION` -- Tracking variable for `AWS_DEFAULT_REGION`
- * `AWS_SSO_PROFILE` -- User customizable varible using the [ProfileFormat](docs/config.md#profileformat) template
+ * `AWS_SSO_PROFILE` -- User customizable varible using the
+    [ProfileFormat](docs/config.md#profileformat) template
  * `AWS_SSO` -- AWS SSO instance name
 
 
@@ -376,28 +392,36 @@ and SDK.
 
 ## Shell Helpers
 
-These are optional helper functions installed in your shell as part of the [completions](
-#completions) command.  Currently only bash is supported.  To install these helper
-functions, please see the [quickstart](quickstart.md) page.
+These are optional helper functions installed in your shell as part of the
+[completions](#completions) command.  To install these helper functions,
+please see the [quickstart](quickstart.md) page.
 
-**Important:** Unlike the commands above, these are standalone shell commands
+**Important:** Unlike the commands above, these are standalone shell functions
 and you should _NOT_ prefix them with `aws-sso`.
 
-By default, these commands uses your default AWS SSO instance, but you can override
-this by first exporting `AWS_SSO` to the value you want to use.
+By default, these commands uses your default AWS SSO instance, but you can
+override this by first exporting `AWS_SSO` to the value you want to use.
 
 If you want to pass specific args to `aws-sso-profile` you can use the
 `$AWS_SSO_HELPER_ARGS` environment variable.  If nothing is set, then
 `--level error --no-config-check` is used.
 
-Currently the following shells are fully supported:
+Currently the following shells are supported:
 
- * `bash`
- * `zsh` (requires manual `# autoload -U +X bashcompinit && bashcompinit`
-    for bash completion support)
+ * [bash](../internal/helpers/bash_profile.sh)
+ * [zsh](../internal/helpers/zshrc.sh)
  * [fish - TBD](https://github.com/synfinatic/aws-sso-cli/issues/361)
 
-**Note:** Please reach out if you can help with adding support for your favorite shell!
+**Note:** `zsh` completion requires you to have the following lines set
+before the AWS SSO completions:
+
+```bash
+autoload -Uz +X compinit && compinit
+autoload -Uz +X bashcompinit && bashcompinit
+```
+
+**Note:** Please reach out if you can help with adding support for your
+favorite shell!
 
 ---
 
@@ -417,5 +441,5 @@ refuse to run if `AWS_PROFILE` is set.
 
 ### aws-sso-clear
 
-Clears all the environment variables set by `aws-sso-profile` or when running
-`eval $(aws-sso env ...)`.
+Clears all the [managed environment variables](#managed-variables) in your
+current shell set by `aws-sso-profile` or by running `eval $(aws-sso env ...)`.
