@@ -1,11 +1,20 @@
 # AWS SSO CLI Changelog
 
+## Unreleased
+
+### New Features
+
+ * Auto-completion is now context sensitive to the `--sso`, `--account`, and
+    `--role` flags and filters results accordingly.
+
+### Bugs
+
 ## [v1.9.1] - 2022-05-09
 
 ## Bugs
 
  * Fix `config` command when user has no `UrlExecCommand` defined #385
- * `console` no longer warns when a role is missing the Color or Icon tag 
+ * `console` no longer warns when a role is missing the Color or Icon tag
 
 ## [v1.9.0] - 2022-05-08
 
@@ -353,7 +362,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.9.0...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.9.1...main
+[v1.9.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.1
 [v1.9.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.0
 [v1.8.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.8.1
 [v1.8.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.8.0

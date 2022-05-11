@@ -1,4 +1,4 @@
-package main
+package predictor
 
 /*
  * AWS SSO CLI
@@ -33,50 +33,22 @@ import (
 type Predictor struct {
 	configFile string
 	accountids []string
-	roles      []string
 	arns       []string
+	roles      []string
 	profiles   []string
-}
-
-// AvailableAwsRegions lists all the AWS regions that AWS provides
-// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html#concepts-available-regions
-var AvailableAwsRegions []string = []string{
-	"us-gov-west-1",
-	"us-gov-east-1",
-	"us-east-1",
-	"us-east-2",
-	"us-west-1",
-	"us-west-2",
-	"af-south-1",
-	"ap-east-1",
-	"ap-south-1",
-	"ap-northeast-1",
-	"ap-northeast-2",
-	"ap-northeast-3",
-	"ap-southeast-1",
-	"ap-southeast-2",
-	"ap-northeast-1",
-	"ca-central-1",
-	"eu-central-1",
-	"eu-west-1",
-	"eu-west-2",
-	"eu-south-1",
-	"eu-west-3",
-	"eu-north-1",
-	"me-south-1",
-	"sa-east-1",
 }
 
 // NewPredictor loads our cache file (if exists) and loads the values
 func NewPredictor(cacheFile, configFile string) *Predictor {
 	defaults := map[string]interface{}{}
-	override := sso.OverrideSettings{}
+
+	// select our SSO from a CLI flag or env var, else use our default
+	override := sso.OverrideSettings{
+		DefaultSSO: getSSOValue(),
+	}
+
 	p := Predictor{
 		configFile: configFile,
-	}
-	ssoName := os.Getenv("AWS_SSO")
-	if ssoName != "" {
-		override.DefaultSSO = ssoName
 	}
 
 	settings, err := sso.LoadSettings(configFile, cacheFile, defaults, override)
@@ -89,22 +61,45 @@ func NewPredictor(cacheFile, configFile string) *Predictor {
 		return &p
 	}
 
+	return p.newPredictor(settings, c)
+}
+
+// newPredictor returns a Predictor based on our settings & cache structs
+func (p *Predictor) newPredictor(s *sso.Settings, c *sso.Cache) *Predictor {
 	uniqueRoles := map[string]bool{}
 
 	cache := c.GetSSO()
-	for aid := range cache.Roles.Accounts {
-		id, _ := utils.AccountIdToString(aid)
-		p.accountids = append(p.accountids, id)
 
+	// read our CLI to filter based on account and/or role
+	filterAccount := getAccountIdFlag()
+	filterRole := getRoleFlag()
+
+	for aid := range cache.Roles.Accounts {
+		if filterAccount > 0 && filterAccount != aid {
+			continue
+		}
+		id, _ := utils.AccountIdToString(aid)
+
+		addedRole := false
 		for roleName, rFlat := range cache.Roles.GetAccountRoles(aid) {
+			if filterRole != "" && filterRole != roleName {
+				continue
+			}
+			addedRole = true
+
 			p.arns = append(p.arns, rFlat.Arn)
 			uniqueRoles[roleName] = true
-			profile, err := rFlat.ProfileName(settings)
+			profile, err := rFlat.ProfileName(s)
 			if err != nil {
 				log.Warnf(err.Error())
 				continue
 			}
 			p.profiles = append(p.profiles, profile)
+		}
+
+		// only include our AccountId if we actually added a role from it
+		if addedRole {
+			p.accountids = append(p.accountids, id)
 		}
 	}
 
@@ -112,13 +107,13 @@ func NewPredictor(cacheFile, configFile string) *Predictor {
 		p.roles = append(p.roles, k)
 	}
 
-	return &p
+	return p
 }
 
 // FieldListComplete returns a completor for the `list` fields
 func (p *Predictor) FieldListComplete() complete.Predictor {
 	set := []string{}
-	for f := range allListFields {
+	for f := range AllListFields {
 		set = append(set, f)
 	}
 
@@ -163,6 +158,8 @@ func (p *Predictor) SsoComplete() complete.Predictor {
 			for sso := range s.SSO {
 				ssos = append(ssos, sso)
 			}
+		} else {
+			log.Panicf("error: %s", err.Error())
 		}
 	}
 	return complete.PredictSet(ssos...)
@@ -179,4 +176,25 @@ func (p *Predictor) ProfileComplete() complete.Predictor {
 	}
 
 	return complete.PredictSet(profiles...)
+}
+
+// getSSOValue scans our os.Args and returns our SSO if specified,
+// or fails to the AWS_SSO env var
+func getSSOValue() string {
+	sso := ""
+	args := os.Args[1:]
+	for i, v := range args {
+		if v == "-S" || v == "--sso" {
+			if i+1 < len(args) {
+				sso = args[i+1]
+			}
+		}
+	}
+	if sso == "" {
+		sso = getSSOFlag()
+	}
+	if sso == "" {
+		sso = os.Getenv("AWS_SSO")
+	}
+	return sso
 }

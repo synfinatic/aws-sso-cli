@@ -183,7 +183,7 @@ and the `$AWS_PROFILE` environment variable, AWS SSO CLI can support that as wel
 
 #### Configuration
 
-Run: `aws-sso config --open [open|clip|exec]`
+Run: `aws-sso config`
 
 This will add the following lines (example) to your `~/.aws/config` file:
 
