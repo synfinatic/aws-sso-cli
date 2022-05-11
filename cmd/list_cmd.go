@@ -32,20 +32,37 @@ import (
 )
 
 type ListCmd struct {
-	ListFields    bool     `kong:"short='f',help='List available fields',xor='fields'"`
-	CSV           bool     `kong:"help='Generate CSV instead of a table',xor='fields'"`
-	ProfilePrefix string   `kong:"short='P',help='Limit profiles to those that have the prefix'"`
-	Fields        []string `kong:"optional,arg,help='Fields to display',env='AWS_SSO_FIELDS',predictor='fieldList',xor='fields'"`
+	ListFields bool     `kong:"short='f',help='List available fields',xor='fields'"`
+	CSV        bool     `kong:"help='Generate CSV instead of a table',xor='fields'"`
+	Prefix     string   `kong:"short='P',help='Filter based on the <FieldName>=<Prefix>'"`
+	Fields     []string `kong:"optional,arg,help='Fields to display',env='AWS_SSO_FIELDS',predictor='fieldList',xor='fields'"`
 }
 
 // what should this actually do?
 func (cc *ListCmd) Run(ctx *RunContext) error {
 	var err error
+	var prefixSearch []string
 
 	// If `-f` then print our fields and exit
 	if ctx.Cli.List.ListFields {
 		listAllFields()
 		return nil
+	}
+
+	if ctx.Cli.List.Prefix != "" {
+		if !strings.Contains(ctx.Cli.List.Prefix, "=") {
+			return fmt.Errorf("--prefix must be in the format of <FieldName>=<Prefix>")
+		}
+		prefixSearch = strings.Split(ctx.Cli.List.Prefix, "=")
+		validFields := make([]string, len(predictor.AllListFields))
+		i := 0
+		for k := range predictor.AllListFields {
+			validFields[i] = k
+			i++
+		}
+		if !utils.StrListContains(prefixSearch[0], validFields) {
+			return fmt.Errorf("--prefix <FieldName> must be a valid field: %s", prefixSearch[0])
+		}
 	}
 
 	s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
@@ -64,7 +81,7 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 		fields = ctx.Cli.List.Fields
 	}
 
-	return printRoles(ctx, fields, ctx.Cli.List.CSV, ctx.Cli.List.ProfilePrefix)
+	return printRoles(ctx, fields, ctx.Cli.List.CSV, prefixSearch)
 }
 
 // DefaultCmd has no args, and just prints the default fields and exists because
@@ -85,11 +102,11 @@ func (cc *DefaultCmd) Run(ctx *RunContext) error {
 		}
 	}
 
-	return printRoles(ctx, ctx.Settings.ListFields, false, "")
+	return printRoles(ctx, ctx.Settings.ListFields, false, []string{})
 }
 
 // Print all our roles
-func printRoles(ctx *RunContext, fields []string, csv bool, profilePrefix string) error {
+func printRoles(ctx *RunContext, fields []string, csv bool, prefixSearch []string) error {
 	var err error
 	roles := ctx.Settings.Cache.GetSSO().Roles
 	tr := []gotable.TableStruct{}
@@ -123,10 +140,18 @@ func printRoles(ctx *RunContext, fields []string, csv bool, profilePrefix string
 				roleFlat.Profile = p
 			}
 
-			if profilePrefix != "" && !strings.HasPrefix(p, profilePrefix) {
-				// skip because not a match
-				continue
+			if len(prefixSearch) > 0 {
+				match, err := roleFlat.HasPrefix(prefixSearch[0], prefixSearch[1])
+				if err != nil {
+					return err
+				}
+
+				if !match {
+					// skip because not a match
+					continue
+				}
 			}
+
 			roleFlat.Id = idx
 			idx += 1
 			tr = append(tr, *roleFlat)

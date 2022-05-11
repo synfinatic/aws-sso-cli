@@ -12,6 +12,10 @@
  * `config` wizard now intelligently selects a default value for
     `ConfigProfilesUrlAction` #387
 
+### Changes
+
+ * Replace `list --profile-prefix` with a more flexible `list --prefix` option #395
+
 ### Bugs
 
  * Fix broken `completions` for zsh and fish
