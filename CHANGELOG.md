@@ -6,8 +6,11 @@
 
  * Auto-completion is now context sensitive to the `--sso`, `--account`, and
     `--role` flags and filters results accordingly.
+ * Add zsh support for shell helpers #360
 
 ### Bugs
+
+ * Fix broken `completions` for zsh and fish
 
 ## [v1.9.1] - 2022-05-09
 
