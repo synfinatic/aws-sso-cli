@@ -61,20 +61,33 @@ var FIREFOX_PLUGIN_ICONS []string = []string{
 
 const FIREFOX_CONTAINER_FORMAT = "ext+container:name=%s&url=%s&color=%s&icon=%s"
 
+// selectElement selects a deterministic pseudo-random option given a string
+// as the seed
+func selectElement(seed string, options []string) string {
+	var v = byte(0)
+	var bytes = []byte(seed)
+
+	for i := 0; i < len(seed); i++ {
+		v += bytes[i] // overflows
+	}
+	v %= byte(len(options))
+	return options[int(v)]
+}
+
 // FirefoxContainerUrl generates a URL for Firefox Containers
 func FirefoxContainerUrl(target, name, color, icon string) string {
 	if !StrListContains(color, FIREFOX_PLUGIN_COLORS) {
 		if color != "" {
 			log.Warnf("Invalid Firefox Container color: %s", color)
 		}
-		color = FIREFOX_PLUGIN_COLORS[0]
+		color = selectElement(name, FIREFOX_PLUGIN_COLORS)
 	}
 
 	if !StrListContains(icon, FIREFOX_PLUGIN_ICONS) {
 		if icon != "" {
 			log.Warnf("Invalid Firefox Container icon: %s", icon)
 		}
-		icon = FIREFOX_PLUGIN_ICONS[0]
+		icon = selectElement(name, FIREFOX_PLUGIN_ICONS)
 	}
 
 	return fmt.Sprintf(FIREFOX_CONTAINER_FORMAT, name, url.QueryEscape(target), color, icon)

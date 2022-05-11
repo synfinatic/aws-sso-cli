@@ -143,8 +143,11 @@ func TestFirefoxContainersUrl(t *testing.T) {
 	assert.Equal(t, "ext+container:name=Test&url=https%3A%2F%2Fsynfin.net&color=blue&icon=fingerprint",
 		FirefoxContainerUrl("https://synfin.net", "Test", "blue", "fingerprint"))
 
-	assert.Equal(t, "ext+container:name=Test&url=https%3A%2F%2Fsynfin.net&color=blue&icon=fingerprint",
-		FirefoxContainerUrl("https://synfin.net", "Test", "Bad", "Value"))
+	assert.Equal(t, "ext+container:name=Testy&url=https%3A%2F%2Fsynfin.net&color=turquoise&icon=briefcase",
+		FirefoxContainerUrl("https://synfin.net", "Testy", "Bad", "Value"))
+
+	assert.Equal(t, "ext+container:name=Testy&url=https%3A%2F%2Fsynfin.net&color=turquoise&icon=briefcase",
+		FirefoxContainerUrl("https://synfin.net", "Testy", "", ""))
 }
 
 func TestCommandBuilder(t *testing.T) {
@@ -169,4 +172,15 @@ func TestCommandBuilder(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "foo", cmd)
 	assert.Equal(t, []string{"bar", "url"}, l)
+}
+
+func TestSelectElement(t *testing.T) {
+	check := map[string]string{
+		"a":  "turquoise", // 97 % 8 => 1
+		"aa": "green",     // 194 % 8 => 2
+		"2d": "pink",      // 150 % 8 => 6
+	}
+	for k, v := range check {
+		assert.Equal(t, v, selectElement(k, FIREFOX_PLUGIN_COLORS))
+	}
 }

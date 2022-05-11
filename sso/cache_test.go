@@ -127,22 +127,24 @@ func (suite *CacheTestSuite) TestAddHistory() {
 	cache := c.GetSSO()
 	assert.Equal(t, []string{}, cache.History)
 
+	now := time.Now().Unix()
+
 	// Basic add
 	c.AddHistory("arn:aws:iam::123456789012:role/Foo")
 	assert.Equal(t, []string{"arn:aws:iam::123456789012:role/Foo"}, cache.History)
-	tag := fmt.Sprintf("MyAccount:Foo,%d", time.Now().Unix())
+	tag := fmt.Sprintf("MyAccount:Foo,%d", now)
 	assert.Equal(t, tag, c.GetSSO().Roles.Accounts[123456789012].Roles["Foo"].Tags["History"])
 
 	// Add again which should be a no-op
 	c.AddHistory("arn:aws:iam::123456789012:role/Foo")
 	assert.Equal(t, []string{"arn:aws:iam::123456789012:role/Foo"}, cache.History)
-	tag = fmt.Sprintf("MyAccount:Foo,%d", time.Now().Unix())
+	tag = fmt.Sprintf("MyAccount:Foo,%d", now)
 	assert.Equal(t, tag, c.GetSSO().Roles.Accounts[123456789012].Roles["Foo"].Tags["History"])
 
 	// Add a new item which expires the previous item
 	c.AddHistory("arn:aws:iam::123456789012:role/Bar")
 	assert.Equal(t, []string{"arn:aws:iam::123456789012:role/Bar"}, cache.History)
-	tag = fmt.Sprintf("MyAccount:Bar,%d", time.Now().Unix())
+	tag = fmt.Sprintf("MyAccount:Bar,%d", now)
 	assert.NotContains(t, "History", c.GetSSO().Roles.Accounts[123456789012].Roles["Foo"].Tags)
 	assert.Equal(t, tag, c.GetSSO().Roles.Accounts[123456789012].Roles["Bar"].Tags["History"])
 
