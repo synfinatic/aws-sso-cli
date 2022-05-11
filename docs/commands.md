@@ -311,7 +311,7 @@ Flags:
 
  * `--install` -- Install the new v1.9+ shell completions scripts
  * `--uninstall` -- Uninstall the new v1.9+ shell completions scripts
- * `--uninstall-pre-19` -- Uninstall the legacy pre-v1.9 scripts 
+ * `--uninstall-pre-19` -- Uninstall the legacy pre-v1.9 scripts
  * `--shell <shell>` -- Override the detected shell
  * `--shell-script <file>` -- Override the default shell script file to modify
 
@@ -384,16 +384,17 @@ functions, please see the [quickstart](quickstart.md) page.
 and you should _NOT_ prefix them with `aws-sso`.
 
 By default, these commands uses your default AWS SSO instance, but you can override
-this by first exporting `AWS_SSO` to the value you want to use.  
+this by first exporting `AWS_SSO` to the value you want to use.
 
-If you want to pass specific args to `aws-sso-profile` you can use the 
-`$AWS_SSO_HELPER_ARGS` environment variable.  If nothing is set, then 
+If you want to pass specific args to `aws-sso-profile` you can use the
+`$AWS_SSO_HELPER_ARGS` environment variable.  If nothing is set, then
 `--level error` is used.
 
 Currently the following shells are fully supported:
 
  * `bash`
- * [zsh - TBD](https://github.com/synfinatic/aws-sso-cli/issues/360)
+ * `zsh` (requires manual `# autoload -U +X bashcompinit && bashcompinit`
+    for bash completion support)
  * [fish - TBD](https://github.com/synfinatic/aws-sso-cli/issues/361)
 
 **Note:** Please reach out if you can help with adding support for your favorite shell!
@@ -406,7 +407,7 @@ This shell command enables you to assume an AWS SSO role by the profile name
 _in the current shell and with auto-complete functionality_.  Basically it is a
 wrapper around `eval $(aws-sso eval --profile XXXX)` but with auto-complete.
 
-This command will export the same [environment variables](#managed-variables) 
+This command will export the same [environment variables](#managed-variables)
 as the [eval](#eval) command.
 
 **Note:** This command will overwrite existing environment variables, but will

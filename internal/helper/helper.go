@@ -19,6 +19,7 @@ package helper
  */
 
 import (
+	"embed"
 	"fmt"
 	"os"
 	"path"
@@ -27,22 +28,28 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
-import _ "embed"
+//go:embed bash_profile.sh zshrc.sh aws-sso.fish
+var embedFiles embed.FS
 
-//go:embed bash_profile.sh
-var BASH_PROFILE string
-
-//go:embed zshrc.sh
-var ZSH_SCRIPT string
-
-//go:embed aws-sso.fish
-var FISH_SCRIPT string
+type fileMap struct {
+	Key  string
+	Path string
+}
 
 // map of shells to their file we edit by default
-var SHELL_SCRIPTS = map[string]string{
-	"bash": "~/.bash_profile",
-	"zsh":  "~/.zshrc",
-	"fish": getFishScript(),
+var SHELL_SCRIPTS = map[string]fileMap{
+	"bash": {
+		Key:  "bash_profile.sh",
+		Path: "~/.bash_profile",
+	},
+	"zsh": {
+		Key:  "zshrc.sh",
+		Path: "~/.zshrc",
+	},
+	"fish": {
+		Key:  "aws-sso.fish",
+		Path: getFishScript(),
+	},
 }
 
 // ConfigFiles returns a list of all the config files we might edit
@@ -50,75 +57,70 @@ func ConfigFiles() []string {
 	ret := []string{}
 
 	for _, v := range SHELL_SCRIPTS {
-		ret = append(ret, utils.GetHomePath(v))
+		ret = append(ret, utils.GetHomePath(v.Path))
 	}
 	return ret
 }
 
-// InstallHelper installs any helper code into our shell startup script(s)
-func InstallHelper(shell, script string) error {
+// getScript takes a shell and returns the contents & path to the shell script
+func getScript(shell string) ([]byte, string, error) {
 	var err error
+	var bytes []byte
+	var shellFile fileMap
 	var ok bool
-	var shellFile string
 
 	if shell == "" {
 		if shell, err = detectShell(); err != nil {
-			return err
+			return bytes, "", err
 		}
 	}
+	log.Debugf("using %s as our shell", shell)
 
-	if script == "" {
-		if shellFile, ok = SHELL_SCRIPTS[shell]; !ok {
-			return fmt.Errorf("unsupported shell: %s", shell)
-		}
-		script = utils.GetHomePath(shellFile)
+	if shellFile, ok = SHELL_SCRIPTS[shell]; !ok {
+		return bytes, "", fmt.Errorf("unsupported shell: %s", shell)
 	}
 
-	switch shell {
-	case "bash":
-		err = installConfigFile(script, BASH_PROFILE)
-	case "zsh":
-		err = installConfigFile(script, ZSH_SCRIPT)
-	case "fish":
-		err = installConfigFile(script, FISH_SCRIPT)
-	default:
-		err = fmt.Errorf("unsupported shell: %s", shell)
+	path := utils.GetHomePath(shellFile.Path)
+	bytes, err = embedFiles.ReadFile(shellFile.Key)
+	if err != nil {
+		return bytes, "", err
+	}
+	return bytes, path, nil
+}
+
+// InstallHelper installs any helper code into our shell startup script(s)
+func InstallHelper(shell string, path string) error {
+	c, defaultPath, err := getScript(shell)
+	if err != nil {
+		return err
+	}
+
+	if path == "" {
+		err = installConfigFile(defaultPath, c)
+	} else {
+		err = installConfigFile(path, c)
 	}
 
 	return err
 }
 
 // UninstallHelper removes any helper code from our shell startup script(s)
-func UninstallHelper(shell, script string) error {
-	var err error
-	var ok bool
-	var shellFile string
-
-	if shell == "" {
-		if shell, err = detectShell(); err != nil {
-			return err
-		}
+func UninstallHelper(shell string, path string) error {
+	c, defaultPath, err := getScript(shell)
+	if err != nil {
+		return err
 	}
 
-	if script == "" {
-		if shellFile, ok = SHELL_SCRIPTS[shell]; !ok {
-			return fmt.Errorf("unsupported shell: %s", shell)
-		}
-		script = utils.GetHomePath(shellFile)
+	if path == "" {
+		err = uninstallConfigFile(defaultPath, c)
+	} else {
+		err = uninstallConfigFile(path, c)
 	}
-
-	switch shell {
-	case "bash":
-		err = uninstallConfigFile(script, BASH_PROFILE)
-	default:
-		err = fmt.Errorf("unsupported shell: %s", shell)
-	}
-
 	return err
 }
 
 // installConfigFile adds our blob to the given file
-func installConfigFile(path, contents string) error {
+func installConfigFile(path string, contents []byte) error {
 	var err error
 	var exec string
 	var fe *utils.FileEdit
@@ -131,7 +133,7 @@ func installConfigFile(path, contents string) error {
 		"Executable": exec,
 	}
 
-	if fe, err = utils.NewFileEdit(BASH_PROFILE, args); err != nil {
+	if fe, err = utils.NewFileEdit(string(contents), args); err != nil {
 		return err
 	}
 
@@ -143,7 +145,7 @@ func installConfigFile(path, contents string) error {
 }
 
 // uninstallConfigFile removes our blob from the given file
-func uninstallConfigFile(path, contents string) error {
+func uninstallConfigFile(path string, contents []byte) error {
 	var err error
 	var fe *utils.FileEdit
 
@@ -168,6 +170,7 @@ func detectShell() (string, error) {
 	}
 
 	_, shell := path.Split(shellPath)
+	log.Debugf("detected configured shell as: %s", shell)
 	return shell, nil
 }
 
