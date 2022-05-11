@@ -27,7 +27,7 @@ import (
 func TestBellSkipper(t *testing.T) {
 	b := BellSkipper{}
 
-	bytes := []byte("this is my buffer")
+	bytes := []byte("this is my bellskipper buffer\n")
 	i, err := b.Write(bytes)
 	assert.NoError(t, err)
 	assert.Equal(t, len(bytes), i)
