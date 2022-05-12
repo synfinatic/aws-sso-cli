@@ -21,15 +21,20 @@ package sso
 import (
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
+	goyaml "github.com/goccy/go-yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/synfinatic/aws-sso-cli/storage"
 )
 
-const TEST_JSON_STORE_FILE = "../storage/testdata/store.json"
+const (
+	TEST_JSON_STORE_FILE = "../storage/testdata/store.json"
+	TEST_ROLES_TEST_FILE = "./testdata/roles_tests.yaml"
+)
 
 type CacheRolesTestSuite struct {
 	suite.Suite
@@ -367,4 +372,44 @@ func TestAWSRoleFlatHasPrefix(t *testing.T) {
 	v, err := f.HasPrefix("Via", "x")
 	assert.NoError(t, err)
 	assert.False(t, v)
+}
+
+func (suite *CacheRolesTestSuite) TestCheckProfiles() {
+	t := suite.T()
+	tests := ProfileTests{}
+
+	data, err := ioutil.ReadFile(TEST_ROLES_TEST_FILE)
+	assert.NoError(t, err)
+
+	err = goyaml.Unmarshal(data, &tests)
+	assert.NoError(t, err)
+
+	for testName, testData := range tests {
+		err := testData.checkProfiles(suite.cache.settings)
+		if strings.HasPrefix(testName, "Invalid") {
+			assert.Error(t, err, testName)
+		} else {
+			assert.NoError(t, err, testName)
+		}
+	}
+
+	badSettings := *suite.cache.settings
+	badSettings.ProfileFormat = "{{ .AccountName }}"
+	r := tests["Valid1"]
+	err = r.checkProfiles(&badSettings)
+	assert.NoError(t, err)
+
+	r = tests["Valid2"]
+	err = r.checkProfiles(&badSettings)
+	assert.Error(t, err)
+
+	badSettings.ProfileFormat = "{{ .RoleName }}"
+	r = tests["Valid3"]
+	err = r.checkProfiles(&badSettings)
+	assert.Error(t, err)
+
+	badSettings.ProfileFormat = "{{ .InvalidFormat }}"
+	r = tests["Valid3"]
+	err = r.checkProfiles(&badSettings)
+	assert.Error(t, err)
 }

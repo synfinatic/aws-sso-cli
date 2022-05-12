@@ -269,6 +269,31 @@ func (r *Roles) MatchingRolesWithTagKey(key string) []*AWSRoleFlat {
 	return ret
 }
 
+// checkProfiles verfies that all the Profile names are unique for all the defined roles
+func (r *Roles) checkProfiles(s *Settings) error {
+	profileUniqueCheck := map[string]string{} // ProfileName() => Arn
+	for accountId, account := range r.Accounts {
+		for roleName, role := range account.Roles {
+			flat, err := r.GetRole(accountId, roleName)
+			if err != nil {
+				return err
+			}
+
+			pname, err := flat.ProfileName(s)
+			if err != nil {
+				return err
+			}
+
+			if arn, duplicate := profileUniqueCheck[pname]; duplicate {
+				return fmt.Errorf("Duplicate profile name '%s' for:\n- %s\n- %s", pname, arn, role.Arn)
+			} else {
+				profileUniqueCheck[pname] = arn
+			}
+		}
+	}
+	return nil
+}
+
 // This is what we always return for a role definition
 type AWSRoleFlat struct {
 	Id            int               `header:"Id"`
