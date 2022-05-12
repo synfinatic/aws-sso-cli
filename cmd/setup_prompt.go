@@ -28,6 +28,7 @@ import (
 
 	"github.com/manifoldco/promptui"
 	"github.com/synfinatic/aws-sso-cli/internal/predictor"
+	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
@@ -108,6 +109,7 @@ func promptSsoInstance(defaultValue string) string {
 			return fmt.Errorf("SSO Name must be a valid string")
 		},
 		Default:   defaultValue,
+		Stdout:    &utils.BellSkipper{},
 		Pointer:   promptui.PipeCursor,
 		Templates: makePromptTemplate(label),
 	}
@@ -141,6 +143,7 @@ func promptStartUrl(defaultValue string) string {
 				return fmt.Errorf("Invalid DNS hostname: %s", input)
 			},
 			Default:   defaultValue,
+			Stdout:    &utils.BellSkipper{},
 			Pointer:   promptui.PipeCursor,
 			Templates: makePromptTemplate(label),
 		}
@@ -226,38 +229,22 @@ func promptDefaultRegion(defaultValue string) string {
 
 // promptUseFirefox asks if the user wants to use firefox containers
 // and if so, returns the path to the Firefox binary
-func promptUseFirefox(defaultValue string) string {
+func promptUseFirefox(defaultValue []string) []string {
 	var val string
-	var i int
 	var err error
 
 	fmt.Printf("\n")
-
-	label := "Use Firefox containers to open URLs? (FirefoxOpenInContainer)"
-	sel := promptui.Select{
-		Label:        label,
-		HideSelected: false,
-		Items:        yesNoItems,
-		CursorPos:    yesNoPos(defaultValue != ""),
-		Stdout:       &utils.BellSkipper{},
-		Templates:    makeSelectTemplate(label),
-	}
-	if i, _, err = sel.Run(); err != nil {
-		log.Fatal(err)
+	if len(defaultValue) == 0 {
+		val = ""
+	} else {
+		val = defaultValue[0]
 	}
 
-	if yesNoItems[i].Value == "No" {
-		return ""
-	}
-
-	fmt.Printf("\n")
-
-	fmt.Printf("Ensure that you have the 'Open external links in a container' plugin for Firefox.")
-	label = "Path to Firefox binary (UrlExecCommand)"
+	label := "Path to Firefox binary (UrlExecCommand)"
 	prompt := promptui.Prompt{
 		Label:     label,
 		Stdout:    &utils.BellSkipper{},
-		Default:   firefoxDefaultBrowserPath(defaultValue),
+		Default:   firefoxDefaultBrowserPath(val),
 		Pointer:   promptui.PipeCursor,
 		Validate:  validateBinary,
 		Templates: makePromptTemplate(label),
@@ -266,17 +253,16 @@ func promptUseFirefox(defaultValue string) string {
 		log.Fatal(err)
 	}
 
-	return val
+	return []string{
+		val,
+		"%s",
+	}
 }
 
-func promptUrlAction(defaultValue string, useFirefox bool) string {
+func promptUrlAction(defaultValue url.Action) url.Action {
 	var i int
 	var err error
 
-	cmd := "Execute custom command"
-	if useFirefox {
-		cmd = "Open in Firefox"
-	}
 	fmt.Printf("\n")
 
 	items := []selectOptions{
@@ -285,7 +271,7 @@ func promptUrlAction(defaultValue string, useFirefox bool) string {
 			Value: "clip",
 		},
 		{
-			Name:  cmd,
+			Name:  "Execute custom command",
 			Value: "exec",
 		},
 		{
@@ -293,21 +279,31 @@ func promptUrlAction(defaultValue string, useFirefox bool) string {
 			Value: "open",
 		},
 		{
+			Name:  "Open in Firefox with Granted Containers plugin",
+			Value: "granted-containers",
+		},
+		{
+			Name:  "Open in Firefox with Open Url in Container plugin",
+			Value: "open-url-in-container",
+		},
+		{
 			Name:  "Print message with URL",
 			Value: "print",
 		},
 		{
-			Name:  "Print just the URL",
+			Name:  "Print only the URL",
 			Value: "printurl",
 		},
 	}
+
+	dValue := string(defaultValue)
 
 	// How should we deal with URLs?  Note we don't support `exec`
 	// here since that is an "advanced" feature
 	label := "Default action to take with URLs (UrlAction):"
 	sel := promptui.Select{
 		Label:     label,
-		CursorPos: defaultSelect(items, defaultValue),
+		CursorPos: defaultSelect(items, dValue),
 		Items:     items,
 		Stdout:    &utils.BellSkipper{},
 		Templates: makeSelectTemplate(label),
@@ -316,20 +312,26 @@ func promptUrlAction(defaultValue string, useFirefox bool) string {
 		log.Fatal(err)
 	}
 
-	return items[i].Value
+	action, err := url.NewAction(items[i].Value)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+	return action
 }
 
 func promptUrlExecCommand(defaultValue []string) []string {
 	var val []string
 	var err error
-	var line string
-	argNum := 1
+	var line, command string
 
 	fmt.Printf("\n")
 
 	fmt.Printf("Please enter one per line, the command and list of arguments for UrlExecCommand:\n")
 
-	command := defaultValue[0]
+	if len(defaultValue) > 0 {
+		command = defaultValue[0]
+	}
+
 	label := "Binary to execute to open URLs (UrlExecCommand)"
 	prompt := promptui.Prompt{
 		Label:     label,
@@ -347,10 +349,11 @@ func promptUrlExecCommand(defaultValue []string) []string {
 	val = append(val, line)
 
 	// zero out the defaults if we change the command to execute
-	if line != defaultValue[0] {
+	if line != command {
 		defaultValue = []string{}
 	}
 
+	argNum := 1
 	for line != "" {
 		arg := ""
 		if argNum < len(defaultValue) {
@@ -557,46 +560,54 @@ func promptCacheRefresh(defaultValue int64) int64 {
 	return x
 }
 
-func promptConfigProfilesUrlAction(defaultValue, urlAction string, useFirefox bool) string {
+func promptConfigProfilesUrlAction(
+	defaultValue url.ConfigProfilesAction, urlAction url.Action) url.ConfigProfilesAction {
 	var err error
 	var i int
 
 	fmt.Printf("\n")
 
-	cmd := "Execute custom command"
-	if useFirefox {
-		cmd = "Open in Firefox"
-	}
-
-	// Must specify these in same order as CONFIG_OPEN_OPTIONS
+	// always valid
 	items := []selectOptions{
 		{
 			Name:  "Copy to clipboard",
 			Value: "clip",
 		},
 		{
-			Name:  cmd,
-			Value: "exec",
-		},
-		{
-			Name:  "Open URL in (default) browser",
+			Name:  "Open in (default) browser",
 			Value: "open",
 		},
 	}
 
-	label := "How to open URLs via $AWS_PROFILE? (ConfigProfilesUrlAction)"
-	if defaultValue == "" {
-		if utils.StrListContains(urlAction, []string{"clip", "exec", "open"}) {
-			defaultValue = urlAction
-		} else {
-			defaultValue = "open"
-		}
+	if defaultValue == url.ConfigProfilesUndef {
+		defaultValue, _ = url.NewConfigProfilesAction(string(urlAction))
 	}
 
+	// if UrlExecCommand uses firefox, then we need to be consitent
+	if urlAction.IsContainer() {
+		items = append(items, selectOptions{
+			Name:  "Open in Firefox with Granted Containers plugin",
+			Value: "granted-containers",
+		})
+
+		items = append(items, selectOptions{
+			Name:  "Open in Firefox with Open Url in Container plugin",
+			Value: "open-url-in-container",
+		})
+	} else {
+		items = append(items, selectOptions{
+			Name:  "Execute custom command",
+			Value: "exec",
+		})
+	}
+
+	dValue := string(defaultValue)
+
+	label := "How to open URLs via $AWS_PROFILE? (ConfigProfilesUrlAction)"
 	sel := promptui.Select{
 		Label:        label,
 		Items:        items,
-		CursorPos:    index(CONFIG_OPEN_OPTIONS, defaultValue),
+		CursorPos:    defaultSelect(items, dValue),
 		HideSelected: false,
 		Stdout:       &utils.BellSkipper{},
 		Templates:    makeSelectTemplate(label),
@@ -606,7 +617,8 @@ func promptConfigProfilesUrlAction(defaultValue, urlAction string, useFirefox bo
 		log.Fatal(err)
 	}
 
-	return items[i].Value
+	ret, _ := url.NewConfigProfilesAction(items[i].Value)
+	return ret
 }
 
 func validateInteger(input string) error {

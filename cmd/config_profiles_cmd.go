@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
@@ -34,30 +35,32 @@ credential_process = {{ $profile.BinaryPath }} -u {{ $profile.Open }} -S "{{ $pr
 {{end}}{{end}}{{end}}`
 )
 
-var CONFIG_OPEN_OPTIONS []string = []string{
-	"clip",
-	"exec",
-	"open",
-}
-
 type ConfigProfilesCmd struct {
 	Diff  bool   `kong:"help='Print a diff of changes to the config file instead of modifying it',xor='action'"`
 	Force bool   `kong:"help='Write a new config file without prompting'"`
-	Open  string `kong:"help='Specify how to open URLs: [clip|exec|open]'"`
+	Open  string `kong:"help='Specify how to open URLs: [clip|exec|open|granted-containers|open-url-in-container]'"`
 	Print bool   `kong:"help='Print profile entries instead of modifying config file',xor='action'"`
 }
 
 func (cc *ConfigProfilesCmd) Run(ctx *RunContext) error {
-	open := ctx.Settings.ConfigProfilesUrlAction
-	if utils.StrListContains(ctx.Cli.ConfigProfiles.Open, CONFIG_OPEN_OPTIONS) {
-		open = ctx.Cli.ConfigProfiles.Open
+	var err error
+	var action url.ConfigProfilesAction
+
+	if ctx.Cli.ConfigProfiles.Open != "" {
+		if action, err = url.NewConfigProfilesAction(ctx.Cli.ConfigProfiles.Open); err != nil {
+			return err
+		}
+	} else {
+		action = ctx.Settings.ConfigProfilesUrlAction
 	}
 
-	if len(open) == 0 {
-		return fmt.Errorf("Please specify --open [clip|exec|open]")
+	if action == url.ConfigProfilesUndef {
+		return fmt.Errorf("Please specify --open [clip|exec|open|granted-containers|open-url-in-container]")
 	}
 
-	profiles, err := ctx.Settings.GetAllProfiles(open)
+	urlAction, _ := url.NewAction(string(action))
+
+	profiles, err := ctx.Settings.GetAllProfiles(urlAction)
 	if err != nil {
 		return err
 	}

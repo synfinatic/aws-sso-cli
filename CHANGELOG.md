@@ -11,10 +11,14 @@
     specify a Color/Icon tag #392
  * `config` wizard now intelligently selects a default value for
     `ConfigProfilesUrlAction` #387
+ * Add support for Granted Containers Firefox plugin #400
+ * `UrlAction` and `ConfigProfilesUrlAction` now support `open-url-in-container` and
+	`granted-containers`
 
 ### Changes
 
  * Replace `list --profile-prefix` with a more flexible `list --prefix` option #395
+ * `FirefoxOpenUrlInContainer` config option has been deprecated
 
 ### Bugs
 

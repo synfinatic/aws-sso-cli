@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/manifoldco/promptui"
+	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
 )
@@ -101,12 +102,7 @@ func (cc *ConfigCmd) Run(ctx *RunContext) error {
 }
 
 func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
-	var instanceName, startHostname, ssoRegion, defaultRegion, urlAction string
-	var defaultLevel, firefoxBrowserPath, browser, configProfilesUrlAction string
-	var hLimit, hMinutes, cacheRefresh int64
-	var consoleDuration int32
-	var autoConfigCheck bool
-	var urlExecCommand []string
+	var s = ctx.Settings
 
 	// Don't run setup twice
 	if ranSetup {
@@ -123,25 +119,15 @@ func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
 `)
 
 	if reconfig {
-		defaultLevel = ctx.Settings.LogLevel
-		defaultRegion = ctx.Settings.DefaultRegion
-		urlAction = ctx.Settings.UrlAction
-		urlExecCommand = ctx.Settings.UrlExecCommand
-		if ctx.Settings.FirefoxOpenUrlInContainer {
-			firefoxBrowserPath = urlExecCommand[0]
+		// migrate old boolean flag to enum
+		if s.FirefoxOpenUrlInContainer {
+			s.UrlAction = url.OpenUrlContainer
 		}
-		autoConfigCheck = ctx.Settings.AutoConfigCheck
-		cacheRefresh = ctx.Settings.CacheRefresh
-		hLimit = ctx.Settings.HistoryLimit
-		hMinutes = ctx.Settings.HistoryMinutes
-		browser = ctx.Settings.Browser
-		consoleDuration = ctx.Settings.ConsoleDuration
 
 		// upgrade deprecated config option
-		configProfilesUrlAction = ctx.Settings.ConfigProfilesUrlAction
-		if ctx.Settings.ConfigUrlAction != "" && configProfilesUrlAction == "" {
-			configProfilesUrlAction = ctx.Settings.ConfigUrlAction
-			ctx.Settings.ConfigUrlAction = ""
+		if s.ConfigUrlAction != "" && s.ConfigProfilesUrlAction == "" {
+			s.ConfigProfilesUrlAction, _ = url.NewConfigProfilesAction(s.ConfigUrlAction)
+			s.ConfigUrlAction = ""
 		}
 		// skips:
 		// - SSORegion
@@ -149,84 +135,65 @@ func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
 		// - StartUrl/startHostname
 		// - InstanceName
 	} else {
-		hMinutes = 1440
-		hLimit = 10
-		defaultLevel = "warn"
-	}
+		instanceName := promptSsoInstance("")
+		startHostname := promptStartUrl("")
+		ssoRegion := promptAwsSsoRegion("")
+		defaultRegion := promptDefaultRegion(ssoRegion)
 
-	if err := logLevelValidate(defaultLevel); err != nil {
-		log.Fatalf("Invalid value for --default-level %s", defaultLevel)
-	}
+		s = &sso.Settings{
+			SSO:             map[string]*sso.SSOConfig{},
+			UrlAction:       "open",
+			LogLevel:        "error",
+			DefaultRegion:   defaultRegion,
+			ConsoleDuration: 60,
+			CacheRefresh:    168,
+			AutoConfigCheck: false,
+			HistoryLimit:    10,
+			HistoryMinutes:  1440,
+			UrlExecCommand:  []string{},
+		}
 
-	if !reconfig {
-		instanceName = promptSsoInstance("")
-		startHostname = promptStartUrl("")
-		ssoRegion = promptAwsSsoRegion("")
-		defaultRegion = promptDefaultRegion(defaultRegion)
-
-		ctx.Settings = &sso.Settings{}
-		ctx.Settings.SSO = map[string]*sso.SSOConfig{}
-
-		ctx.Settings.SSO[instanceName] = &sso.SSOConfig{
+		s.SSO[instanceName] = &sso.SSOConfig{
 			SSORegion:     ssoRegion,
 			StartUrl:      fmt.Sprintf(START_URL_FORMAT, startHostname),
 			DefaultRegion: defaultRegion,
 		}
-		consoleDuration = 60
-		cacheRefresh = 168
-		autoConfigCheck = false
-		hLimit = 10
-		hMinutes = 1440
-		urlAction = "open"
-		defaultLevel = "error"
-	} else if reconfig {
-		// don't do anything with the SSO for reconfig
-	} else if addSSO {
-		log.Errorf("sorry, not supported yet")
 	}
 
-	ctx.Settings.CacheRefresh = promptCacheRefresh(cacheRefresh)
+	// first, caching
+	s.CacheRefresh = promptCacheRefresh(s.CacheRefresh)
 
-	if ctx.Settings.CacheRefresh > 0 {
-		ctx.Settings.AutoConfigCheck = promptAutoConfigCheck(autoConfigCheck)
+	if s.CacheRefresh > 0 {
+		s.AutoConfigCheck = promptAutoConfigCheck(s.AutoConfigCheck)
 	}
 
-	// First check if using Firefox w/ Containers
-	firefoxBrowserPath = promptUseFirefox(firefoxBrowserPath)
+	// next how we open URLs
+	s.UrlAction = promptUrlAction(s.UrlAction)
+	s.ConfigProfilesUrlAction = promptConfigProfilesUrlAction(s.ConfigProfilesUrlAction, s.UrlAction)
 
-	// if yes, then configure urlAction = 'exec' and our UrlExecCommand
-	if firefoxBrowserPath != "" {
-		ctx.Settings.FirefoxOpenUrlInContainer = true
-		ctx.Settings.UrlAction = "exec"
-		ctx.Settings.UrlExecCommand = []string{
-			firefoxBrowserPath,
-			`%s`,
-		}
+	// do we need urlExecCommand?
+	if s.UrlAction == url.Exec {
+		s.UrlExecCommand = promptUrlExecCommand(s.UrlExecCommand)
+	} else if s.UrlAction.IsContainer() {
+		s.UrlExecCommand = promptUseFirefox(s.UrlExecCommand)
 	} else {
-		// Not using firefox containers...
-		ctx.Settings.FirefoxOpenUrlInContainer = false
-		ctx.Settings.UrlAction = promptUrlAction(urlAction, ctx.Settings.FirefoxOpenUrlInContainer)
+		s.UrlExecCommand = []string{}
 	}
-
-	ctx.Settings.ConfigProfilesUrlAction = promptConfigProfilesUrlAction(
-		configProfilesUrlAction, ctx.Settings.UrlAction, ctx.Settings.FirefoxOpenUrlInContainer)
 
 	// should we prompt user to override default browser?
-	if ctx.Settings.UrlAction == "open" || ctx.Settings.ConfigProfilesUrlAction == "open" {
-		ctx.Settings.Browser = promptDefaultBrowser(browser)
+	if s.UrlAction == url.Open || s.ConfigProfilesUrlAction == url.Open {
+		s.Browser = promptDefaultBrowser(s.Browser)
 	}
 
-	// Does either action call `exec` without firefox containers?
-	if ctx.Settings.UrlAction == "exec" || ctx.Settings.ConfigProfilesUrlAction == "exec" {
-		if !ctx.Settings.FirefoxOpenUrlInContainer {
-			ctx.Settings.UrlExecCommand = promptUrlExecCommand(urlExecCommand)
-		}
+	s.ConsoleDuration = promptConsoleDuration(s.ConsoleDuration)
+	s.HistoryLimit = promptHistoryLimit(s.HistoryLimit)
+	s.HistoryMinutes = promptHistoryMinutes(s.HistoryMinutes)
+	s.LogLevel = promptLogLevel(s.LogLevel)
+
+	if err := s.Validate(); err != nil {
+		return err
 	}
 
-	ctx.Settings.ConsoleDuration = promptConsoleDuration(consoleDuration)
-	ctx.Settings.HistoryLimit = promptHistoryLimit(hLimit)
-	ctx.Settings.HistoryMinutes = promptHistoryMinutes(hMinutes)
-	ctx.Settings.LogLevel = promptLogLevel(defaultLevel)
 	fmt.Printf("\nAwesome!  Saving the new %s\n", ctx.Cli.ConfigFile)
-	return ctx.Settings.Save(ctx.Cli.ConfigFile, reconfig)
+	return s.Save(ctx.Cli.ConfigFile, reconfig)
 }

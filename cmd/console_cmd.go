@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
+	neturl "net/url"
 	"os/user"
 	"regexp"
 	"strings"
@@ -35,6 +35,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/c-bata/go-prompt"
 	// "github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/synfinatic/aws-sso-cli/storage"
@@ -317,19 +318,17 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials,
 		Destination: fmt.Sprintf("https://console.aws.amazon.com/console/home?region=%s", region),
 		SigninToken: loginResponse.SigninToken,
 	}
-	awsUrl := login.GetUrl()
 
-	if ctx.Settings.FirefoxOpenUrlInContainer {
-		awsUrl = firefoxContainerUrl(ctx, accountId, role, awsUrl)
-	}
+	urlOpener := url.NewHandleUrl(ctx.Settings.UrlAction, login.GetUrl(),
+		ctx.Settings.Browser, ctx.Settings.UrlExecCommand)
 
-	urlOpener := utils.NewHandleUrl(ctx.Settings.UrlAction, ctx.Settings.Browser, ctx.Settings.UrlExecCommand)
-	return urlOpener.Open(awsUrl,
-		"Please open the following URL in your browser:\n\n", "\n\n")
+	urlOpener.ContainerSettings(containerParams(ctx, accountId, role))
+
+	return urlOpener.Open()
 }
 
-// firefoxContainerUrl generates a URL for the Firefox container plugin
-func firefoxContainerUrl(ctx *RunContext, accountId int64, role, awsUrl string) string {
+// containerParams generates the name, color, icon for the Firefox container plugin
+func containerParams(ctx *RunContext, accountId int64, role string) (string, string, string) {
 	rFlat, _ := ctx.Settings.Cache.GetRole(utils.MakeRoleARN(accountId, role))
 	profile, err := rFlat.ProfileName(ctx.Settings)
 	if err != nil && strings.Contains(profile, "&") {
@@ -339,7 +338,7 @@ func firefoxContainerUrl(ctx *RunContext, accountId int64, role, awsUrl string) 
 	color := rFlat.Tags["Color"]
 	icon := rFlat.Tags["Icon"]
 
-	return utils.FirefoxContainerUrl(awsUrl, profile, color, icon)
+	return profile, color, icon
 }
 
 type LoginResponse struct {
@@ -364,7 +363,7 @@ type SessionUrlParams struct {
 
 func (sup *SessionUrlParams) Encode() string {
 	s, _ := json.Marshal(sup)
-	return url.QueryEscape(string(s))
+	return neturl.QueryEscape(string(s))
 }
 
 type LoginUrlParams struct {

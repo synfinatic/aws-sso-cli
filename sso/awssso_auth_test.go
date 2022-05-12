@@ -380,41 +380,41 @@ func TestReauthenticate(t *testing.T) {
 
 	secs, _ := time.ParseDuration("5s")
 	expires := time.Now().Add(secs).Unix()
-
-	as.ssooidc = &mockSsoOidcAPI{
-		Results: []mockSsoOidcAPIResults{
-			{
-				RegisterClient: &ssooidc.RegisterClientOutput{
-					AuthorizationEndpoint: nil,
-					ClientId:              aws.String("this-is-my-client-id"),
-					ClientSecret:          aws.String("this-is-my-client-secret"),
-					ClientIdIssuedAt:      time.Now().Unix(),
-					ClientSecretExpiresAt: int64(expires),
-					TokenEndpoint:         nil,
+	/*
+		as.ssooidc = &mockSsoOidcAPI{
+			Results: []mockSsoOidcAPIResults{
+				{
+					RegisterClient: &ssooidc.RegisterClientOutput{
+						AuthorizationEndpoint: nil,
+						ClientId:              aws.String("this-is-my-client-id"),
+						ClientSecret:          aws.String("this-is-my-client-secret"),
+						ClientIdIssuedAt:      time.Now().Unix(),
+						ClientSecretExpiresAt: int64(expires),
+						TokenEndpoint:         nil,
+					},
+					Error: nil,
 				},
-				Error: nil,
-			},
-			{
-				StartDeviceAuthorization: &ssooidc.StartDeviceAuthorizationOutput{
-					DeviceCode:              aws.String("device-code"),
-					UserCode:                aws.String("user-code"),
-					VerificationUri:         aws.String("verification-uri"),
-					VerificationUriComplete: aws.String("verification-uri-complete"),
-					ExpiresIn:               int32(expires),
-					Interval:                5,
+				{
+					StartDeviceAuthorization: &ssooidc.StartDeviceAuthorizationOutput{
+						DeviceCode:              aws.String("device-code"),
+						UserCode:                aws.String("user-code"),
+						VerificationUri:         aws.String("verification-uri"),
+						VerificationUriComplete: aws.String("verification-uri-complete"),
+						ExpiresIn:               int32(expires),
+						Interval:                5,
+					},
+					Error: nil,
 				},
-				Error: nil,
+				{
+					CreateToken: &ssooidc.CreateTokenOutput{},
+					Error:       fmt.Errorf("some error"),
+				},
 			},
-			{
-				CreateToken: &ssooidc.CreateTokenOutput{},
-				Error:       fmt.Errorf("some error"),
-			},
-		},
-	}
+		}
 
-	// invalid urlAction
-	assert.Panics(t, func() { _ = as.reauthenticate() })
-
+		// invalid urlAction
+		assert.Panics(t, func() { _ = as.reauthenticate() })
+	*/
 	// valid urlAction, but command is invalid
 	as.urlAction = "exec"
 	as.ssooidc = &mockSsoOidcAPI{

@@ -32,6 +32,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/storage"
 	"github.com/synfinatic/gotable"
@@ -65,7 +66,7 @@ type AWSSSO struct {
 	Accounts       []AccountInfo               `json:"Accounts"`
 	Roles          map[string][]RoleInfo       `json:"Roles"`
 	SSOConfig      *SSOConfig                  `json:"SSOConfig"`
-	urlAction      string                      // cache for future calls
+	urlAction      url.Action                  // cache for future calls
 	browser        string                      // cache for future calls
 	urlExecCommand []string                    // cache for future calls
 }

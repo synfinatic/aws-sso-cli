@@ -27,13 +27,18 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	oidctypes "github.com/aws/aws-sdk-go-v2/service/ssooidc/types"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
+	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/storage"
+)
+
+const (
+	DEFAULT_AUTH_COLOR = "blue"
+	DEFAULT_AUTH_ICON  = "fingerprint"
 )
 
 // Authenticate retrieves an AWS SSO AccessToken from our cache or by
 // making the necessary AWS SSO calls.
-func (as *AWSSSO) Authenticate(urlAction, browser string) error {
+func (as *AWSSSO) Authenticate(urlAction url.Action, browser string) error {
 	log.Tracef("Authenticate(%s, %s)", urlAction, browser)
 	// cache urlAction and browser for subsequent calls if necessary
 	if urlAction != "" {
@@ -98,16 +103,11 @@ func (as *AWSSSO) reauthenticate() error {
 		return fmt.Errorf("Unable to get device auth info from AWS SSO: %s", err.Error())
 	}
 
-	awsUrl := auth.VerificationUriComplete
-	if as.SSOConfig.settings.FirefoxOpenUrlInContainer {
-		awsUrl = utils.FirefoxContainerUrl(awsUrl, as.StoreKey(), "blue", "fingerprint")
-	}
+	urlOpener := url.NewHandleUrl(as.urlAction, auth.VerificationUriComplete,
+		as.browser, as.urlExecCommand)
+	urlOpener.ContainerSettings(as.StoreKey(), DEFAULT_AUTH_COLOR, DEFAULT_AUTH_ICON)
 
-	urlOpener := utils.NewHandleUrl(as.urlAction, as.browser, as.urlExecCommand)
-
-	err = urlOpener.Open(awsUrl,
-		"Please open the following URL in your browser:\n\n", "\n\n")
-	if err != nil {
+	if err = urlOpener.Open(); err != nil {
 		return err
 	}
 
