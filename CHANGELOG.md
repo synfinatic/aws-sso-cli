@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [v1.9.2] - 2022-05-13
+
 ### New Features
 
  * Auto-completion is now context sensitive to the `--sso`, `--account`, and
@@ -377,7 +379,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.9.1...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.9.2...main
+[v1.9.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.2
 [v1.9.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.1
 [v1.9.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.0
 [v1.8.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.8.1
