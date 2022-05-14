@@ -6,7 +6,8 @@ but this can be overridden by setting `$AWS_SSO_CONFIG` in your shell or via the
 
 The first time you run `aws-sso` and it detects there is no configuration file,
 it will prompt you for a number of questions to give you a basic configuration.
-Afterwords, you can edit the file and adjust the settings as desired.
+Afterwords, you can edit the file and adjust the settings as desired or run
+[aws-sso config](commands.md#config).
 
 ```yaml
 SSOConfig:
@@ -35,18 +36,16 @@ SSOConfig:
 DefaultRegion: <AWS_DEFAULT_REGION>
 DefaultSSO: <name of AWS SSO>
 CacheRefresh: <hours>
+AutoConfigCheck: [False|True]
 
 Browser: <path to web browser>
-UrlAction: [clip|exec|print|printurl|open]
+UrlAction: [clip|exec|print|printurl|open|granted-containers|open-url-in-container]
+ConfigProfilesUrlAction: [clip|exec|open|granted-containers|open-url-in-container]
 UrlExecCommand:
     - <command>
     - <arg 1>
     - <arg N>
     - "%s"
-FirefoxOpenInContainer: [False|True]
-AutoConfigCheck: [False|True]
-ConfigProfilesUrlAction: [clip|exec|open]
-
 ConsoleDuration: <minutes>
 
 LogLevel: [error|warn|info|debug|trace]
@@ -221,16 +220,23 @@ in a browser:
 
  * `clip` -- Copies the URL to your clipboard
  * `exec` -- Execute the command provided in `UrlExecCommand`
+ * `granted-containers`  -- Generates a URL for the Firefox [Granted Containers](
+	https://addons.mozilla.org/en-US/firefox/addon/granted/) plugin and
+	runs your `UrlExecCommand`
  * `open` -- Opens the URL in your default browser or the browser you specified
     via `--browser` or `Browser`
+ * `open-url-in-container` -- Generates a URL for the Firefox [Open Url in Container](
+	https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/) plugin
+	and runs your `UrlExecCommand`
  * `print` -- Prints the URL with a message in your terminal to stderr
  * `printurl` -- Prints only the URL in your terminal to stderr
 
 If `Browser` is not set, then your default browser will be used and that
 your browser needs to support JavaScript for the AWS SSO user interface.
 
-`UrlExecCommand` is used with `UrlAction: exec` and allows you to execute
-arbitrary commands to handle the URL.  The command and arguments should be
+`UrlExecCommand` is used with `UrlAction: exec` and the two Firefox containers
+plugin options (`granted-containers` / `open-url-in-container`) and allows you
+to execute arbitrary commands to handle the URL.  The command and arguments should be
 specified as a list, with the URL to open specified as the format string `%s`.
 Only one instance of `%s` is allowed.  Note that YAML requires quotes around
 strings which start with a [reserved indicator](
@@ -254,57 +260,38 @@ UrlExecCommand:
     - "%s"
 ```
 
-## FirefoxOpenUrlInContainer
-
-`FirefoxOpenUrlInContainer` is used with `UrlAction: exec` and [Firefox](
-https://getfirefox.com) with the [Firefox Open URL in Container](
-https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/) v1.0.3
-plugin.  This causes the generated URL to be of the format:
-
-```
-ext+container:name=<ProfileName>&url=<AWS Console URL>
-```
-
-The result is that each account/role has a dedicated Firefox container named
-after the _ProfileName_ so that you can be logged in across multiple AWS
-accounts/roles without getting an error from AWS.
-
-Example:
-
 ```yaml
-# Open the AWS Console in a Firefox container on MacOS
-UrlAction: exec
-UrlExecCommand:
+# Use Granted Containers on MacOS
+UrlAction: granted-containers
+UrlExecCommand::
     - /Applications/Firefox.app/Contents/MacOS/firefox
     - "%s"
-FirefoxOpenUrlInContainer: True
 ```
 
 **Note:** If your `ProfileFormat` generates a _ProfileName_ with an `&`, then
-`{{ .AccountId }}:{{ .RoleName }}` will be used as the container name instead.
+`{{ .AccountId }}:{{ .RoleName }}` will be used as the Firefox container name instead.
 
-**Note:** You can control the color and icon of the container label using
+**Note:** You can control the color and icon of the Firefox container label using
 [Tags](#tags).
 
 **Note for MacOS users:** This feature does not work with the bundle directory,
-so you should specify `/Applications/Firefox.app/Contents/MacOS/firefox` (
-or as appropriate) as the command to execute.
-
-You can disable this feature on the command line via the `--no-config-check`
-flag.  `ConfigProfilesUrlAction` is also the default action when manually
-running `aws-sso config-profiles`.
+so you should specify `/Applications/Firefox.app/Contents/MacOS/firefox` (or as
+appropriate) as the command to execute.
 
 ## ConfigProfilesUrlAction
 
-This sets your default `--url-action` in your `~/.aws/config` when generating
-named AWS profiles for use with `$AWS_PROFILE` and the default value for the
-[config-profiles]
+This works just like `UrlAction` above, but is used for setting the default
+`--url-action` in your `~/.aws/config` when generating named AWS profiles for
+use with `$AWS_PROFILE` and the default value for the [config-profiles](
+command.md#config-profiles) command.
 
 Due to limitations with the AWS SDK, only the following options are valid:
 
  * `clip`
  * `exec`
  * `open`
+ * `granted-containers`
+ * `open-url-in-container`
 
 **Note:** This option is required if you also want to use [AutoConfigCheck](
 #autoconfigcheck).
@@ -321,7 +308,7 @@ are warranted in your `~/.aws/config`.
 **Note:** This option requires you to also set [ConfigProfilesUrlAction](
 #configprofilesaction).
 
-This option can be disabled temporarily on the command line by passing
+**Note:** This option can be disabled temporarily on the command line by passing
 the `--no-config-check` flag.
 
 ## LogLevel / LogLines

@@ -25,8 +25,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"github.com/synfinatic/aws-sso-cli/internal/url"
 )
 
 const (
@@ -63,7 +65,11 @@ func (suite *SettingsTestSuite) TestLoadSettings() {
 
 	// ensure we upgraded ConfigUrlAction to ConfigProfilesUrlAction
 	assert.Equal(t, "", suite.settings.ConfigUrlAction)
-	assert.Equal(t, "open", suite.settings.ConfigProfilesUrlAction)
+	assert.Equal(t, url.ConfigProfilesOpen, string(suite.settings.ConfigProfilesUrlAction))
+
+	// ensure we upgraded FirefoxOpenUrlInContainer
+	assert.False(t, suite.settings.FirefoxOpenUrlInContainer)
+	assert.Equal(t, url.OpenUrlContainer, string(suite.settings.UrlAction))
 }
 
 func (suite *SettingsTestSuite) TestGetSelectedSSO() {
@@ -204,6 +210,10 @@ func (suite *SettingsTestSuite) TestGetDefaultRegion() {
 	assert.Equal(t, "ca-central-1", suite.settings.GetDefaultRegion(258234615182, "AWSAdministratorAccess", false))
 	assert.Equal(t, "eu-west-1", suite.settings.GetDefaultRegion(258234615182, "LimitedAccess", false))
 	assert.Equal(t, "us-east-1", suite.settings.GetDefaultRegion(833365043586, "AWSAdministratorAccess:", false))
+
+	assert.Panics(t, func() {
+		suite.settings.GetDefaultRegion(-1, "foo", false)
+	})
 }
 
 func (suite *SettingsTestSuite) TestOtherSSO() {
@@ -278,4 +288,43 @@ func (suite *SettingsTestSuite) TestGetAllProfiles() {
 	assert.Error(t, err)
 
 	suite.settings.ProfileFormat = oldFormat
+}
+
+func (suite *SettingsTestSuite) TestValidate() {
+	t := suite.T()
+
+	assert.NoError(t, suite.settings.Validate())
+	suite.settings.UrlAction = url.Exec
+	suite.settings.ConfigProfilesUrlAction = url.ConfigProfilesGrantedContainer
+	assert.Error(t, suite.settings.Validate())
+}
+
+func (suite *SettingsTestSuite) TestSetOverrides() {
+	t := suite.T()
+
+	s := suite.settings
+	overrides := OverrideSettings{
+		LogLevel:   "debug",
+		LogLines:   true,
+		Browser:    "my-browser",
+		DefaultSSO: "hello",
+		UrlAction:  url.PrintUrl,
+	}
+
+	s.setOverrides(overrides)
+
+	assert.Equal(t, logrus.DebugLevel, log.Level)
+	assert.True(t, log.ReportCaller)
+	assert.Equal(t, "my-browser", s.Browser)
+	assert.Equal(t, "hello", s.DefaultSSO)
+	assert.Equal(t, url.PrintUrl, s.UrlAction)
+}
+
+func TestCreatedAt(t *testing.T) {
+	s := Settings{
+		configFile: "/dev/null/invalid",
+	}
+	assert.Panics(t, func() {
+		s.CreatedAt()
+	})
 }

@@ -21,7 +21,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	// log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
@@ -40,7 +39,8 @@ type ProcessCmd struct {
 func (cc *ProcessCmd) Run(ctx *RunContext) error {
 	var err error
 
-	if strings.Contains(ctx.Settings.UrlAction, "print") {
+	switch ctx.Cli.UrlAction {
+	case "print", "printurl":
 		return fmt.Errorf("unsupported --url-action=print|printurl option")
 	}
 

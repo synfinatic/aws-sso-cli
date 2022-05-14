@@ -35,6 +35,7 @@ import (
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/sirupsen/logrus"
+	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
@@ -43,33 +44,33 @@ const (
 )
 
 type Settings struct {
-	configFile                string                 // name of this file
-	cacheFile                 string                 // name of cache file; always passed in via CLI args
-	Cache                     *Cache                 `yaml:"-"` // our cache data
-	SSO                       map[string]*SSOConfig  `koanf:"SSOConfig" yaml:"SSOConfig,omitempty"`
-	DefaultSSO                string                 `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`   // specify default SSO by key
-	SecureStore               string                 `koanf:"SecureStore" yaml:"SecureStore,omitempty"` // json or keyring
-	DefaultRegion             string                 `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
-	ConsoleDuration           int32                  `koanf:"ConsoleDuration" yaml:"ConsoleDuration,omitempty"`
-	JsonStore                 string                 `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
-	CacheRefresh              int64                  `koanf:"CacheRefresh" yaml:"CacheRefresh,omitempty"`
-	AutoConfigCheck           bool                   `koanf:"AutoConfigCheck" yaml:"AutoConfigCheck"`
-	FirefoxOpenUrlInContainer bool                   `koanf:"FirefoxOpenUrlInContainer" yaml:"FirefoxOpenUrlInContainer"`
-	UrlAction                 string                 `koanf:"UrlAction" yaml:"UrlAction,omitempty"`
-	Browser                   string                 `koanf:"Browser" yaml:"Browser,omitempty"`
-	ConfigUrlAction           string                 `koanf:"ConfigUrlAction" yaml:"ConfigUrlAction,omitempty"` // deprecated
-	ConfigProfilesUrlAction   string                 `koanf:"ConfigProfilesUrlAction" yaml:"ConfigProfilesUrlAction,omitempty"`
-	UrlExecCommand            []string               `koanf:"UrlExecCommand" yaml:"UrlExecCommand,omitempty"` // string or list
-	LogLevel                  string                 `koanf:"LogLevel" yaml:"LogLevel,omitempty"`
-	LogLines                  bool                   `koanf:"LogLines" yaml:"LogLines,omitempty"`
-	HistoryLimit              int64                  `koanf:"HistoryLimit" yaml:"HistoryLimit,omitempty"`
-	HistoryMinutes            int64                  `koanf:"HistoryMinutes" yaml:"HistoryMinutes,omitempty"`
-	ProfileFormat             string                 `koanf:"ProfileFormat" yaml:"ProfileFormat,omitempty"`
-	AccountPrimaryTag         []string               `koanf:"AccountPrimaryTag" yaml:"AccountPrimaryTag,omitempty"`
-	PromptColors              PromptColors           `koanf:"PromptColors" yaml:"PromptColors,omitempty"` // go-prompt colors
-	ListFields                []string               `koanf:"ListFields" yaml:"ListFields,omitempty"`
-	ConfigVariables           map[string]interface{} `koanf:"ConfigVariables" yaml:"ConfigVariables,omitempty"`
-	EnvVarTags                []string               `koanf:"EnvVarTags" yaml:"EnvVarTags,omitempty"`
+	configFile                string                   // name of this file
+	cacheFile                 string                   // name of cache file; always passed in via CLI args
+	Cache                     *Cache                   `yaml:"-"` // our cache data
+	SSO                       map[string]*SSOConfig    `koanf:"SSOConfig" yaml:"SSOConfig,omitempty"`
+	DefaultSSO                string                   `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`   // specify default SSO by key
+	SecureStore               string                   `koanf:"SecureStore" yaml:"SecureStore,omitempty"` // json or keyring
+	DefaultRegion             string                   `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
+	ConsoleDuration           int32                    `koanf:"ConsoleDuration" yaml:"ConsoleDuration,omitempty"`
+	JsonStore                 string                   `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
+	CacheRefresh              int64                    `koanf:"CacheRefresh" yaml:"CacheRefresh,omitempty"`
+	AutoConfigCheck           bool                     `koanf:"AutoConfigCheck" yaml:"AutoConfigCheck,omitempty"`
+	FirefoxOpenUrlInContainer bool                     `koanf:"FirefoxOpenUrlInContainer" yaml:"FirefoxOpenUrlInContainer,omitempty"` // deprecated
+	UrlAction                 url.Action               `koanf:"UrlAction" yaml:"UrlAction"`
+	Browser                   string                   `koanf:"Browser" yaml:"Browser,omitempty"`
+	ConfigUrlAction           string                   `koanf:"ConfigUrlAction" yaml:"ConfigUrlAction,omitempty"` // deprecated
+	ConfigProfilesUrlAction   url.ConfigProfilesAction `koanf:"ConfigProfilesUrlAction" yaml:"ConfigProfilesUrlAction,omitempty"`
+	UrlExecCommand            []string                 `koanf:"UrlExecCommand" yaml:"UrlExecCommand,omitempty"` // string or list
+	LogLevel                  string                   `koanf:"LogLevel" yaml:"LogLevel,omitempty"`
+	LogLines                  bool                     `koanf:"LogLines" yaml:"LogLines,omitempty"`
+	HistoryLimit              int64                    `koanf:"HistoryLimit" yaml:"HistoryLimit,omitempty"`
+	HistoryMinutes            int64                    `koanf:"HistoryMinutes" yaml:"HistoryMinutes,omitempty"`
+	ProfileFormat             string                   `koanf:"ProfileFormat" yaml:"ProfileFormat,omitempty"`
+	AccountPrimaryTag         []string                 `koanf:"AccountPrimaryTag" yaml:"AccountPrimaryTag,omitempty"`
+	PromptColors              PromptColors             `koanf:"PromptColors" yaml:"PromptColors,omitempty"` // go-prompt colors
+	ListFields                []string                 `koanf:"ListFields" yaml:"ListFields,omitempty"`
+	ConfigVariables           map[string]interface{}   `koanf:"ConfigVariables" yaml:"ConfigVariables,omitempty"`
+	EnvVarTags                []string                 `koanf:"EnvVarTags" yaml:"EnvVarTags,omitempty"`
 }
 
 type SSOConfig struct {
@@ -109,7 +110,7 @@ func (s *Settings) GetDefaultRegion(id int64, roleName string, noRegion bool) st
 
 	accountId, err := utils.AccountIdToString(id)
 	if err != nil {
-		log.WithError(err).Fatalf("Unable to GetDefaultRegion()")
+		log.WithError(err).Panicf("Unable to GetDefaultRegion()")
 	}
 
 	currentRegion := os.Getenv("AWS_DEFAULT_REGION")
@@ -151,11 +152,12 @@ type OverrideSettings struct {
 	DefaultSSO string
 	LogLevel   string
 	LogLines   bool
-	UrlAction  string
+	UrlAction  url.Action
 }
 
 // Loads our settings from config, cache and CLI args
 func LoadSettings(configFile, cacheFile string, defaults map[string]interface{}, override OverrideSettings) (*Settings, error) {
+	var err error
 	konf := koanf.New(".")
 	s := &Settings{
 		configFile: configFile,
@@ -164,15 +166,15 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 
 	// default values.  Can be overridden using:
 	// https://pkg.go.dev/github.com/c-bata/go-prompt?utm_source=godoc#Color
-	if err := konf.Load(confmap.Provider(defaults, "."), nil); err != nil {
+	if err = konf.Load(confmap.Provider(defaults, "."), nil); err != nil {
 		return s, fmt.Errorf("Unable to load default settings: %s", err.Error())
 	}
 
-	if err := konf.Load(file.Provider(configFile), yaml.Parser()); err != nil {
+	if err = konf.Load(file.Provider(configFile), yaml.Parser()); err != nil {
 		return s, fmt.Errorf("Unable to open config file %s: %s", configFile, err.Error())
 	}
 
-	if err := konf.Unmarshal("", s); err != nil {
+	if err = konf.Unmarshal("", s); err != nil {
 		return s, fmt.Errorf("Unable to process config file: %s", err.Error())
 	}
 
@@ -214,20 +216,55 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 
 	s.SSO[s.DefaultSSO].Refresh(s)
 
-	// Upgrade ConfigUrlAction to ConfigProfilesUrlAction because we want to
-	// deprecate ConfigUrlAction.
-	if s.ConfigUrlAction != "" && s.ConfigProfilesUrlAction == "" {
-		s.ConfigProfilesUrlAction = s.ConfigUrlAction
-		s.ConfigUrlAction = ""
+	s.applyDeprecations()
+	if err = s.Validate(); err != nil {
+		return s, err
 	}
 
 	// load the cache
-	var err error
 	if s.Cache, err = OpenCache(s.cacheFile, s); err != nil {
 		log.Infof("%s", err.Error())
 	}
 
 	return s, nil
+}
+
+func (s *Settings) Validate() error {
+	// Does either action call `exec` without firefox containers?
+	if s.UrlAction.IsContainer() != s.ConfigProfilesUrlAction.IsContainer() {
+		if s.UrlAction == url.Exec || s.ConfigProfilesUrlAction == url.ConfigProfilesExec {
+			return fmt.Errorf("Must not select `exec` and a Firefox container option")
+		}
+	}
+
+	return nil
+}
+
+// applyDeprecations migrates old config options to the new one and returns true
+// if we made a change
+func (s *Settings) applyDeprecations() bool {
+	var change = false
+	var err error
+
+	// Upgrade ConfigUrlAction to ConfigProfilesUrlAction because we want to
+	// deprecate ConfigUrlAction.
+	if s.ConfigUrlAction != "" && s.ConfigProfilesUrlAction == "" {
+		s.ConfigProfilesUrlAction, err = url.NewConfigProfilesAction(s.ConfigUrlAction)
+		if err != nil {
+			log.Warnf("Invalid value for ConfigUrlAction: %s", s.ConfigUrlAction)
+		}
+		s.ConfigUrlAction = "" // disable old value so it is omitempty
+		change = true
+	}
+
+	// Upgrade FirefoxOpenUrlInContainer to UrlAction = open-url-in-container
+	if s.FirefoxOpenUrlInContainer {
+		s.UrlAction = url.OpenUrlContainer
+		s.FirefoxOpenUrlInContainer = false // disable old value so it is omitempty
+		change = true
+	}
+
+	return change
 }
 
 // Save overwrites the current config file with our settings (not recommended)
@@ -270,18 +307,17 @@ func (s *Settings) setOverrides(override OverrideSettings) {
 	if override.LogLevel != "" {
 		s.LogLevel = override.LogLevel
 	}
-	switch s.LogLevel {
-	case "trace":
-		log.SetLevel(logrus.TraceLevel)
-	case "debug":
-		log.SetLevel(logrus.DebugLevel)
-	case "info":
-		log.SetLevel(logrus.InfoLevel)
-	case "warn":
-		log.SetLevel(logrus.WarnLevel)
-	case "error":
-		log.SetLevel(logrus.ErrorLevel)
+
+	lvls := map[string]logrus.Level{
+		"trace": logrus.TraceLevel,
+		"debug": logrus.DebugLevel,
+		"info":  logrus.InfoLevel,
+		"warn":  logrus.WarnLevel,
+		"error": logrus.ErrorLevel,
 	}
+
+	lvl := lvls[s.LogLevel]
+	log.SetLevel(lvl)
 
 	if override.LogLines {
 		s.LogLines = true
@@ -311,13 +347,13 @@ func (s *Settings) ConfigFile() string {
 func (s *Settings) CreatedAt() int64 {
 	f, err := os.Open(s.configFile)
 	if err != nil {
-		log.WithError(err).Fatalf("Unable to open %s", s.configFile)
+		log.WithError(err).Panicf("Unable to open %s", s.configFile)
 	}
 	defer f.Close()
 
 	info, err := f.Stat()
 	if err != nil {
-		log.WithError(err).Fatalf("Unable to Stat() %s", s.configFile)
+		log.WithError(err).Panicf("Unable to Stat() %s", s.configFile)
 	}
 	return info.ModTime().Unix()
 }
@@ -379,7 +415,7 @@ var getExecutable func() (string, error) = os.Executable
 
 // GetAllProfiles returns a map of the ProfileConfig for each SSOConfig.
 // takes the binary path to `open` URL with if set
-func (s *Settings) GetAllProfiles(open string) (*ProfileMap, error) {
+func (s *Settings) GetAllProfiles(open url.Action) (*ProfileMap, error) {
 	profiles := ProfileMap{}
 
 	binaryPath, err := getExecutable()
@@ -403,7 +439,7 @@ func (s *Settings) GetAllProfiles(open string) (*ProfileMap, error) {
 				Arn:             role.Arn,
 				BinaryPath:      binaryPath,
 				ConfigVariables: s.ConfigVariables,
-				Open:            open,
+				Open:            string(open),
 				Profile:         profile,
 				Sso:             ssoName,
 			}

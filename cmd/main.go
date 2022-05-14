@@ -30,6 +30,7 @@ import (
 	"github.com/synfinatic/aws-sso-cli/awsconfig"
 	"github.com/synfinatic/aws-sso-cli/internal/helper"
 	"github.com/synfinatic/aws-sso-cli/internal/predictor"
+	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/synfinatic/aws-sso-cli/storage"
@@ -98,7 +99,7 @@ type CLI struct {
 	ConfigFile    string `kong:"name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
 	LogLevel      string `kong:"short='L',name='level',help='Logging level [error|warn|info|debug|trace] (default: warn)'"`
 	Lines         bool   `kong:"help='Print line number in logs'"`
-	UrlAction     string `kong:"short='u',help='How to handle URLs [clip|exec|open|print|printurl] (default: open)'"`
+	UrlAction     string `kong:"short='u',help='How to handle URLs [clip|exec|open|print|printurl|granted-containers|open-url-in-container] (default: open)'"`
 	SSO           string `kong:"short='S',help='Override default AWS SSO Instance',env='AWS_SSO',predictor='sso'"`
 	STSRefresh    bool   `kong:"help='Force refresh of STS Token Credentials'"`
 	NoConfigCheck bool   `kong:"help='Disable automatic ~/.aws/config updates'"`
@@ -128,12 +129,13 @@ func main() {
 
 	log = logrus.New()
 	ctx, override := parseArgs(&cli)
-	sso.SetLogger(log)
-	storage.SetLogger(log)
-	utils.SetLogger(log)
 	awsconfig.SetLogger(log)
 	helper.SetLogger(log)
 	predictor.SetLogger(log)
+	sso.SetLogger(log)
+	storage.SetLogger(log)
+	url.SetLogger(log)
+	utils.SetLogger(log)
 
 	if err := logLevelValidate(cli.LogLevel); err != nil {
 		log.Fatalf("%s", err.Error())
@@ -228,8 +230,13 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 	ctx, err := parser.Parse(os.Args[1:])
 	parser.FatalIfErrorf(err)
 
+	action, err := url.NewAction(cli.UrlAction)
+	if err != nil {
+		log.Fatalf("Invalid --url-action %s", cli.UrlAction)
+	}
+
 	override := sso.OverrideSettings{
-		UrlAction:  cli.UrlAction,
+		UrlAction:  action,
 		Browser:    cli.Browser,
 		DefaultSSO: cli.SSO,
 		LogLevel:   cli.LogLevel,
@@ -334,10 +341,11 @@ func doAuth(ctx *RunContext) *sso.AWSSSO {
 
 		// should we update our config??
 		if !ctx.Cli.NoConfigCheck && ctx.Settings.AutoConfigCheck {
-			if utils.StrListContains(ctx.Settings.ConfigProfilesUrlAction, CONFIG_OPEN_OPTIONS) {
+			if ctx.Settings.ConfigProfilesUrlAction != url.ConfigProfilesUndef {
 				cfgFile := utils.GetHomePath("~/.aws/config")
 
-				profiles, err := ctx.Settings.GetAllProfiles(ctx.Settings.ConfigProfilesUrlAction)
+				action, _ := url.NewAction(string(ctx.Settings.ConfigProfilesUrlAction))
+				profiles, err := ctx.Settings.GetAllProfiles(action)
 				if err != nil {
 					log.Warnf("Unable to update %s: %s", cfgFile, err.Error())
 					return AwsSSO

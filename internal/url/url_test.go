@@ -1,4 +1,4 @@
-package utils
+package url
 
 /*
  * AWS SSO CLI
@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -54,24 +55,26 @@ func testUrlOpenerWithError(url, browser string) error {
 	return fmt.Errorf("there was an error")
 }
 
-func (suite *UtilsTestSuite) TestHandleUrl() {
-	t := suite.T()
-
+func TestHandleUrl(t *testing.T) {
 	noCommand := []string{}
-	assert.Panics(t, func() { NewHandleUrl("foo", "browser", noCommand) })
+	assert.Panics(t, func() { NewHandleUrl(Exec, "foo", "browser", noCommand) })
 
 	// override the print method
 	printWriter = new(bytes.Buffer)
-	h := NewHandleUrl("print", "browser", noCommand)
+	h := NewHandleUrl(Print, "bar", "browser", noCommand)
 	assert.NotNil(t, h)
-	assert.NoError(t, h.Open("bar", "pre", "post"))
+	h.PreMsg = "pre"
+	h.PostMsg = "post"
+	assert.NoError(t, h.Open())
 	assert.Equal(t, "prebarpost", printWriter.(*bytes.Buffer).String())
 
 	// new print method for printurl
 	printWriter = new(bytes.Buffer)
-	h = NewHandleUrl("printurl", "browser", noCommand)
+	h = NewHandleUrl(PrintUrl, "bar", "browser", noCommand)
+	h.PreMsg = "pre"
+	h.PostMsg = "post"
 	assert.NotNil(t, h)
-	assert.NoError(t, h.Open("bar", "pre", "post"))
+	assert.NoError(t, h.Open())
 	assert.Equal(t, "bar\n", printWriter.(*bytes.Buffer).String())
 
 	// Clipboard tests
@@ -79,75 +82,71 @@ func (suite *UtilsTestSuite) TestHandleUrl() {
 	urlOpenerWith = testUrlOpenerWith
 	clipboardWriter = testClipboardWriter
 
-	h = NewHandleUrl("clip", "browser", noCommand)
+	h = NewHandleUrl(Clip, "url", "browser", noCommand)
 	assert.NotNil(t, h)
-	assert.NoError(t, h.Open("url", "pre", "post"))
+	assert.NoError(t, h.Open())
 	assert.Equal(t, "url", checkValue)
 
-	h = NewHandleUrl("open", "other-browser", noCommand)
+	h = NewHandleUrl(Open, "other-url", "other-browser", noCommand)
 	assert.NotNil(t, h)
-	assert.NoError(t, h.Open("other-url", "pre", "post"))
+	assert.NoError(t, h.Open())
 	assert.Equal(t, "other-browser", checkBrowser)
 	assert.Equal(t, "other-url", checkValue)
 
-	h = NewHandleUrl("open", "", noCommand)
+	h = NewHandleUrl(Open, "some-url", "", noCommand)
 	assert.NotNil(t, h)
-	assert.NoError(t, h.Open("some-url", "pre", "post"))
+	assert.NoError(t, h.Open())
 	assert.Equal(t, "default browser", checkBrowser)
 	assert.Equal(t, "some-url", checkValue)
 
 	urlOpener = testUrlOpenerError
-	assert.Error(t, h.Open("url", "pre", "post"))
+	assert.Error(t, h.Open())
 
 	urlOpenerWith = testUrlOpenerWithError
-	h = NewHandleUrl("open", "foo", noCommand)
+	h = NewHandleUrl(Open, "url", "foo", noCommand)
 	assert.NotNil(t, h)
-	assert.Error(t, h.Open("url", "pre", "post"))
+	assert.Error(t, h.Open())
 
 	clipboardWriter = testUrlOpenerError
-	h = NewHandleUrl("clip", "", noCommand)
+	h = NewHandleUrl(Clip, "url", "", noCommand)
 	assert.NotNil(t, h)
-	assert.Error(t, h.Open("url", "pre", "post"))
+	assert.Error(t, h.Open())
 
 	// Exec tests
-	h = NewHandleUrl("exec", "", []string{"echo", "foo", "%s"})
+	h = NewHandleUrl(Exec, "url", "", []string{"echo", "foo", "%s"})
 	assert.NotNil(t, h)
-	assert.NoError(t, h.Open("url", "pre", "post"))
+	assert.NoError(t, h.Open())
 
-	h = NewHandleUrl("exec", "", []string{})
-	assert.NotNil(t, h)
-	assert.Error(t, h.Open("sh", "pre", "post"))
+	assert.Panics(t, func() { NewHandleUrl(Exec, "sh", "", []string{}) })
 
-	h = NewHandleUrl("exec", "", []string{"%s"})
+	h = NewHandleUrl(Exec, "sh", "", []string{"%s"})
 	assert.NotNil(t, h)
-	assert.Error(t, h.Open("sh", "pre", "post"))
+	assert.Error(t, h.Open())
 
-	h = NewHandleUrl("exec", "", []string{"/dev/null", "%s"})
+	h = NewHandleUrl(Exec, "url", "", []string{"/dev/null", "%s"})
 	assert.NotNil(t, h)
-	assert.Error(t, h.Open("url", "pre", "post"))
+	assert.Error(t, h.Open())
 
-	h = NewHandleUrl("exec", "", []string{"/dev/null"})
+	h = NewHandleUrl(Exec, "url", "", []string{"/dev/null"})
 	assert.NotNil(t, h)
-	assert.Error(t, h.Open("url", "pre", "post"))
+	assert.Error(t, h.Open())
 
-	h = NewHandleUrl("exec", "", []string{"%s"})
+	h = NewHandleUrl(Exec, "url", "", []string{"%s"})
 	assert.NotNil(t, h)
-	assert.Error(t, h.Open("url", "pre", "post"))
+	assert.Error(t, h.Open())
 
-	h = NewHandleUrl("exec", "", noCommand)
-	assert.NotNil(t, h)
-	assert.Error(t, h.Open("url", "pre", "post"))
+	assert.Panics(t, func() { NewHandleUrl(Exec, "url", "", noCommand) })
 }
 
 func TestFirefoxContainersUrl(t *testing.T) {
 	assert.Equal(t, "ext+container:name=Test&url=https%3A%2F%2Fsynfin.net&color=blue&icon=fingerprint",
-		FirefoxContainerUrl("https://synfin.net", "Test", "blue", "fingerprint"))
+		formatContainerUrl(FIREFOX_CONTAINER_FORMAT, "https://synfin.net", "Test", "blue", "fingerprint"))
 
 	assert.Equal(t, "ext+container:name=Testy&url=https%3A%2F%2Fsynfin.net&color=turquoise&icon=briefcase",
-		FirefoxContainerUrl("https://synfin.net", "Testy", "Bad", "Value"))
+		formatContainerUrl(FIREFOX_CONTAINER_FORMAT, "https://synfin.net", "Testy", "Bad", "Value"))
 
-	assert.Equal(t, "ext+container:name=Testy&url=https%3A%2F%2Fsynfin.net&color=turquoise&icon=briefcase",
-		FirefoxContainerUrl("https://synfin.net", "Testy", "", ""))
+	assert.Equal(t, "ext+granted-containers:name=Testy&url=https%3A%2F%2Fsynfin.net&color=turquoise&icon=briefcase",
+		formatContainerUrl(GRANTED_CONTAINER_FORMAT, "https://synfin.net", "Testy", "", ""))
 }
 
 func TestCommandBuilder(t *testing.T) {
@@ -183,4 +182,61 @@ func TestSelectElement(t *testing.T) {
 	for k, v := range check {
 		assert.Equal(t, v, selectElement(k, FIREFOX_PLUGIN_COLORS))
 	}
+}
+
+func TestIsContainer(t *testing.T) {
+	a := Action(Open)
+	assert.False(t, a.IsContainer())
+	a = Exec
+	assert.False(t, a.IsContainer())
+	a = GrantedContainer
+	assert.True(t, a.IsContainer())
+
+	b := ConfigProfilesClip
+	assert.False(t, b.IsContainer())
+
+	b = ConfigProfilesOpenUrlContainer
+	assert.True(t, b.IsContainer())
+}
+
+func TestNewAction(t *testing.T) {
+	a, err := NewAction("clip")
+	assert.NoError(t, err)
+	assert.Equal(t, Clip, a)
+
+	a, err = NewAction("missing")
+	assert.Error(t, err)
+	assert.Equal(t, Action(Open), a)
+
+	b, err := NewConfigProfilesAction("exec")
+	assert.NoError(t, err)
+	assert.Equal(t, ConfigProfilesAction(ConfigProfilesExec), b)
+
+	b, err = NewConfigProfilesAction("missing")
+	assert.Error(t, err)
+	assert.Equal(t, ConfigProfilesAction(ConfigProfilesOpen), b)
+}
+
+func TestLogger(t *testing.T) {
+	first := GetLogger()
+	defer SetLogger(first)
+
+	log := logrus.New()
+	SetLogger(log)
+
+	l := GetLogger()
+	assert.Equal(t, log, l)
+}
+func TestNewConfigProfilesAction(t *testing.T) {
+	a, err := NewConfigProfilesAction("exec")
+	assert.NoError(t, err)
+	assert.Equal(t, a, ConfigProfilesAction("exec"), a)
+
+	a, err = NewConfigProfilesAction("print")
+	assert.Error(t, err)
+	assert.Equal(t, a, ConfigProfilesAction("open"), a)
+
+	a, err = NewConfigProfilesAction("invalid")
+	assert.Error(t, err)
+	assert.Equal(t, a, ConfigProfilesAction("open"), a)
 }
