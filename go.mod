@@ -67,7 +67,11 @@ require (
 	golang.org/x/sys v0.0.0-20220204135822-1c1b9b1eba6a // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+
+	// see: https://github.com/go-yaml/yaml/issues/666
+	// imported via testify, but they haven't yet merged the PR
+	// with the fix yet
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 require (
