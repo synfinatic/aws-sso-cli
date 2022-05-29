@@ -28,11 +28,11 @@ import (
 	goyaml "github.com/goccy/go-yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"github.com/synfinatic/aws-sso-cli/storage"
+	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
 
 const (
-	TEST_JSON_STORE_FILE = "../storage/testdata/store.json"
+	TEST_JSON_STORE_FILE = "../internal/storage/testdata/store.json"
 	TEST_ROLES_TEST_FILE = "./testdata/roles_tests.yaml"
 )
 

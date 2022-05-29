@@ -23,9 +23,9 @@ import (
 	"fmt"
 
 	// log "github.com/sirupsen/logrus"
+	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
-	"github.com/synfinatic/aws-sso-cli/storage"
 )
 
 type ProcessCmd struct {

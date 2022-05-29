@@ -27,13 +27,13 @@ import (
 	"github.com/posener/complete"
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/sirupsen/logrus"
-	"github.com/synfinatic/aws-sso-cli/awsconfig"
+	"github.com/synfinatic/aws-sso-cli/internal/awsconfig"
 	"github.com/synfinatic/aws-sso-cli/internal/helper"
 	"github.com/synfinatic/aws-sso-cli/internal/predictor"
+	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
-	"github.com/synfinatic/aws-sso-cli/storage"
 	"github.com/willabides/kongplete"
 )
 

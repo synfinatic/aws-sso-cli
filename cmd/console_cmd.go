@@ -35,10 +35,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/c-bata/go-prompt"
 	// "github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
-	"github.com/synfinatic/aws-sso-cli/storage"
 )
 
 const AWS_FEDERATED_URL = "https://signin.aws.amazon.com/federation"
