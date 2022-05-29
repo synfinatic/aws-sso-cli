@@ -31,10 +31,10 @@ import (
 	// "github.com/davecgh/go-spew/spew"
 	//	"github.com/manifoldco/promptui"
 	"github.com/manifoldco/promptui"
-	"github.com/synfinatic/aws-sso-cli/awsconfig"
+	"github.com/synfinatic/aws-sso-cli/internal/awsconfig"
+	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
-	"github.com/synfinatic/aws-sso-cli/storage"
 	"github.com/synfinatic/gotable"
 )
 

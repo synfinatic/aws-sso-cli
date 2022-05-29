@@ -30,7 +30,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
-	"github.com/synfinatic/aws-sso-cli/storage"
+	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
 
 // mock ssooidc

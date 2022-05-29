@@ -25,9 +25,9 @@ import (
 	"strings"
 
 	"github.com/synfinatic/aws-sso-cli/internal/predictor"
+	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
-	"github.com/synfinatic/aws-sso-cli/storage"
 	"github.com/synfinatic/gotable"
 )
 

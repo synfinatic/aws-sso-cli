@@ -95,9 +95,10 @@ package: linux linux-arm64  ## Build deb/rpm packages
 		-v $$(pwd)/dist:/root/dist \
 		-e VERSION=$(PROJECT_VERSION) aws-sso-cli-builder:latest
 
-tags: cmd/*.go sso/*.go  ## Create tags file for vim, etc
+tags: cmd/*.go sso/*.go internal/*/*.go ## Create tags file for vim, etc
 	@echo Make sure you have Universal Ctags installed: https://github.com/universal-ctags/ctags
-	ctags -R
+	ctags --recurse=yes --exclude=.git --exclude=\*.sw?  --exclude=dist --exclude=docs
+
 
 .build-release: windows windows32 linux linux-arm64 darwin darwin-arm64
 
