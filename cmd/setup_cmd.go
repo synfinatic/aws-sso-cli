@@ -46,56 +46,8 @@ type ConfigCmd struct {
 }
 
 func (cc *ConfigCmd) Run(ctx *RunContext) error {
-	// backup our config file
-	var i int
-	var err error
-
-	label := fmt.Sprintf("Backup %s first?", ctx.Cli.ConfigFile)
-	sel := promptui.Select{
-		Label:        label,
-		Items:        yesNoItems,
-		CursorPos:    yesNoPos(true),
-		HideSelected: false,
-		Stdout:       &utils.BellSkipper{},
-		Templates:    makeSelectTemplate(label),
-	}
-	if i, _, err = sel.Run(); err != nil {
+	if err := backupConfig(ctx.Cli.ConfigFile); err != nil {
 		return err
-	}
-
-	if yesNoItems[i].Value == "Yes" {
-		sourcePath := utils.GetHomePath(ctx.Cli.ConfigFile)
-		src, err := os.Open(sourcePath)
-		if err != nil {
-			return err
-		}
-
-		dir := path.Dir(sourcePath)
-		fileName := path.Base(sourcePath)
-		fileparts := strings.Split(fileName, ".")
-		ext := "yaml"
-		if len(fileparts) > 1 {
-			ext = fileparts[len(fileparts)-1]
-			fileparts = fileparts[:len(fileparts)-1]
-		}
-
-		fileparts = append(fileparts, time.Now().Format("2006-01-02-15:04:05"))
-		fileparts = append(fileparts, ext)
-
-		newFile := strings.Join(fileparts, ".")
-		newFile = path.Join(dir, newFile)
-
-		dst, err := os.Create(newFile)
-		if err != nil {
-			return err
-		}
-		if _, err = io.Copy(dst, src); err != nil {
-			return err
-		}
-
-		src.Close()
-		dst.Close()
-		fmt.Printf("Wrote: %s\n\n", newFile)
 	}
 
 	return setupWizard(ctx, true, false) // ctx.Cli.Config.AddSSO)
@@ -196,4 +148,63 @@ func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
 
 	fmt.Printf("\nAwesome!  Saving the new %s\n", ctx.Cli.ConfigFile)
 	return s.Save(ctx.Cli.ConfigFile, reconfig)
+}
+
+// backupConfig copies the specified config file to its backup
+func backupConfig(cfgFile string) error {
+	var i int
+
+	// only backup file if it exists
+	if _, err := os.Open(cfgFile); err == nil {
+		label := fmt.Sprintf("Backup %s first?", cfgFile)
+		sel := promptui.Select{
+			Label:        label,
+			Items:        yesNoItems,
+			CursorPos:    yesNoPos(true),
+			HideSelected: false,
+			Stdout:       &utils.BellSkipper{},
+			Templates:    makeSelectTemplate(label),
+		}
+		if i, _, err = sel.Run(); err != nil {
+			return err
+		}
+
+		// user said yes
+		if yesNoItems[i].Value == "Yes" {
+			sourcePath := utils.GetHomePath(cfgFile)
+			src, err := os.Open(sourcePath)
+			if err != nil {
+				return err
+			}
+
+			dir := path.Dir(sourcePath)
+			fileName := path.Base(sourcePath)
+			fileparts := strings.Split(fileName, ".")
+			ext := "yaml"
+			if len(fileparts) > 1 {
+				ext = fileparts[len(fileparts)-1]
+				fileparts = fileparts[:len(fileparts)-1]
+			}
+
+			fileparts = append(fileparts, time.Now().Format("2006-01-02-15:04:05"))
+			fileparts = append(fileparts, ext)
+
+			newFile := strings.Join(fileparts, ".")
+			newFile = path.Join(dir, newFile)
+
+			dst, err := os.Create(newFile)
+			if err != nil {
+				return err
+			}
+			if _, err = io.Copy(dst, src); err != nil {
+				return err
+			}
+
+			src.Close()
+			dst.Close()
+			fmt.Printf("Wrote: %s\n\n", newFile)
+		}
+	}
+
+	return nil
 }

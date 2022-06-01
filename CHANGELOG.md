@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Bugs
+
+ * `aws-sso config` no longer prompts to backup a config file if it 
+    doesn't exist.  #402
+
 ## [v1.9.2] - 2022-05-13
 
 ### New Features
