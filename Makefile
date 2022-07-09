@@ -31,6 +31,7 @@ endif
 ifeq ($(PROJECT_DELTA),)
 PROJECT_DELTA             :=
 endif
+
 VERSION_PKG               := $(shell echo $(PROJECT_VERSION) | sed 's/^v//g')
 LICENSE                   := GPLv3
 URL                       := https://github.com/$(DOCKER_REPO)/$(PROJECT_NAME)
@@ -213,17 +214,34 @@ $(LINUXARM64_BIN): $(wildcard */*.go) .prepare
 	GOARCH=arm64 GOOS=linux go build -ldflags='$(LDFLAGS)' -o $(LINUXARM64_BIN) cmd/*.go
 	@echo "Created: $(LINUXARM64_BIN)"
 
+# macOS needs different build flags if you are cross-compiling because of the key chain
+# See: https://github.com/99designs/aws-vault/issues/758
+
 darwin: $(DARWIN_BIN)  ## Build MacOS/x86_64 binary
 
+ifeq ($(ARCH), x86_64)
 $(DARWIN_BIN): $(wildcard */*.go) .prepare
 	GOARCH=amd64 GOOS=darwin go build -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) cmd/*.go
 	@echo "Created: $(DARWIN_BIN)"
+else
+$(DARWIN_BIN): $(wildcard */*.go) .prepare
+	GOARCH=amd64 GOOS=darwin CGO_ENABLED=1 SDKROOT=$(shell xcrun --sdk macosx --show-sdk-path) \
+		go build -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) cmd/*.go
+	@echo "Created: $(DARWIN_BIN)"
+endif
 
 darwin-arm64: $(DARWINARM64_BIN)  ## Build MacOS/ARM64 binary
 
+ifeq ($(ARCH), arm64)
 $(DARWINARM64_BIN): $(wildcard */*.go) .prepare
 	GOARCH=arm64 GOOS=darwin go build -ldflags='$(LDFLAGS)' -o $(DARWINARM64_BIN) cmd/*.go
 	@echo "Created: $(DARWINARM64_BIN)"
+else
+$(DARWINARM64_BIN): $(wildcard */*.go) .prepare
+	GOARCH=arm64 GOOS=darwin CGO_ENABLED=1 SDKROOT=$(shell xcrun --sdk macosx --show-sdk-path) \
+		go build -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) cmd/*.go
+	@echo "Created: $(DARWIN_BIN)"
+endif
 
 $(OUTPUT_NAME): $(wildcard */*.go) .prepare
 	go build -ldflags='$(LDFLAGS)' -o $(OUTPUT_NAME) cmd/*.go
@@ -233,3 +251,6 @@ docs: docs/default-region.png  ## Build document files
 docs/default-region.png:
 	dot -o docs/default-region.png -Tpng docs/default-region.dot
 
+.PHONY: loc
+loc:  ## Print LOC stats
+	wc -l $$(find . -name "*.go")
