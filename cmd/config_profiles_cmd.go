@@ -30,7 +30,7 @@ const (
 	AWS_CONFIG_FILE = "~/.aws/config"
 	CONFIG_TEMPLATE = `{{range $sso, $struct := . }}{{ range $arn, $profile := $struct }}
 [profile {{ $profile.Profile }}]
-credential_process = {{ $profile.BinaryPath }} -u {{ $profile.Open }} -S "{{ $profile.Sso }}" process --arn {{ $profile.Arn }}
+credential_process = {{ if hasPrefix $profile.BinaryPath "/nix/store/" }}aws-sso{{ else }}{{ $profile.BinaryPath }}{{ end }} -u {{ $profile.Open }} -S "{{ $profile.Sso }}" process --arn {{ $profile.Arn }}
 {{ range $key, $value := $profile.ConfigVariables }}{{ $key }} = {{ $value }}
 {{end}}{{end}}{{end}}`
 )

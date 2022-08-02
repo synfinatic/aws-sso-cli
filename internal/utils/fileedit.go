@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+    "strings"
 	"text/template"
 
 	"github.com/hexops/gotextdiff"
@@ -50,10 +51,12 @@ var prompt = askUser
 func NewFileEdit(fileTemplate string, vars interface{}) (*FileEdit, error) {
 	var t string
 
+	funcs := map[string]interface{}{"hasPrefix": strings.HasPrefix}
+
 	if fileTemplate != "" {
 		t = fmt.Sprintf(FILE_TEMPLATE, CONFIG_PREFIX, fileTemplate, CONFIG_SUFFIX)
 	}
-	templ, err := template.New("template").Parse(t)
+	templ, err := template.New("template").Funcs(funcs).Parse(t)
 	if err != nil {
 		return &FileEdit{}, err
 	}

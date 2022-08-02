@@ -36,9 +36,10 @@ func TestFileEdit(t *testing.T) {
 	diffWriter = &output
 	defer func() { diffWriter = os.Stdout }()
 
-	var template = "{{ .Test }}"
+	var template = `{{ .Test }}{{ if hasPrefix .BinPath "/nix/store" }}bar{{ end }}`
 	var vars = map[string]string{
 		"Test": "foo",
+        "BinPath": "/nix/store/9x7cjw31mrqaz03zkc275l3ndilzbdmy-aws-sso-cli/bin/aws-sso",
 	}
 
 	_, err = NewFileEdit("{{ .Test", vars)
@@ -58,7 +59,7 @@ func TestFileEdit(t *testing.T) {
 	fBytes, err := os.ReadFile(tfile.Name())
 	assert.NoError(t, err)
 	assert.Equal(t, []byte(
-		fmt.Sprintf(FILE_TEMPLATE, CONFIG_PREFIX, "foo", CONFIG_SUFFIX)), fBytes)
+		fmt.Sprintf(FILE_TEMPLATE, CONFIG_PREFIX, "foobar", CONFIG_SUFFIX)), fBytes)
 
 	// can't open file
 	err = fe.UpdateConfig(false, true, "/this/directory/and/the/file/in/it/doesn't/exist")
