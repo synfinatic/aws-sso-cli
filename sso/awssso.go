@@ -278,9 +278,9 @@ func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.Role
 	}
 
 	configRole, err := as.SSOConfig.GetRole(accountId, role)
-	if err != nil && configRole.Via == "" {
+	if err == nil && configRole.Via == "" {
 		log.Debugf("Getting %s:%s directly", aId, role)
-		// This are the actual role creds requested through AWS SSO
+		// This is the actual role creds requested through AWS SSO
 		input := sso.GetRoleCredentialsInput{
 			AccessToken: aws.String(as.Token.AccessToken),
 			AccountId:   aws.String(aId),

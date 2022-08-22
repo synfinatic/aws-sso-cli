@@ -11,6 +11,7 @@
  * `aws-sso config` no longer prompts to backup a config file if it 
     doesn't exist.  #402
  * Fix cross-compiling on macOS #407
+ * Fix role lookup when defined in the config.yaml #412
 
 ## [v1.9.2] - 2022-05-13
 
