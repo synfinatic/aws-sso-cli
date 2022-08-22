@@ -19,7 +19,6 @@ package predictor
  */
 
 import (
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -153,7 +152,7 @@ func (p *Predictor) SsoComplete() complete.Predictor {
 	ssos := []string{}
 	s := sso.Settings{}
 
-	if config, err := ioutil.ReadFile(p.configFile); err == nil {
+	if config, err := os.ReadFile(p.configFile); err == nil {
 		if err = yaml.Unmarshal(config, &s); err == nil {
 			for sso := range s.SSO {
 				ssos = append(ssos, sso)

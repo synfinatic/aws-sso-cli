@@ -21,7 +21,7 @@ package storage
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
@@ -48,7 +48,7 @@ func OpenJsonStore(fileName string) (*JsonStore, error) {
 		StaticCredentials:   map[string]StaticCredentials{},
 	}
 
-	cacheBytes, err := ioutil.ReadFile(fileName)
+	cacheBytes, err := os.ReadFile(fileName)
 	if err != nil {
 		log.Infof("Creating new cache file: %s", fileName)
 	} else if len(cacheBytes) > 0 {
@@ -71,7 +71,7 @@ func (jc *JsonStore) save() error {
 		return err
 	}
 
-	return ioutil.WriteFile(jc.filename, jbytes, 0600)
+	return os.WriteFile(jc.filename, jbytes, 0600)
 }
 
 // SaveRegisterClientData saves the RegisterClientData in our JSON store

@@ -19,7 +19,6 @@ package storage
  */
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -50,10 +49,10 @@ func (s *JsonStoreTestSuite) SetupTest() {
 	s.jsonFile = f.Name()
 	f.Close()
 
-	input, err := ioutil.ReadFile(TEST_JSON_STORE_FILE)
+	input, err := os.ReadFile(TEST_JSON_STORE_FILE)
 	assert.Nil(t, err)
 
-	err = ioutil.WriteFile(s.jsonFile, input, 0600)
+	err = os.WriteFile(s.jsonFile, input, 0600)
 	assert.Nil(t, err)
 
 	s.json, err = OpenJsonStore(s.jsonFile)

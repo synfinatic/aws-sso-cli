@@ -23,7 +23,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -298,7 +297,7 @@ func (s *Settings) Save(configFile string, overwrite bool) error {
 	}
 
 	// need to make directory if not exist
-	return ioutil.WriteFile(configFile, fileBytes, 0600)
+	return os.WriteFile(configFile, fileBytes, 0600)
 }
 
 // configure our settings using the overrides

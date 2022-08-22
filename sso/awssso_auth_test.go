@@ -21,7 +21,6 @@ package sso
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -104,7 +103,7 @@ func TestStoreKey(t *testing.T) {
 }
 
 func TestAuthenticateSteps(t *testing.T) {
-	tfile, err := ioutil.TempFile("", "*storage.json")
+	tfile, err := os.CreateTemp("", "*storage.json")
 	assert.NoError(t, err)
 
 	jstore, err := storage.OpenJsonStore(tfile.Name())
@@ -184,7 +183,7 @@ func TestAuthenticateSteps(t *testing.T) {
 }
 
 func TestAuthenticate(t *testing.T) {
-	tfile, err := ioutil.TempFile("", "*storage.json")
+	tfile, err := os.CreateTemp("", "*storage.json")
 	assert.NoError(t, err)
 
 	jstore, err := storage.OpenJsonStore(tfile.Name())
@@ -259,7 +258,7 @@ func TestAuthenticate(t *testing.T) {
 }
 
 func TestAuthenticateFailure(t *testing.T) {
-	tfile, err := ioutil.TempFile("", "*storage.json")
+	tfile, err := os.CreateTemp("", "*storage.json")
 	assert.NoError(t, err)
 
 	jstore, err := storage.OpenJsonStore(tfile.Name())
@@ -358,7 +357,7 @@ func TestAuthenticateFailure(t *testing.T) {
 }
 
 func TestReauthenticate(t *testing.T) {
-	tfile, err := ioutil.TempFile("", "*storage.json")
+	tfile, err := os.CreateTemp("", "*storage.json")
 	assert.NoError(t, err)
 
 	jstore, err := storage.OpenJsonStore(tfile.Name())

@@ -21,7 +21,6 @@ package storage
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -331,7 +330,7 @@ func TestNewKeyringConfig(t *testing.T) {
 	d, err := os.MkdirTemp("", "test-keyring")
 	assert.NoError(t, err)
 
-	err = ioutil.WriteFile(path.Join(d, "aws-sso-cli-records"), []byte("INVALID DATA"), 0600)
+	err = os.WriteFile(path.Join(d, "aws-sso-cli-records"), []byte("INVALID DATA"), 0600)
 	assert.NoError(t, err)
 
 	defer func() {
@@ -385,10 +384,10 @@ func TestKeyringSuiteFails(t *testing.T) {
 		return fmt.Errorf("unmarshal failure")
 	}
 
-	in, err := ioutil.ReadFile("./testdata/aws-sso-cli-records")
+	in, err := os.ReadFile("./testdata/aws-sso-cli-records")
 	assert.NoError(t, err)
 
-	err = ioutil.WriteFile(path.Join(d, "secure", "aws-sso-cli-records"), in, 0600)
+	err = os.WriteFile(path.Join(d, "secure", "aws-sso-cli-records"), in, 0600)
 	assert.NoError(t, err)
 
 	err = kr.getStorageData(&kr.cache)

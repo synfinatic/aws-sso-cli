@@ -20,7 +20,6 @@ package sso
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -168,7 +167,7 @@ func (suite *SettingsTestSuite) TestGetAllTags() {
 func (suite *SettingsTestSuite) TestSave() {
 	t := suite.T()
 
-	dir, err := ioutil.TempDir("", "settings_test")
+	dir, err := os.MkdirTemp("", "settings_test")
 	assert.Nil(t, err)
 	defer os.RemoveAll(dir)
 

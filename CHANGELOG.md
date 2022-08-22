@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changes
+
+ * Update to Golang v1.18
+
 ### Bugs
 
  * `aws-sso config` no longer prompts to backup a config file if it 
