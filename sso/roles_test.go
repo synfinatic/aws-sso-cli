@@ -19,7 +19,6 @@ package sso
  */
 
 import (
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -59,10 +58,10 @@ func TestCacheRolesTestSuite(t *testing.T) {
 	}
 
 	// cache
-	input, err := ioutil.ReadFile(TEST_CACHE_FILE)
+	input, err := os.ReadFile(TEST_CACHE_FILE)
 	assert.NoError(t, err)
 
-	err = ioutil.WriteFile(f.Name(), input, 0600)
+	err = os.WriteFile(f.Name(), input, 0600)
 	assert.NoError(t, err)
 
 	c, err := OpenCache(f.Name(), settings)
@@ -75,10 +74,10 @@ func TestCacheRolesTestSuite(t *testing.T) {
 	jsonFile := f2.Name()
 	f2.Close()
 
-	input, err = ioutil.ReadFile(TEST_JSON_STORE_FILE)
+	input, err = os.ReadFile(TEST_JSON_STORE_FILE)
 	assert.Nil(t, err)
 
-	err = ioutil.WriteFile(jsonFile, input, 0600)
+	err = os.WriteFile(jsonFile, input, 0600)
 	assert.Nil(t, err)
 
 	sstore, err := storage.OpenJsonStore(jsonFile)
@@ -378,7 +377,7 @@ func (suite *CacheRolesTestSuite) TestCheckProfiles() {
 	t := suite.T()
 	tests := ProfileTests{}
 
-	data, err := ioutil.ReadFile(TEST_ROLES_TEST_FILE)
+	data, err := os.ReadFile(TEST_ROLES_TEST_FILE)
 	assert.NoError(t, err)
 
 	err = goyaml.Unmarshal(data, &tests)

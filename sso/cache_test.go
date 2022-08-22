@@ -20,7 +20,6 @@ package sso
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -60,10 +59,10 @@ func TestCacheTestSuite(t *testing.T) {
 		cacheFile:      f.Name(),
 	}
 
-	input, err := ioutil.ReadFile(TEST_CACHE_FILE)
+	input, err := os.ReadFile(TEST_CACHE_FILE)
 	assert.NoError(t, err)
 
-	err = ioutil.WriteFile(f.Name(), input, 0600)
+	err = os.WriteFile(f.Name(), input, 0600)
 	assert.NoError(t, err)
 
 	c, err := OpenCache(f.Name(), settings)

@@ -21,7 +21,7 @@ package sso
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -60,7 +60,7 @@ func OpenCache(f string, s *Settings) (*Cache, error) {
 	var err error
 	var cacheBytes []byte
 	if f != "" {
-		cacheBytes, err = ioutil.ReadFile(f)
+		cacheBytes, err = os.ReadFile(f)
 		if err != nil {
 			return &cache, err // return empty struct
 		}
@@ -138,7 +138,7 @@ func (c *Cache) Save(updateTime bool) error {
 	if err != nil {
 		return fmt.Errorf("Unable to create directory for %s: %s", c.CacheFile(), err.Error())
 	}
-	err = ioutil.WriteFile(c.CacheFile(), jbytes, 0600)
+	err = os.WriteFile(c.CacheFile(), jbytes, 0600)
 	if err != nil {
 		return fmt.Errorf("Unable to write %s: %s", c.CacheFile(), err.Error())
 	}

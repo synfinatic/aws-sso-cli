@@ -21,7 +21,6 @@ package sso
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -75,7 +74,7 @@ func (m *mockSsoAPI) GetRoleCredentials(ctx context.Context, params *sso.GetRole
 
 func TestNewAWSSSO(t *testing.T) {
 	var jstore storage.SecureStorage
-	tfile, err := ioutil.TempFile("", "*storage.json")
+	tfile, err := os.CreateTemp("", "*storage.json")
 	assert.NoError(t, err)
 
 	jstore, err = storage.OpenJsonStore(tfile.Name())
@@ -124,7 +123,7 @@ func TestGetFieldNameRoleInfo(t *testing.T) {
 }
 
 func TestGetRoles(t *testing.T) {
-	tfile, err := ioutil.TempFile("", "*storage.json")
+	tfile, err := os.CreateTemp("", "*storage.json")
 	assert.NoError(t, err)
 
 	jstore, err := storage.OpenJsonStore(tfile.Name())
@@ -398,7 +397,7 @@ func TestGetRoles(t *testing.T) {
 }
 
 func TestGetAccounts(t *testing.T) {
-	tfile, err := ioutil.TempFile("", "*storage.json")
+	tfile, err := os.CreateTemp("", "*storage.json")
 	assert.NoError(t, err)
 
 	jstore, err := storage.OpenJsonStore(tfile.Name())
@@ -551,7 +550,7 @@ func TestGetAccounts(t *testing.T) {
 }
 
 func TestGetRoleCredentials(t *testing.T) {
-	tfile, err := ioutil.TempFile("", "*storage.json")
+	tfile, err := os.CreateTemp("", "*storage.json")
 	assert.NoError(t, err)
 
 	jstore, err := storage.OpenJsonStore(tfile.Name())
