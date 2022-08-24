@@ -589,6 +589,16 @@ func TestGetRoleCredentials(t *testing.T) {
 		},
 		SSOConfig: &SSOConfig{
 			settings: &Settings{},
+			// GetRoleCredentials() calls SSOConfig.GetRoles() so we need this too
+			Accounts: map[string]*SSOAccount{
+				"000001111111": {
+					Roles: map[string]*SSORole{
+						"FooBar": {
+							ARN: "arn:aws:iam::000001111111:role/FooBar",
+						},
+					},
+				},
+			},
 		},
 		Token: storage.CreateTokenResponse{
 			AccessToken:  "access-token",
@@ -619,14 +629,14 @@ func TestGetRoleCredentials(t *testing.T) {
 		},
 	}
 
-	creds, err := as.GetRoleCredentials(int64(000001111111), "FooBar")
+	creds, err := as.GetRoleCredentials(int64(1111111), "FooBar")
 	assert.NoError(t, err)
 	assert.Equal(t, "access-key-id", creds.AccessKeyId)
 	assert.Equal(t, int64(42), creds.Expiration)
 	assert.Equal(t, "secret-access-key", creds.SecretAccessKey)
 	assert.Equal(t, "session-token", creds.SessionToken)
 
-	_, err = as.GetRoleCredentials(int64(000001111111), "FooBar")
+	_, err = as.GetRoleCredentials(int64(1111111), "FooBar")
 	assert.Error(t, err)
 }
 
