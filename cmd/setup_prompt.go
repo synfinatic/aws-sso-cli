@@ -25,6 +25,7 @@ import (
 	"regexp"
 	"runtime"
 	"strconv"
+	"strings"
 
 	"github.com/manifoldco/promptui"
 	"github.com/synfinatic/aws-sso-cli/internal/predictor"
@@ -34,7 +35,7 @@ import (
 
 const (
 	START_URL_FORMAT  = "https://%s.awsapps.com/start"
-	START_FQDN_FORMAT = "%s.awsapps.com"
+	START_FQDN_SUFFIX = ".awsapps.com"
 )
 
 type selectOptions struct {
@@ -135,6 +136,7 @@ func promptStartUrl(defaultValue string) string {
 			Label: label,
 			Validate: func(input string) error {
 				if ssoHostnameRegexp == nil {
+					// users can specify the FQDN or just Hostname
 					ssoHostnameRegexp, _ = regexp.Compile(`^([a-zA-Z0-9-]+)(\.awsapps\.com)?$`)
 				}
 				if len(input) > 0 && len(input) < 64 && ssoHostnameRegexp.Match([]byte(input)) {
@@ -151,10 +153,17 @@ func promptStartUrl(defaultValue string) string {
 			log.Fatal(err)
 		}
 
-		if _, err := net.LookupHost(fmt.Sprintf(START_FQDN_FORMAT, val)); err == nil {
+		// User input value is either the hostname or full FQDN and
+		// we need the full FQDN
+		if !strings.Contains(val, ".") {
+			val = val + START_FQDN_SUFFIX
+			log.Infof("Using %s", val)
+		}
+
+		if _, err := net.LookupHost(val); err == nil {
 			validFQDN = true
 		} else if err != nil {
-			log.Errorf("Unable to resolve %s", fmt.Sprintf(START_FQDN_FORMAT, val))
+			log.Errorf("Unable to resolve %s", val)
 		}
 	}
 
