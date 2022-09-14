@@ -27,6 +27,9 @@
     1. Run `make` (or `gmake` for GNU Make)
     1. Your binary will be created in the `dist` directory
     1. Run `make install` to install in /usr/local/bin
+ * Option 5: `go install`:
+    1. Install [GoLang](https://golang.org) v1.17+ and GNU Make
+    1. `go install github.com/synfinatic/aws-sso-cli/cmd/aws-sso@latest`
 
 Note that the release binaries and packages are not officially signed at this
 time so systems may generate warnings.
