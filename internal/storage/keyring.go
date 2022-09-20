@@ -228,7 +228,7 @@ func (kr *KeyringStore) joinAndGetKeyringData(key string) ([]byte, error) {
 	}
 
 	totalBytes, data := binary.BigEndian.Uint64(chunk[:8]), chunk[8:]
-	readBytes := uint64(len(chunk))
+	readBytes := uint64(len(data))
 
 	for i := 1; readBytes < totalBytes; i++ {
 		k := fmt.Sprintf("%s_%d", key, i)
