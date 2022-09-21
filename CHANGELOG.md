@@ -12,6 +12,7 @@
     doesn't exist.  #402
  * Fix cross-compiling on macOS #407
  * Fix role lookup when defined in the config.yaml #412
+ * Fix bug retrieving data from Windows CredStore
 
 ## [v1.9.2] - 2022-05-13
 

@@ -165,6 +165,25 @@ func (suite *KeyringSuite) TestErrorReadKeyring() {
 	assert.Error(t, err)
 }
 
+func (suite *KeyringSuite) TestJoinAndGetKeyringData() {
+	t := suite.T()
+
+	secretKey := "TestString"
+	secretLabel := "TestLabel"
+	dataLen := WINCRED_MAX_LENGTH*2 + 50
+	secretData := make([]byte, dataLen)
+	for i := 0; i < dataLen; i++ {
+		secretData[i] = 'A'
+	}
+
+	err := suite.store.splitAndSetStorageData(secretData, secretKey, secretLabel)
+	assert.NoError(t, err)
+
+	ret, err := suite.store.joinAndGetKeyringData(secretKey)
+	assert.NoError(t, err)
+	assert.Equal(t, secretData, ret)
+}
+
 func TestGetStorageData(t *testing.T) {
 	d, err := os.MkdirTemp("", "test-keyring")
 	assert.NoError(t, err)
