@@ -54,7 +54,7 @@ ALL: $(DIST_DIR)$(PROJECT_NAME) ## Build binary for this platform
 include help.mk  # place after ALL target and before all other targets
 
 $(DIST_DIR)$(PROJECT_NAME):	$(wildcard */*.go) .prepare
-	go build -ldflags='$(LDFLAGS)' -o $(DIST_DIR)$(PROJECT_NAME) ./cmd/aws-sso/*.go
+	go build -ldflags='$(LDFLAGS)' -o $(DIST_DIR)$(PROJECT_NAME) ./cmd/aws-sso/...
 	@echo "Created: $(DIST_DIR)$(PROJECT_NAME)"
 
 INSTALL_PREFIX ?= /usr/local
@@ -116,11 +116,11 @@ release: .validate-release clean .build-release package ## Build all our release
 
 .PHONY: run
 run: cmd/aws-sso/*.go  sso/*.go ## build and run using $PROGRAM_ARGS
-	go run cmd/aws-sso/*.go $(PROGRAM_ARGS)
+	go run ./cmd/aws-sso $(PROGRAM_ARGS)
 
 .PHONY: delve
 delve: cmd/aws-sso/*.go sso/*.go ## debug binary using $PROGRAM_ARGS
-	dlv debug cmd/aws-sso/*.go -- $(PROGRAM_ARGS)
+	dlv debug ./cmd/aws-sso -- $(PROGRAM_ARGS)
 
 clean-all: clean ## clean _everything_
 
@@ -137,10 +137,10 @@ go-get:  ## Get our go modules
 
 .PHONY: build-race
 build-race: .prepare ## Build race detection binary
-	go build -race -ldflags='$(LDFLAGS)' -o $(OUTPUT_NAME) cmd/aws-sso/*.go
+	go build -race -ldflags='$(LDFLAGS)' -o $(OUTPUT_NAME) ./cmd/aws-sso/...
 
 debug: .prepare ## Run debug in dlv
-	dlv debug cmd/aws-sso/*.go
+	dlv debug ./cmd/aws-sso
 
 .PHONY: unittest
 unittest: ## Run go unit tests
@@ -168,7 +168,7 @@ $(DIST_DIR):
 
 .PHONY: fmt
 fmt: ## Format Go code
-	@go fmt ./cmd/aws-sso
+	@go fmt ./...
 
 .PHONY: test-fmt
 test-fmt: fmt ## Test to make sure code if formatted correctly
@@ -193,25 +193,25 @@ lint:  ## Run golangci-lint
 windows: $(WINDOWS_BIN)  ## Build 64bit x86 Windows binary
 
 $(WINDOWS_BIN): $(wildcard */*.go) .prepare
-	GOARCH=amd64 GOOS=windows go build -ldflags='$(LDFLAGS)' -o $(WINDOWS_BIN) ./cmd/aws-sso/*.go
+	GOARCH=amd64 GOOS=windows go build -ldflags='$(LDFLAGS)' -o $(WINDOWS_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(WINDOWS_BIN)"
 
 windows32: $(WINDOWS32_BIN)  ## Build 32bit x86 Windows binary
 
 $(WINDOWS32_BIN): $(wildcard */*.go) .prepare
-	GOARCH=386 GOOS=windows go build -ldflags='$(LDFLAGS)' -o $(WINDOWS32_BIN) ./cmd/aws-sso/*.go
+	GOARCH=386 GOOS=windows go build -ldflags='$(LDFLAGS)' -o $(WINDOWS32_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(WINDOWS32_BIN)"
 
 linux: $(LINUX_BIN)  ## Build Linux/x86_64 binary
 
 $(LINUX_BIN): $(wildcard */*.go) .prepare
-	GOARCH=amd64 GOOS=linux go build -ldflags='$(LDFLAGS)' -o $(LINUX_BIN) ./cmd/aws-sso/*.go
+	GOARCH=amd64 GOOS=linux go build -ldflags='$(LDFLAGS)' -o $(LINUX_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(LINUX_BIN)"
 
 linux-arm64: $(LINUXARM64_BIN)  ## Build Linux/arm64 binary
 
 $(LINUXARM64_BIN): $(wildcard */*.go) .prepare
-	GOARCH=arm64 GOOS=linux go build -ldflags='$(LDFLAGS)' -o $(LINUXARM64_BIN) ./cmd/aws-sso/*.go
+	GOARCH=arm64 GOOS=linux go build -ldflags='$(LDFLAGS)' -o $(LINUXARM64_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(LINUXARM64_BIN)"
 
 # macOS needs different build flags if you are cross-compiling because of the key chain
@@ -221,12 +221,12 @@ darwin: $(DARWIN_BIN)  ## Build MacOS/x86_64 binary
 
 ifeq ($(ARCH), x86_64)
 $(DARWIN_BIN): $(wildcard */*.go) .prepare
-	GOARCH=amd64 GOOS=darwin go build -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) ./cmd/aws-sso/*.go
+	GOARCH=amd64 GOOS=darwin go build -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(DARWIN_BIN)"
 else
 $(DARWIN_BIN): $(wildcard */*.go) .prepare
 	GOARCH=amd64 GOOS=darwin CGO_ENABLED=1 SDKROOT=$(shell xcrun --sdk macosx --show-sdk-path) \
-		go build -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) ./cmd/aws-sso/*.go
+		go build -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(DARWIN_BIN)"
 endif
 
@@ -234,17 +234,17 @@ darwin-arm64: $(DARWINARM64_BIN)  ## Build MacOS/ARM64 binary
 
 ifeq ($(ARCH), arm64)
 $(DARWINARM64_BIN): $(wildcard */*.go) .prepare
-	GOARCH=arm64 GOOS=darwin go build -ldflags='$(LDFLAGS)' -o $(DARWINARM64_BIN) ./cmd/aws-sso/*.go
+	GOARCH=arm64 GOOS=darwin go build -ldflags='$(LDFLAGS)' -o $(DARWINARM64_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(DARWINARM64_BIN)"
 else
 $(DARWINARM64_BIN): $(wildcard */*.go) .prepare
 	GOARCH=arm64 GOOS=darwin CGO_ENABLED=1 SDKROOT=$(shell xcrun --sdk macosx --show-sdk-path) \
-		go build -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) ./cmd/aws-sso/*.go
+		go build -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(DARWIN_BIN)"
 endif
 
 $(OUTPUT_NAME): $(wildcard */*.go) .prepare
-	go build -ldflags='$(LDFLAGS)' -o $(OUTPUT_NAME) ./cmd/aws-sso/*.go
+	go build -ldflags='$(LDFLAGS)' -o $(OUTPUT_NAME) ./cmd/aws-sso/...
 
 docs: docs/default-region.png  ## Build document files
 
