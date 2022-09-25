@@ -2,13 +2,17 @@
 
 ## Unreleased
 
+## [v1.9.3] - 2022-09-29
+
 ### Changes
 
  * Update to Golang v1.18
+ * Add `ConfigProfilesBinaryPath` option and use $PATH with NIX #410
+ * NIX users will use `aws-sso` for `credential_process`
 
 ### Bugs
 
- * `aws-sso config` no longer prompts to backup a config file if it 
+ * `aws-sso config` no longer prompts to backup a config file if it
     doesn't exist.  #402
  * Fix cross-compiling on macOS #407
  * Fix role lookup when defined in the config.yaml #412
@@ -391,7 +395,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.9.2...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.9.3...main
+[v1.9.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.2
 [v1.9.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.2
 [v1.9.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.1
 [v1.9.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.0

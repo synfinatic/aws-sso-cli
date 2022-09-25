@@ -40,6 +40,7 @@ import (
 
 const (
 	AWS_SSO_SESSION_EXPIRATION_FORMAT = "2006-01-02 15:04:05 -0700 MST"
+	NIX_STORE_PREFIX                  = "/nix/store/"
 )
 
 type Settings struct {
@@ -58,6 +59,7 @@ type Settings struct {
 	UrlAction                 url.Action               `koanf:"UrlAction" yaml:"UrlAction"`
 	Browser                   string                   `koanf:"Browser" yaml:"Browser,omitempty"`
 	ConfigUrlAction           string                   `koanf:"ConfigUrlAction" yaml:"ConfigUrlAction,omitempty"` // deprecated
+	ConfigProfilesBinaryPath  string                   `koanf:"ConfigProfilesBinaryPath" yaml:"ConfigProfilesBinaryPath,omitempty"`
 	ConfigProfilesUrlAction   url.ConfigProfilesAction `koanf:"ConfigProfilesUrlAction" yaml:"ConfigProfilesUrlAction,omitempty"`
 	UrlExecCommand            []string                 `koanf:"UrlExecCommand" yaml:"UrlExecCommand,omitempty"` // string or list
 	LogLevel                  string                   `koanf:"LogLevel" yaml:"LogLevel,omitempty"`
@@ -382,16 +384,29 @@ type ProfileConfig struct {
 }
 
 // allow os.Executable call to be overridden for unit testing purposes
-var getExecutable func() (string, error) = os.Executable
+var getExecutable func() (string, error) = func() (string, error) {
+	exec, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	if strings.HasPrefix(exec, NIX_STORE_PREFIX) {
+		log.Warnf("Detected NIX. Using $PATH to find `aws-sso`. Override with `ConfigProfilesBinaryPath`")
+		exec = "aws-sso"
+	}
+	return exec, nil
+}
 
 // GetAllProfiles returns a map of the ProfileConfig for each SSOConfig.
 // takes the binary path to `open` URL with if set
 func (s *Settings) GetAllProfiles(open url.Action) (*ProfileMap, error) {
 	profiles := ProfileMap{}
+	var err error
 
-	binaryPath, err := getExecutable()
-	if err != nil {
-		return &profiles, err
+	binaryPath := s.ConfigProfilesBinaryPath
+	if binaryPath == "" {
+		if binaryPath, err = getExecutable(); err != nil {
+			return &profiles, err
+		}
 	}
 
 	// Find all the roles across all of the SSO instances
