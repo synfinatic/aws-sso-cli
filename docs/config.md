@@ -41,6 +41,7 @@ AutoConfigCheck: [False|True]
 Browser: <path to web browser>
 UrlAction: [clip|exec|print|printurl|open|granted-containers|open-url-in-container]
 ConfigProfilesUrlAction: [clip|exec|open|granted-containers|open-url-in-container]
+ConfigProfilesBinaryPath: <path to aws-sso binary>
 UrlExecCommand:
     - <command>
     - <arg 1>
@@ -298,6 +299,11 @@ Due to limitations with the AWS SDK, only the following options are valid:
 
 **Note:** This config option was previously known as `ConfigUrlAction` which
 has been deprecated.
+
+## ConfigProfilesBinaryPath
+
+Override execution path for `aws-sso` when generating named AWS profiles via the
+[config-profiles](command.md#config-profiles).
 
 ## AutoConfigCheck
 
