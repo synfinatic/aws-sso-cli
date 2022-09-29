@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Bugs
+ * Fix macOS amd64 release binary #427
+
 ## [v1.9.3] - 2022-09-29
 
 ### Changes
