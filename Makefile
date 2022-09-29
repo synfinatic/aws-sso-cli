@@ -219,29 +219,25 @@ $(LINUXARM64_BIN): $(wildcard */*.go) .prepare
 
 darwin: $(DARWIN_BIN)  ## Build MacOS/x86_64 binary
 
+$(DARWIN_BIN): $(wildcard */*.go) .prepare
 ifeq ($(ARCH), x86_64)
-$(DARWIN_BIN): $(wildcard */*.go) .prepare
 	GOARCH=amd64 GOOS=darwin go build -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) ./cmd/aws-sso/...
-	@echo "Created: $(DARWIN_BIN)"
 else
-$(DARWIN_BIN): $(wildcard */*.go) .prepare
 	GOARCH=amd64 GOOS=darwin CGO_ENABLED=1 SDKROOT=$(shell xcrun --sdk macosx --show-sdk-path) \
 		go build -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) ./cmd/aws-sso/...
-	@echo "Created: $(DARWIN_BIN)"
 endif
+	@echo "Created: $(DARWIN_BIN)"
 
 darwin-arm64: $(DARWINARM64_BIN)  ## Build MacOS/ARM64 binary
 
+$(DARWINARM64_BIN): $(wildcard */*.go) .prepare
 ifeq ($(ARCH), arm64)
-$(DARWINARM64_BIN): $(wildcard */*.go) .prepare
 	GOARCH=arm64 GOOS=darwin go build -ldflags='$(LDFLAGS)' -o $(DARWINARM64_BIN) ./cmd/aws-sso/...
-	@echo "Created: $(DARWINARM64_BIN)"
 else
-$(DARWINARM64_BIN): $(wildcard */*.go) .prepare
 	GOARCH=arm64 GOOS=darwin CGO_ENABLED=1 SDKROOT=$(shell xcrun --sdk macosx --show-sdk-path) \
 		go build -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) ./cmd/aws-sso/...
-	@echo "Created: $(DARWIN_BIN)"
 endif
+	@echo "Created: $(DARWINARM64_BIN)"
 
 $(OUTPUT_NAME): $(wildcard */*.go) .prepare
 	go build -ldflags='$(LDFLAGS)' -o $(OUTPUT_NAME) ./cmd/aws-sso/...
