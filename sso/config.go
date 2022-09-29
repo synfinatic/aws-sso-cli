@@ -1,12 +1,5 @@
 package sso
 
-import (
-	"fmt"
-	"strings"
-
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
-)
-
 /*
  * AWS SSO CLI
  * Copyright (c) 2021-2022 Aaron Turner  <synfinatic at gmail dot com>
@@ -24,6 +17,13 @@ import (
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/synfinatic/aws-sso-cli/internal/utils"
+)
 
 type SSOConfig struct {
 	settings      *Settings              // pointer back up
