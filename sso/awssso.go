@@ -64,7 +64,7 @@ type AWSSSO struct {
 	DeviceAuth     storage.StartDeviceAuthData `json:"StartDeviceAuth"`
 	Token          storage.CreateTokenResponse `json:"TokenResponse"`
 	Accounts       []AccountInfo               `json:"Accounts"`
-	Roles          map[string][]RoleInfo       `json:"Roles"`
+	Roles          map[string][]RoleInfo       `json:"Roles"` // key is AccountId
 	SSOConfig      *SSOConfig                  `json:"SSOConfig"`
 	urlAction      url.Action                  // cache for future calls
 	browser        string                      // cache for future calls
@@ -277,8 +277,14 @@ func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.Role
 		return storage.RoleCredentials{}, err
 	}
 
+	// is the role defined in the config file?
 	configRole, err := as.SSOConfig.GetRole(accountId, role)
-	if err == nil && configRole.Via == "" {
+	if err != nil {
+		log.Debugf("SSOConfig.GetRole(): %s", err.Error())
+	}
+
+	// If not in config OR config does not require doing a Via
+	if err != nil || configRole.Via == "" {
 		log.Debugf("Getting %s:%s directly", aId, role)
 		// This is the actual role creds requested through AWS SSO
 		input := sso.GetRoleCredentialsInput{

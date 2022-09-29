@@ -2,8 +2,11 @@
 
 ## Unreleased
 
+## [v1.9.4] - 2022-09-29
+
 ### Bugs
  * Fix macOS amd64 release binary #427
+ * Fix role loop detection regression #425
 
 ## [v1.9.3] - 2022-09-29
 
@@ -398,8 +401,9 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.9.3...main
-[v1.9.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.2
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.9.4...main
+[v1.9.4]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.4
+[v1.9.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.3
 [v1.9.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.2
 [v1.9.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.1
 [v1.9.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.0
