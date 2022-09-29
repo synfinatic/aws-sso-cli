@@ -73,11 +73,16 @@ homebrew: $(HOMEBREW)  ## Build homebrew tap file
 #DOWNLOAD_URL := https://synfin.net/misc/aws-sso-cli.$(PROJECT_VERSION).tar.gz
 DOWNLOAD_URL ?= https://github.com/synfinatic/aws-sso-cli/archive/refs/tags/v$(PROJECT_VERSION).tar.gz
 
+.PHONY: shasum
+shasum:
+	@which shasum >/dev/null || (echo "Missing 'shasum' binary" ; exit 1)
+	@echo "foo" | shasum -a 256 >/dev/null || (echo "'shasum' does not support: -a 256"; exit 1)
+
 .PHONY: $(HOMEBREW)
-$(HOMEBREW):  homebrew/template.rb  ## no-help
+$(HOMEBREW):  homebrew/template.rb shasum ## no-help
 	TEMPFILE=$$(mktemp) && wget -q -O $${TEMPFILE} $(DOWNLOAD_URL) ; \
 	if test -s $${TEMPFILE}; then \
-		export SHA=$$(cat $${TEMPFILE} | sha256sum | sed -e 's|  -||') && rm $${TEMPFILE} && \
+		export SHA=$$(cat $${TEMPFILE} | shasum -a 256 | sed -e 's|  -||') && rm $${TEMPFILE} && \
 		m4 -D __SHA256__=$${SHA} \
 		   -D __VERSION__=$(PROJECT_VERSION) \
 		   -D __COMMIT__=$(PROJECT_COMMIT) \
