@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Bugs
+ * `config-profiles` now always uses the latest list of profiles from AWS #420
+
 ## [v1.9.4] - 2022-09-29
 
 ### Bugs
