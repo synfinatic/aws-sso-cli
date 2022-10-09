@@ -6,6 +6,9 @@
  * `config-profiles` now always uses the latest list of profiles from AWS #430
  * Specifying the FQDN for the start url hostname now works #434
 
+### Changes
+ * Now support overriding the timestamp when building via `BUILDINFOS` env var
+
 ## [v1.9.4] - 2022-09-29
 
 ### Bugs
