@@ -4,6 +4,7 @@
 
 ### Bugs
  * `config-profiles` now always uses the latest list of profiles from AWS #430
+ * Specifying the FQDN for the start url hostname now works #434
 
 ## [v1.9.4] - 2022-09-29
 

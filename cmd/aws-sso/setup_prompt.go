@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	START_URL_FORMAT  = "https://%s.awsapps.com/start"
+	START_URL_FORMAT  = "https://%s/start"
 	START_FQDN_SUFFIX = ".awsapps.com"
 )
 
@@ -131,13 +131,15 @@ func promptStartUrl(defaultValue string) string {
 
 	for !validFQDN {
 		// Get the hostname of the AWS SSO start URL
-		label := "SSO Start URL Hostname (XXXXXXX.awsapps.com)"
+		label := fmt.Sprintf("SSO Start URL Hostname (XXXXXXX%s)", START_FQDN_SUFFIX)
+		regexpFQDNSuffix := strings.Replace(START_FQDN_SUFFIX, ".", "\\.", -1)
 		prompt := promptui.Prompt{
 			Label: label,
 			Validate: func(input string) error {
 				if ssoHostnameRegexp == nil {
 					// users can specify the FQDN or just Hostname
-					ssoHostnameRegexp, _ = regexp.Compile(`^([a-zA-Z0-9-]+)(\.awsapps\.com)?$`)
+					regex := fmt.Sprintf(`^([a-zA-Z0-9-]+)(%s)?$`, regexpFQDNSuffix)
+					ssoHostnameRegexp, _ = regexp.Compile(regex)
 				}
 				if len(input) > 0 && len(input) < 64 && ssoHostnameRegexp.Match([]byte(input)) {
 					return nil
