@@ -5,6 +5,9 @@
 ### Bugs
  * `config-profiles` now always uses the latest list of profiles from AWS #430
 
+### Changes
+ * Now support overriding the timestamp when building via `BUILDINFOS` env var
+
 ## [v1.9.4] - 2022-09-29
 
 ### Bugs

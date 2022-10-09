@@ -17,7 +17,6 @@ PROJECT_COMMIT            := $(shell git rev-parse HEAD || echo "")
 PROJECT_DELTA             := $(shell DELTA_LINES=$$(git diff | wc -l); if [ $${DELTA_LINES} -ne 0 ]; then echo $${DELTA_LINES} ; else echo "''" ; fi)
 else
 PROJECT_TAG               := Homebrew
-
 endif
 
 BUILDINFOSDET ?=
@@ -36,8 +35,7 @@ VERSION_PKG               := $(shell echo $(PROJECT_VERSION) | sed 's/^v//g')
 LICENSE                   := GPLv3
 URL                       := https://github.com/$(DOCKER_REPO)/$(PROJECT_NAME)
 DESCRIPTION               := AWS SSO CLI
-BUILDINFOS                := $(shell date +%FT%T%z)$(BUILDINFOSDET)
-HOSTNAME                  := $(shell hostname)
+BUILDINFOS                ?= $(shell date +%FT%T%z)$(BUILDINFOSDET)
 LDFLAGS                   := -X "main.Version=$(PROJECT_VERSION)" -X "main.Delta=$(PROJECT_DELTA)" -X "main.Buildinfos=$(BUILDINFOS)" -X "main.Tag=$(PROJECT_TAG)" -X "main.CommitID=$(PROJECT_COMMIT)"
 OUTPUT_NAME               := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)  # default for current platform
 
