@@ -1,0 +1,94 @@
+# NOTE: multiple `make` commands could be replaced with
+# `make release` in future if all binaries are built on MacOS machine
+
+name: Build Release binaries
+
+on:
+  # Workflow executes when a new release is created
+  release:
+    types: [created]
+
+jobs:
+  # most binaries can be built on linux machine which is the most cost-efficient on GitHub actions
+  # for building darwin-arm64 binary we need Xcode, therefore, we need to build it on MacOS
+
+  linux-build:
+    name: Build binaries on Ubuntu
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run Makefile
+        run: |
+          make package
+          make linux
+          make linux-arm64
+          make windows
+          make windows32
+
+      # Artifacts docs: https://docs.github.com/en/actions/using-workflows/storing-workflow-data-as-artifacts
+      - name: Upload files as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ubuntu-build-files
+          path: dist/aws-sso*
+          retention-days: 1
+
+  macos-build:
+    name: Build binaries on MacOS
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run Makefile
+        run: |
+          make darwin-arm64
+          make darwin
+
+      - name: Upload files as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: macos-build-files
+          path: dist/aws-sso*
+          retention-days: 1
+
+  sign-and-upload-files:
+    name: Sign and upload binary files
+    runs-on: ubuntu-latest
+
+    # Wait for binary files to be built
+    needs: [linux-build, macos-build]
+
+    steps:
+      - name: Download ubuntu binaries
+        uses: actions/download-artifact@v3
+        with:
+          name: ubuntu-build-files
+          path: dist/
+
+      - name: Download macos binaries
+        uses: actions/download-artifact@v3
+        with:
+          name: macos-build-files
+          path: dist/
+
+      # Source: https://github.com/crazy-max/ghaction-import-gpg
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v5.1.0
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Create signature file
+        run: |
+          shasum -a 256 dist/* | gpg --clear-sign > dist/release.sig.asc
+
+      # Source: https://github.com/svenstaro/upload-release-action
+      - name: Upload all files to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          file: dist/*
+          overwrite: true
+          file_glob: true
