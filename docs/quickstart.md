@@ -31,8 +31,21 @@
     1. Install [GoLang](https://golang.org) v1.17+ and GNU Make
     1. `go install github.com/synfinatic/aws-sso-cli/cmd/aws-sso@latest`
 
-Note that the release binaries and packages are not officially signed at this
-time so systems may generate warnings.
+Note that macOS binaries must be build on macOS to enable Keychain support.
+
+### Building and Signing Code
+
+The [release binaries and packages](
+https://github.com/synfinatic/aws-sso-cli/releases) are not signed with keys
+trusted by Apple or Microsoft and may generate warnings on macOS and Windows.
+
+Packages and binaries are however automatically built and signed via
+[Github Action](../.github/workflows/build-release.yml) with my [PGP code
+signing key](code-sign-key.asc).  Note that this is a _different_ PGP key from
+the one I use to [sign my commits](commit-sign-key.asc).
+
+Users who are paranoid (think SolarWinds) are strongly encouraged to build
+binaries themselves.
 
 ## Guided Configuration
 
@@ -85,7 +98,7 @@ Users of older versions will note that starting in v1.9.0, running
 for you to accept.
 
 Also, unlike with older versions, only your current shell is modified when
-you run `completions -I` or `completions -U`, but 
+you run `completions -I` or `completions -U`, but
 `completions --uninstall-pre-19` uses the original code/library and will
 modify your `bash`, `zsh` and `fish` init scripts.
 
