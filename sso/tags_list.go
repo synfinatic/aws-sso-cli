@@ -110,6 +110,14 @@ func reformatHistory(value string) string {
 		return value
 	}
 
+	// handle if AccountAlias or RoleName has a comma in it
+	// concat all but the last element
+	if len(x) > 2 {
+		x[0] = strings.Join(x[0:len(x)-1], ",")
+		x[1] = x[len(x)-1]
+		x = x[0:2]
+	}
+
 	i, err := strconv.ParseInt(x[1], 10, 64)
 	if err != nil {
 		log.WithError(err).Panicf("Unable to parse: %s", value)
