@@ -167,4 +167,8 @@ func (suite *TagsListTestSuite) TestReformatHistory() {
 	thirtyMinAgo := time.Now().Add(time.Minute * -30)
 	x = fmt.Sprintf("foo,%d", thirtyMinAgo.Unix())
 	assert.Equal(t, "[0h30m0s] foo", reformatHistory(x))
+
+	// case with comma in account alias
+	x = fmt.Sprintf("foo, bar,%d", thirtyMinAgo.Unix())
+	assert.Equal(t, "[0h30m0s] foo, bar", reformatHistory(x))
 }
