@@ -57,7 +57,7 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 
 	// refreshing?
 	if ctx.Cli.Eval.Refresh {
-		if ctx.Cli.Eval.EnvArn != "" {
+		if ctx.Cli.Eval.EnvArn == "" {
 			return fmt.Errorf("Unable to determine current IAM role")
 		}
 		accountid, role, err = utils.ParseRoleARN(ctx.Cli.Eval.EnvArn)
