@@ -11,7 +11,7 @@
 
 __aws_sso_profile_complete() {
      local _args=${AWS_SSO_HELPER_ARGS:- -L error}
-    _multi_parts : "($({{ .Executable }} list --csv $_args Profile))"
+    _multi_parts : "($({{ .Executable }} ${=_args} list --csv Profile))"
 }
 
 aws-sso-profile() {
@@ -20,7 +20,7 @@ aws-sso-profile() {
         echo "Unable to assume a role while AWS_PROFILE is set"
         return 1
     fi
-    eval $({{ .Executable }} $_args eval -p "$1")
+    eval $({{ .Executable }} ${=_args} eval -p "$1")
     if [ "$AWS_SSO_PROFILE" != "$1" ]; then
         return 1
     fi
@@ -32,7 +32,7 @@ aws-sso-clear() {
         echo "AWS_SSO_PROFILE is not set"
         return 1
     fi
-    eval $({{ .Executable }} -sso eval $_args -c)
+    eval $({{ .Executable }} ${=_args} eval -c)
 }
 
 compdef __aws_sso_profile_complete aws-sso-profile
