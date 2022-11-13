@@ -1,13 +1,19 @@
 # AWS SSO CLI Changelog
 
-## Unreleased
+## [v1.9.5] - 2022-11-13
 
-### Bugs
- * `config-profiles` now always uses the latest list of profiles from AWS #430
- * Specifying the FQDN for the start url hostname now works #434
+### New Features
+ * Release binaries are now automatically signed via Github Actions
 
 ### Changes
  * Now support overriding the timestamp when building via `BUILDINFOS` env var
+
+### Bugs
+ * `config-profiles` now always uses the latest list of profiles from AWS #430
+ * Specifying the FQDN for the start url hostname now works in the config wizard #434
+ * Fix multiple bugs in zsh autocomplete helper
+ * Fix problems with a comma in the AccountAlias
+ * Fix bug in `aws-sso eval --refresh`
 
 ## [v1.9.4] - 2022-09-29
 
@@ -408,7 +414,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.9.4...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.9.5...main
+[v1.9.5]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.5
 [v1.9.4]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.4
 [v1.9.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.3
 [v1.9.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.2
