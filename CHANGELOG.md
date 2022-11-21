@@ -1,5 +1,10 @@
 # AWS SSO CLI Changelog
 
+## [Unreleased] 
+
+### Bugs 
+ * `config-profiles` now pads the AccountID in the profile name as described. #446
+
 ## [v1.9.5] - 2022-11-13
 
 ### New Features
