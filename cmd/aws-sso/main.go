@@ -89,7 +89,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"DefaultSSO":                                "Default",
 	"FirefoxOpenUrlInContainer":                 false,
 	"AutoConfigCheck":                           false,
-	"ProfileFormat":                             `{{ .AccountId }}:{{ .RoleName }}`,
+	"ProfileFormat":                             `{{ AccountIdStr .AccountId }}:{{ .RoleName }}`,
 	"CacheRefresh":                              24, // in hours
 }
 
