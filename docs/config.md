@@ -37,6 +37,7 @@ DefaultRegion: <AWS_DEFAULT_REGION>
 DefaultSSO: <name of AWS SSO>
 CacheRefresh: <hours>
 AutoConfigCheck: [False|True]
+Threads: <integer>
 
 Browser: <path to web browser>
 UrlAction: [clip|exec|print|printurl|open|granted-containers|open-url-in-container]
@@ -212,6 +213,11 @@ is 24 (1 day).  Disable this feature by setting to any value <= 0.
 
 **Note:** If this feature is disabled, then [AutoConfigCheck](#autoconfigcheck)
 is also disabled.
+
+## Threads
+
+Certain actions when communicating with AWS can be accellerated by running multiple
+parallel threads.  Must be >= 1.  Default is 10 threads.
 
 ## Browser / UrlAction / UrlExecCommand
 

@@ -30,7 +30,10 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
-const CACHE_VERSION = 3
+const (
+	CACHE_VERSION      = 3
+	SLOW_FETCH_SECONDS = 2 // number of seconds before notifying users
+)
 
 type SSOCache struct {
 	LastUpdate int64    `json:"LastUpdate,omitempty"` // when these records for this SSO were updated
@@ -46,6 +49,7 @@ type Cache struct {
 	ConfigCreatedAt int64                `json:"ConfigCreatedAt"` // track config.yaml
 	SSO             map[string]*SSOCache `json:"SSO,omitempty"`
 	ssoName         string               // name of SSO that is active
+	refreshed       bool                 // track if we have run Refresh() since this is expensive
 }
 
 func OpenCache(f string, s *Settings) (*Cache, error) {
@@ -267,6 +271,12 @@ func (c *Cache) deleteOldHistory() {
 // Refresh updates our cached Roles based on AWS SSO & our Config
 // but does not save this data!
 func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string) error {
+	// Only refresh once per execution
+	if c.refreshed {
+		return nil
+	}
+	c.refreshed = true
+
 	// save role creds expires time
 	expires := map[string]int64{}
 	cache := c.GetSSO()
@@ -327,6 +337,7 @@ func (c *Cache) SetRoleExpires(arn string, expires int64) error {
 	return c.Save(false)
 }
 
+// MarkRolesExpired marks all IAM role credentials in the cache as expired
 func (c *Cache) MarkRolesExpired() error {
 	cache := c.GetSSO()
 	for accountId := range cache.Roles.Accounts {
@@ -410,6 +421,61 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 	return &r, nil
 }
 
+// goroutine worker to fetch the RoleInfo for the given account
+func fetchSSORole(id int, as *AWSSSO, aInfo <-chan AccountInfo, rInfo chan<- []RoleInfo) {
+	for {
+		a := <-aInfo
+		if a.AccountId == "" {
+			// need some way to exit our worker...
+			break
+		}
+		log.Debugf("Worker %d processing AccountId: %s", id, a.AccountId)
+		roles, err := as.GetRoles(a)
+		if err != nil {
+			log.Panicf("Unable to get AWS SSO roles: %s", err.Error())
+		}
+		rInfo <- roles
+	}
+}
+
+// processSSORoles updates the *Roles with ith the list of RoleInfo
+// and using our SSOCache
+func processSSORoles(roles []RoleInfo, cache *SSOCache, r *Roles) {
+	for _, role := range roles {
+		accountId := role.GetAccountId64()
+
+		if _, ok := r.Accounts[accountId]; !ok {
+			r.Accounts[accountId] = &AWSAccount{
+				Alias:        role.AccountName, // AWS SSO calls it `AccountName`
+				EmailAddress: role.EmailAddress,
+				Tags:         map[string]string{},
+				Roles:        map[string]*AWSRole{},
+			}
+		}
+
+		r.Accounts[accountId].Roles[role.RoleName] = &AWSRole{
+			Arn: utils.MakeRoleARN(accountId, role.RoleName),
+			Tags: map[string]string{
+				"AccountID":    role.AccountId,
+				"AccountAlias": role.AccountName, // AWS SSO calls it `AccountName`
+				"Email":        role.EmailAddress,
+				"Role":         role.RoleName,
+			},
+		}
+		// need to copy over the Expires & History fields from our current cache
+		if _, ok := cache.Roles.Accounts[accountId]; ok {
+			if _, ok := cache.Roles.Accounts[accountId].Roles[role.RoleName]; ok {
+				if expires := cache.Roles.Accounts[accountId].Roles[role.RoleName].Expires; expires > 0 {
+					r.Accounts[accountId].Roles[role.RoleName].Expires = expires
+				}
+				if v, ok := cache.Roles.Accounts[accountId].Roles[role.RoleName].Tags["History"]; ok {
+					r.Accounts[accountId].Roles[role.RoleName].Tags["History"] = v
+				}
+			}
+		}
+	}
+}
+
 // addSSORoles retrieves all the SSO Roles from AWS SSO and places them in r
 func (c *Cache) addSSORoles(r *Roles, as *AWSSSO) error {
 	cache := c.GetSSO()
@@ -419,41 +485,55 @@ func (c *Cache) addSSORoles(r *Roles, as *AWSSSO) error {
 		return fmt.Errorf("Unable to get AWS SSO accounts: %s", err.Error())
 	}
 
-	for _, aInfo := range accounts {
-		accountId := aInfo.GetAccountId64()
-		r.Accounts[accountId] = &AWSAccount{
-			Alias:        aInfo.AccountName, // AWS SSO calls it `AccountName`
-			EmailAddress: aInfo.EmailAddress,
-			Tags:         map[string]string{},
-			Roles:        map[string]*AWSRole{},
+	// Our first query must NOT be part of the worker pool so our AccessToken
+	// can be updated
+	firstJob, accounts := accounts[0], accounts[1:]
+	roles, err := as.GetRoles(firstJob)
+	if err != nil {
+		return err
+	}
+	processSSORoles(roles, cache, r)
+
+	// Per #448, doing this serially is too slow for many accounts.  Hence,
+	// we'll use a worker pool.
+	if len(accounts) > 0 {
+		workers := 1
+		if c.settings.Threads > 0 {
+			workers = c.settings.Threads
+		}
+		if workers > len(accounts) {
+			workers = len(accounts)
 		}
 
-		roles, err := as.GetRoles(aInfo)
-		if err != nil {
-			return fmt.Errorf("Unable to get AWS SSO roles: %s", err.Error())
+		tasks := make(chan AccountInfo, len(accounts))
+		results := make(chan []RoleInfo, len(accounts))
+
+		// feed our workers with our other accounts
+		for _, aInfo := range accounts {
+			tasks <- aInfo
 		}
-		for _, role := range roles {
-			r.Accounts[accountId].Roles[role.RoleName] = &AWSRole{
-				Arn: utils.MakeRoleARN(accountId, role.RoleName),
-				Tags: map[string]string{
-					"AccountID":    aInfo.AccountId,
-					"AccountAlias": aInfo.AccountName, // AWS SSO calls it `AccountName`
-					"Email":        aInfo.EmailAddress,
-					"Role":         role.RoleName,
-				},
-			}
-			// need to copy over the Expires & History fields from our current cache
-			if _, ok := cache.Roles.Accounts[accountId]; ok {
-				if _, ok := cache.Roles.Accounts[accountId].Roles[role.RoleName]; ok {
-					if expires := cache.Roles.Accounts[accountId].Roles[role.RoleName].Expires; expires > 0 {
-						r.Accounts[accountId].Roles[role.RoleName].Expires = expires
-					}
-					if v, ok := cache.Roles.Accounts[accountId].Roles[role.RoleName].Tags["History"]; ok {
-						r.Accounts[accountId].Roles[role.RoleName].Tags["History"] = v
-					}
-				}
+		close(tasks)
+
+		// start our workers...
+		for w := 1; w <= workers; w++ {
+			go fetchSSORole(w, as, tasks, results)
+		}
+
+		// Notify
+		ticker := time.NewTicker(SLOW_FETCH_SECONDS * time.Second)
+
+		for count := 0; count < len(accounts); {
+			select {
+			case roles := <-results:
+				processSSORoles(roles, cache, r)
+				count++ // increment count only when processing results
+				log.Debugf("proccessed %d results", count)
+			case <-ticker.C:
+				log.Warnf("Fetching roles for %d accounts, this might take a while...\n", len(accounts)+1)
+				ticker.Stop()
 			}
 		}
+		close(results)
 	}
 	return nil
 }

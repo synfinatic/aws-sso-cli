@@ -53,13 +53,15 @@ func (as *AWSSSO) Authenticate(urlAction url.Action, browser string) error {
 	token := storage.CreateTokenResponse{}
 	err := as.store.GetCreateTokenResponse(as.StoreKey(), &token)
 	if err == nil && !token.Expired() {
+		as.tokenLock.Lock()
 		as.Token = token
+		as.tokenLock.Unlock()
 		return nil
 	} else if err != nil {
 		log.Debugf(err.Error())
 	} else {
-		if as.Token.ExpiresAt != 0 {
-			t := time.Unix(as.Token.ExpiresAt, 0)
+		if token.ExpiresAt != 0 {
+			t := time.Unix(token.ExpiresAt, 0)
 			log.Infof("Cached SSO token expired at: %s.  Reauthenticating...\n",
 				t.Format("Mon Jan 2 15:04:05 -0700 MST 2006"))
 		} else {
@@ -77,6 +79,10 @@ func (as *AWSSSO) StoreKey() string {
 
 // reauthenticate talks to AWS SSO to generate a new AWS SSO AccessToken
 func (as *AWSSSO) reauthenticate() error {
+	// This should only be happening one at a time!
+	as.authenticateLock.Lock()
+	defer as.authenticateLock.Unlock()
+
 	log.Tracef("reauthenticate() for %s", as.StoreKey())
 	err := as.registerClient(false)
 	log.Tracef("<- reauthenticate()")
@@ -260,6 +266,7 @@ func (as *AWSSSO) createToken() error {
 	}
 
 	secs, _ := time.ParseDuration(fmt.Sprintf("%ds", resp.ExpiresIn)) // seconds
+	as.tokenLock.Lock()
 	as.Token = storage.CreateTokenResponse{
 		AccessToken:  aws.ToString(resp.AccessToken),
 		ExpiresIn:    resp.ExpiresIn,
@@ -268,7 +275,10 @@ func (as *AWSSSO) createToken() error {
 		RefreshToken: aws.ToString(resp.RefreshToken), // per AWS docs, not currently implemented
 		TokenType:    aws.ToString(resp.TokenType),
 	}
+	as.tokenLock.Unlock()
+	as.tokenLock.RLock()
 	err = as.store.SaveCreateTokenResponse(as.StoreKey(), as.Token)
+	as.tokenLock.RUnlock()
 	if err != nil {
 		log.WithError(err).Errorf("Unable to save CreateTokenResponse")
 	}

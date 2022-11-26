@@ -1,9 +1,19 @@
 # AWS SSO CLI Changelog
 
-## [Unreleased] 
+## [v1.9.6] - 2022-12-04
 
-### Bugs 
+### New Features
+ * Add `Threads` option to config file
+ * Updating the account and role cache now honors the `Threads` option
+ * If updating role cache takes > 2 seconds, let users know we're working on it #448
+
+### Bugs
  * `config-profiles` now pads the AccountID in the profile name as described. #446
+ * `cache` command no longer queries AWS twice if the cache was expired/invalidated
+ * Fix `make fmt` target to use gofmt
+
+### Changes
+ * Unexpected AccessToken failure is now considered an error
 
 ## [v1.9.5] - 2022-11-13
 
@@ -419,7 +429,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.9.5...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.9.6...main
+[v1.9.6]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.6
 [v1.9.5]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.5
 [v1.9.4]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.4
 [v1.9.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.3

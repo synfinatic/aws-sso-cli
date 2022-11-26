@@ -91,6 +91,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"AutoConfigCheck":                           false,
 	"ProfileFormat":                             `{{ AccountIdStr .AccountId }}:{{ .RoleName }}`,
 	"CacheRefresh":                              24, // in hours
+	"Threads":                                   5,
 }
 
 type CLI struct {
@@ -103,6 +104,7 @@ type CLI struct {
 	SSO           string `kong:"short='S',help='Override default AWS SSO Instance',env='AWS_SSO',predictor='sso'"`
 	STSRefresh    bool   `kong:"help='Force refresh of STS Token Credentials'"`
 	NoConfigCheck bool   `kong:"help='Disable automatic ~/.aws/config updates'"`
+	Threads       int    `kong:"help='Override number of threads for talking to AWS'"`
 
 	// Commands
 	Cache          CacheCmd          `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
@@ -236,11 +238,12 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 	}
 
 	override := sso.OverrideSettings{
-		UrlAction:  action,
 		Browser:    cli.Browser,
 		DefaultSSO: cli.SSO,
 		LogLevel:   cli.LogLevel,
 		LogLines:   cli.Lines,
+		Threads:    cli.Threads,
+		UrlAction:  action,
 	}
 
 	log.SetFormatter(&logrus.TextFormatter{

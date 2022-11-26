@@ -54,6 +54,7 @@ type Settings struct {
 	ConsoleDuration           int32                    `koanf:"ConsoleDuration" yaml:"ConsoleDuration,omitempty"`
 	JsonStore                 string                   `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
 	CacheRefresh              int64                    `koanf:"CacheRefresh" yaml:"CacheRefresh,omitempty"`
+	Threads                   int                      `koanf:"Threads" yaml:"Threads,omitempty"`
 	AutoConfigCheck           bool                     `koanf:"AutoConfigCheck" yaml:"AutoConfigCheck,omitempty"`
 	FirefoxOpenUrlInContainer bool                     `koanf:"FirefoxOpenUrlInContainer" yaml:"FirefoxOpenUrlInContainer,omitempty"` // deprecated
 	UrlAction                 url.Action               `koanf:"UrlAction" yaml:"UrlAction"`
@@ -126,6 +127,7 @@ type OverrideSettings struct {
 	LogLevel   string
 	LogLines   bool
 	UrlAction  url.Action
+	Threads    int
 }
 
 // Loads our settings from config, cache and CLI args
@@ -310,6 +312,10 @@ func (s *Settings) setOverrides(override OverrideSettings) {
 
 	if override.UrlAction != "" {
 		s.UrlAction = override.UrlAction
+	}
+
+	if override.Threads > 0 {
+		s.Threads = override.Threads
 	}
 }
 

@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -52,23 +53,26 @@ type SsoAPI interface {
 }
 
 type AWSSSO struct {
-	key            string // key in the settings file that names us
-	sso            SsoAPI
-	ssooidc        SsoOidcAPI
-	store          storage.SecureStorage
-	ClientName     string                      `json:"ClientName"`
-	ClientType     string                      `json:"ClientType"`
-	SsoRegion      string                      `json:"ssoRegion"`
-	StartUrl       string                      `json:"startUrl"`
-	ClientData     storage.RegisterClientData  `json:"RegisterClient"`
-	DeviceAuth     storage.StartDeviceAuthData `json:"StartDeviceAuth"`
-	Token          storage.CreateTokenResponse `json:"TokenResponse"`
-	Accounts       []AccountInfo               `json:"Accounts"`
-	Roles          map[string][]RoleInfo       `json:"Roles"` // key is AccountId
-	SSOConfig      *SSOConfig                  `json:"SSOConfig"`
-	urlAction      url.Action                  // cache for future calls
-	browser        string                      // cache for future calls
-	urlExecCommand []string                    // cache for future calls
+	key              string // key in the settings file that names us
+	sso              SsoAPI
+	ssooidc          SsoOidcAPI
+	store            storage.SecureStorage
+	ClientName       string                      `json:"ClientName"`
+	ClientType       string                      `json:"ClientType"`
+	SsoRegion        string                      `json:"ssoRegion"`
+	StartUrl         string                      `json:"startUrl"`
+	ClientData       storage.RegisterClientData  `json:"RegisterClient"`
+	DeviceAuth       storage.StartDeviceAuthData `json:"StartDeviceAuth"`
+	Token            storage.CreateTokenResponse `json:"TokenResponse"`
+	tokenLock        sync.RWMutex                // lock for our Token
+	Accounts         []AccountInfo               `json:"Accounts"`
+	Roles            map[string][]RoleInfo       `json:"Roles"` // key is AccountId
+	rolesLock        sync.RWMutex                // lock for our Roles
+	SSOConfig        *SSOConfig                  `json:"SSOConfig"`
+	urlAction        url.Action                  // cache for future calls
+	browser          string                      // cache for future calls
+	urlExecCommand   []string                    // cache for future calls
+	authenticateLock sync.RWMutex                // lock for reauthenticate()
 }
 
 func NewAWSSSO(s *SSOConfig, store *storage.SecureStorage) *AWSSSO {
@@ -123,34 +127,60 @@ func (ri RoleInfo) RoleArn() string {
 	return utils.MakeRoleARN(a, ri.RoleName)
 }
 
+func (ri RoleInfo) GetAccountId64() int64 {
+	i64, err := strconv.ParseInt(ri.AccountId, 10, 64)
+	if err != nil {
+		log.WithError(err).Panicf("Invalid AWS AccountID from AWS SSO: %s", ri.AccountId)
+	}
+	if i64 < 0 {
+		log.WithError(err).Panicf("AWS AccountID must be >= 0: %s", ri.AccountId)
+	}
+	return i64
+}
+
+// GetRoles fetches all the AWS SSO IAM Roles for the given AWS Account
 func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
+	as.rolesLock.RLock()
 	roles, ok := as.Roles[account.AccountId]
+	as.rolesLock.RUnlock()
 	if ok && len(roles) > 0 {
 		return roles, nil
 	}
-	as.Roles[account.AccountId] = []RoleInfo{}
 
+	as.rolesLock.Lock()
+	as.Roles[account.AccountId] = []RoleInfo{}
+	as.rolesLock.Unlock()
+
+	as.tokenLock.RLock()
 	input := sso.ListAccountRolesInput{
 		AccessToken: aws.String(as.Token.AccessToken),
 		AccountId:   aws.String(account.AccountId),
 		MaxResults:  aws.Int32(1000),
 	}
+	as.tokenLock.RUnlock()
+
 	output, err := as.sso.ListAccountRoles(context.TODO(), &input)
 	if err != nil {
 		// sometimes our AccessToken is invalid even though it has not expired
 		// so retry once
-		log.Debugf("Unexpected AccessToken failure.  Refreshing...")
+		log.Errorf("Unexpected AccessToken failure; refreshing: %s", err)
 		if err = as.reauthenticate(); err != nil {
 			// failed again... return our cache?
+			as.rolesLock.RLock()
+			defer as.rolesLock.RUnlock()
 			return as.Roles[account.AccountId], err
 		}
 		input.AccessToken = aws.String(as.Token.AccessToken)
 		if output, err = as.sso.ListAccountRoles(context.TODO(), &input); err != nil {
+			as.rolesLock.RLock()
+			defer as.rolesLock.RUnlock()
 			return as.Roles[account.AccountId], err
 		}
 	}
 	for i, r := range output.RoleList {
 		if err := as.makeRoleInfo(account, i, r); err != nil {
+			as.rolesLock.RLock()
+			defer as.rolesLock.RUnlock()
 			return as.Roles[account.AccountId], err
 		}
 	}
@@ -159,16 +189,26 @@ func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 		input.NextToken = output.NextToken
 		output, err = as.sso.ListAccountRoles(context.TODO(), &input)
 		if err != nil {
+			as.rolesLock.RLock()
+			defer as.rolesLock.RUnlock()
 			return as.Roles[account.AccountId], err
 		}
+
+		as.rolesLock.RLock()
 		roleCount := len(as.Roles[account.AccountId])
+		as.rolesLock.RUnlock()
+
 		for i, r := range output.RoleList {
 			x := roleCount + i
 			if err := as.makeRoleInfo(account, x, r); err != nil {
+				as.rolesLock.RLock()
+				defer as.rolesLock.RUnlock()
 				return as.Roles[account.AccountId], err
 			}
 		}
 	}
+	as.rolesLock.RLock()
+	defer as.rolesLock.RUnlock()
 	return as.Roles[account.AccountId], nil
 }
 
@@ -181,6 +221,9 @@ func (as *AWSSSO) makeRoleInfo(account AccountInfo, i int, r types.RoleInfo) err
 	if err != nil && len(ssoRole.Via) > 0 {
 		via = ssoRole.Via
 	}
+
+	as.rolesLock.Lock()
+	defer as.rolesLock.Unlock()
 	as.Roles[account.AccountId] = append(as.Roles[account.AccountId], RoleInfo{
 		Id:           i,
 		AccountId:    aws.ToString(r.AccountId),
@@ -218,6 +261,7 @@ func (ai AccountInfo) GetAccountId64() int64 {
 	return i64
 }
 
+// GetAccounts queries AWS and returns a list of AWS accounts
 func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {
 	if len(as.Accounts) > 0 {
 		return as.Accounts, nil
@@ -230,7 +274,7 @@ func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {
 	output, err := as.sso.ListAccounts(context.TODO(), &input)
 	if err != nil {
 		// sometimes our AccessToken is invalid so try a new one once?
-		log.Debugf("Unexpected AccessToken failure.  Refreshing...")
+		log.Errorf("Unexpected AccessToken failure; refreshing: %s", err)
 		if err = as.reauthenticate(); err != nil {
 			return as.Accounts, err
 		}
@@ -239,6 +283,7 @@ func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {
 			return as.Accounts, err
 		}
 	}
+
 	for i, r := range output.AccountList {
 		as.Accounts = append(as.Accounts, AccountInfo{
 			Id:           i,
@@ -247,6 +292,7 @@ func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {
 			EmailAddress: aws.ToString(r.EmailAddress),
 		})
 	}
+
 	for aws.ToString(output.NextToken) != "" {
 		input.NextToken = output.NextToken
 		output, err = as.sso.ListAccounts(context.TODO(), &input)
