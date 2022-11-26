@@ -308,6 +308,7 @@ func (suite *SettingsTestSuite) TestSetOverrides() {
 		Browser:    "my-browser",
 		DefaultSSO: "hello",
 		UrlAction:  url.PrintUrl,
+		Threads:    10,
 	}
 
 	s.setOverrides(overrides)
@@ -317,6 +318,7 @@ func (suite *SettingsTestSuite) TestSetOverrides() {
 	assert.Equal(t, "my-browser", s.Browser)
 	assert.Equal(t, "hello", s.DefaultSSO)
 	assert.Equal(t, url.PrintUrl, s.UrlAction)
+	assert.Equal(t, 10, s.Threads)
 }
 
 func TestCreatedAt(t *testing.T) {

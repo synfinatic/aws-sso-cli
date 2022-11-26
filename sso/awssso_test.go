@@ -656,8 +656,7 @@ func TestGetFieldNameAccountInfo(t *testing.T) {
 
 func TestGetAccountId64(t *testing.T) {
 	ai := AccountInfo{
-		AccountId:   "1111111",
-		AccountName: "FooBar",
+		AccountId: "1111111",
 	}
 
 	assert.Equal(t, int64(1111111), ai.GetAccountId64())
@@ -667,4 +666,16 @@ func TestGetAccountId64(t *testing.T) {
 
 	ai.AccountId = "InvalidAccountId"
 	assert.Panics(t, func() { ai.GetAccountId64() })
+
+	ri := RoleInfo{
+		AccountId: "1111111",
+	}
+
+	assert.Equal(t, int64(1111111), ri.GetAccountId64())
+
+	ri.AccountId = "-1"
+	assert.Panics(t, func() { ri.GetAccountId64() })
+
+	ri.AccountId = "InvalidAccountId"
+	assert.Panics(t, func() { ri.GetAccountId64() })
 }

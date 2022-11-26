@@ -28,6 +28,7 @@
 
  * [Error: Unable to save... org.freedesktop.DBus.Properties](#error-unable-to-save-orgfreedesktopdbusproperties)
  * [Error: Invalid grant provided](#error-invalid-grant-provided)
+ * [Error: Unexpected AccessToken failure; refreshing](#error-unexpected-accesstoken-failure-refreshing)
 
 ##### Misc
 
@@ -303,6 +304,15 @@ Depending on your OS and setup, running:
 
 as your default (non-root) user, but be sure to check the relevant documentation
 with your OS for best practices.
+
+### Error: Unexpected AccessToken failure; refreshing
+
+This can happen when querying AWS for a list of AWS Accounts or Roles and may
+indicate that AWS is throttling requests because the number of
+[Threads](config.md#Threads) is too high.
+
+Note: Unlike most errors, this one is not always fatal, but it can cause `aws-sso`
+to behave very poorly.
 
 ### Are macOS Keychain items synced?
 

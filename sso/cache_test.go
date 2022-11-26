@@ -495,3 +495,47 @@ func (suite *CacheTestSuite) TestSetRoleExpires() {
 	err = suite.cache.SetRoleExpires(INVALID_ROLE_ARN, 12344553243)
 	assert.Error(t, err)
 }
+
+func (suite *CacheTestSuite) TestProcessSSORoles() {
+	t := suite.T()
+
+	roles := []RoleInfo{
+		{
+			Id:           0,
+			Arn:          "arn:aws:iam::123456789012:role/testing",
+			RoleName:     "testing",
+			AccountId:    "123456789012",
+			AccountName:  "MyTestAccount",
+			EmailAddress: "testing@domain.com",
+			Expires:      555555555,
+			Profile:      "TestingAccountTesting",
+			Region:       "us-east-1",
+			SSORegion:    "us-east-2",
+			StartUrl:     "https://fake.awsapps.com/start",
+		},
+	}
+
+	r := Roles{
+		Accounts: map[int64]*AWSAccount{},
+	}
+	cache := SSOCache{
+		Roles: &Roles{
+			Accounts: map[int64]*AWSAccount{
+				123456789012: {},
+			},
+		},
+	}
+
+	processSSORoles(roles, &cache, &r)
+	assert.Len(t, r.Accounts, 1)
+	assert.Len(t, r.Accounts[123456789012].Roles, 1)
+	assert.Equal(t, "MyTestAccount", r.Accounts[123456789012].Alias)
+	assert.Equal(t, "testing@domain.com", r.Accounts[123456789012].EmailAddress)
+	assert.Equal(t, "arn:aws:iam::123456789012:role/testing", r.Accounts[123456789012].Roles["testing"].Arn)
+	assert.Len(t, r.Accounts[123456789012].Tags, 0)
+
+	assert.Equal(t, "MyTestAccount", r.Accounts[123456789012].Roles["testing"].Tags["AccountAlias"])
+	assert.Equal(t, "123456789012", r.Accounts[123456789012].Roles["testing"].Tags["AccountID"])
+	assert.Equal(t, "testing@domain.com", r.Accounts[123456789012].Roles["testing"].Tags["Email"])
+	assert.Equal(t, "testing", r.Accounts[123456789012].Roles["testing"].Tags["Role"])
+}

@@ -1,4 +1,4 @@
-PROJECT_VERSION := 1.9.4
+PROJECT_VERSION := 1.9.6
 DOCKER_REPO     := synfinatic
 PROJECT_NAME    := aws-sso
 
@@ -171,7 +171,7 @@ $(DIST_DIR):
 
 .PHONY: fmt
 fmt: ## Format Go code
-	@go fmt ./...
+	@gofmt -s -w */*.go */*/*.go
 
 .PHONY: test-fmt
 test-fmt: fmt ## Test to make sure code if formatted correctly
