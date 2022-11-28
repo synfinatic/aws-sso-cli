@@ -264,7 +264,7 @@ UrlExecCommand:
 ```yaml
 # Use Granted Containers on MacOS
 UrlAction: granted-containers
-UrlExecCommand::
+UrlExecCommand:
     - /Applications/Firefox.app/Contents/MacOS/firefox
     - "%s"
 ```
