@@ -18,7 +18,7 @@
     1. Copy to appropriate location and `chmod 755`
  * Option 2: [Download RPM or DEB package](https://github.com/synfinatic/aws-sso-cli/releases)
     1. Use your package manager to install (Linux only)
- * Option 3: Install via [Homebrew](https://brew.sh)
+ * Option 3: Build & Install via [Homebrew](https://brew.sh)
 	1. Run `brew tap synfinatic/aws-sso-cli`
 	1. Run `brew install aws-sso-cli`
  * Option 4: Build from source:
@@ -31,9 +31,12 @@
     1. Install [GoLang](https://golang.org) v1.17+ and GNU Make
     1. `go install github.com/synfinatic/aws-sso-cli/cmd/aws-sso@latest`
 
-Note that macOS binaries must be build on macOS to enable Keychain support.
+Note 1: macOS binaries must be build on macOS to enable Keychain support.
 
-### Building and Signing Code
+Note 2: Installing via Brew requires XCode since it will be compiled locally
+to avoid code signing errors on macOS.
+
+### Binaries and Code Signatures
 
 The [release binaries and packages](
 https://github.com/synfinatic/aws-sso-cli/releases) are not signed with keys
