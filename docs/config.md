@@ -181,7 +181,7 @@ specific to that role and override any account level tags.
 
 ##### Via
 
-Impliments the concept of [role chaining](
+Implements the concept of [role chaining](
 https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_terms-and-concepts.html).
 
 `Via` defines which role to assume before calling [sts:AssumeRole](
