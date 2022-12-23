@@ -122,7 +122,7 @@ been granted access!
 ### What is not encrypted?
 
  * Contents of user defined `~/.aws-sso/config.yaml`
- * Meta data associated with the AWS Roles fetched via AWS SSO in `~/.aws-sso/cache.json`
+ * Metadata associated with the AWS Roles fetched via AWS SSO in `~/.aws-sso/cache.json`
     * Email address tied to the account (root user)
     * AWS Account Alias
     * AWS Role ARN
@@ -138,4 +138,4 @@ The following pages will help get you started:
 
 ## License
 
-AWS SSO CLI is licnsed under the [GPLv3](LICENSE).
+AWS SSO CLI is licensed under the [GPLv3](LICENSE).
