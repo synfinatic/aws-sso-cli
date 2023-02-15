@@ -90,13 +90,19 @@ and many other quality of life improvements!
  * Written in GoLang, so only need to install a single binary (no dependencies)
  * Supports Linux, MacOS, and Windows
 
-## Demo
+## Demos
 
 Here's a quick demo showing how to select a role to assume in interactive mode
-and then run commands in that context (by default it starts a new shell).
+and then run commands in that context (by default it starts a new shell):
 
-<!-- exec -->
 [![asciicast](https://asciinema.org/a/462167.svg)](https://asciinema.org/a/462167)
+
+
+`aws-sso` also allows you to open the AWS Console in your browser for a
+given AWS SSO role:
+
+![FirefoxContainers Demo](
+https://user-images.githubusercontent.com/1075352/166165880-24f7c9af-a037-4e48-aa2d-342f2efe5ad7.gif)
 
 Want to see more?  Check out the [other demos](docs/demos.md).
 

@@ -39,6 +39,7 @@ to assume and is especially useful if you don't remember the role specifics.
 
 ---
 
+<!-- console -->
 ### Using the `console` command 
 
 The `console` command allows you to open the AWS Console in your browser for a
