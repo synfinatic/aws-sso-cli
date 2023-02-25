@@ -1,4 +1,4 @@
-PROJECT_VERSION := 1.9.7
+PROJECT_VERSION := 1.9.8
 DOCKER_REPO     := synfinatic
 PROJECT_NAME    := aws-sso
 
@@ -77,7 +77,7 @@ shasum:
 	@echo "foo" | shasum -a 256 >/dev/null || (echo "'shasum' does not support: -a 256"; exit 1)
 
 .PHONY: $(HOMEBREW)
-$(HOMEBREW):  homebrew/template.rb shasum ## no-help
+$(HOMEBREW):  homebrew/template.rb.m4 shasum ## no-help
 	TEMPFILE=$$(mktemp) && wget -q -O $${TEMPFILE} $(DOWNLOAD_URL) ; \
 	if test -s $${TEMPFILE}; then \
 		export SHA=$$(cat $${TEMPFILE} | shasum -a 256 | sed -e 's|  -||') && rm $${TEMPFILE} && \
@@ -85,7 +85,7 @@ $(HOMEBREW):  homebrew/template.rb shasum ## no-help
 		   -D __VERSION__=$(PROJECT_VERSION) \
 		   -D __COMMIT__=$(PROJECT_COMMIT) \
 		   -D __URL__=$(DOWNLOAD_URL) \
-		   homebrew/template.rb | tee $(HOMEBREW) && \
+		   homebrew/template.rb.m4 | tee $(HOMEBREW) && \
 		   echo "***** Please review above and test! ******" && \
 		   echo "File written to: $(HOMEBREW)  Please commit in git submodule!" ; \
 	else \

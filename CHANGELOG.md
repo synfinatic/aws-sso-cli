@@ -1,5 +1,15 @@
 # AWS SSO CLI Changelog
 
+## [v1.9.8] - 2023-02-25
+
+### Bugs
+
+ * `aws-sso version` no longer requires a valid config file
+
+### Changes
+
+ * Update location for homebrew template file
+
 ## [v1.9.7] - 2023-02-25
 
 ### Bugs
