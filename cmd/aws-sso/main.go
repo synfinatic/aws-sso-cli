@@ -149,7 +149,7 @@ func main() {
 	}
 
 	switch ctx.Command() {
-	case "Version":
+	case "version":
 		if err = ctx.Run(&runCtx); err != nil {
 			log.Fatalf("Error running command: %s", err.Error())
 		}
