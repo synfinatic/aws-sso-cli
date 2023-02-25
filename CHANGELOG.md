@@ -1,36 +1,46 @@
 # AWS SSO CLI Changelog
 
-## Unreleased
+## [v1.9.7] - 2023-02-25
 
 ### Bugs
 
- * Update golang.org/x/crypto and golang.org/x/sys dependencies due to upstream
-    security vulns. #460, #460
+ * Update golang.org/x/crypto & golang.org/x/crypto/ssh dependencies for security #460
+ * Update golang.org/x/sys dependencies for security #461
+
+### Changes
+
+ * Update various dependencies not covered in bugs
 
 ## [v1.9.6] - 2022-12-04
 
 ### New Features
+
  * Add `Threads` option to config file
  * Updating the account and role cache now honors the `Threads` option
  * If updating role cache takes > 2 seconds, let users know we're working on it #448
 
 ### Bugs
+
  * `config-profiles` now pads the AccountID in the profile name as described. #446
  * `cache` command no longer queries AWS twice if the cache was expired/invalidated
  * Fix `make fmt` target to use gofmt
 
 ### Changes
+
  * Unexpected AccessToken failure is now considered an error
 
 ## [v1.9.5] - 2022-11-13
 
 ### New Features
+
  * Release binaries are now automatically signed via Github Actions
 
 ### Changes
+
  * Now support overriding the timestamp when building via `BUILDINFOS` env var
 
 ### Bugs
+
  * `config-profiles` now always uses the latest list of profiles from AWS #430
  * Specifying the FQDN for the start url hostname now works in the config wizard #434
  * Fix multiple bugs in zsh autocomplete helper
@@ -40,6 +50,7 @@
 ## [v1.9.4] - 2022-09-29
 
 ### Bugs
+
  * Fix macOS amd64 release binary #427
  * Fix role loop detection regression #425
 
@@ -436,7 +447,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.9.6...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.9.7...main
+[v1.9.7]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.7
 [v1.9.6]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.6
 [v1.9.5]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.5
 [v1.9.4]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.4
