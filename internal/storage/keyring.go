@@ -29,7 +29,7 @@ import (
 	"github.com/99designs/keyring"
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 const (
@@ -141,7 +141,7 @@ func fileKeyringPassword(prompt string) (string, error) {
 	}
 
 	fmt.Fprintf(os.Stderr, "%s: ", prompt)
-	b, err := terminal.ReadPassword(int(os.Stdin.Fd()))
+	b, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return "", err
 	}
