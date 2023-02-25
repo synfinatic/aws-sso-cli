@@ -64,7 +64,7 @@ require (
 	github.com/spf13/cast v1.3.1 // indirect
 
 	// see: https://github.com/sirupsen/logrus/issues/1275
-	golang.org/x/sys v0.0.0-20220204135822-1c1b9b1eba6a // indirect
+	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 
