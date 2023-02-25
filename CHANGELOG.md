@@ -1,5 +1,11 @@
 # AWS SSO CLI Changelog
 
+## [v1.9.9] - 2023-02-25
+
+### Bugs
+
+ * `aws-sso version` no longer requires a valid config file (again)
+
 ## [v1.9.8] - 2023-02-25
 
 ### Bugs
@@ -457,7 +463,9 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.9.7...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.9.9...main
+[v1.9.9]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.9
+[v1.9.8]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.8
 [v1.9.7]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.7
 [v1.9.6]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.6
 [v1.9.5]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.5

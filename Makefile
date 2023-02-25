@@ -1,4 +1,4 @@
-PROJECT_VERSION := 1.9.8
+PROJECT_VERSION := 1.9.9
 DOCKER_REPO     := synfinatic
 PROJECT_NAME    := aws-sso
 
@@ -159,12 +159,12 @@ vet: ## Run `go vet` on the code
 	@echo checking code is vetted...
 	for x in $(shell go list ./...); do echo $$x ; go vet $$x ; done
 
-test: vet unittest lint ## Run important tests
+test: vet unittest lint test-homebrew ## Run important tests
 
 precheck: test test-fmt test-tidy ## Run all tests that happen in a PR
 
 # run everything but `lint` because that runs via it's own workflow
-.build-tests: vet unittest test-tidy test-fmt
+.build-tests: vet unittest test-tidy test-fmt test-homebrew
 
 $(DIST_DIR):
 	@if test ! -d $(DIST_DIR); then mkdir -p $(DIST_DIR) ; fi
@@ -191,6 +191,10 @@ test-tidy:  ## Test to make sure go.mod is tidy
 
 lint:  ## Run golangci-lint
 	golangci-lint run
+
+test-homebrew: $(DIST_DIR)$(PROJECT_NAME)  ## Run the homebrew tests
+	@$(DIST_DIR)$(PROJECT_NAME) --config /dev/null version 2>/dev/null | grep -q "AWS SSO CLI Version $(PROJECT_VERSION)"
+	@$(DIST_DIR)$(PROJECT_NAME) --config /dev/null 2>&1 | grep -q "No AWS SSO providers have been configured."
 
 # Build targets for our supported plaforms
 windows: $(WINDOWS_BIN)  ## Build 64bit x86 Windows binary
