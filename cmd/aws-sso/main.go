@@ -148,6 +148,14 @@ func main() {
 		Cli:  &cli,
 	}
 
+	switch ctx.Command() {
+	case "Version":
+		if err = ctx.Run(&runCtx); err != nil {
+			log.Fatalf("Error running command: %s", err.Error())
+		}
+		return
+	}
+
 	// Load the config file
 	cli.ConfigFile = utils.GetHomePath(cli.ConfigFile)
 
