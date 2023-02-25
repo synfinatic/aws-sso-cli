@@ -1,5 +1,12 @@
 # AWS SSO CLI Changelog
 
+## Unreleased
+
+### Bugs
+
+ * Update golang.org/x/crypto and golang.org/x/sys dependencies due to upstream
+    security vulns. #460, #460
+
 ## [v1.9.6] - 2022-12-04
 
 ### New Features

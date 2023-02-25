@@ -19,7 +19,7 @@ require (
 	github.com/stretchr/testify v1.7.1
 	github.com/synfinatic/gotable v0.0.3
 	github.com/willabides/kongplete v0.2.0
-	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
+	golang.org/x/crypto v0.1.0 // indirect
 )
 
 require (
@@ -31,6 +31,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.10.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.14.0
 	github.com/riywo/loginshell v0.0.0-20200815045211-7d26008be1ab
+	golang.org/x/term v0.1.0
 	gopkg.in/ini.v1 v1.66.4
 )
 
@@ -82,5 +83,4 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.7.0 // indirect
 	github.com/aws/smithy-go v1.11.2 // indirect
-	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 )
