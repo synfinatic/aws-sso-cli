@@ -1,5 +1,10 @@
 # AWS SSO CLI Changelog
 
+## [v1.9.10] - 2023-02-27
+
+ * Switch to `https` for homebrew submodule
+ * Use `homebrew-core` to distribute via brew #458
+
 ## [v1.9.9] - 2023-02-25
 
 ### Bugs
