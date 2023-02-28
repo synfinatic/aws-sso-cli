@@ -6,7 +6,7 @@
     * [First time aws-sso users](#first-time-aws-sso-users)
     * [Upgrading from before v1.9.0](#upgrading-from-before-v190)
     * [Upgrading from after v1.9.0](#upgrading-from-after-v190)
- * [Use `aws-sso` on the CLI for AWS API calls](#use-aws-sso-on-the-cli-for-aws-calls)
+ * [Use `aws-sso` on the CLI for AWS API calls](#use-aws-sso-on-the-cli-for-aws-api-calls)
     * [`aws-sso-profile` helper script](#aws-sso-profile-helper-script)
     * [Using the `exec` command](#using-the-exec-command)
     * [Using the `$AWS_PROFILE` variable](#using-the-aws-profile-variable)
