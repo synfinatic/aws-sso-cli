@@ -408,9 +408,11 @@ If you want to pass specific args to `aws-sso-profile` you can use the
 
 Currently the following shells are supported:
 
+ <!-- markdown-link-check-disable -->
  * [bash](/internal/helper/bash_profile.sh)
  * [zsh](/internal/helper/zshrc.sh)
  * [fish - TBD](https://github.com/synfinatic/aws-sso-cli/issues/361)
+ <!-- markdown-link-check-enable-->
 
 **Note:** `zsh` completion requires you to have the following lines set
 before the AWS SSO completions:
