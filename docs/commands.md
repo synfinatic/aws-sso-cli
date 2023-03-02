@@ -408,8 +408,8 @@ If you want to pass specific args to `aws-sso-profile` you can use the
 
 Currently the following shells are supported:
 
- * [bash](/internal/helpers/bash_profile.sh)
- * [zsh](/internal/helpers/zshrc.sh)
+ * [bash](/internal/helper/bash_profile.sh)
+ * [zsh](/internal/helper/zshrc.sh)
  * [fish - TBD](https://github.com/synfinatic/aws-sso-cli/issues/361)
 
 **Note:** `zsh` completion requires you to have the following lines set
