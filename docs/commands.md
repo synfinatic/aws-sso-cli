@@ -13,7 +13,7 @@
     * [time](#time) -- Print how much time before current STS Token expires
     * [completions](#completions) -- Manage shell completions
     * [config-profiles](#config-profiles) -- Update ~/.aws/config with AWS SSO profiles from the cache
-	* [config](#econfig) -- Run through the configuration wizard and update your AWS SSO config
+	* [config](#config) -- Run through the configuration wizard and update your AWS SSO config
     * `version` -- Print version and exit
  * [Environment Variables](#environment-variables)
  * [Shell Helpers](#shell-helpers)
@@ -42,7 +42,7 @@ in the terminal or copied into the Copy & Paste buffer of your computer.
 
 **Note:** Normally, you can only have a single active AWS Console session at
 a time, but multiple session are supported via the [FirefoxOpenUrlInContainer](
-docs/config.md#firefoxopenurlincontainer) configuration option.
+config.md#browser--urlaction--urlexeccommand) configuration option.
 
 Flags:
 
@@ -86,16 +86,16 @@ Flags:
 
 
 By default, each profile is named according to the [ProfileFormat](
-docs/config.md#profileformat) config option or overridden by the user defined
-[Profile](docs/config.md#profile) option on a role by role basis.
+config.md#profileformat) config option or overridden by the user defined
+[Profile](config.md#profile) option on a role by role basis.
 
 For each profile generated, it will specify a [list of settings](
 https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html) as defined
-by the [ConfigVariables](docs/config.md#configvariables) setting in the
+by the [ConfigVariables](config.md#configvariables) setting in the
 `~/.aws-sso/config.yaml`.
 
 For more information on this feature, [read the Quickstart Guide](
-docs/quickstart.md#integrating-with-the-aws-profile-variable).
+quickstart.md#integrating-with-the-aws-profile-variable).
 
 Unlike with other ways to use AWS SSO CLI, the AWS IAM STS credentials will
 _automatically refresh_.  This means, if you do not have a valid AWS SSO token,
@@ -109,8 +109,8 @@ URLs to your clipboard.  _No user prompting is possible._
 
 **Note:** You should run this command any time your list of AWS roles changes
 in order to update the `~/.aws/config` file or enable [AutoConfigCheck](
-docs/config.md#AutoConfigCheck) and [ConfigProfilesUrlAction](
-docs/config.md#ConfigProfilesUrlAction).
+config.md#autoconfigcheck) and [ConfigProfilesUrlAction](
+config.md#configprofilesurlaction).
 
 **Note:** If `ConfigProfilesUrlAction` is set, then `--open` is optional,
 otherwise it is required.
@@ -314,8 +314,8 @@ in your shell via [eval](#eval) or [exec](#exec).
 ### completions
 
 Configures your appropriate shell configuration file to add auto-complete
-and [shell helper](#shell-helper) functionality for commands, flags and
-options.  Must restart your shell for this to take effect.
+and [Shell Helpers](#shell-helpers) functionality for commands, flags and
+options. Must restart your shell for this to take effect.
 
 For more information about this feature, please read [the quickstart](
 quickstart.md#enabling-auto-completion-in-your-shell).
@@ -383,7 +383,7 @@ The following environment variables are specific to `aws-sso`:
     credentials will expire
  * `AWS_SSO_DEFAULT_REGION` -- Tracking variable for `AWS_DEFAULT_REGION`
  * `AWS_SSO_PROFILE` -- User customizable varible using the
-    [ProfileFormat](docs/config.md#profileformat) template
+    [ProfileFormat](config.md#profileformat) template
  * `AWS_SSO` -- AWS SSO instance name
 
 
@@ -408,8 +408,8 @@ If you want to pass specific args to `aws-sso-profile` you can use the
 
 Currently the following shells are supported:
 
- * [bash](../internal/helpers/bash_profile.sh)
- * [zsh](../internal/helpers/zshrc.sh)
+ * [bash](/internal/helpers/bash_profile.sh)
+ * [zsh](/internal/helpers/zshrc.sh)
  * [fish - TBD](https://github.com/synfinatic/aws-sso-cli/issues/361)
 
 **Note:** `zsh` completion requires you to have the following lines set
