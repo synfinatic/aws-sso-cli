@@ -144,7 +144,7 @@ the account level will be applied to all roles in that account.
 
 Some special tags:
 
- * **Color** -- Used to specify the color of the [Firefox container](#firefoxopenurlincontainer) label.  Valid values are:
+ * **Color** -- Used to specify the color of the [Firefox container](#browser--urlaction--urlexeccommand) label.  Valid values are:
 	* blue
 	* turquoise
 	* green
@@ -153,7 +153,7 @@ Some special tags:
 	* red
 	* pink
 	* purple
- * **Icon** -- Used to specify the icon of the [Firefox container](#firefoxopenurlincontainer) label.  Valid values are:
+ * **Icon** -- Used to specify the icon of the [Firefox container](#browser--urlaction--urlexeccommand) label.  Valid values are:
 	* fingerprint
 	* briefcase
 	* dollar
@@ -290,7 +290,7 @@ appropriate) as the command to execute.
 This works just like `UrlAction` above, but is used for setting the default
 `--url-action` in your `~/.aws/config` when generating named AWS profiles for
 use with `$AWS_PROFILE` and the default value for the [config-profiles](
-command.md#config-profiles) command.
+commands.md#config-profiles) command.
 
 Due to limitations with the AWS SDK, only the following options are valid:
 
@@ -309,7 +309,7 @@ has been deprecated.
 ## ConfigProfilesBinaryPath
 
 Override execution path for `aws-sso` when generating named AWS profiles via the
-[config-profiles](command.md#config-profiles).
+[config-profiles](commands.md#config-profiles).
 
 ## AutoConfigCheck
 
@@ -318,7 +318,7 @@ When set to `True`, when you AWS SSO roles are automatically refreshed (see
 are warranted in your `~/.aws/config`.
 
 **Note:** This option requires you to also set [ConfigProfilesUrlAction](
-#configprofilesaction).
+#configprofilesurlaction).
 
 **Note:** This option can be disabled temporarily on the command line by passing
 the `--no-config-check` flag.
