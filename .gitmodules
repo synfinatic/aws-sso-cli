@@ -1,3 +1,0 @@
-[submodule "homebrew"]
-	path = homebrew
-	url = https://github.com/synfinatic/homebrew-aws-sso-cli.git
