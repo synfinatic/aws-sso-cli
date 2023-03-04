@@ -468,7 +468,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.9.9...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.9.10...main
+[v1.9.10]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.9
 [v1.9.9]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.9
 [v1.9.8]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.8
 [v1.9.7]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.7
