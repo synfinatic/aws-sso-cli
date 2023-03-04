@@ -23,6 +23,7 @@
  * [Which SecureStore should I use?](#which-securestore-should-i-use)
  * [Does aws-sso support using AWS FIPS endpoints?](#does-aws-sso-support-using-aws-fips-endpoints)
  * [How can I stop typing my password all the time?](#how-can-i-stop-typing-my-password-all-the-time)
+ * [I'm now getting a warning in macOS after upgrading aws-sso-cli](#im-now-getting-a-warning-in-macos-after-upgrading-aws-sso-cli)
 
 ##### Errors and their meaning
 
@@ -34,6 +35,7 @@
 
  * [How good is the Windows support?](#how-good-is-the-windows-support)
  * [How can I say thanks?](#how-can-I-say-thanks)
+ * [What is the story with Homebrew support?](#what-is-the-story-with-homebrew-support)
 
 ---
 
@@ -366,3 +368,22 @@ every time you use `aws-sso`.  For that reason, I recommend using the [pass](
 https://www.passwordstore.org) option which uses GPG and optionally the `gpg-agent`
 for caching of your GPG passphrase.  Please note that configuring pass, GPG
 and the gpg-agent are outside of the scope of this documentation.
+
+### What is the story with Homebrew support?
+
+Initially, `aws-sso-cli` was distributed as an [independant tap](
+https://github.com/synfinatic/homebrew-aws-sso-cli) but as of 
+[v1.9.10](../CHANGELOG.md#v1.9.10) it has been added to homebrew-core.
+
+As of v1.9.10, I will no longer be maintaing the above tap, but because
+of the way homebrew works, the version in homebrew-core supercedes the
+old tap so no user intervention is necessary.
+ 
+### I'm now getting a warning in macOS after upgrading aws-sso-cli?
+
+As of v1.9.10, `aws-sso-cli` is now distributed as a bottle in homebrew and
+these binaries are not signed and will generate a warning that the binary
+has changed.
+
+If you prefer the old way of building locally from source to avoid the warning
+you should use `brew install -s aws-sso-cli` or `brew upgrade -s aws-sso-cli`.

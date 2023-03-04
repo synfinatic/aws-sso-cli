@@ -19,8 +19,10 @@
  * Option 2: [Download RPM or DEB package](https://github.com/synfinatic/aws-sso-cli/releases)
     1. Use your package manager to install (Linux only)
  * Option 3: Build & Install via [Homebrew](https://brew.sh)
-	1. Run `brew tap synfinatic/aws-sso-cli`
 	1. Run `brew install aws-sso-cli`
+        Note: You no longer need to install the hombrew tap as `aws-sso-cli` is
+        now part of [homebrew-core](
+        https://github.com/Homebrew/homebrew-core/blob/master/Formula/aws-sso-cli.rb).
  * Option 4: Build from source:
     1. Install [GoLang](https://golang.org) v1.17+ and GNU Make
     1. Clone this repo
