@@ -1,5 +1,11 @@
 # AWS SSO CLI Changelog
 
+## Unreleased
+
+### Bugs
+
+ * Fix fish auto-complete helper #472
+
 ## [v1.9.10] - 2023-02-27
 
  * Switch to `https` for homebrew submodule
