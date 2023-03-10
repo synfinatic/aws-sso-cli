@@ -3,3 +3,4 @@ function __complete_aws-sso
     test -z (commandline -ct)
     and set COMP_LINE "$COMP_LINE "
     {{ .Executable }}
+end
