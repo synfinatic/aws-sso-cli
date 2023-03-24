@@ -239,7 +239,7 @@ in a browser:
  * `printurl` -- Prints only the URL in your terminal to stderr
 
 If `Browser` is not set, then your default browser will be used and that
-your browser needs to support JavaScript for the AWS SSO user interface.
+browser needs to support JavaScript for the AWS SSO user interface.
 
 `UrlExecCommand` is used with `UrlAction: exec` and the two Firefox containers
 plugin options (`granted-containers` / `open-url-in-container`) and allows you
