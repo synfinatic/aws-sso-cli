@@ -126,6 +126,7 @@ type CLI struct {
 	List           ListCmd           `kong:"cmd,help='List all accounts / roles (default command)'"`
 	Login          LoginCmd          `kong:"cmd,help='Login to an AWS Identity Center instance'"`
 	Logout         LogoutCmd         `kong:"cmd,help='Logout from an AWS Identity Center instance and invalidate all credentials'"`
+	ListSSORoles   ListSSORolesCmd   `kong:"cmd,hidden,help='List AWS SSO Roles (debugging)'"`
 	Process        ProcessCmd        `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
 	Tags           TagsCmd           `kong:"cmd,help='List tags'"`
 	Time           TimeCmd           `kong:"cmd,help='Print how much time before current STS Token expires'"`
