@@ -2,7 +2,7 @@ package main
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2022 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2023 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -58,7 +58,7 @@ const (
 	JSON_STORE_FILE     = CONFIG_DIR + "/store.json"
 	INSECURE_CACHE_FILE = CONFIG_DIR + "/cache.json"
 	DEFAULT_STORE       = "file"
-	COPYRIGHT_YEAR      = "2021-2022"
+	COPYRIGHT_YEAR      = "2021-2023"
 )
 
 var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
@@ -114,6 +114,7 @@ type CLI struct {
 	Exec           ExecCmd           `kong:"cmd,help='Execute command using specified IAM role in a new shell'"`
 	Flush          FlushCmd          `kong:"cmd,help='Flush AWS SSO/STS credentials from cache'"`
 	List           ListCmd           `kong:"cmd,help='List all accounts / roles (default command)'"`
+	ListSSORoles   ListSSORolesCmd   `kong:"cmd,hidden,help='List AWS SSO Roles (debugging)'"`
 	Process        ProcessCmd        `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
 	Static         StaticCmd         `kong:"cmd,help='Manage static AWS API credentials',hidden"`
 	Tags           TagsCmd           `kong:"cmd,help='List tags'"`
