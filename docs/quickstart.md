@@ -199,7 +199,7 @@ Cons:
 ### Using the `$AWS_PROFILE` variable
 
 If you have existing tooling using [named profiles](
-https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html)
+https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
 and the `$AWS_PROFILE` environment variable, AWS SSO CLI can support that as well.
 
 #### Configuration

@@ -74,7 +74,7 @@ Priority is given to:
 ### config-profiles
 
 Modifies the `~/.aws/config` file to contain a [named profile](
-https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html)
+https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
 for every role accessible via AWS SSO CLI.
 
 Flags:
