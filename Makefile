@@ -39,6 +39,9 @@ BUILDINFOS                ?= $(shell date +%FT%T%z)$(BUILDINFOSDET)
 LDFLAGS                   := -X "main.Version=$(PROJECT_VERSION)" -X "main.Delta=$(PROJECT_DELTA)" -X "main.Buildinfos=$(BUILDINFOS)" -X "main.Tag=$(PROJECT_TAG)" -X "main.CommitID=$(PROJECT_COMMIT)"
 OUTPUT_NAME               := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)  # default for current platform
 
+# go build flags
+GOBFLAGS                  := -trimpath
+
 # supported platforms for `make release`
 WINDOWS_BIN               := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)-windows-amd64.exe
 WINDOWS32_BIN             := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)-windows-386.exe
@@ -52,7 +55,7 @@ ALL: $(DIST_DIR)$(PROJECT_NAME) ## Build binary for this platform
 include help.mk  # place after ALL target and before all other targets
 
 $(DIST_DIR)$(PROJECT_NAME):	$(wildcard */*.go) .prepare
-	go build -ldflags='$(LDFLAGS)' -o $(DIST_DIR)$(PROJECT_NAME) ./cmd/aws-sso/...
+	go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(DIST_DIR)$(PROJECT_NAME) ./cmd/aws-sso/...
 	@echo "Created: $(DIST_DIR)$(PROJECT_NAME)"
 
 INSTALL_PREFIX ?= /usr/local
@@ -200,25 +203,25 @@ test-homebrew: $(DIST_DIR)$(PROJECT_NAME)  ## Run the homebrew tests
 windows: $(WINDOWS_BIN)  ## Build 64bit x86 Windows binary
 
 $(WINDOWS_BIN): $(wildcard */*.go) .prepare
-	GOARCH=amd64 GOOS=windows go build -ldflags='$(LDFLAGS)' -o $(WINDOWS_BIN) ./cmd/aws-sso/...
+	GOARCH=amd64 GOOS=windows go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(WINDOWS_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(WINDOWS_BIN)"
 
 windows32: $(WINDOWS32_BIN)  ## Build 32bit x86 Windows binary
 
 $(WINDOWS32_BIN): $(wildcard */*.go) .prepare
-	GOARCH=386 GOOS=windows go build -ldflags='$(LDFLAGS)' -o $(WINDOWS32_BIN) ./cmd/aws-sso/...
+	GOARCH=386 GOOS=windows go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(WINDOWS32_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(WINDOWS32_BIN)"
 
 linux: $(LINUX_BIN)  ## Build Linux/x86_64 binary
 
 $(LINUX_BIN): $(wildcard */*.go) .prepare
-	GOARCH=amd64 GOOS=linux go build -ldflags='$(LDFLAGS)' -o $(LINUX_BIN) ./cmd/aws-sso/...
+	GOARCH=amd64 GOOS=linux go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(LINUX_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(LINUX_BIN)"
 
 linux-arm64: $(LINUXARM64_BIN)  ## Build Linux/arm64 binary
 
 $(LINUXARM64_BIN): $(wildcard */*.go) .prepare
-	GOARCH=arm64 GOOS=linux go build -ldflags='$(LDFLAGS)' -o $(LINUXARM64_BIN) ./cmd/aws-sso/...
+	GOARCH=arm64 GOOS=linux go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(LINUXARM64_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(LINUXARM64_BIN)"
 
 # macOS needs different build flags if you are cross-compiling because of the key chain
@@ -228,10 +231,10 @@ darwin: $(DARWIN_BIN)  ## Build MacOS/x86_64 binary
 
 $(DARWIN_BIN): $(wildcard */*.go) .prepare
 ifeq ($(ARCH), x86_64)
-	GOARCH=amd64 GOOS=darwin go build -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) ./cmd/aws-sso/...
+	GOARCH=amd64 GOOS=darwin go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) ./cmd/aws-sso/...
 else
 	GOARCH=amd64 GOOS=darwin CGO_ENABLED=1 SDKROOT=$(shell xcrun --sdk macosx --show-sdk-path) \
-		go build -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) ./cmd/aws-sso/...
+		go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) ./cmd/aws-sso/...
 endif
 	@echo "Created: $(DARWIN_BIN)"
 
@@ -239,15 +242,15 @@ darwin-arm64: $(DARWINARM64_BIN)  ## Build MacOS/ARM64 binary
 
 $(DARWINARM64_BIN): $(wildcard */*.go) .prepare
 ifeq ($(ARCH), arm64)
-	GOARCH=arm64 GOOS=darwin go build -ldflags='$(LDFLAGS)' -o $(DARWINARM64_BIN) ./cmd/aws-sso/...
+	GOARCH=arm64 GOOS=darwin go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(DARWINARM64_BIN) ./cmd/aws-sso/...
 else
 	GOARCH=arm64 GOOS=darwin CGO_ENABLED=1 SDKROOT=$(shell xcrun --sdk macosx --show-sdk-path) \
-		go build -ldflags='$(LDFLAGS)' -o $(DARWINARM64_BIN) ./cmd/aws-sso/...
+		go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(DARWINARM64_BIN) ./cmd/aws-sso/...
 endif
 	@echo "Created: $(DARWINARM64_BIN)"
 
 $(OUTPUT_NAME): $(wildcard */*.go) .prepare
-	go build -ldflags='$(LDFLAGS)' -o $(OUTPUT_NAME) ./cmd/aws-sso/...
+	go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(OUTPUT_NAME) ./cmd/aws-sso/...
 
 docs: docs/default-region.png  ## Build document files
 
