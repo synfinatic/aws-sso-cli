@@ -33,7 +33,7 @@ so thanks to them for making that available!
 
 Because of it's early focus on securely managing [static AWS API
 credentials](
-https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html)
+https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
 and integration with the existing `~/.aws/config` file, `aws-vault` still is
 weighed down with the limitations of syntax and structure of the `~/.aws/config`
 file.
