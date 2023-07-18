@@ -373,9 +373,9 @@ tooling.
 The following variables are accessible from the `AWSRoleFlat` struct:
 
  * `Id` -- Unique integer defined by AWS SSO CLI for this role
- * `AccountId` -- AWS Account ID (int64)
- * `AccountAlias` -- AWS Account Alias defined in AWS
- * `AccountName` -- AWS Account Name defined in AWS or overridden in AWS SSO's config
+ * `AccountId` -- AWS Account ID (int64! See `AccountIdStr()` below)
+ * `AccountAlias` -- AWS Account Alias defined in AWS by the account owner
+ * `AccountName` -- AWS Account Name defined in `~/.aws-sso/config.yaml`
  * `EmailAddress` -- Root account email address associated with the account in AWS
  * `Expires` -- When your API credentials expire (string)
  * `Arn` -- AWS ARN for this role
