@@ -179,10 +179,9 @@ Some examples:
     way of writing `{{ .AccountAlias }}:{{ .RoleName }}`
  * `ProfileFormat: '{{ StringReplace " " "_" .AccountAlias }}'` -- Replace any
     spaces (` `) in the AccountAlias with an underscore (`_`).
- * `ProfileFormat: '{{ FirstItem .AccountName .AccountAlias | StringReplace " " "_" }}:{{ .RoleName }}'`
-    -- Use the Account Name if set, otherwise use the Account Alias and replace
-    any spaces with an underscore and then append a colon, followed by the role
-    name.
+ * `ProfileFormat: '{{ FirstItem .AccountName nospaces(.AccountAlias) }}:{{ .RoleName }}'`
+    -- Use the Account Name if set, otherwise use the Account Alias (without spaces)
+    and then append a colon, followed by the IAM Role Name.
  * `ProfileFormat: '{{ .AccountAlias | kebabcase }}:{{ .RoleName }}'
 	-- Reformat the AWS account alias like `AStringLikeThis` into
 	`a-string-like-this` using the [kebabcase function](
