@@ -1,5 +1,11 @@
 # Frequently Asked Questions
 
+##### General Usage
+
+ * [How do I logout?](#how-do-i-logout)
+ * [When will my credentials expire?](#when-will-my-credentials-expire)
+ * [What happens when credentials expire?](#what-happens-when-credentials-expire)
+
 ##### Advanced Features
 
  * [Does AWS SSO CLI support Role Chaining?](#does-aws-sso-cli-support-role-chaining)
@@ -38,6 +44,24 @@
  * [What is the story with Homebrew support?](#what-is-the-story-with-homebrew-support)
 
 ---
+
+### How do I logout?
+
+There are two different kinds of AWS credentials that `aws-sso` deals with:
+
+ 1. Your AWS IAM STS credentials for interacting with the AWS API
+ 1. Your AWS SSO session tokens used to generate your AWS IAM STS credentials
+
+See the [flush command](commands.md#flush) for how to flush either or both of these.
+
+### When will my credentials expire?
+
+Your credentials will expire based on how long your administrator allows. To
+see how long your credentials have until they expire, see the [list command)[commands.md#list).
+
+### What happens when credentials expire?
+
+The next call to `aws-sso exec` or `aws-sso eval` will automatically refresh them.
 
 ### How do I delete all secrets from the macOS keychain?
 
@@ -119,7 +143,7 @@ The `AccountAlias` is defined in AWS itself and is visible via the
 https://docs.aws.amazon.com/IAM/latest/APIReference/API_ListAccountAliases.html)
 API call.
 
-The `AccountName` is defined in the `~/.aws-sso/config.yaml` file like this:
+The `AccountName` is defined explicitly in the `~/.aws-sso/config.yaml` file like this:
 
 ```yaml
 SSOConfig:
@@ -130,6 +154,8 @@ SSOConfig:
       2347575757:
         Name: Production
 ```
+
+or automatically via the [ProfileFormat config option](config.md#profileformat).
 
 ### Defining `$AWS_PROFILE` and `$AWS_SSO_PROFILE` variable names
 
@@ -371,13 +397,13 @@ and the gpg-agent are outside of the scope of this documentation.
 ### What is the story with Homebrew support?
 
 Initially, `aws-sso-cli` was distributed as an [independant tap](
-https://github.com/synfinatic/homebrew-aws-sso-cli) but as of 
+https://github.com/synfinatic/homebrew-aws-sso-cli) but as of
 [v1.9.10](../CHANGELOG.md#v1.9.10) it has been added to homebrew-core.
 
 As of v1.9.10, I will no longer be maintaing the above tap, but because
 of the way homebrew works, the version in homebrew-core supercedes the
 old tap so no user intervention is necessary.
- 
+
 ### I'm now getting a warning in macOS after upgrading aws-sso-cli?
 
 As of v1.9.10, `aws-sso-cli` is now distributed as a bottle in homebrew and
