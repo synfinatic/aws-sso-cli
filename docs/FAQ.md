@@ -57,7 +57,7 @@ See the [flush command](commands.md#flush) for how to flush either or both of th
 ### When will my credentials expire?
 
 Your credentials will expire based on how long your administrator allows. To
-see how long your credentials have until they expire, see the [list command)[commands.md#list).
+see how long your credentials have until they expire, see the [list command](commands.md#list).
 
 ### What happens when credentials expire?
 
