@@ -6,6 +6,10 @@
 
  * Fix fish auto-complete helper #472
 
+### Changes
+
+ * Authentication via your SSO provider no longer uses a Firefox container #486
+
 ## [v1.9.10] - 2023-02-27
 
  * Switch to `https` for homebrew submodule

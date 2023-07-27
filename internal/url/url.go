@@ -317,3 +317,13 @@ func commandBuilder(command []string, url string) (string, []string, error) {
 
 	return program, cmdList, nil
 }
+
+// SSOAuthAction returns the action except in the case where it might use a
+// container, in that case it returns a straight Open.  This is so that URLs
+// used to do AWS SSO auth use the primary browser session to avoid re-auth
+func SSOAuthAction(action Action) Action {
+	if action.IsContainer() {
+		return Open
+	}
+	return action
+}

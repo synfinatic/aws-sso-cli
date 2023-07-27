@@ -240,3 +240,24 @@ func TestNewConfigProfilesAction(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, a, ConfigProfilesAction("open"), a)
 }
+
+func TestSSOAuthAction(t *testing.T) {
+	// no change
+	a, _ := NewAction("clip")
+	assert.Equal(t, a, SSOAuthAction(Clip))
+	a, _ = NewAction("open")
+	assert.Equal(t, a, SSOAuthAction(Open))
+	a, _ = NewAction("")
+	assert.Equal(t, a, SSOAuthAction(Undef))
+	a, _ = NewAction("print")
+	assert.Equal(t, a, SSOAuthAction(Print))
+	a, _ = NewAction("printurl")
+	assert.Equal(t, a, SSOAuthAction(PrintUrl))
+	a, _ = NewAction("exec")
+	assert.Equal(t, a, SSOAuthAction(Exec))
+
+	// change to open
+	a, _ = NewAction("open")
+	assert.Equal(t, a, SSOAuthAction(GrantedContainer))
+	assert.Equal(t, a, SSOAuthAction(OpenUrlContainer))
+}
