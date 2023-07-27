@@ -9,6 +9,7 @@
 ### Changes
 
  * Authentication via your SSO provider no longer uses a Firefox container #486
+ * Profiles in ~/.aws/config now include the `region = XXX` option #481
 
 ## [v1.9.10] - 2023-02-27
 

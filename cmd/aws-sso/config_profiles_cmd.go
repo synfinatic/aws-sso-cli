@@ -31,6 +31,7 @@ const (
 	CONFIG_TEMPLATE = `{{range $sso, $struct := . }}{{ range $arn, $profile := $struct }}
 [profile {{ $profile.Profile }}]
 credential_process = {{ $profile.BinaryPath }} -u {{ $profile.Open }} -S "{{ $profile.Sso }}" process --arn {{ $profile.Arn }}
+{{ if len $profile.DefaultRegion }}region = {{ printf "%s\n" $profile.DefaultRegion }}{{ end -}}
 {{ range $key, $value := $profile.ConfigVariables }}{{ $key }} = {{ $value }}
 {{end}}{{end}}{{end}}`
 )
