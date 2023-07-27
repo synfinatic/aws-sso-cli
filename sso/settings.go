@@ -384,6 +384,7 @@ type ProfileConfig struct {
 	Arn             string
 	BinaryPath      string
 	ConfigVariables map[string]interface{}
+	DefaultRegion   string
 	Open            string
 	Profile         string
 	Sso             string
@@ -431,6 +432,7 @@ func (s *Settings) GetAllProfiles(open url.Action) (*ProfileMap, error) {
 				Arn:             role.Arn,
 				BinaryPath:      binaryPath,
 				ConfigVariables: s.ConfigVariables,
+				DefaultRegion:   role.DefaultRegion,
 				Open:            string(open),
 				Profile:         profile,
 				Sso:             ssoName,
