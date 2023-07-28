@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/synfinatic/aws-sso-cli/internal/tags"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
@@ -83,8 +84,8 @@ func (s *SSOConfig) GetRoles() []*SSORole {
 }
 
 // returns all of the available account & role tags for our SSO Provider
-func (s *SSOConfig) GetAllTags() *TagsList {
-	tags := NewTagsList()
+func (s *SSOConfig) GetAllTags() *tags.TagsList {
+	tags := tags.NewTagsList()
 
 	for _, accountInfo := range s.Accounts {
 		/*

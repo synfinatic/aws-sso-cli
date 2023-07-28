@@ -1,4 +1,4 @@
-package sso
+package tags
 
 import (
 	"fmt"
@@ -118,9 +118,12 @@ func (suite *TagsListTestSuite) TestUniqueKeys() {
 
 	tl.Add("tag3", "value3")
 
-	assert.ElementsMatch(t, []string{"tag", "tag2", "tag3"}, tl.UniqueKeys([]string{}), "All")
-	assert.ElementsMatch(t, []string{}, tl.UniqueKeys([]string{"tag", "tag2", "tag3"}), "None")
-	assert.ElementsMatch(t, []string{"tag2"}, tl.UniqueKeys([]string{"tag", "tag3"}), "Some")
+	assert.ElementsMatch(t, []string{"tag", "tag2", "tag3"}, tl.UniqueKeys([]string{}, ""), "All")
+	assert.ElementsMatch(t, []string{}, tl.UniqueKeys([]string{"tag", "tag2", "tag3"}, ""), "None")
+	assert.ElementsMatch(t, []string{"tag2"}, tl.UniqueKeys([]string{"tag", "tag3"}, ""), "Some")
+
+	assert.ElementsMatch(t, []string{"tag3", "tag", "tag2"}, tl.UniqueKeys([]string{}, "tag3"), "tag3")
+	assert.ElementsMatch(t, []string{"tag", "tag2", "tag3"}, tl.UniqueKeys([]string{}, "tag4"), "tag4")
 }
 
 func (suite *TagsListTestSuite) TestUniqueValues() {
@@ -148,7 +151,7 @@ func (suite *TagsListTestSuite) TestReformatHistory() {
 	t := suite.T()
 
 	// special case, has no timestamp
-	assert.Equal(t, "foo", reformatHistory("foo"))
+	assert.Equal(t, "foo", ReformatHistory("foo"))
 
 	invalidTS := []string{
 		"fooo,",
@@ -156,19 +159,19 @@ func (suite *TagsListTestSuite) TestReformatHistory() {
 	}
 
 	for _, x := range invalidTS {
-		assert.Panics(t, func() { reformatHistory(x) })
+		assert.Panics(t, func() { ReformatHistory(x) })
 	}
 
 	// valid case
 	ninetyMinAgo := time.Now().Add(time.Minute * -90)
 	x := fmt.Sprintf("foo,%d", ninetyMinAgo.Unix())
-	assert.Equal(t, "[1h30m0s] foo", reformatHistory(x))
+	assert.Equal(t, "[1h30m0s] foo", ReformatHistory(x))
 
 	thirtyMinAgo := time.Now().Add(time.Minute * -30)
 	x = fmt.Sprintf("foo,%d", thirtyMinAgo.Unix())
-	assert.Equal(t, "[0h30m0s] foo", reformatHistory(x))
+	assert.Equal(t, "[0h30m0s] foo", ReformatHistory(x))
 
 	// case with comma in account alias
 	x = fmt.Sprintf("foo, bar,%d", thirtyMinAgo.Unix())
-	assert.Equal(t, "[0h30m0s] foo, bar", reformatHistory(x))
+	assert.Equal(t, "[0h30m0s] foo, bar", ReformatHistory(x))
 }

@@ -31,6 +31,7 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/helper"
 	"github.com/synfinatic/aws-sso-cli/internal/predictor"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
+	"github.com/synfinatic/aws-sso-cli/internal/tags"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
@@ -136,6 +137,7 @@ func main() {
 	predictor.SetLogger(log)
 	sso.SetLogger(log)
 	storage.SetLogger(log)
+	tags.SetLogger(log)
 	url.SetLogger(log)
 	utils.SetLogger(log)
 

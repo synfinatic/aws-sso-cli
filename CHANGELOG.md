@@ -10,7 +10,13 @@
 ### Changes
 
  * Authentication via your SSO provider no longer uses a Firefox container #486
+ * Bump to Go v1.19
+ * Bump to golangci-lint v1.52.2
+
+### New Features
+
  * Profiles in ~/.aws/config now include the `region = XXX` option #481
+ * Add `FirstTag` support in the config for placing a tag at the top of the select list #445
 
 ## [v1.9.10] - 2023-02-27
 

@@ -26,6 +26,7 @@ import (
 
 	"github.com/c-bata/go-prompt"
 	//	"github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/tags"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
 )
@@ -36,7 +37,7 @@ type TagsCompleter struct {
 	ctx      *RunContext
 	sso      *sso.SSOConfig
 	roleTags *sso.RoleTags
-	allTags  *sso.TagsList
+	allTags  *tags.TagsList
 	suggest  []prompt.Suggest
 	exec     CompleterExec
 }
@@ -51,7 +52,7 @@ func NewTagsCompleter(ctx *RunContext, s *sso.SSOConfig, exec CompleterExec) *Ta
 		sso:      s,
 		roleTags: roleTags,
 		allTags:  allTags,
-		suggest:  completeTags(roleTags, allTags, set.AccountPrimaryTag, []string{}),
+		suggest:  completeTags(roleTags, allTags, set.AccountPrimaryTag, []string{}, set.FirstTag),
 		exec:     exec,
 	}
 }
@@ -69,7 +70,7 @@ func (tc *TagsCompleter) Complete(d prompt.Document) []prompt.Suggest {
 	// remove any extra spaces
 	cleanArgs := CompleteSpaceReplace.ReplaceAllString(args, " ")
 	argsList := strings.Split(cleanArgs, " ")
-	suggest := completeTags(tc.roleTags, tc.allTags, tc.ctx.Settings.AccountPrimaryTag, argsList)
+	suggest := completeTags(tc.roleTags, tc.allTags, tc.ctx.Settings.AccountPrimaryTag, argsList, tc.ctx.Settings.FirstTag)
 	return prompt.FilterHasPrefix(suggest, w, true)
 }
 
@@ -118,7 +119,7 @@ func (tc *TagsCompleter) ExitChecker(in string, breakline bool) bool {
 }
 
 // return a list of suggestions based on user selected []key:value
-func completeTags(roleTags *sso.RoleTags, allTags *sso.TagsList, accountPrimaryTags []string, args []string) []prompt.Suggest {
+func completeTags(roleTags *sso.RoleTags, allTags *tags.TagsList, accountPrimaryTags []string, args []string, firstTag string) []prompt.Suggest {
 	suggestions := []prompt.Suggest{}
 
 	currentTags, nextKey, nextValue := argsToMap(args)
@@ -137,7 +138,7 @@ func completeTags(roleTags *sso.RoleTags, allTags *sso.TagsList, accountPrimaryT
 
 		returnedRoles := map[string]bool{}
 
-		for _, key := range allTags.UniqueKeys(selectedKeys) {
+		for _, key := range allTags.UniqueKeys(selectedKeys, firstTag) {
 			uniqueRoles := roleTags.GetPossibleUniqueRoles(currentTags, key, (*allTags)[key])
 			if len(args) > 0 && len(uniqueRoles) == len(currentRoles) {
 				// skip keys which can't reduce our options
@@ -219,7 +220,7 @@ func completeTags(roleTags *sso.RoleTags, allTags *sso.TagsList, accountPrimaryT
 			for k := range currentTags {
 				usedKeys = append(usedKeys, k)
 			}
-			remainKeys := allTags.UniqueKeys(usedKeys)
+			remainKeys := allTags.UniqueKeys(usedKeys, firstTag)
 
 			for _, checkKey := range remainKeys {
 				if strings.Contains(strings.ToLower(checkKey), strings.ToLower(nextKey)) {
