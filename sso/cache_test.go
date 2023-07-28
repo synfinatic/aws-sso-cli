@@ -539,3 +539,24 @@ func (suite *CacheTestSuite) TestProcessSSORoles() {
 	assert.Equal(t, "testing@domain.com", r.Accounts[123456789012].Roles["testing"].Tags["Email"])
 	assert.Equal(t, "testing", r.Accounts[123456789012].Roles["testing"].Tags["Role"])
 }
+
+func (suite *CacheTestSuite) TestPruneSSO() {
+	t := suite.T()
+
+	s := &Settings{
+		SSO: map[string]*SSOConfig{
+			"Primary": {},
+		},
+	}
+
+	c := &Cache{
+		SSO: map[string]*SSOCache{
+			"Primary": {},
+			"Invalid": {},
+		},
+	}
+
+	c.PruneSSO(s)
+	assert.Contains(t, c.SSO, "Primary")
+	assert.NotContains(t, c.SSO, "Invalid")
+}

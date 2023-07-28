@@ -276,6 +276,7 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string) error {
 		return nil
 	}
 	c.refreshed = true
+	log.Debugf("refreshing %s SSO cache", ssoName)
 
 	// save role creds expires time
 	expires := map[string]int64{}
@@ -325,7 +326,26 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string) error {
 	return nil
 }
 
-// Update the Expires time in the cache.  expires is Unix epoch time in sec
+// pruneSSO removes any SSO instances that are no longer configured
+func (c *Cache) PruneSSO(settings *Settings) {
+	log.Debugf("pruning our cache of outdated SSO instances")
+	for sso := range c.SSO {
+		hasSSO := false
+		for s := range settings.SSO {
+			if s == sso {
+				log.Debugf("keeping %s in cache", sso)
+				hasSSO = true
+				break
+			}
+		}
+		if !hasSSO {
+			log.Debugf("pruning %s from cache", sso)
+			delete(c.SSO, sso)
+		}
+	}
+}
+
+// SetRoleExpires updates the Expires time in the cache.  expires is Unix epoch time in sec
 func (c *Cache) SetRoleExpires(arn string, expires int64) error {
 	flat, err := c.GetRole(arn)
 	if err != nil {
