@@ -64,6 +64,7 @@ ConfigVariables:
     <Var2>: <Value2>
     <VarN>: <ValueN>
 
+FirstTag: <Tag Name>
 AccountPrimaryTag:
     - <tag 1>
     - <tag 2>
@@ -414,6 +415,11 @@ Some examples to consider:
 
  * `sts_regional_endpoints: regional`
  * `output: json`
+
+## FirstTag
+
+When selecting a role, the tag key name at the top of the list will be this value regardless
+of sort order.  Useful if you want `History` or some other tag easily accessible via arrow keys.
 
 ## AccountPrimaryTag
 

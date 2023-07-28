@@ -69,6 +69,7 @@ type Settings struct {
 	HistoryMinutes            int64                    `koanf:"HistoryMinutes" yaml:"HistoryMinutes,omitempty"`
 	ProfileFormat             string                   `koanf:"ProfileFormat" yaml:"ProfileFormat,omitempty"`
 	AccountPrimaryTag         []string                 `koanf:"AccountPrimaryTag" yaml:"AccountPrimaryTag,omitempty"`
+	FirstTag                  string                   `koanf:"FirstTag" yaml:"FirstTag,omitempty"`
 	PromptColors              PromptColors             `koanf:"PromptColors" yaml:"PromptColors,omitempty"` // go-prompt colors
 	ListFields                []string                 `koanf:"ListFields" yaml:"ListFields,omitempty"`
 	ConfigVariables           map[string]interface{}   `koanf:"ConfigVariables" yaml:"ConfigVariables,omitempty"`

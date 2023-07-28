@@ -1,4 +1,4 @@
-package sso
+package tags
 
 /*
  * AWS SSO CLI
@@ -82,7 +82,8 @@ func (t *TagsList) Merge(a *TagsList) {
 }
 
 // Returns a sorted unique list of tag keys, removing any keys which have already been picked
-func (t *TagsList) UniqueKeys(picked []string) []string {
+// if first is set, ensure that is the first element
+func (t *TagsList) UniqueKeys(picked []string, first string) []string {
 	keys := []string{}
 	for key := range *t {
 		seen := false
@@ -97,12 +98,29 @@ func (t *TagsList) UniqueKeys(picked []string) []string {
 		}
 	}
 	sort.Strings(keys)
+
+	// move the first element to the top
+	if first != "" {
+		found := false
+		// remove the element from the list
+		for i, v := range keys {
+			if v == first {
+				keys = append(keys[:i], keys[i+1:]...)
+				found = true
+				break
+			}
+		}
+		// add it to the top
+		if found {
+			keys = append([]string{first}, keys...)
+		}
+	}
 	return keys
 }
 
-// reformatHistory modifies the History tag values to their human format for the selector
+// ReformatHistory modifies the History tag values to their human format for the selector
 // History tag value is: <AccountAlias>:<RoleName>,<epochtime>
-func reformatHistory(value string) string {
+func ReformatHistory(value string) string {
 	x := strings.Split(value, ",")
 
 	// oldformat

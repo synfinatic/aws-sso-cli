@@ -27,6 +27,7 @@ import (
 	"time"
 
 	// "github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/tags"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
@@ -369,15 +370,15 @@ func (c *Cache) MarkRolesExpired() error {
 }
 
 // returns all tags, but with with spaces replaced with underscores
-func (c *Cache) GetAllTagsSelect() *TagsList {
+func (c *Cache) GetAllTagsSelect() *tags.TagsList {
 	cache := c.GetSSO()
-	tags := cache.Roles.GetAllTags()
-	fixedTags := NewTagsList()
-	for k, values := range *tags {
+	t := cache.Roles.GetAllTags()
+	fixedTags := tags.NewTagsList()
+	for k, values := range *t {
 		key := strings.ReplaceAll(k, " ", "_")
 		for _, v := range values {
 			if key == "History" {
-				v = reformatHistory(v)
+				v = tags.ReformatHistory(v)
 			}
 			fixedTags.Add(key, strings.ReplaceAll(v, " ", "_"))
 		}
@@ -396,7 +397,7 @@ func (c *Cache) GetRoleTagsSelect() *RoleTags {
 		for k, v := range role.Tags {
 			key := strings.ReplaceAll(k, " ", "_")
 			if key == "History" {
-				v = reformatHistory(v)
+				v = tags.ReformatHistory(v)
 			}
 			value := strings.ReplaceAll(v, " ", "_")
 			ret[role.Arn][key] = value

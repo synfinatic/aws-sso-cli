@@ -28,6 +28,7 @@ import (
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/tags"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/gotable"
 )
@@ -99,8 +100,8 @@ func (r *Roles) GetAccountRoles(accountId int64) map[string]*AWSRoleFlat {
 }
 
 // GetAllTags returns all the unique key/tag pairs for every role
-func (r *Roles) GetAllTags() *TagsList {
-	ret := TagsList{}
+func (r *Roles) GetAllTags() *tags.TagsList {
+	ret := tags.TagsList{}
 	fList := r.GetAllRoles()
 	for _, role := range fList {
 		for k, v := range role.Tags {
