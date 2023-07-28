@@ -5,6 +5,7 @@
 ### Bugs
 
  * Fix fish auto-complete helper #472
+ * Fix issue where we were not appropriately flushing the roles cache #479
 
 ### Changes
 
