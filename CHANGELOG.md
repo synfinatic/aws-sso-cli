@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [v1.10.0] - 2023-07-29
+
 ### Bugs
 
  * Fix fish auto-complete helper #472
@@ -17,6 +19,7 @@
 
  * Profiles in ~/.aws/config now include the `region = XXX` option #481
  * Add `FirstTag` support in the config for placing a tag at the top of the select list #445
+ * Support `eval` command in Windows PowerShell via Invoke-Expression #188
 
 ## [v1.9.10] - 2023-02-27
 
@@ -486,7 +489,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.9.10...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.10.0...main
+[v1.10.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.10
 [v1.9.10]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.9
 [v1.9.9]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.9
 [v1.9.8]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.8
