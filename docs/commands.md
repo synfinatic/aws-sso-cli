@@ -166,6 +166,15 @@ of _STDERR_ to see the URL to open.
 See [Environment Variables](#environment-variables) for more information about
 what varibles are set.
 
+#### Windows PowerShell
+
+Getting Windows PowerShell to work requires a slightly different invocation than
+bash/zsh/etc:
+
+`aws-sso eval <args> | Out-String | Invoke-Expression`
+
+But other than that, it works the same way.
+
 ---
 
 ### exec

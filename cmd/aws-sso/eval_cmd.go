@@ -24,7 +24,6 @@ import (
 	"runtime"
 	"strings"
 
-	// log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
@@ -43,10 +42,6 @@ type EvalCmd struct {
 
 func (cc *EvalCmd) Run(ctx *RunContext) error {
 	var err error
-
-	if runtime.GOOS == "windows" && !strings.HasSuffix(os.Getenv("SHELL"), "/bash") {
-		return fmt.Errorf("eval is not supported on Windows unless running under bash")
-	}
 
 	var role string
 	var accountid int64
@@ -90,10 +85,17 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 	awssso := doAuth(ctx)
 
 	for k, v := range execShellEnvs(ctx, awssso, accountid, role, region) {
-		if len(v) == 0 {
-			fmt.Printf("unset %s\n", k)
+		if isBashLike() {
+			if len(v) == 0 {
+				fmt.Printf("unset %s\n", k)
+			} else {
+				fmt.Printf("export %s=\"%s\"\n", k, v)
+			}
+		} else if runtime.GOOS == "windows" {
+			// powershell Invoke-Expression https://github.com/synfinatic/aws-sso-cli/issues/188
+			fmt.Printf("$Env:%s = \"%s\"\r\n", k, v)
 		} else {
-			fmt.Printf("export %s=\"%s\"\n", k, v)
+			return fmt.Errorf("invalid or unsupported shell.  Please file a bug!")
 		}
 	}
 	return nil
@@ -128,7 +130,31 @@ func unsetEnvVars(ctx *RunContext) error {
 	}
 
 	for _, e := range envs {
-		fmt.Printf("unset %s\n", e)
+		if isBashLike() {
+			fmt.Printf("unset %s\n", e)
+		} else if runtime.GOOS == "windows" {
+			// PowerShell
+			fmt.Printf("$Env:%s = \"\"\r\n", e)
+		} else {
+			return fmt.Errorf("invalid or unsupported shell.  Please file a bug!")
+		}
 	}
 	return nil
+}
+
+func isBashLike() bool {
+	supportedShells := []string{"bash", "fish", "zsh", "sh"}
+
+	shell := os.Getenv("SHELL")
+
+	for _, s := range supportedShells {
+		if strings.HasSuffix(shell, fmt.Sprintf("/%s", s)) {
+			return true
+		}
+		// windows
+		if strings.HasSuffix(shell, fmt.Sprintf("\\%s.exe", s)) {
+			return true
+		}
+	}
+	return false
 }
