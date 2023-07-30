@@ -13,7 +13,7 @@ function __aws_sso_profile_complete
 end
 
 function aws-sso-profile
-    if test -n $AWS_SSO_HELPER_ARGS 
+    if test -n $AWS_SSO_PROFILE 
         set -l _args "$AWS_SSO_HELPER_ARGS" 
     else
         set -l _args ' --no-config-check --level=error '
@@ -27,6 +27,17 @@ function aws-sso-profile
 
     if test "$AWS_SSO_PROFILE" != "$argv[1]"
         return 1
+    end
+
+end
+
+function aws-sso-to-creds
+    if test -n $AWS_SSO_HELPER_ARGS 
+        sed -i "/^\[$AWS_SSO_PROFILE\]/,/^\[/d" ~/.aws/credentials
+        printf "[%s]\n" $AWS_SSO_PROFILE >> ~/.aws/credentials
+        printf "aws_access_key_id = %s\n" $AWS_ACCESS_KEY_ID >> ~/.aws/credentials
+        printf "aws_secret_access_key = %s\n" $AWS_SECRET_ACCESS_KEY >> ~/.aws/credentials
+        printf "aws_session_token = %s\n" $AWS_SESSION_TOKEN >> ~/.aws/credentials
     end
 end
 
@@ -44,14 +55,23 @@ function aws-sso-clear
     aws-sso eval $_args -c | sed 's/unset //g' | while read LINE;
         eval (set --erase $LINE)
     end
+    rm -rf ~/.aws/credentials
 end
 
-complete -c aws-sso -f
+complete -f -c aws-sso-profile -f -a '(__aws_sso_profile_complete)'
 
-complete -c aws-sso -s h -l help -d 'Show context-sensitive help.'
+complete -f -c aws-sso -s h -l help -d 'Show context-sensitive help.'
 complete -c aws-sso -l lines -d 'Print line number in logs'
 complete -c aws-sso -l sts-refresh -d 'Force refresh of STS Token Credentials'
 complete -c aws-sso -l no-config-check -d 'Disable automatic ~/.aws/config updates'
+complete -c aws-sso -s b -l browser -d 'Path to browser to open URLs with ($AWS_SSO_BROWSER)'
+complete -c aws-sso -l config -d 'Config file ($AWS_SSO_CONFIG)'
+complete -c aws-sso -s L -l level -d 'Logging level [error|warn|info|debug|trace] (default: warn)'
+complete -c aws-sso -s u -l url-action -d 'How to handle URLs [clip|exec|open|print|printurl|granted-containers|open-url-in-container] (default: open)'
+complete -c aws-sso -s S -l sso -d 'Override default AWS SSO Instance ($AWS_SSO)'
+complete -c aws-sso -l sts-refresh  -d 'Force refresh of STS Token Credentials'
+complete -c aws-sso -l threads -d 'Override number of threads for talking to AWS'
+
 complete -c aws-sso -n __fish_use_subcommand -a console -d 'Open AWS Console using specificed AWS role/profile'
 complete -c aws-sso -n '__fish_seen_subcommand_from console' -s h -l help -d 'Show context-sensitive help.'
 complete -c aws-sso -n '__fish_seen_subcommand_from console' -l lines -d 'Print line number in logs'
