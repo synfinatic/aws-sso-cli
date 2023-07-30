@@ -61,7 +61,8 @@ see how long your credentials have until they expire, see the [list command](com
 
 ### What happens when credentials expire?
 
-The next call to `aws-sso exec` or `aws-sso eval` will automatically refresh them.
+The next call to `aws-sso exec` or `aws-sso eval` will automatically refresh them
+as appropriate.
 
 ### How do I delete all secrets from the macOS keychain?
 
@@ -73,21 +74,17 @@ The next call to `aws-sso exec` or `aws-sso eval` will automatically refresh the
 
 In a word: alpha.
 
-Right now you are pretty much limited to using CommandPrompt (`cmd.exe`) instead
-of PowerShell or MINGW64/bash.  Not that you can't use PowerShell or bash, but
-there are a number of terminal related issues which cause `aws-sso` to behave
-incorrectly.  Would likely have to change how input processing other than for
-CLI arguments work for it to work with PowerShell or MINGW64/bash.
+For best experience, I recommend using CommandPrompt (`cmd.exe) instead of PowerShell
+or MINGW64/bash.  Not that you can't use PowerShell or bash, but there are a number of
+terminal related issues which cause `aws-sso` to behave incorrectly.
+PowerShell and MINGW64/bash users should rely on CLI arguments rather than the
+interactive role selector.
 
 [Tracking ticket](https://github.com/synfinatic/aws-sso-cli/issues/189)
 
-There is also the issue right now that the `eval` command does not work on Windows
-because it has no equivalant to the bash `eval` and there does not seem to be a
-reasonable way to generate and auto-execute batch files.  And of course, batch
-files must be written to disk and would contain the clear text secrets that
-`aws-sso` works very hard to never write to disk in clear text.
-
-[Tracking ticket](https://github.com/synfinatic/aws-sso-cli/issues/188)
+Now that [#188](https://github.com/synfinatic/aws-sso-cli/issues/188) has been fixed,
+PowerShell users can use the `eval` command to load IAM credentials into their current
+shell.
 
 If you are a Windows user and experience any bugs, please open a [detailed bug report](
 https://github.com/synfinatic/aws-sso-cli/issues/new?labels=bug&template=bug_report.md).
