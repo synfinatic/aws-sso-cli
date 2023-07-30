@@ -32,10 +32,12 @@ import (
 )
 
 type ListCmd struct {
-	ListFields bool     `kong:"short='f',help='List available fields',xor='fields'"`
-	CSV        bool     `kong:"help='Generate CSV instead of a table',xor='fields'"`
+	ListFields bool     `kong:"short='f',help='List available fields',xor='listfields'"`
+	CSV        bool     `kong:"help='Generate CSV instead of a table',xor='listfields'"`
 	Prefix     string   `kong:"short='P',help='Filter based on the <FieldName>=<Prefix>'"`
-	Fields     []string `kong:"optional,arg,help='Fields to display',env='AWS_SSO_FIELDS',predictor='fieldList',xor='fields'"`
+	Fields     []string `kong:"optional,arg,help='Fields to display',env='AWS_SSO_FIELDS',predictor='fieldList',xor='listfields'"`
+	Sort       string   `kong:"short='s',help='Sort results by the <FieldName>',default='AccountId',env='AWS_SSO_FIELD_SORT',predictor='fieldList'"`
+	Reverse    bool     `kong:"help='Reverse sort results',env='AWS_SSO_FIELD_SORT_REVERSE'"`
 }
 
 // what should this actually do?
@@ -81,7 +83,7 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 		fields = ctx.Cli.List.Fields
 	}
 
-	return printRoles(ctx, fields, ctx.Cli.List.CSV, prefixSearch)
+	return printRoles(ctx, fields, ctx.Cli.List.CSV, prefixSearch, ctx.Cli.List.Sort, ctx.Cli.List.Reverse)
 }
 
 // DefaultCmd has no args, and just prints the default fields and exists because
@@ -102,60 +104,76 @@ func (cc *DefaultCmd) Run(ctx *RunContext) error {
 		}
 	}
 
-	return printRoles(ctx, ctx.Settings.ListFields, false, []string{})
+	return printRoles(ctx, ctx.Settings.ListFields, false, []string{}, "AccountId", false)
 }
 
 // Print all our roles
-func printRoles(ctx *RunContext, fields []string, csv bool, prefixSearch []string) error {
+func printRoles(ctx *RunContext, fields []string, csv bool, prefixSearch []string, sortby string, reverse bool) error {
 	var err error
 	roles := ctx.Settings.Cache.GetSSO().Roles
 	tr := []gotable.TableStruct{}
 	idx := 0
 
-	// print in AccountId order
-	accounts := []int64{}
-	for account := range roles.Accounts {
-		accounts = append(accounts, account)
+	allRoles := roles.GetAllRoles()
+
+	var sortError error
+	sort.SliceStable(allRoles, func(i, j int) bool {
+		a, err := allRoles[i].GetField(sortby)
+		if err != nil {
+			sortError = fmt.Errorf("Invalid --sort value: %s", sortby)
+			return false
+		}
+		b, _ := allRoles[j].GetField(sortby)
+
+		if a.Type == sso.Sval {
+			if !reverse {
+				return a.Sval < b.Sval
+			} else {
+				return a.Sval > b.Sval
+			}
+		} else if a.Type == sso.Ival {
+			if !reverse {
+				return a.Ival < b.Ival
+			} else {
+				return a.Ival > b.Ival
+			}
+		} else {
+			sortError = fmt.Errorf("Unable to sort by field: %s", sortby)
+			return false
+		}
+	})
+
+	if sortError != nil {
+		return sortError
 	}
-	sort.Slice(accounts, func(i, j int) bool { return accounts[i] < accounts[j] })
 
-	for _, account := range accounts {
-		// print roles in order
-		roleNames := []string{}
-		for _, roleFlat := range roles.GetAccountRoles(account) {
-			roleNames = append(roleNames, roleFlat.RoleName)
+	for _, roleFlat := range allRoles {
+		if len(prefixSearch) > 0 {
+			match, err := roleFlat.HasPrefix(prefixSearch[0], prefixSearch[1])
+			if err != nil {
+				return err
+			}
+
+			if !match {
+				// skip because not a match
+				continue
+			}
 		}
-		sort.Strings(roleNames)
 
-		for _, roleName := range roleNames {
-			roleFlat, _ := roles.GetRole(account, roleName)
-			if !roleFlat.IsExpired() {
-				if exp, err := utils.TimeRemain(roleFlat.Expires, true); err == nil {
-					roleFlat.ExpiresStr = exp
-				}
+		if !roleFlat.IsExpired() {
+			if exp, err := utils.TimeRemain(roleFlat.Expires, true); err == nil {
+				roleFlat.ExpiresStr = exp
 			}
-			// update Profile
-			p, err := roleFlat.ProfileName(ctx.Settings)
-			if err == nil {
-				roleFlat.Profile = p
-			}
-
-			if len(prefixSearch) > 0 {
-				match, err := roleFlat.HasPrefix(prefixSearch[0], prefixSearch[1])
-				if err != nil {
-					return err
-				}
-
-				if !match {
-					// skip because not a match
-					continue
-				}
-			}
-
-			roleFlat.Id = idx
-			idx += 1
-			tr = append(tr, *roleFlat)
 		}
+
+		p, err := roleFlat.ProfileName(ctx.Settings)
+		if err == nil {
+			roleFlat.Profile = p
+		}
+
+		roleFlat.Id = idx
+		idx += 1
+		tr = append(tr, *roleFlat)
 	}
 
 	// Determine when our AWS SSO session expires

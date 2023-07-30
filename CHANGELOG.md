@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-## [v1.10.0] - 2023-07-29
+## [v1.10.0] - 2023-07-30
 
 ### Bugs
 
@@ -14,12 +14,14 @@
  * Authentication via your SSO provider no longer uses a Firefox container #486
  * Bump to Go v1.19
  * Bump to golangci-lint v1.52.2
+ * AccountId in the `list` command output are now presented with a leading zero
 
 ### New Features
 
  * Profiles in ~/.aws/config now include the `region = XXX` option #481
  * Add `FirstTag` support in the config for placing a tag at the top of the select list #445
  * Support `eval` command in Windows PowerShell via Invoke-Expression #188
+ * Add support for `--sort` and `--reverse` flags for the `list` command #466
 
 ## [v1.9.10] - 2023-02-27
 

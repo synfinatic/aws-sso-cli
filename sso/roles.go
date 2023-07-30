@@ -482,3 +482,51 @@ func (r *AWSRoleFlat) HasPrefix(field, prefix string) (bool, error) {
 	}
 	return false, nil
 }
+
+type FlatFieldType int
+
+const (
+	Serr FlatFieldType = iota
+	Sval
+	Ival
+)
+
+type FlatField struct {
+	Sval string
+	Ival int64
+	Type FlatFieldType
+}
+
+func (r *AWSRoleFlat) GetField(fieldName string) (FlatField, error) {
+	var err error
+	ret := FlatField{}
+	v := reflect.ValueOf(r)
+	f := reflect.Indirect(v).FieldByName(fieldName)
+
+	// Make sure the fieldName exists in our struct
+	if !f.IsValid() {
+		return ret, fmt.Errorf("Invalid field name: %s", fieldName)
+	}
+
+	switch fieldName {
+	case "AccountId":
+		ret.Type = Sval
+		ret.Sval, err = utils.AccountIdToString(int64(f.Int()))
+		if err != nil {
+			return ret, err
+		}
+
+	case "Expires":
+		ret.Type = Ival
+		ret.Ival = int64(f.Int())
+
+	case "Tags":
+		return ret, fmt.Errorf("Unable to sort by `Tags`")
+
+	default:
+		ret.Type = Sval
+		ret.Sval = f.String()
+	}
+
+	return ret, nil
+}

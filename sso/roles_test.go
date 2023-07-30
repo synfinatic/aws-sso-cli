@@ -108,7 +108,7 @@ func (suite *CacheRolesTestSuite) TestAccountIds() {
 	roles := suite.cache.SSO[suite.cache.ssoName].Roles
 
 	assert.NotEmpty(t, roles.AccountIds())
-	assert.Contains(t, roles.AccountIds(), int64(258234615182))
+	assert.Contains(t, roles.AccountIds(), int64(25823461518))
 	assert.NotContains(t, roles.AccountIds(), int64(2582346))
 }
 
@@ -124,7 +124,7 @@ func (suite *CacheRolesTestSuite) TestGetAccountRoles() {
 	t := suite.T()
 	roles := suite.cache.SSO[suite.cache.ssoName].Roles
 
-	flat := roles.GetAccountRoles(258234615182)
+	flat := roles.GetAccountRoles(25823461518)
 	assert.NotEmpty(t, flat)
 
 	flat = roles.GetAccountRoles(258234615)
@@ -147,7 +147,7 @@ func (suite *CacheRolesTestSuite) TestGetRoleTags() {
 
 	tags := *(roles.GetRoleTags())
 	assert.NotEmpty(t, tags)
-	arn := "arn:aws:iam::258234615182:role/AWSAdministratorAccess"
+	arn := "arn:aws:iam::025823461518:role/AWSAdministratorAccess"
 	assert.Contains(t, tags, arn)
 	assert.NotContains(t, tags, "foobar")
 	assert.Contains(t, tags[arn]["Email"], "control-tower-dev-aws@ourcompany.com")
@@ -161,9 +161,9 @@ func (suite *CacheRolesTestSuite) TestGetRole() {
 	_, err := roles.GetRole(58234615182, "AWSAdministratorAccess")
 	assert.Error(t, err)
 
-	r, err := roles.GetRole(258234615182, "AWSAdministratorAccess")
+	r, err := roles.GetRole(25823461518, "AWSAdministratorAccess")
 	assert.NoError(t, err)
-	assert.Equal(t, int64(258234615182), r.AccountId)
+	assert.Equal(t, int64(25823461518), r.AccountId)
 	assert.Equal(t, "AWSAdministratorAccess", r.RoleName)
 	assert.Equal(t, "", r.Profile)
 	assert.Equal(t, "us-east-1", r.DefaultRegion)
@@ -176,7 +176,7 @@ func (suite *CacheRolesTestSuite) TestGetRole() {
 func (suite *CacheRolesTestSuite) TestProfileName() {
 	t := suite.T()
 	roles := suite.cache.SSO[suite.cache.ssoName].Roles
-	r, err := roles.GetRole(258234615182, "AWSAdministratorAccess")
+	r, err := roles.GetRole(25823461518, "AWSAdministratorAccess")
 	assert.NoError(t, err)
 
 	p, err := r.ProfileName(suite.settings)
@@ -231,6 +231,35 @@ func (suite *CacheRolesTestSuite) TestGetEnvVarTags() {
 		"AWS_SSO_TAG_ACCOUNTNAME": "Audit",
 	}
 	assert.Equal(t, x, flat.GetEnvVarTags(&settings))
+}
+
+func TestAWSRoleFlatGetField(t *testing.T) {
+	flat := AWSRoleFlat{
+		RoleName:  "foobar",
+		AccountId: 12344553243,
+		Expires:   0,
+	}
+
+	f, err := flat.GetField("RoleName")
+	assert.NoError(t, err)
+	assert.Equal(t, Sval, f.Type)
+	assert.Equal(t, "foobar", f.Sval)
+
+	f, err = flat.GetField("AccountId")
+	assert.NoError(t, err)
+	assert.Equal(t, Sval, f.Type)
+	assert.Equal(t, "012344553243", f.Sval)
+
+	f, err = flat.GetField("Expires")
+	assert.NoError(t, err)
+	assert.Equal(t, Ival, f.Type)
+	assert.Equal(t, int64(0), f.Ival)
+
+	f, err = flat.GetField("Tags")
+	assert.Error(t, err)
+
+	f, err = flat.GetField("Role")
+	assert.Error(t, err)
 }
 
 func TestAWSRoleFlatGetHeader(t *testing.T) {
