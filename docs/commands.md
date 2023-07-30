@@ -426,7 +426,7 @@ Currently the following shells are supported:
  <!-- markdown-link-check-disable -->
  * [bash](/internal/helper/bash_profile.sh)
  * [zsh](/internal/helper/zshrc.sh)
- * [fish - TBD](https://github.com/synfinatic/aws-sso-cli/issues/361)
+ * [fish](/internal/helper/aws-sso.fish)
  <!-- markdown-link-check-enable-->
 
 **Note:** `zsh` completion requires you to have the following lines set
@@ -436,6 +436,9 @@ before the AWS SSO completions:
 autoload -Uz +X compinit && compinit
 autoload -Uz +X bashcompinit && bashcompinit
 ```
+
+**Note:** `fish` completion are installed in your `$XDG_CONFIG_HOME/.config/fish/conf.d` as opposed to your `completions` folder.  Fish completions are lazy loaded, so 
+helper functions such as `aws-sso-profile` are not loaded until the first completion request is made.  By loading upon start, these helper functions are enabled
 
 **Note:** Please reach out if you can help with adding support for your
 favorite shell!
