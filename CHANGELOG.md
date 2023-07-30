@@ -8,13 +8,16 @@
 
  * Fix fish auto-complete helper #472
  * Fix issue where we were not appropriately flushing the roles cache #479
+ * Creds with less than 1min remaining now indicate so via `< 1m` rather than empty string
+ * We now consistently use `RoleName` as both input and output for the `list` command
 
 ### Changes
 
  * Authentication via your SSO provider no longer uses a Firefox container #486
  * Bump to Go v1.19
  * Bump to golangci-lint v1.52.2
- * AccountId in the `list` command output are now presented with a leading zero
+ * AccountId in the `list` command output are now presented with a leading zero(s)
+ * Expired IAM credentials are now explictily marked instead of an empty string
 
 ### New Features
 
