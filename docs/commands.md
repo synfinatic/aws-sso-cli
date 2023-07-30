@@ -257,9 +257,11 @@ which fields are printed by specifying the field names as arguments.
 Flags:
 
  * `--list-fields`, `-f` -- List the available fields to print
- * `--prefix <Field>=<Prefix>`, `-P` -- Filter results by the given field 
+ * `--prefix <FieldName>=<Prefix>`, `-P` -- Filter results by the given field 
     value & prefix value
  * `--csv` -- Generate results in CSV format
+ * `--sort <FieldName>`, `-s` -- Sort results by the provided field name
+ * `--reverse` -- Reverse the sort order
 
 Arguments: `[<field> ...]`
 
@@ -272,6 +274,8 @@ Default fields:
  * `AccountAlias`
  * `RoleName`
  * `ExpiresStr`
+
+**Note:** Sorting always happens in a case-sensitive and alphabetic manner.
 
 ---
 
@@ -354,14 +358,16 @@ the new settings if you've upgraded from a previous version!
 
 The following environment variables are honored by `aws-sso`:
 
- * `AWS_SSO_FILE_PASSWORD` -- Password to use with the `file` SecureStore
- * `AWS_SSO_CONFIG` -- Specify an alternate path to the `aws-sso` config file
- * `AWS_SSO_BROWSER` -- Override default browser for AWS SSO login
- * `AWS_SSO` -- Override default AWS SSO instance to use
- * `AWS_SSO_ROLE_NAME` -- Used for `--role`/`-R` with some commands
- * `AWS_SSO_ACCOUNT_ID` -- Used for `--account`/`-A` with some commands
- * `AWS_SSO_ROLE_ARN` -- Used for `--arn`/`-a` with some commands and with
-     `eval --refresh`
+ * `AWS_SSO_FILE_PASSWORD` -- Password to use with the `file` SecureStore.
+ * `AWS_SSO_CONFIG` -- Specify an alternate path to the `aws-sso` config file.
+ * `AWS_SSO_BROWSER` -- Override default browser for AWS SSO login.
+ * `AWS_SSO` -- Override default AWS SSO instance to use.
+ * `AWS_SSO_ROLE_NAME` -- Used for `--role`/`-R` with some commands.
+ * `AWS_SSO_ACCOUNT_ID` -- Used for `--account`/`-A` with some commands.
+ * `AWS_SSO_ROLE_ARN` -- Used for `--arn`/`-a` with some commands and with.
+     `eval --refresh`.
+ * `AWS_SSO_FIELD_SORT` -- Used by `list` command to select which field to sort by.
+ * `AWS_SSO_FIELD_SORT_REVERSE` -- Used to reverse the `list` sort order.  Set to `1` to enable.
 
 The `file` SecureStore will use the `AWS_SSO_FILE_PASSWORD` environment
 variable for the password if it is set. (Not recommended.)
