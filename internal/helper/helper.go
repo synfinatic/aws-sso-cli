@@ -181,5 +181,5 @@ func getFishScript() string {
 		base = utils.GetHomePath("~/.config")
 	}
 
-	return path.Join(base, "fish", "completions", "aws-sso.fish")
+	return path.Join(base, "fish", "conf.d", "aws-sso.fish")
 }
