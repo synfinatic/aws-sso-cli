@@ -235,9 +235,10 @@ func (suite *CacheRolesTestSuite) TestGetEnvVarTags() {
 
 func TestAWSRoleFlatGetField(t *testing.T) {
 	flat := AWSRoleFlat{
-		RoleName:  "foobar",
-		AccountId: 12344553243,
-		Expires:   0,
+		RoleName:   "foobar",
+		AccountId:  12344553243,
+		Expires:    0,
+		ExpiresStr: "Expired",
 	}
 
 	f, err := flat.GetField("RoleName")
@@ -251,6 +252,11 @@ func TestAWSRoleFlatGetField(t *testing.T) {
 	assert.Equal(t, "012344553243", f.Sval)
 
 	f, err = flat.GetField("Expires")
+	assert.NoError(t, err)
+	assert.Equal(t, Sval, f.Type)
+	assert.Equal(t, "Expired", f.Sval)
+
+	f, err = flat.GetField("ExpiresEpoch")
 	assert.NoError(t, err)
 	assert.Equal(t, Ival, f.Type)
 	assert.Equal(t, int64(0), f.Ival)

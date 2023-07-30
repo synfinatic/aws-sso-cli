@@ -160,12 +160,6 @@ func printRoles(ctx *RunContext, fields []string, csv bool, prefixSearch []strin
 			}
 		}
 
-		if !roleFlat.IsExpired() {
-			if exp, err := utils.TimeRemain(roleFlat.Expires, true); err == nil {
-				roleFlat.ExpiresStr = exp
-			}
-		}
-
 		p, err := roleFlat.ProfileName(ctx.Settings)
 		if err == nil {
 			roleFlat.Profile = p

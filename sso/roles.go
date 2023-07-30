@@ -130,6 +130,7 @@ func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) 
 	if !ok {
 		return &AWSRoleFlat{}, fmt.Errorf("invalid AWS AccountID: %d", accountId)
 	}
+
 	for thisRoleName, role := range account.Roles {
 		if thisRoleName == roleName {
 			flat := AWSRoleFlat{
@@ -147,6 +148,14 @@ func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) 
 				StartUrl:      r.StartUrl,
 				Tags:          map[string]string{},
 				Via:           role.Via,
+			}
+
+			if !flat.IsExpired() {
+				if exp, err := utils.TimeRemain(flat.Expires, true); err == nil {
+					flat.ExpiresStr = exp
+				}
+			} else {
+				flat.ExpiresStr = "Expired"
 			}
 
 			// copy over account tags
@@ -305,7 +314,7 @@ type AWSRoleFlat struct {
 	Expires       int64             `json:"Expires" header:"ExpiresEpoch"`
 	ExpiresStr    string            `json:"-" header:"Expires"`
 	Arn           string            `json:"Arn" header:"ARN"`
-	RoleName      string            `json:"RoleName" header:"Role"`
+	RoleName      string            `json:"RoleName" header:"RoleName"`
 	Profile       string            `json:"Profile" header:"Profile"`
 	DefaultRegion string            `json:"DefaultRegion" header:"DefaultRegion"`
 	SSO           string            `json:"SSO" header:"SSO"`
@@ -497,9 +506,27 @@ type FlatField struct {
 	Type FlatFieldType
 }
 
-func (r *AWSRoleFlat) GetField(fieldName string) (FlatField, error) {
+func (r *AWSRoleFlat) GetField(columnName string) (FlatField, error) {
 	var err error
+	var fieldName string
 	ret := FlatField{}
+
+	// Map cases where the `header` != field name in the struct
+	switch columnName {
+	case "Tags":
+		// Tags is a valid field, but we can't sort by it
+		return ret, fmt.Errorf("Unable to sort by `Tags`")
+
+	case "ExpiresEpoch":
+		fieldName = "Expires"
+
+	case "Expires":
+		fieldName = "ExpiresStr"
+
+	default:
+		fieldName = columnName
+	}
+
 	v := reflect.ValueOf(r)
 	f := reflect.Indirect(v).FieldByName(fieldName)
 
@@ -516,12 +543,13 @@ func (r *AWSRoleFlat) GetField(fieldName string) (FlatField, error) {
 			return ret, err
 		}
 
+	case "ExpiresStr":
+		ret.Type = Sval
+		ret.Sval = f.String()
+
 	case "Expires":
 		ret.Type = Ival
 		ret.Ival = int64(f.Int())
-
-	case "Tags":
-		return ret, fmt.Errorf("Unable to sort by `Tags`")
 
 	default:
 		ret.Type = Sval

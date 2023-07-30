@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -152,13 +153,22 @@ func TimeRemain(expires int64, space bool) (string, error) {
 		return "Expired", nil
 	}
 
-	s := strings.Replace(d.Round(time.Minute).String(), "0s", "", 1)
+	s := strings.Replace(d.Truncate(time.Minute).String(), "0s", "", 1)
+	if strings.Compare(s, "") == 0 {
+		s = "< 1m"
+	}
+
 	if space {
-		if strings.Contains(s, "h") {
-			s = strings.Replace(s, "h", "h ", 1)
-		} else {
-			s = fmt.Sprintf("   %s", s)
-		}
+		// space between min & hour and minutes.  Add min mark if it is missing
+		re := regexp.MustCompile(`\A(\d+)h(\d+)m?\z`)
+		s = re.ReplaceAllString(s, "${1}h ${2}m")
+
+		// two spaces for single digit min
+		padMin := regexp.MustCompile(`\A(\d+h) (\dm)\z`)
+		s = padMin.ReplaceAllString(s, "$1  $2")
+
+		// padd out to 7 chars
+		s = fmt.Sprintf("%7s", s)
 	}
 
 	// Just return the number of MMm or HHhMMm
