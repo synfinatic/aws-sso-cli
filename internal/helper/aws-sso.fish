@@ -12,6 +12,42 @@ function __aws_sso_profile_complete
     end
 end
 
+function aws-sso-profile
+    if test -n $AWS_SSO_PROFILE 
+        set -l _args "$AWS_SSO_HELPER_ARGS" 
+    else
+        set -l _args ' --no-config-check --level=error '
+    end
+    if test -n "$AWS_PROFILE"
+        echo "Unable to assume a role while AWS_PROFILE is set"
+        return 1
+    end
+
+    eval (aws-sso $_args eval -p "$argv[1]")
+
+    if test "$AWS_SSO_PROFILE" != "$argv[1]"
+        return 1
+    end
+
+end
+
+function aws-sso-clear
+    if test -n $AWS_SSO_HELPER_ARGS 
+        set -l _args "$AWS_SSO_HELPER_ARGS" 
+    else
+        set -l _args ' --no-config-check --level=error '
+    end
+    if test -z "$AWS_SSO_PROFILE"
+        echo "AWS_SSO_PROFILE is not set"
+        return 1
+    end
+
+    aws-sso eval $_args -c | sed 's/unset //g' | while read LINE;
+        eval (set --erase $LINE)
+    end
+    rm -rf ~/.aws/credentials
+end
+
 complete -f -c aws-sso-profile -f -a '(__aws_sso_profile_complete)'
 
 complete -f -c aws-sso -s h -l help -d 'Show context-sensitive help.'
