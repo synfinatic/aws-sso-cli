@@ -219,7 +219,6 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 		cli,
 		kong.Name("aws-sso"),
 		kong.Description("Securely manage temporary AWS API Credentials issued via AWS SSO"),
-		kong.UsageOnError(),
 		vars,
 	)
 

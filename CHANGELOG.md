@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Bugs
+
+ * Fix `process --profile` flag not working
+
+### Changes
+
+ * No longer show usage on error
+
 ## [v1.10.0] - 2023-07-30
 
 ### Bugs
