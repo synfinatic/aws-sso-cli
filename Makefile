@@ -11,13 +11,9 @@ else
 GOARCH             := $(ARCH)  # no idea if this works for other platforms....
 endif
 
-ifneq ($(BREW_INSTALL),1)
 PROJECT_TAG               := $(shell git describe --tags 2>/dev/null $(git rev-list --tags --max-count=1))
 PROJECT_COMMIT            := $(shell git rev-parse HEAD || echo "")
 PROJECT_DELTA             := $(shell DELTA_LINES=$$(git diff | wc -l); if [ $${DELTA_LINES} -ne 0 ]; then echo $${DELTA_LINES} ; else echo "''" ; fi)
-else
-PROJECT_TAG               := Homebrew
-endif
 
 BUILDINFOSDET ?=
 PROGRAM_ARGS ?=
@@ -67,9 +63,8 @@ install: $(DIST_DIR)$(PROJECT_NAME)  ## install binary in $INSTALL_PREFIX
 uninstall:  ## Uninstall binary from $INSTALL_PREFIX
 	rm $(INSTALL_PREFIX)/bin/$(PROJECT_NAME)
 
-HOMEBREW := ./homebrew/Formula/aws-sso-cli.rb
-
-homebrew: $(HOMEBREW)  ## Build homebrew tap file
+release-brew:  ## Create a PR against homebrew to bump the version 
+	brew bump-formula-pr --version $(PROJECT_VERSION) aws-sso-cli
 
 #DOWNLOAD_URL := https://synfin.net/misc/aws-sso-cli.$(PROJECT_VERSION).tar.gz
 DOWNLOAD_URL ?= https://github.com/synfinatic/aws-sso-cli/archive/refs/tags/v$(PROJECT_VERSION).tar.gz
@@ -79,21 +74,6 @@ shasum:
 	@which shasum >/dev/null || (echo "Missing 'shasum' binary" ; exit 1)
 	@echo "foo" | shasum -a 256 >/dev/null || (echo "'shasum' does not support: -a 256"; exit 1)
 
-.PHONY: $(HOMEBREW)
-$(HOMEBREW):  homebrew/template.rb.m4 shasum ## no-help
-	TEMPFILE=$$(mktemp) && wget -q -O $${TEMPFILE} $(DOWNLOAD_URL) ; \
-	if test -s $${TEMPFILE}; then \
-		export SHA=$$(cat $${TEMPFILE} | shasum -a 256 | sed -e 's|  -||') && rm $${TEMPFILE} && \
-		m4 -D __SHA256__=$${SHA} \
-		   -D __VERSION__=$(PROJECT_VERSION) \
-		   -D __COMMIT__=$(PROJECT_COMMIT) \
-		   -D __URL__=$(DOWNLOAD_URL) \
-		   homebrew/template.rb.m4 | tee $(HOMEBREW) && \
-		   echo "***** Please review above and test! ******" && \
-		   echo "File written to: $(HOMEBREW)  Please commit in git submodule!" ; \
-	else \
-		echo "*** Error downloading $(DOWNLOAD_URL) ***" ; \
-	fi
 
 .PHONY: package
 package: linux linux-arm64  ## Build deb/rpm packages
