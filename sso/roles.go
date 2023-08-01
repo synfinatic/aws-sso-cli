@@ -21,6 +21,7 @@ package sso
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"reflect"
 	"strings"
 	"text/template"
@@ -144,7 +145,7 @@ func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) 
 				AccountName:   account.Name,
 				AccountAlias:  account.Alias,
 				EmailAddress:  account.EmailAddress,
-				Expires:       role.Expires,
+				ExpiresEpoch:  role.Expires,
 				Arn:           role.Arn,
 				RoleName:      roleName,
 				Profile:       role.Profile,
@@ -157,11 +158,11 @@ func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) 
 			}
 
 			if !flat.IsExpired() {
-				if exp, err := utils.TimeRemain(flat.Expires, true); err == nil {
-					flat.ExpiresStr = exp
+				if exp, err := utils.TimeRemain(flat.ExpiresEpoch, true); err == nil {
+					flat.Expires = exp
 				}
 			} else {
-				flat.ExpiresStr = "Expired"
+				flat.Expires = "Expired"
 			}
 
 			// copy over account tags
@@ -318,9 +319,9 @@ type AWSRoleFlat struct {
 	AccountName   string            `json:"AccountName" header:"AccountName"`
 	AccountAlias  string            `json:"AccountAlias" header:"AccountAlias"`
 	EmailAddress  string            `json:"EmailAddress" header:"EmailAddress"`
-	Expires       int64             `json:"Expires" header:"Expires"`
-	ExpiresStr    string            `json:"-" header:"ExpiresStr"`
-	Arn           string            `json:"Arn" header:"ARN"`
+	ExpiresEpoch  int64             `json:"Expires" header:"ExpiresEpoch"`
+	Expires       string            `json:"-" header:"Expires"`
+	Arn           string            `json:"Arn" header:"Arn"`
 	RoleName      string            `json:"RoleName" header:"RoleName"`
 	Profile       string            `json:"Profile" header:"Profile"`
 	DefaultRegion string            `json:"DefaultRegion" header:"DefaultRegion"`
@@ -339,16 +340,16 @@ func (f AWSRoleFlat) GetHeader(fieldName string) (string, error) {
 
 // IsExpired returns if this role has expired or has no creds available
 func (r *AWSRoleFlat) IsExpired() bool {
-	if r.Expires == 0 {
+	if r.ExpiresEpoch == 0 {
 		return true
 	}
-	d := time.Until(time.Unix(r.Expires, 0))
+	d := time.Until(time.Unix(r.ExpiresEpoch, 0))
 	return d <= 0
 }
 
 // ExpiresIn returns how long until this role expires as a string
 func (r *AWSRoleFlat) ExpiresIn() (string, error) {
-	return utils.TimeRemain(r.Expires, false)
+	return utils.TimeRemain(r.ExpiresEpoch, false)
 }
 
 // RoleProfile returns either the user-defined Profile value for the role from
@@ -438,7 +439,7 @@ func (r *AWSRoleFlat) GetEnvVarTags(s *Settings) map[string]string {
 }
 
 // HasPrefix determines if the given field starts with the value
-// Tags, Expires and ExpiresStr are invalid
+// Tags, Expires and ExpiresEpoch are invalid
 func (r *AWSRoleFlat) HasPrefix(field, prefix string) (bool, error) {
 	switch field {
 	case "Id":
@@ -447,6 +448,10 @@ func (r *AWSRoleFlat) HasPrefix(field, prefix string) (bool, error) {
 		}
 	case "AccountId":
 		if strings.HasPrefix(fmt.Sprintf("%d", r.AccountId), prefix) {
+			return true, nil
+		}
+	case "AccountIdStr":
+		if strings.HasPrefix(r.AccountIdStr, prefix) {
 			return true, nil
 		}
 	case "AccountName":
@@ -493,7 +498,7 @@ func (r *AWSRoleFlat) HasPrefix(field, prefix string) (bool, error) {
 		if strings.HasPrefix(r.Via, prefix) {
 			return true, nil
 		}
-	default: // Expires, ExpiresStr & Tags
+	default: // Expires, ExpiresEpoch & Tags
 		return false, fmt.Errorf("invalid field: %s", field)
 	}
 	return false, nil
@@ -513,8 +518,9 @@ type FlatField struct {
 	Type FlatFieldType
 }
 
-func (r *AWSRoleFlat) GetField(columnName string) (FlatField, error) {
-	var err error
+// GetSortableField returns a FlatField for the given field.  We do some mapping across
+// fields so that this can be used for sorting.
+func (r *AWSRoleFlat) GetSortableField(columnName string) (FlatField, error) {
 	var fieldName string
 	ret := FlatField{}
 
@@ -523,12 +529,6 @@ func (r *AWSRoleFlat) GetField(columnName string) (FlatField, error) {
 	case "Tags":
 		// Tags is a valid field, but we can't sort by it
 		return ret, fmt.Errorf("Unable to sort by `Tags`")
-
-	case "ExpiresEpoch":
-		fieldName = "Expires"
-
-	case "Expires":
-		fieldName = "ExpiresStr"
 
 	default:
 		fieldName = columnName
@@ -543,21 +543,18 @@ func (r *AWSRoleFlat) GetField(columnName string) (FlatField, error) {
 	}
 
 	switch fieldName {
-	case "AccountId":
-		// convert AccountId to the string
-		ret.Type = Sval
-		ret.Sval, err = utils.AccountIdToString(int64(f.Int()))
-		if err != nil {
-			return ret, err
-		}
-
-	case "ExpiresStr":
-		ret.Type = Sval
-		ret.Sval = f.String()
-
-	case "Expires":
+	case "AccountId", "AccountIdStr":
+		// use the integer value
 		ret.Type = Ival
-		ret.Ival = int64(f.Int())
+		ret.Ival = r.AccountId
+
+	case "ExpiresEpoch", "Expires":
+		ret.Type = Ival
+		ret.Ival = r.ExpiresEpoch
+		// expired entries are last
+		if ret.Ival == 0 {
+			ret.Ival = int64(math.Pow(2, 62))
+		}
 
 	default:
 		ret.Type = Sval

@@ -19,6 +19,7 @@ package sso
  */
 
 import (
+	"math"
 	"os"
 	"strings"
 	"testing"
@@ -233,50 +234,56 @@ func (suite *CacheRolesTestSuite) TestGetEnvVarTags() {
 	assert.Equal(t, x, flat.GetEnvVarTags(&settings))
 }
 
-func TestAWSRoleFlatGetField(t *testing.T) {
+func TestAWSRoleFlatGetSortableField(t *testing.T) {
 	flat := AWSRoleFlat{
-		RoleName:   "foobar",
-		AccountId:  12344553243,
-		Expires:    0,
-		ExpiresStr: "Expired",
+		RoleName:     "foobar",
+		AccountId:    12344553243,
+		AccountIdStr: "012344553243",
+		ExpiresEpoch: 0,
+		Expires:      "Expired",
 	}
 
-	f, err := flat.GetField("RoleName")
+	f, err := flat.GetSortableField("RoleName")
 	assert.NoError(t, err)
 	assert.Equal(t, Sval, f.Type)
 	assert.Equal(t, "foobar", f.Sval)
 
-	f, err = flat.GetField("AccountId")
-	assert.NoError(t, err)
-	assert.Equal(t, Sval, f.Type)
-	assert.Equal(t, "012344553243", f.Sval)
-
-	f, err = flat.GetField("Expires")
-	assert.NoError(t, err)
-	assert.Equal(t, Sval, f.Type)
-	assert.Equal(t, "Expired", f.Sval)
-
-	f, err = flat.GetField("ExpiresEpoch")
+	f, err = flat.GetSortableField("AccountId")
 	assert.NoError(t, err)
 	assert.Equal(t, Ival, f.Type)
-	assert.Equal(t, int64(0), f.Ival)
+	assert.Equal(t, int64(12344553243), f.Ival)
 
-	f, err = flat.GetField("Tags")
+	f, err = flat.GetSortableField("AccountIdStr")
+	assert.NoError(t, err)
+	assert.Equal(t, Ival, f.Type)
+	assert.Equal(t, int64(12344553243), f.Ival)
+
+	f, err = flat.GetSortableField("Expires")
+	assert.NoError(t, err)
+	assert.Equal(t, Ival, f.Type)
+	assert.Equal(t, int64(math.Pow(2, 62)), f.Ival)
+
+	f, err = flat.GetSortableField("ExpiresEpoch")
+	assert.NoError(t, err)
+	assert.Equal(t, Ival, f.Type)
+	assert.Equal(t, int64(math.Pow(2, 62)), f.Ival)
+
+	f, err = flat.GetSortableField("Tags")
 	assert.Error(t, err)
 
-	f, err = flat.GetField("Role")
+	f, err = flat.GetSortableField("Role")
 	assert.Error(t, err)
 }
 
 func TestAWSRoleFlatGetHeader(t *testing.T) {
 	f := AWSRoleFlat{}
-	x, err := f.GetHeader("ExpiresStr")
-	assert.NoError(t, err)
-	assert.Equal(t, "ExpiresStr", x)
-
-	x, err = f.GetHeader("Expires")
+	x, err := f.GetHeader("Expires")
 	assert.NoError(t, err)
 	assert.Equal(t, "Expires", x)
+
+	x, err = f.GetHeader("ExpiresEpoch")
+	assert.NoError(t, err)
+	assert.Equal(t, "ExpiresEpoch", x)
 
 	x, err = f.GetHeader("Id")
 	assert.NoError(t, err)
@@ -289,17 +296,17 @@ func TestAWSRoleFlatGetHeader(t *testing.T) {
 
 func TestAWSRoleFlatExpired(t *testing.T) {
 	f := &AWSRoleFlat{
-		Expires: 0,
+		ExpiresEpoch: 0,
 	}
 	assert.True(t, f.IsExpired())
 
 	f = &AWSRoleFlat{
-		Expires: 12345455,
+		ExpiresEpoch: 12345455,
 	}
 	assert.True(t, f.IsExpired())
 
 	f = &AWSRoleFlat{
-		Expires: time.Now().Add(time.Minute * 5).Unix(),
+		ExpiresEpoch: time.Now().Add(time.Minute * 5).Unix(),
 	}
 	assert.False(t, f.IsExpired())
 }
@@ -355,10 +362,10 @@ func TestAWSRoleFlatHasPrefix(t *testing.T) {
 
 	// invalid key
 	invalid := map[string]string{
-		"X":          "test",
-		"Expires":    "foo",
-		"ExpiresStr": "bar",
-		"Tags":       "baz",
+		"X":            "test",
+		"Expires":      "foo",
+		"ExpiresEpoch": "bar",
+		"Tags":         "baz",
 	}
 	for k, v := range invalid {
 		_, err := f.HasPrefix(k, v)

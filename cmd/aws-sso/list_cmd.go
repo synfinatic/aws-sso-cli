@@ -40,7 +40,8 @@ type ListCmd struct {
 	Reverse    bool     `kong:"help='Reverse sort results',env='AWS_SSO_FIELD_SORT_REVERSE'"`
 }
 
-var default_list_fields []string = []string{"AccountIdStr", "AccountAlias", "RoleName", "Profile", "ExpiresStr"}
+// Actually used in main.go, but definied here for locality
+var DEFAULT_LIST_FIELDS []string = []string{"AccountIdStr", "AccountAlias", "RoleName", "Profile", "Expires"}
 
 // what should this actually do?
 func (cc *ListCmd) Run(ctx *RunContext) error {
@@ -120,12 +121,12 @@ func printRoles(ctx *RunContext, fields []string, csv bool, prefixSearch []strin
 
 	var sortError error
 	sort.SliceStable(allRoles, func(i, j int) bool {
-		a, err := allRoles[i].GetField(sortby)
+		a, err := allRoles[i].GetSortableField(sortby)
 		if err != nil {
 			sortError = fmt.Errorf("Invalid --sort value: %s", sortby)
 			return false
 		}
-		b, _ := allRoles[j].GetField(sortby)
+		b, _ := allRoles[j].GetSortableField(sortby)
 
 		if a.Type == sso.Sval {
 			if !reverse {

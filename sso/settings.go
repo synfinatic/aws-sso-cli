@@ -240,6 +240,15 @@ func (s *Settings) applyDeprecations() bool {
 		change = true
 	}
 
+	// ExpiresStr => Expires in v1.11.0
+	if len(s.ListFields) > 0 {
+		for i, v := range s.ListFields {
+			if v == "ExpiresStr" {
+				s.ListFields[i] = "Expires"
+			}
+		}
+	}
+
 	return change
 }
 

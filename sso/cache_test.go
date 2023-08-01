@@ -490,7 +490,7 @@ func (suite *CacheTestSuite) TestSetRoleExpires() {
 
 	flat, err := suite.cache.GetRole(TEST_ROLE_ARN)
 	assert.NoError(t, err)
-	assert.Equal(t, int64(12344553243), flat.Expires)
+	assert.Equal(t, int64(12344553243), flat.ExpiresEpoch)
 
 	err = suite.cache.SetRoleExpires(INVALID_ROLE_ARN, 12344553243)
 	assert.Error(t, err)

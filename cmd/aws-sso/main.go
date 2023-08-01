@@ -82,7 +82,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"DefaultRegion":                             "us-east-1",
 	"HistoryLimit":                              10,
 	"HistoryMinutes":                            1440, // 24hrs
-	"ListFields":                                default_list_fields,
+	"ListFields":                                DEFAULT_LIST_FIELDS,
 	"ConsoleDuration":                           60,
 	"UrlAction":                                 "open",
 	"ConfigProfilesUrlAction":                   "open",

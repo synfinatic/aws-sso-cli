@@ -379,8 +379,8 @@ The following variables are accessible from the `AWSRoleFlat` struct:
  * `AccountAlias` -- AWS Account Alias defined in AWS by the account owner
  * `AccountName` -- AWS Account Name defined in `~/.aws-sso/config.yaml`
  * `EmailAddress` -- Root account email address associated with the account in AWS
- * `Expires` -- When your API credentials expire (UNIX epoch)
- * `ExpiresStr` -- When your API credentials expire (string)
+ * `ExpiresEpoch` -- When your API credentials expire (UNIX epoch)
+ * `Expires` -- When your API credentials expire (string)
  * `Arn` -- AWS ARN for this role
  * `RoleName` -- The role name
  * `DefaultRegion` -- The manually configured default region for this role
@@ -511,8 +511,8 @@ Specify which fields to display via the `list` command.  Valid options are:
  * `Arn` -- Role ARN
  * `DefaultRegion` -- Configured default region
  * `EmailAddress` -- Email address of root account associated with AWS Account
- * `Expires` -- Unix epoch time when cached STS creds expire
- * `ExpiresStr` -- Hours and minutes until cached STS creds expire
+ * `ExpiresEpoch` -- Unix epoch time when cached STS creds expire
+ * `Expires` -- Hours and minutes until cached STS creds expire
  * `Profile` -- Value used for `$AWS_SSO_PROFILE` and the profile name in `~/.aws/config`
  * `RoleName` -- Role name
  * `SSO` -- AWS SSO instance name

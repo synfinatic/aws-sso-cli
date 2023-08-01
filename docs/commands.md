@@ -257,7 +257,7 @@ which fields are printed by specifying the field names as arguments.
 Flags:
 
  * `--list-fields`, `-f` -- List the available fields to print
- * `--prefix <FieldName>=<Prefix>`, `-P` -- Filter results by the given field 
+ * `--prefix <FieldName>=<Prefix>`, `-P` -- Filter results by the given field
     value & prefix value
  * `--csv` -- Generate results in CSV format
  * `--sort <FieldName>`, `-s` -- Sort results by the provided field name
@@ -274,11 +274,11 @@ Default fields:
  * `AccountIdStr`
  * `AccountAlias`
  * `RoleName`
- * `ExpiresStr`
+ * `Expires`
 
-**Note:** Sorting always happens in a case-sensitive and alphabetic manner.
-
-**Note:** Sorting by `AccountId` is discouraged.  Use `AccountIdStr` instead!
+**Note:** Sorting for `AccountIdStr` and `Expires` is done via their respective
+`AccountId` and `ExpiresEpoch` integer values.  Expired entries are considered to be very large.
+All other fields are sorted alphabetically and in a case-sensitive manner.
 
 ---
 
@@ -293,6 +293,10 @@ Flags:
     * `sts` -- Flush temporary STS credentials for IAM roles
     * `sso` -- Flush temporary AWS SSO credentials
     * `all` -- Flush temporary STS and SSO credentials
+
+**Note:** Flushing non-expired SSO credentials will not cause new credentials to be issued
+on the next call to the AWS SSO API, but rather the existing credentials will be refreshed
+from the browser session.
 
 ---
 
