@@ -35,7 +35,7 @@ import (
 )
 
 // Note: the Profile template uses the struct field names, not the header names!
-const DEFAULT_PROFILE_TEMPLATE = "{{.AccountIdStr}}:{{.RoleName}}"
+const DEFAULT_PROFILE_TEMPLATE = "{{.AccountIdPad}}:{{.RoleName}}"
 
 // main struct holding all our Roles discovered via AWS SSO and
 // via the config.yaml
@@ -141,7 +141,7 @@ func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) 
 		if thisRoleName == roleName {
 			flat := AWSRoleFlat{
 				AccountId:     accountId,
-				AccountIdStr:  idStr,
+				AccountIdPad:  idStr,
 				AccountName:   account.Name,
 				AccountAlias:  account.Alias,
 				EmailAddress:  account.EmailAddress,
@@ -315,7 +315,7 @@ func (r *Roles) checkProfiles(s *Settings) error {
 type AWSRoleFlat struct {
 	Id            int               `header:"Id"`
 	AccountId     int64             `json:"AccountId" header:"AccountId"`
-	AccountIdStr  string            `json:"-" header:"AccountIdStr"`
+	AccountIdPad  string            `json:"-" header:"AccountIdPad"`
 	AccountName   string            `json:"AccountName" header:"AccountName"`
 	AccountAlias  string            `json:"AccountAlias" header:"AccountAlias"`
 	EmailAddress  string            `json:"EmailAddress" header:"EmailAddress"`
@@ -450,8 +450,8 @@ func (r *AWSRoleFlat) HasPrefix(field, prefix string) (bool, error) {
 		if strings.HasPrefix(fmt.Sprintf("%d", r.AccountId), prefix) {
 			return true, nil
 		}
-	case "AccountIdStr":
-		if strings.HasPrefix(r.AccountIdStr, prefix) {
+	case "AccountIdPad":
+		if strings.HasPrefix(r.AccountIdPad, prefix) {
 			return true, nil
 		}
 	case "AccountName":
@@ -543,7 +543,7 @@ func (r *AWSRoleFlat) GetSortableField(columnName string) (FlatField, error) {
 	}
 
 	switch fieldName {
-	case "AccountId", "AccountIdStr":
+	case "AccountId", "AccountIdPad":
 		// use the integer value
 		ret.Type = Ival
 		ret.Ival = r.AccountId

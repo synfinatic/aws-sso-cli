@@ -271,14 +271,15 @@ defaults and/or the specified [ListFields](config.md#ListFields) in the
 
 Default fields:
 
- * `AccountIdStr`
+ * `AccountIdPad`
  * `AccountAlias`
  * `RoleName`
  * `Expires`
 
-**Note:** Sorting for `AccountIdStr` and `Expires` is done via their respective
-`AccountId` and `ExpiresEpoch` integer values.  Expired entries are considered to be very large.
-All other fields are sorted alphabetically and in a case-sensitive manner.
+**Note:** Sorting for `AccountIdPad` and `Expires` is done via their respective
+`AccountId` and `ExpiresEpoch` integer values.  Expired entries are considered
+to be very large.  All other fields are sorted alphabetically and in a
+case-sensitive manner.
 
 ---
 

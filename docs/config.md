@@ -375,7 +375,7 @@ The following variables are accessible from the `AWSRoleFlat` struct:
 
  * `Id` -- Unique integer defined by AWS SSO CLI for this role
  * `AccountId` -- AWS Account ID (int64! not zero padded)
- * `AccountIdStr` -- AWS Account ID (zero padded)
+ * `AccountIdPad` -- AWS Account ID (zero padded)
  * `AccountAlias` -- AWS Account Alias defined in AWS by the account owner
  * `AccountName` -- AWS Account Name defined in `~/.aws-sso/config.yaml`
  * `EmailAddress` -- Root account email address associated with the account in AWS
@@ -390,12 +390,12 @@ The following variables are accessible from the `AWSRoleFlat` struct:
  * `Tags` -- Map of additional custom key/value pairs
  * `Via` -- Role AWS SSO CLI will assume before assuming this role
 
-By default, `ProfileFormat` is set to `{{ .AccountIdStr }}:{{ .RoleName }}`.
+By default, `ProfileFormat` is set to `{{ .AccountIdPad }}:{{ .RoleName }}`.
 
 AWS SSO CLI uses [sprig](http://masterminds.github.io/sprig/) for most of its
 functions, but a few custom functions are available:
 
- * `AccountIdStr(x)` -- Converts the `.AccountId` variable to a string.  Deprecated.  Use `.AccountIdStr` variable instead.
+ * `AccountIdStr(x)` -- Converts the `.AccountId` variable to a string.  Deprecated.  Use `.AccountIdPad` variable instead.
  * `EmptyString(x)` -- Returns true/false if the value `x` is an empty string
  * `FirstItem([]x)` -- Returns the first item in a list that is not an empty string
  * `StringsJoin(x, []y)` -- Joins the items in `y` with the string `x`

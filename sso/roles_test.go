@@ -238,7 +238,7 @@ func TestAWSRoleFlatGetSortableField(t *testing.T) {
 	flat := AWSRoleFlat{
 		RoleName:     "foobar",
 		AccountId:    12344553243,
-		AccountIdStr: "012344553243",
+		AccountIdPad: "012344553243",
 		ExpiresEpoch: 0,
 		Expires:      "Expired",
 	}
@@ -253,7 +253,7 @@ func TestAWSRoleFlatGetSortableField(t *testing.T) {
 	assert.Equal(t, Ival, f.Type)
 	assert.Equal(t, int64(12344553243), f.Ival)
 
-	f, err = flat.GetSortableField("AccountIdStr")
+	f, err = flat.GetSortableField("AccountIdPad")
 	assert.NoError(t, err)
 	assert.Equal(t, Ival, f.Type)
 	assert.Equal(t, int64(12344553243), f.Ival)

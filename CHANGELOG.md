@@ -10,16 +10,16 @@
 ### Changes
 
  * No longer show usage on error
- * Add `AccountIdStr` as a new field name for the `list` command to pad with zeros
+ * Add `AccountIdPad` as a new field name for the `list` command to pad with zeros
     as appropriate.
- * Change default `ProfileFormat` to `{{ .AccountIdStr }}:{{ .RoleName }}`
+ * Change default `ProfileFormat` to `{{ .AccountIdPad }}:{{ .RoleName }}`
  * `ExpiresStr` field name is now `Expires` to match the header
  * `Expires` is now `ExpiresEpoch` as both field name and header
  * `ARN` header is now `Arn` to match the field name
 
 ### Deprecated
 
- * `AccountIdStr` function for `ProfileFormat`.  Use the `.AccountIdStr` variable instead.
+ * `AccountIdStr` function for `ProfileFormat`.  Use the `.AccountIdPad` variable instead.
  * `ExpiresStr` is now deprecated.  Use `Expires` instead.
 
 ## [v1.10.0] - 2023-07-30

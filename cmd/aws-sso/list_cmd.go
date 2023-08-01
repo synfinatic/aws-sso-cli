@@ -41,7 +41,7 @@ type ListCmd struct {
 }
 
 // Actually used in main.go, but definied here for locality
-var DEFAULT_LIST_FIELDS []string = []string{"AccountIdStr", "AccountAlias", "RoleName", "Profile", "Expires"}
+var DEFAULT_LIST_FIELDS []string = []string{"AccountIdPad", "AccountAlias", "RoleName", "Profile", "Expires"}
 
 // what should this actually do?
 func (cc *ListCmd) Run(ctx *RunContext) error {

@@ -23,7 +23,7 @@ var AllListFields = map[string]string{
 	"Id":            "Column Index",
 	"Arn":           "AWS Role Resource Name",
 	"AccountId":     "AWS AccountID (integer)",
-	"AccountIdStr":  "AWS AccountID (zero padded)",
+	"AccountIdPad":  "AWS AccountID (zero padded)",
 	"AccountName":   "Configured Account Name",
 	"AccountAlias":  "AWS Account Alias",
 	"DefaultRegion": "Default AWS Region",
