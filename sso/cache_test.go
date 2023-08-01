@@ -393,9 +393,9 @@ func (suite *CacheTestSuite) TestGetAllTags() {
 	cache := suite.cache.GetSSO()
 
 	tl := cache.Roles.GetAllTags()
-	assert.Equal(t, 9, len(*tl))
+	assert.Equal(t, 10, len(*tl))
 	tl = suite.cache.GetAllTagsSelect()
-	assert.Equal(t, 9, len(*tl))
+	assert.Equal(t, 10, len(*tl))
 }
 
 func (suite *CacheTestSuite) TestGetRoleTags() {

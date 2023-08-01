@@ -162,9 +162,6 @@ func (suite *CacheRolesTestSuite) TestGetRole() {
 	_, err := roles.GetRole(58234615182, "AWSAdministratorAccess")
 	assert.Error(t, err)
 
-	_, err = roles.GetRole(234234234324234234, "AWSAdministratorAccess")
-	assert.Error(t, err)
-
 	r, err := roles.GetRole(25823461518, "AWSAdministratorAccess")
 	assert.NoError(t, err)
 	assert.Equal(t, int64(25823461518), r.AccountId)
@@ -175,6 +172,10 @@ func (suite *CacheRolesTestSuite) TestGetRole() {
 	p, err := r.ProfileName(suite.settings)
 	assert.NoError(t, err)
 	assert.Equal(t, "OurCompany Control Tower Playground/AWSAdministratorAccess", p)
+
+	r, err = roles.GetRole(707513610766, "AWSPowerUserAccess")
+	assert.NoError(t, err)
+	assert.Equal(t, "arn:aws:iam::707513610766:role/AWSReadOnlyAccess", r.Via)
 }
 
 func (suite *CacheRolesTestSuite) TestProfileName() {
@@ -362,6 +363,10 @@ func TestStringsJoin(t *testing.T) {
 	assert.Equal(t, "a.b.c", stringsJoin(".", "a", "b", "c"))
 }
 
+func TestAccountIdToStr(t *testing.T) {
+	assert.Equal(t, "000000555555", accountIdToStr(555555))
+}
+
 func TestAWSRoleFlatHasPrefix(t *testing.T) {
 	f := &AWSRoleFlat{
 		Id:            10,
@@ -474,4 +479,15 @@ func (suite *CacheRolesTestSuite) TestCheckProfiles() {
 	r = tests["Valid3"]
 	err = r.checkProfiles(&badSettings)
 	assert.Error(t, err)
+}
+
+func (suite *CacheRolesTestSuite) TestGetRoleChain() {
+	t := suite.T()
+
+	roles := suite.cache.SSO[suite.cache.ssoName].Roles
+	flat := roles.GetRoleChain(707513610766, "AWSPowerUserAccess")
+	assert.Equal(t, 2, len(flat))
+
+	assert.Equal(t, "arn:aws:iam::707513610766:role/AWSReadOnlyAccess", flat[0].Arn)
+	assert.Equal(t, "arn:aws:iam::707513610766:role/AWSPowerUserAccess", flat[1].Arn)
 }

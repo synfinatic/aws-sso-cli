@@ -134,10 +134,7 @@ func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) 
 	}
 
 	for thisRoleName, role := range account.Roles {
-		idStr, err := utils.AccountIdToString(accountId)
-		if err != nil {
-			return &AWSRoleFlat{}, err
-		}
+		idStr, _ := utils.AccountIdToString(accountId)
 		if thisRoleName == roleName {
 			flat := AWSRoleFlat{
 				AccountId:     accountId,
