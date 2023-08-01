@@ -1,14 +1,23 @@
 # AWS SSO CLI Changelog
 
-## Unreleased
+## [v1.10.1] - 2023-07-31
 
 ### Bugs
 
  * Fix `process --profile` flag not working
+ * Use `ExpireStr` consistently rather than `Expires`
+ * Fix `AccountId` still not zero padding in `list` output
 
 ### Changes
 
  * No longer show usage on error
+ * Add `AccountIdStr` as a new field name for the `list` command to pad with zeros
+    as appropriate.
+ * Change default `ProfileFormat` to `{{ .AccountIdStr }}:{{ .RoleName }}`
+
+### Deprecated
+
+ * `AccountIdStr` function for `ProfileFormat`.  Use the `.AccountIdStr` variable instead.
 
 ## [v1.10.0] - 2023-07-30
 
@@ -502,7 +511,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.10.0...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.10.1...main
+[v1.10.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.10.0
 [v1.10.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.10
 [v1.9.10]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.9
 [v1.9.9]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.9

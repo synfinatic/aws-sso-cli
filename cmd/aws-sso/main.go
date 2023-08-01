@@ -82,7 +82,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"DefaultRegion":                             "us-east-1",
 	"HistoryLimit":                              10,
 	"HistoryMinutes":                            1440, // 24hrs
-	"ListFields":                                []string{"AccountId", "AccountAlias", "RoleName", "Profile", "ExpiresStr"},
+	"ListFields":                                default_list_fields,
 	"ConsoleDuration":                           60,
 	"UrlAction":                                 "open",
 	"ConfigProfilesUrlAction":                   "open",
@@ -90,7 +90,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"DefaultSSO":                                "Default",
 	"FirefoxOpenUrlInContainer":                 false,
 	"AutoConfigCheck":                           false,
-	"ProfileFormat":                             `{{ AccountIdStr .AccountId }}:{{ .RoleName }}`,
+	"ProfileFormat":                             sso.DEFAULT_PROFILE_TEMPLATE,
 	"CacheRefresh":                              24, // in hours
 	"Threads":                                   5,
 }

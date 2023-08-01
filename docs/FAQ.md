@@ -195,8 +195,7 @@ Some examples:
  * `ProfileFormat: '{{ FirstItem .AccountName .AccountAlias }}'` -- If there
     is an Account Name set in the config.yaml print that, otherwise print the
     Account Alias defined by the AWS administrator.
- * `ProfileFormat: '{{ AccountIdStr .AccountId }}'` -- Pad the AccountId with
-    leading zeros if it is < 12 digits long
+ * `ProfileFormat: '{{ .AccountIdStr }}'` -- Pad the AccountId with leading zeros if it is < 12 digits long
  * `ProfileFormat: '{{ .AccountId }}'` -- Print the AccountId as a regular number
  * `ProfileFormat: '{{ StringsJoin ":" .AccountAlias .RoleName }}'` -- Another
     way of writing `{{ .AccountAlias }}:{{ .RoleName }}`

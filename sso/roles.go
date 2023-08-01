@@ -33,7 +33,8 @@ import (
 	"github.com/synfinatic/gotable"
 )
 
-const DEFAULT_PROFILE_TEMPLATE = "{{AccountIdStr .AccountId}}:{{.RoleName}}"
+// Note: the Profile template uses the struct field names, not the header names!
+const DEFAULT_PROFILE_TEMPLATE = "{{.AccountIdStr}}:{{.RoleName}}"
 
 // main struct holding all our Roles discovered via AWS SSO and
 // via the config.yaml
@@ -132,9 +133,14 @@ func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) 
 	}
 
 	for thisRoleName, role := range account.Roles {
+		idStr, err := utils.AccountIdToString(accountId)
+		if err != nil {
+			return &AWSRoleFlat{}, err
+		}
 		if thisRoleName == roleName {
 			flat := AWSRoleFlat{
 				AccountId:     accountId,
+				AccountIdStr:  idStr,
 				AccountName:   account.Name,
 				AccountAlias:  account.Alias,
 				EmailAddress:  account.EmailAddress,
@@ -170,7 +176,7 @@ func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) 
 				flat.DefaultRegion = role.DefaultRegion
 			}
 			// Automatic tags
-			flat.Tags["AccountID"], _ = utils.AccountIdToString(accountId)
+			flat.Tags["AccountID"] = idStr
 			flat.Tags["Email"] = account.EmailAddress
 
 			if account.Alias != "" {
@@ -308,11 +314,12 @@ func (r *Roles) checkProfiles(s *Settings) error {
 type AWSRoleFlat struct {
 	Id            int               `header:"Id"`
 	AccountId     int64             `json:"AccountId" header:"AccountId"`
+	AccountIdStr  string            `json:"-" header:"AccountIdStr"`
 	AccountName   string            `json:"AccountName" header:"AccountName"`
 	AccountAlias  string            `json:"AccountAlias" header:"AccountAlias"`
 	EmailAddress  string            `json:"EmailAddress" header:"EmailAddress"`
-	Expires       int64             `json:"Expires" header:"ExpiresEpoch"`
-	ExpiresStr    string            `json:"-" header:"Expires"`
+	Expires       int64             `json:"Expires" header:"Expires"`
+	ExpiresStr    string            `json:"-" header:"ExpiresStr"`
 	Arn           string            `json:"Arn" header:"ARN"`
 	RoleName      string            `json:"RoleName" header:"RoleName"`
 	Profile       string            `json:"Profile" header:"Profile"`
@@ -537,6 +544,7 @@ func (r *AWSRoleFlat) GetField(columnName string) (FlatField, error) {
 
 	switch fieldName {
 	case "AccountId":
+		// convert AccountId to the string
 		ret.Type = Sval
 		ret.Sval, err = utils.AccountIdToString(int64(f.Int()))
 		if err != nil {

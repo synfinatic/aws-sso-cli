@@ -40,6 +40,8 @@ type ListCmd struct {
 	Reverse    bool     `kong:"help='Reverse sort results',env='AWS_SSO_FIELD_SORT_REVERSE'"`
 }
 
+var default_list_fields []string = []string{"AccountIdStr", "AccountAlias", "RoleName", "Profile", "ExpiresStr"}
+
 // what should this actually do?
 func (cc *ListCmd) Run(ctx *RunContext) error {
 	var err error
@@ -189,7 +191,7 @@ func printRoles(ctx *RunContext, fields []string, csv bool, prefixSearch []strin
 			if exp, err := utils.TimeRemain(ctr.ExpiresAt, true); err != nil {
 				log.Errorf("Unable to determine time remain for %d: %s", ctr.ExpiresAt, err)
 			} else {
-				expires = fmt.Sprintf(" [Expires in: %s]", exp)
+				expires = fmt.Sprintf(" [Expires in: %s]", strings.TrimSpace(exp))
 			}
 		}
 		fmt.Printf("List of AWS roles for SSO Instance: %s%s\n\n", ctx.Settings.DefaultSSO, expires)

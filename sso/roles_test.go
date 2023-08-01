@@ -272,11 +272,11 @@ func TestAWSRoleFlatGetHeader(t *testing.T) {
 	f := AWSRoleFlat{}
 	x, err := f.GetHeader("ExpiresStr")
 	assert.NoError(t, err)
-	assert.Equal(t, "Expires", x)
+	assert.Equal(t, "ExpiresStr", x)
 
 	x, err = f.GetHeader("Expires")
 	assert.NoError(t, err)
-	assert.Equal(t, "ExpiresEpoch", x)
+	assert.Equal(t, "Expires", x)
 
 	x, err = f.GetHeader("Id")
 	assert.NoError(t, err)
