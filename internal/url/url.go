@@ -83,10 +83,10 @@ const (
 	Clip             Action = "clip"     // copy to clipboard
 	Print            Action = "print"    // print message & url to stderr
 	PrintUrl         Action = "printurl" // print only the  url to stderr
-	Exec                    = "exec"     // Exec comand
-	Open                    = "open"     // auto-open in default or specified browser
-	GrantedContainer        = "granted-containers"
-	OpenUrlContainer        = "open-url-in-container"
+	Exec             Action = "exec"     // Exec comand
+	Open             Action = "open"     // auto-open in default or specified browser
+	GrantedContainer Action = "granted-containers"
+	OpenUrlContainer Action = "open-url-in-container"
 )
 
 func (u Action) IsContainer() bool {
@@ -98,10 +98,10 @@ type ConfigProfilesAction string
 const (
 	ConfigProfilesUndef            ConfigProfilesAction = ""     // undefined
 	ConfigProfilesClip             ConfigProfilesAction = "clip" // copy to clipboard
-	ConfigProfilesExec                                  = "exec" // Exec comand
-	ConfigProfilesOpen                                  = "open" // auto-open in default or specified browser
-	ConfigProfilesGrantedContainer                      = "granted-containers"
-	ConfigProfilesOpenUrlContainer                      = "open-url-in-container"
+	ConfigProfilesExec             ConfigProfilesAction = "exec" // Exec comand
+	ConfigProfilesOpen             ConfigProfilesAction = "open" // auto-open in default or specified browser
+	ConfigProfilesGrantedContainer ConfigProfilesAction = "granted-containers"
+	ConfigProfilesOpenUrlContainer ConfigProfilesAction = "open-url-in-container"
 )
 
 func (u ConfigProfilesAction) IsContainer() bool {

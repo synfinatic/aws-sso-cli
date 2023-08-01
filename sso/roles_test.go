@@ -162,6 +162,9 @@ func (suite *CacheRolesTestSuite) TestGetRole() {
 	_, err := roles.GetRole(58234615182, "AWSAdministratorAccess")
 	assert.Error(t, err)
 
+	_, err = roles.GetRole(234234234324234234, "AWSAdministratorAccess")
+	assert.Error(t, err)
+
 	r, err := roles.GetRole(25823461518, "AWSAdministratorAccess")
 	assert.NoError(t, err)
 	assert.Equal(t, int64(25823461518), r.AccountId)
@@ -321,6 +324,22 @@ func TestAWSRoleFlatProfileName(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestRoleFlatExpiresIn(t *testing.T) {
+	f := &AWSRoleFlat{
+		ExpiresEpoch: 0,
+	}
+	x, err := f.ExpiresIn()
+	assert.NoError(t, err)
+	assert.Equal(t, "Expired", x)
+
+	f = &AWSRoleFlat{
+		ExpiresEpoch: time.Now().Add(time.Minute * 5).Unix(),
+	}
+	x, err = f.ExpiresIn()
+	assert.NoError(t, err)
+	assert.Equal(t, "4m", x)
+}
+
 // profile functions
 func TestEmptyString(t *testing.T) {
 	assert.True(t, emptyString(""))
@@ -347,6 +366,7 @@ func TestAWSRoleFlatHasPrefix(t *testing.T) {
 	f := &AWSRoleFlat{
 		Id:            10,
 		AccountId:     555555,
+		AccountIdPad:  "000000555555",
 		AccountName:   "testing account",
 		AccountAlias:  "testing",
 		EmailAddress:  "testing+aws@company.com",
@@ -375,6 +395,7 @@ func TestAWSRoleFlatHasPrefix(t *testing.T) {
 	valid := map[string]string{
 		"Id":            "1",
 		"AccountId":     "55",
+		"AccountIdPad":  "00000055",
 		"AccountName":   "testing",
 		"AccountAlias":  "test",
 		"EmailAddress":  "testing+aws@company.",

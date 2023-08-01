@@ -133,7 +133,7 @@ func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
 	}
 
 	// should we prompt user to override default browser?
-	if s.UrlAction == url.Open || s.ConfigProfilesUrlAction == url.Open {
+	if s.UrlAction == url.Open || s.ConfigProfilesUrlAction == url.ConfigProfilesOpen {
 		s.Browser = promptDefaultBrowser(s.Browser)
 	}
 

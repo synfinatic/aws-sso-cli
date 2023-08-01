@@ -229,7 +229,7 @@ func (s *Settings) applyDeprecations() bool {
 		if err != nil {
 			log.Warnf("Invalid value for ConfigUrlAction: %s", s.ConfigUrlAction)
 		}
-		s.ConfigUrlAction = "" // disable old value so it is omitempty
+		s.ConfigUrlAction = string(url.Undef) // disable old value so it is omitempty
 		change = true
 	}
 
@@ -248,6 +248,9 @@ func (s *Settings) applyDeprecations() bool {
 			}
 		}
 	}
+
+	// AccountIdStr .AccountId => .AccountIdPad in v1.11.0
+	s.ProfileFormat = strings.ReplaceAll(s.ProfileFormat, "AccountIdStr .AccountId", ".AccountIdPad")
 
 	return change
 }
