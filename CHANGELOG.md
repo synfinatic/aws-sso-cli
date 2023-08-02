@@ -4,8 +4,11 @@
 
 ### Bugs
 
+ * Fix `list --sort` bugs #506
  * Fix `process --profile` flag not working
- * Fix `AccountId` still not zero padding in `list` output
+ * Fix `AccountId` still not zero padding in `list` output #503
+ * Invalid fields passed to `list` command are now detected instead of an empty column
+ 
 
 ### Changes
 
@@ -20,7 +23,9 @@
 ### Deprecated
 
  * `AccountIdStr` function for `ProfileFormat`.  Use the `.AccountIdPad` variable instead.
- * `ExpiresStr` is now deprecated.  Use `Expires` instead.
+ * `AccountIdStr` field is replaced by `AccountIdPad` in `list` command and `ListFields` in config.yaml
+ * `ARN` field is replaced by `Arn` in `list` command and `ListFields` in config.yaml
+ * `ExpiresStr` field is replaced by `Expires` in `list` command and `ListFields` in config.yaml
 
 ## [v1.10.0] - 2023-07-30
 

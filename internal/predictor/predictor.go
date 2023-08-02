@@ -197,3 +197,14 @@ func getSSOValue() string {
 	}
 	return sso
 }
+
+func SupportedListField(name string) bool {
+	ret := false
+	for k := range AllListFields {
+		if k == name {
+			ret = true
+			break
+		}
+	}
+	return ret
+}

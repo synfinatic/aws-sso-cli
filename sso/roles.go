@@ -159,6 +159,7 @@ func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) 
 					flat.Expires = exp
 				}
 			} else {
+				flat.ExpiresEpoch = 0
 				flat.Expires = "Expired"
 			}
 
@@ -517,18 +518,13 @@ type FlatField struct {
 
 // GetSortableField returns a FlatField for the given field.  We do some mapping across
 // fields so that this can be used for sorting.
-func (r *AWSRoleFlat) GetSortableField(columnName string) (FlatField, error) {
-	var fieldName string
+func (r *AWSRoleFlat) GetSortableField(fieldName string) (FlatField, error) {
 	ret := FlatField{}
 
-	// Map cases where the `header` != field name in the struct
-	switch columnName {
+	switch fieldName {
 	case "Tags":
 		// Tags is a valid field, but we can't sort by it
 		return ret, fmt.Errorf("Unable to sort by `Tags`")
-
-	default:
-		fieldName = columnName
 	}
 
 	v := reflect.ValueOf(r)

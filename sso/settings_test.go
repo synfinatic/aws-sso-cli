@@ -332,7 +332,7 @@ func TestCreatedAt(t *testing.T) {
 
 func TestApplyDeprecations(t *testing.T) {
 	s := &Settings{
-		ListFields:                []string{"Foo", "Bar", "ExpiresStr"},
+		ListFields:                []string{"Foo", "Bar", "ExpiresStr", "AccountIdStr", "ARN"},
 		ProfileFormat:             "{{ AccountIdStr .AccountId }}:{{ .RoleName }}",
 		FirefoxOpenUrlInContainer: true,
 		ConfigProfilesUrlAction:   url.ConfigProfilesUndef,
@@ -350,8 +350,8 @@ func TestApplyDeprecations(t *testing.T) {
 	assert.Equal(t, url.OpenUrlContainer, s.UrlAction)
 	assert.Equal(t, false, s.FirefoxOpenUrlInContainer)
 
-	// ExpiresStr => Expires
-	assert.Equal(t, []string{"Foo", "Bar", "Expires"}, s.ListFields)
+	// ExpiresStr => Expires, etc
+	assert.Equal(t, []string{"Foo", "Bar", "Expires", "AccountIdPad", "Arn"}, s.ListFields)
 
 	// AccountIdStr .AccountId => .AccountIdPad
 	assert.Equal(t, "{{ .AccountIdPad }}:{{ .RoleName }}", s.ProfileFormat)

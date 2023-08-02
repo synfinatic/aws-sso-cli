@@ -86,6 +86,12 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 		fields = ctx.Cli.List.Fields
 	}
 
+	for _, f := range fields {
+		if !predictor.SupportedListField(f) {
+			return fmt.Errorf("Unsupported field: '%s'", f)
+		}
+	}
+
 	return printRoles(ctx, fields, ctx.Cli.List.CSV, prefixSearch, ctx.Cli.List.Sort, ctx.Cli.List.Reverse)
 }
 
@@ -118,29 +124,39 @@ func printRoles(ctx *RunContext, fields []string, csv bool, prefixSearch []strin
 	idx := 0
 
 	allRoles := roles.GetAllRoles()
+	for _, roleFlat := range allRoles {
+		// this doesn't happen in GetAllRoles()
+		p, err := roleFlat.ProfileName(ctx.Settings)
+		if err == nil {
+			roleFlat.Profile = p
+		}
+	}
 
 	var sortError error
 	sort.SliceStable(allRoles, func(i, j int) bool {
 		a, err := allRoles[i].GetSortableField(sortby)
 		if err != nil {
-			sortError = fmt.Errorf("Invalid --sort value: %s", sortby)
+			sortError = fmt.Errorf("Invalid --sort: %s", err.Error())
 			return false
 		}
 		b, _ := allRoles[j].GetSortableField(sortby)
 
-		if a.Type == sso.Sval {
+		switch a.Type {
+		case sso.Sval:
 			if !reverse {
 				return a.Sval < b.Sval
 			} else {
 				return a.Sval > b.Sval
 			}
-		} else if a.Type == sso.Ival {
+
+		case sso.Ival:
 			if !reverse {
 				return a.Ival < b.Ival
 			} else {
 				return a.Ival > b.Ival
 			}
-		} else {
+
+		default:
 			sortError = fmt.Errorf("Unable to sort by field: %s", sortby)
 			return false
 		}
@@ -163,27 +179,23 @@ func printRoles(ctx *RunContext, fields []string, csv bool, prefixSearch []strin
 			}
 		}
 
-		p, err := roleFlat.ProfileName(ctx.Settings)
-		if err == nil {
-			roleFlat.Profile = p
-		}
-
 		roleFlat.Id = idx
 		idx += 1
 		tr = append(tr, *roleFlat)
 	}
 
-	// Determine when our AWS SSO session expires
-	// list doesn't call doAuth() so we have to initialize our global *AwsSSO manually
-	s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
-	if err != nil {
-		log.Fatalf("%s", err.Error())
-	}
-	AwsSSO = sso.NewAWSSSO(s, &ctx.Store)
-
 	if csv {
 		err = gotable.GenerateCSV(tr, fields)
 	} else {
+		// Determine when our AWS SSO session expires
+		// list doesn't call doAuth() so we have to initialize our global *AwsSSO manually
+		var s *sso.SSOConfig
+		s, err = ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
+		if err != nil {
+			log.Fatalf("%s", err.Error())
+		}
+		AwsSSO = sso.NewAWSSSO(s, &ctx.Store)
+
 		expires := ""
 		ctr := storage.CreateTokenResponse{}
 		if err := ctx.Store.GetCreateTokenResponse(AwsSSO.StoreKey(), &ctr); err != nil {
@@ -199,6 +211,7 @@ func printRoles(ctx *RunContext, fields []string, csv bool, prefixSearch []strin
 
 		err = gotable.GenerateTable(tr, fields)
 	}
+
 	if err == nil {
 		fmt.Printf("\n")
 	}

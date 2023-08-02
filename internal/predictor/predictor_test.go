@@ -71,3 +71,8 @@ func TestCompletions(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.Equal(t, 3, len(c.Predict(args)))
 }
+
+func TestSupportedListField(t *testing.T) {
+	assert.True(t, SupportedListField("AccountIdPad"))
+	assert.False(t, SupportedListField("Account"))
+}
