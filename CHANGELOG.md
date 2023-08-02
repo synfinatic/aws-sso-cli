@@ -1,6 +1,6 @@
 # AWS SSO CLI Changelog
 
-## [v1.11.0] - 2023-07-31
+## [v1.11.0] - 2023-08-02
 
 ### Bugs
 
@@ -19,6 +19,7 @@
  * `ExpiresStr` field name is now `Expires` to match the header
  * `Expires` is now `ExpiresEpoch` as both field name and header
  * `ARN` header is now `Arn` to match the field name
+ * Add missing AWS Regions & SSO Regions #507
 
 ### Deprecated
 
