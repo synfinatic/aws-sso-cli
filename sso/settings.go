@@ -241,10 +241,17 @@ func (s *Settings) applyDeprecations() bool {
 	}
 
 	// ExpiresStr => Expires in v1.11.0
+	// AccountIdStr => AccountIdPad v1.11.0
+	// ARN => Arn v1.11.0
 	if len(s.ListFields) > 0 {
 		for i, v := range s.ListFields {
-			if v == "ExpiresStr" {
+			switch v {
+			case "ExpiresStr":
 				s.ListFields[i] = "Expires"
+			case "AccountIdStr":
+				s.ListFields[i] = "AccountIdPad"
+			case "ARN":
+				s.ListFields[i] = "Arn"
 			}
 		}
 	}
