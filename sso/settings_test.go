@@ -356,3 +356,10 @@ func TestApplyDeprecations(t *testing.T) {
 	// AccountIdStr .AccountId => .AccountIdPad
 	assert.Equal(t, "{{ .AccountIdPad }}:{{ .RoleName }}", s.ProfileFormat)
 }
+
+func TestGetExecutable(t *testing.T) {
+	path, err := getExecutable()
+	assert.NoError(t, err)
+	// can't test the NIX path really can we??
+	assert.Contains(t, path, "sso.test")
+}

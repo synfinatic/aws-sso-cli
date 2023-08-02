@@ -335,6 +335,13 @@ func (suite *CacheTestSuite) TestExpired() {
 	assert.Error(t, suite.cache.Expired(&s))
 	s.settings.CacheRefresh = 0
 	assert.NoError(t, suite.cache.Expired(&s))
+
+	// invalid version
+	c := &Cache{
+		Version: 1, // invalid
+	}
+	err := c.Expired(&s)
+	assert.Error(t, err)
 }
 
 func (suite *CacheTestSuite) TestGetRole() {
@@ -559,4 +566,12 @@ func (suite *CacheTestSuite) TestPruneSSO() {
 	c.PruneSSO(s)
 	assert.Contains(t, c.SSO, "Primary")
 	assert.NotContains(t, c.SSO, "Invalid")
+}
+
+func TestOpenCacheFailure(t *testing.T) {
+	s := &Settings{}
+	c, err := OpenCache("/dev/null", s)
+	assert.Error(t, err)
+	assert.Equal(t, int64(0), c.ConfigCreatedAt)
+	assert.Equal(t, int64(1), c.Version)
 }
