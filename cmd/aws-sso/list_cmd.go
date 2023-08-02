@@ -40,6 +40,9 @@ type ListCmd struct {
 	Reverse    bool     `kong:"help='Reverse sort results',env='AWS_SSO_FIELD_SORT_REVERSE'"`
 }
 
+// Actually used in main.go, but definied here for locality
+var DEFAULT_LIST_FIELDS []string = []string{"AccountIdPad", "AccountAlias", "RoleName", "Profile", "Expires"}
+
 // what should this actually do?
 func (cc *ListCmd) Run(ctx *RunContext) error {
 	var err error
@@ -118,12 +121,12 @@ func printRoles(ctx *RunContext, fields []string, csv bool, prefixSearch []strin
 
 	var sortError error
 	sort.SliceStable(allRoles, func(i, j int) bool {
-		a, err := allRoles[i].GetField(sortby)
+		a, err := allRoles[i].GetSortableField(sortby)
 		if err != nil {
 			sortError = fmt.Errorf("Invalid --sort value: %s", sortby)
 			return false
 		}
-		b, _ := allRoles[j].GetField(sortby)
+		b, _ := allRoles[j].GetSortableField(sortby)
 
 		if a.Type == sso.Sval {
 			if !reverse {
@@ -189,7 +192,7 @@ func printRoles(ctx *RunContext, fields []string, csv bool, prefixSearch []strin
 			if exp, err := utils.TimeRemain(ctr.ExpiresAt, true); err != nil {
 				log.Errorf("Unable to determine time remain for %d: %s", ctr.ExpiresAt, err)
 			} else {
-				expires = fmt.Sprintf(" [Expires in: %s]", exp)
+				expires = fmt.Sprintf(" [Expires in: %s]", strings.TrimSpace(exp))
 			}
 		}
 		fmt.Printf("List of AWS roles for SSO Instance: %s%s\n\n", ctx.Settings.DefaultSSO, expires)

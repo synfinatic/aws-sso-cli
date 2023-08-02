@@ -64,11 +64,11 @@ func (suite *SettingsTestSuite) TestLoadSettings() {
 
 	// ensure we upgraded ConfigUrlAction to ConfigProfilesUrlAction
 	assert.Equal(t, "", suite.settings.ConfigUrlAction)
-	assert.Equal(t, url.ConfigProfilesOpen, string(suite.settings.ConfigProfilesUrlAction))
+	assert.Equal(t, url.ConfigProfilesOpen, suite.settings.ConfigProfilesUrlAction)
 
 	// ensure we upgraded FirefoxOpenUrlInContainer
 	assert.False(t, suite.settings.FirefoxOpenUrlInContainer)
-	assert.Equal(t, url.OpenUrlContainer, string(suite.settings.UrlAction))
+	assert.Equal(t, url.OpenUrlContainer, suite.settings.UrlAction)
 }
 
 func (suite *SettingsTestSuite) TestGetSelectedSSO() {
@@ -328,4 +328,31 @@ func TestCreatedAt(t *testing.T) {
 	assert.Panics(t, func() {
 		s.CreatedAt()
 	})
+}
+
+func TestApplyDeprecations(t *testing.T) {
+	s := &Settings{
+		ListFields:                []string{"Foo", "Bar", "ExpiresStr"},
+		ProfileFormat:             "{{ AccountIdStr .AccountId }}:{{ .RoleName }}",
+		FirefoxOpenUrlInContainer: true,
+		ConfigProfilesUrlAction:   url.ConfigProfilesUndef,
+		ConfigUrlAction:           string(url.Exec),
+	}
+
+	r := s.applyDeprecations()
+	assert.True(t, r)
+
+	// Upgrade ConfigUrlAction to ConfigProfilesUrlAction
+	assert.Equal(t, string(url.Undef), s.ConfigUrlAction)
+	assert.Equal(t, url.ConfigProfilesExec, s.ConfigProfilesUrlAction)
+
+	// Upgrade FirefoxOpenUrlInContainer to UrlAction
+	assert.Equal(t, url.OpenUrlContainer, s.UrlAction)
+	assert.Equal(t, false, s.FirefoxOpenUrlInContainer)
+
+	// ExpiresStr => Expires
+	assert.Equal(t, []string{"Foo", "Bar", "Expires"}, s.ListFields)
+
+	// AccountIdStr .AccountId => .AccountIdPad
+	assert.Equal(t, "{{ .AccountIdPad }}:{{ .RoleName }}", s.ProfileFormat)
 }

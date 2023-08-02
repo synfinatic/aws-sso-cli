@@ -393,9 +393,9 @@ func (suite *CacheTestSuite) TestGetAllTags() {
 	cache := suite.cache.GetSSO()
 
 	tl := cache.Roles.GetAllTags()
-	assert.Equal(t, 9, len(*tl))
+	assert.Equal(t, 10, len(*tl))
 	tl = suite.cache.GetAllTagsSelect()
-	assert.Equal(t, 9, len(*tl))
+	assert.Equal(t, 10, len(*tl))
 }
 
 func (suite *CacheTestSuite) TestGetRoleTags() {
@@ -490,7 +490,7 @@ func (suite *CacheTestSuite) TestSetRoleExpires() {
 
 	flat, err := suite.cache.GetRole(TEST_ROLE_ARN)
 	assert.NoError(t, err)
-	assert.Equal(t, int64(12344553243), flat.Expires)
+	assert.Equal(t, int64(12344553243), flat.ExpiresEpoch)
 
 	err = suite.cache.SetRoleExpires(INVALID_ROLE_ARN, 12344553243)
 	assert.Error(t, err)

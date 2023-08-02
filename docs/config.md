@@ -374,10 +374,12 @@ tooling.
 The following variables are accessible from the `AWSRoleFlat` struct:
 
  * `Id` -- Unique integer defined by AWS SSO CLI for this role
- * `AccountId` -- AWS Account ID (int64! See `AccountIdStr()` below)
+ * `AccountId` -- AWS Account ID (int64! not zero padded)
+ * `AccountIdPad` -- AWS Account ID (zero padded)
  * `AccountAlias` -- AWS Account Alias defined in AWS by the account owner
  * `AccountName` -- AWS Account Name defined in `~/.aws-sso/config.yaml`
  * `EmailAddress` -- Root account email address associated with the account in AWS
+ * `ExpiresEpoch` -- When your API credentials expire (UNIX epoch)
  * `Expires` -- When your API credentials expire (string)
  * `Arn` -- AWS ARN for this role
  * `RoleName` -- The role name
@@ -388,12 +390,12 @@ The following variables are accessible from the `AWSRoleFlat` struct:
  * `Tags` -- Map of additional custom key/value pairs
  * `Via` -- Role AWS SSO CLI will assume before assuming this role
 
-By default, `ProfileFormat` is set to `{{ AccountIdStr .AccountId }}:{{ .RoleName }}`.
+By default, `ProfileFormat` is set to `{{ .AccountIdPad }}:{{ .RoleName }}`.
 
 AWS SSO CLI uses [sprig](http://masterminds.github.io/sprig/) for most of its
 functions, but a few custom functions are available:
 
- * `AccountIdStr(x)` -- Converts an AWS Account ID to a string
+ * `AccountIdStr(x)` -- Converts the `.AccountId` variable to a string.  Deprecated.  Use `.AccountIdPad` variable instead.
  * `EmptyString(x)` -- Returns true/false if the value `x` is an empty string
  * `FirstItem([]x)` -- Returns the first item in a list that is not an empty string
  * `StringsJoin(x, []y)` -- Joins the items in `y` with the string `x`
@@ -509,8 +511,8 @@ Specify which fields to display via the `list` command.  Valid options are:
  * `Arn` -- Role ARN
  * `DefaultRegion` -- Configured default region
  * `EmailAddress` -- Email address of root account associated with AWS Account
- * `Expires` -- Unix epoch time when cached STS creds expire
- * `ExpiresStr` -- Hours and minutes until cached STS creds expire
+ * `ExpiresEpoch` -- Unix epoch time when cached STS creds expire
+ * `Expires` -- Hours and minutes until cached STS creds expire
  * `Profile` -- Value used for `$AWS_SSO_PROFILE` and the profile name in `~/.aws/config`
  * `RoleName` -- Role name
  * `SSO` -- AWS SSO instance name

@@ -229,7 +229,7 @@ func (s *Settings) applyDeprecations() bool {
 		if err != nil {
 			log.Warnf("Invalid value for ConfigUrlAction: %s", s.ConfigUrlAction)
 		}
-		s.ConfigUrlAction = "" // disable old value so it is omitempty
+		s.ConfigUrlAction = string(url.Undef) // disable old value so it is omitempty
 		change = true
 	}
 
@@ -239,6 +239,18 @@ func (s *Settings) applyDeprecations() bool {
 		s.FirefoxOpenUrlInContainer = false // disable old value so it is omitempty
 		change = true
 	}
+
+	// ExpiresStr => Expires in v1.11.0
+	if len(s.ListFields) > 0 {
+		for i, v := range s.ListFields {
+			if v == "ExpiresStr" {
+				s.ListFields[i] = "Expires"
+			}
+		}
+	}
+
+	// AccountIdStr .AccountId => .AccountIdPad in v1.11.0
+	s.ProfileFormat = strings.ReplaceAll(s.ProfileFormat, "AccountIdStr .AccountId", ".AccountIdPad")
 
 	return change
 }

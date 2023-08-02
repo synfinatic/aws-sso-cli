@@ -26,6 +26,7 @@ Valid1:
           Profile: FunnyMan
         Foobar2:
           Profile: FunnyMan2
+          Via: arn:aws:iam::0000001:role/FunnyMan
 
 Valid2:
   Accounts:

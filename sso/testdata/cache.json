@@ -212,6 +212,7 @@
               },
               "AWSPowerUserAccess": {
                 "Arn": "arn:aws:iam::707513610766:role/AWSPowerUserAccess",
+				"Via": "arn:aws:iam::707513610766:role/AWSReadOnlyAccess",
                 "Tags": {
                   "AccountAlias": "control-tower-dev-sub1-aws",
                   "AccountID": "707513610766",
