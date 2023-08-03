@@ -66,11 +66,14 @@ uninstall:  ## Uninstall binary from $INSTALL_PREFIX
 release-brew:  ## Create a PR against homebrew to bump the version 
 	brew bump-formula-pr --version $(PROJECT_VERSION) aws-sso-cli
 
+release-tag:  ## Tag our current HEAD as v$(PROJECT_VERSION)
+	git tag -a v$(PROJECT_VERSION) -m 'release $(PROJECT_VERSION)'
+
 #DOWNLOAD_URL := https://synfin.net/misc/aws-sso-cli.$(PROJECT_VERSION).tar.gz
 DOWNLOAD_URL ?= https://github.com/synfinatic/aws-sso-cli/archive/refs/tags/v$(PROJECT_VERSION).tar.gz
 
-.PHONY: shasum
-shasum:
+.PHONY: .shasum
+.shasum:
 	@which shasum >/dev/null || (echo "Missing 'shasum' binary" ; exit 1)
 	@echo "foo" | shasum -a 256 >/dev/null || (echo "'shasum' does not support: -a 256"; exit 1)
 
@@ -97,7 +100,7 @@ tags: cmd/aws-sso/*.go sso/*.go internal/*/*.go ## Create tags file for vim, etc
 		exit 1 ; \
 	fi
 
-release: .validate-release clean .build-release package ## Build all our release binaries
+release: .validate-release .shasum clean .build-release package ## Build all our release binaries
 	cd dist && shasum -a 256 * | gpg --clear-sign >release.sig.asc
 
 .PHONY: run
