@@ -549,6 +549,28 @@ func promptAutoConfigCheck(flag bool) bool {
 	return yesNoItems[i].Value == "Yes"
 }
 
+func promptFullTextSearch(flag bool) bool {
+	var i int
+	var err error
+
+	fmt.Printf("\n")
+
+	label := "Enable full-text search? (FullTextSearch)"
+	sel := promptui.Select{
+		Label:        label,
+		Items:        yesNoItems,
+		CursorPos:    yesNoPos(flag),
+		HideSelected: false,
+		Stdout:       &utils.BellSkipper{},
+		Templates:    makeSelectTemplate(label),
+	}
+	if i, _, err = sel.Run(); err != nil {
+		log.WithError(err).Fatalf("Unable to select FullTextSearch")
+	}
+
+	return yesNoItems[i].Value == "Yes"
+}
+
 func promptCacheRefresh(defaultValue int64) int64 {
 	var val string
 	var err error
