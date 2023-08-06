@@ -90,6 +90,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"DefaultSSO":                                "Default",
 	"FirefoxOpenUrlInContainer":                 false,
 	"AutoConfigCheck":                           false,
+	"FullTextSearch":                            true,
 	"ProfileFormat":                             sso.DEFAULT_PROFILE_TEMPLATE,
 	"CacheRefresh":                              24, // in hours
 	"Threads":                                   5,

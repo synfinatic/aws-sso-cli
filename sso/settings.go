@@ -74,6 +74,7 @@ type Settings struct {
 	ListFields                []string                 `koanf:"ListFields" yaml:"ListFields,omitempty"`
 	ConfigVariables           map[string]interface{}   `koanf:"ConfigVariables" yaml:"ConfigVariables,omitempty"`
 	EnvVarTags                []string                 `koanf:"EnvVarTags" yaml:"EnvVarTags,omitempty"`
+	FullTextSearch            bool                     `koanf:"FullTextSearch" yaml:"FullTextSearch"`
 }
 
 // GetDefaultRegion scans the config settings file to pick the most local DefaultRegion from the tree

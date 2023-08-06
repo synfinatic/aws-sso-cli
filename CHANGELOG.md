@@ -1,5 +1,15 @@
 # AWS SSO CLI Changelog
 
+## Unreleased
+
+### Changes
+
+ * [FullTextSearch](docs/config.md) is enabled by default for interactive `list` mode.
+
+### New Features
+
+ * Add full-text search for interactive `list` mode #504
+
 ## [v1.11.0] - 2023-08-02
 
 ### Bugs

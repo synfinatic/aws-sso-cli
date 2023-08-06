@@ -65,6 +65,7 @@ ConfigVariables:
     <VarN>: <ValueN>
 
 FirstTag: <Tag Name>
+FullTextSearch: [true|false]
 AccountPrimaryTag:
     - <tag 1>
     - <tag 2>
@@ -423,6 +424,11 @@ Some examples to consider:
 When selecting a role, the tag key name at the top of the list will be this value regardless
 of sort order.  Useful if you want `History` or some other tag easily accessible via arrow keys.
 
+## FullTextSearch
+
+When set to `true`, searching via interactive exec mode (`aws-sso exec` without role selector args)
+will cause searching to be done via substrings rather than the default prefix based search.
+
 ## AccountPrimaryTag
 
 When selecting a role, if you first select by role name (via the `Role` tag) you
@@ -507,6 +513,7 @@ Specify which fields to display via the `list` command.  Valid options are:
  * `Id` -- Unique row identifier
  * `AccountAlias` -- Account Name from AWS SSO
  * `AccountId` -- AWS Account Id
+ * `AccountIdPad` -- AWS Account Id with leading zeros if necessary
  * `AccountName` -- Account Name from config.yaml
  * `Arn` -- Role ARN
  * `DefaultRegion` -- Configured default region

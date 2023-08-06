@@ -1,4 +1,4 @@
-PROJECT_VERSION := 1.11.0
+PROJECT_VERSION := 1.12.0
 DOCKER_REPO     := synfinatic
 PROJECT_NAME    := aws-sso
 

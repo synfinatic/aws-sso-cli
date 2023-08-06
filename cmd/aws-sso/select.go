@@ -34,12 +34,13 @@ import (
 type CompleterExec = func(*RunContext, *sso.AWSSSO, int64, string) error
 
 type TagsCompleter struct {
-	ctx      *RunContext
-	sso      *sso.SSOConfig
-	roleTags *sso.RoleTags
-	allTags  *tags.TagsList
-	suggest  []prompt.Suggest
-	exec     CompleterExec
+	ctx            *RunContext
+	sso            *sso.SSOConfig
+	roleTags       *sso.RoleTags
+	allTags        *tags.TagsList
+	suggest        []prompt.Suggest
+	exec           CompleterExec
+	fullTextSearch bool
 }
 
 func NewTagsCompleter(ctx *RunContext, s *sso.SSOConfig, exec CompleterExec) *TagsCompleter {
@@ -48,12 +49,13 @@ func NewTagsCompleter(ctx *RunContext, s *sso.SSOConfig, exec CompleterExec) *Ta
 	allTags := set.Cache.GetAllTagsSelect()
 
 	return &TagsCompleter{
-		ctx:      ctx,
-		sso:      s,
-		roleTags: roleTags,
-		allTags:  allTags,
-		suggest:  completeTags(roleTags, allTags, set.AccountPrimaryTag, []string{}, set.FirstTag),
-		exec:     exec,
+		ctx:            ctx,
+		sso:            s,
+		roleTags:       roleTags,
+		allTags:        allTags,
+		suggest:        completeTags(roleTags, allTags, set.AccountPrimaryTag, []string{}, set.FirstTag),
+		exec:           exec,
+		fullTextSearch: set.FullTextSearch,
 	}
 }
 
@@ -61,7 +63,11 @@ var CompleteSpaceReplace *regexp.Regexp = regexp.MustCompile(`\s+`)
 
 func (tc *TagsCompleter) Complete(d prompt.Document) []prompt.Suggest {
 	if d.TextBeforeCursor() == "" {
-		return prompt.FilterHasPrefix(tc.suggest, d.GetWordBeforeCursor(), true)
+		if tc.fullTextSearch {
+			return prompt.FilterContains(tc.suggest, d.GetWordBeforeCursor(), true)
+		} else {
+			return prompt.FilterHasPrefix(tc.suggest, d.GetWordBeforeCursor(), true)
+		}
 	}
 
 	args := d.TextBeforeCursor()
@@ -71,7 +77,11 @@ func (tc *TagsCompleter) Complete(d prompt.Document) []prompt.Suggest {
 	cleanArgs := CompleteSpaceReplace.ReplaceAllString(args, " ")
 	argsList := strings.Split(cleanArgs, " ")
 	suggest := completeTags(tc.roleTags, tc.allTags, tc.ctx.Settings.AccountPrimaryTag, argsList, tc.ctx.Settings.FirstTag)
-	return prompt.FilterHasPrefix(suggest, w, true)
+	if tc.fullTextSearch {
+		return prompt.FilterContains(suggest, w, true)
+	} else {
+		return prompt.FilterHasPrefix(suggest, w, true)
+	}
 }
 
 // https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_iam-quotas.html

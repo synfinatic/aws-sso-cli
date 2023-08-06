@@ -100,6 +100,7 @@ func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
 			ConsoleDuration: 60,
 			CacheRefresh:    168,
 			AutoConfigCheck: false,
+			FullTextSearch:  true,
 			HistoryLimit:    10,
 			HistoryMinutes:  1440,
 			UrlExecCommand:  []string{},
@@ -118,6 +119,9 @@ func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
 	if s.CacheRefresh > 0 {
 		s.AutoConfigCheck = promptAutoConfigCheck(s.AutoConfigCheck)
 	}
+
+	// full text search?
+	s.FullTextSearch = promptFullTextSearch(s.FullTextSearch)
 
 	// next how we open URLs
 	s.UrlAction = promptUrlAction(s.UrlAction)
