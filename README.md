@@ -20,6 +20,7 @@ Other Pages:
  * [Running aws-sso](docs/commands.md)
  * [Configuration](docs/config.md)
  * [Security Policy](security.md)
+ * [Using ECS Server mode](docs/ecs-server.md)
  * [Frequently Asked Questions](docs/FAQ.md)
  * [Compared to AWS Vault](docs/aws-vault.md)
  * [Releases](https://github.com/synfinatic/aws-sso-cli/releases)
@@ -110,6 +111,8 @@ https://user-images.githubusercontent.com/1075352/166165880-24f7c9af-a037-4e48-a
 Want to see more?  Check out the [other demos](docs/demos.md).
 
 ## Security
+
+Please note their is also a [Security Policy](security.md).
 
 Unlike the official [AWS cli tooling](https://aws.amazon.com/cli/), _all_
 authentication tokens and credentials used for accessing AWS and your SSO
