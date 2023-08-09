@@ -24,7 +24,6 @@ import (
 	"os/exec"
 	"runtime"
 
-	"github.com/c-bata/go-prompt"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
 )
@@ -59,33 +58,7 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 		return execCmd(ctx, awssso, sci.AccountId, sci.RoleName)
 	}
 
-	// Nope, auto-complete mode...
-	sso, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
-	if err != nil {
-		return err
-	}
-	if err = ctx.Settings.Cache.Expired(sso); err != nil {
-		log.Infof(err.Error())
-		c := &CacheCmd{}
-		if err = c.Run(ctx); err != nil {
-			return err
-		}
-	}
-
-	sso.Refresh(ctx.Settings)
-	fmt.Printf("Please use `exit` or `Ctrl-D` to quit.\n")
-
-	c := NewTagsCompleter(ctx, sso, execCmd)
-	opts := ctx.Settings.DefaultOptions(c.ExitChecker)
-	opts = append(opts, ctx.Settings.GetColorOptions()...)
-
-	p := prompt.New(
-		c.Executor,
-		c.Complete,
-		opts...,
-	)
-	p.Run()
-	return nil
+	return ctx.PromptExec(execCmd)
 }
 
 // Executes Cmd+Args in the context of the AWS Role creds

@@ -33,7 +33,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/c-bata/go-prompt"
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
@@ -61,52 +60,40 @@ type ConsoleCmd struct {
 }
 
 func (cc *ConsoleCmd) Run(ctx *RunContext) error {
-	duration := ctx.Settings.ConsoleDuration
-
 	if ctx.Cli.Console.Duration > 0 {
-		duration = ctx.Cli.Console.Duration
+		ctx.Settings.ConsoleDuration = ctx.Cli.Console.Duration
 	}
 
-	if duration > 0 && (duration < 15 || duration > 720) {
-		return fmt.Errorf("Invalid --duration %d.  Must be between 15 and 720", duration)
+	if ctx.Settings.ConsoleDuration > 0 && (ctx.Settings.ConsoleDuration < 15 || ctx.Settings.ConsoleDuration > 720) {
+		return fmt.Errorf("Invalid --duration %d.  Must be between 15 and 720", ctx.Settings.ConsoleDuration)
 	}
 
+	// do we force interactive prompt?
 	if ctx.Cli.Console.Prompt {
-		return consolePrompt(ctx)
-	} else if ctx.Cli.Console.Profile != "" {
-		awssso := doAuth(ctx)
-		cache := ctx.Settings.Cache.GetSSO()
-		rFlat, err := cache.Roles.GetRoleByProfile(ctx.Cli.Console.Profile, ctx.Settings)
-		if err != nil {
-			return err
-		}
+		return ctx.PromptExec(openConsole)
+	}
 
-		return openConsole(ctx, awssso, rFlat.AccountId, rFlat.RoleName)
-	} else if ctx.Cli.Console.Arn != "" {
-		awssso := doAuth(ctx)
+	// Check our CLI args
+	sci := NewSelectCliArgs(ctx.Cli.Console.Arn, ctx.Cli.Console.AccountId, ctx.Cli.Console.Role, ctx.Cli.Console.Profile)
+	if awssso, err := sci.Update(ctx); err == nil {
+		// successful lookup?
+		return openConsole(ctx, awssso, sci.AccountId, sci.RoleName)
+	}
 
-		accountid, role, err := utils.ParseRoleARN(ctx.Cli.Console.Arn)
-		if err != nil {
-			return err
-		}
-
-		return openConsole(ctx, awssso, accountid, role)
-	} else if ctx.Cli.Console.AccountId > 0 && ctx.Cli.Console.Role != "" {
-		awssso := doAuth(ctx)
-		return openConsole(ctx, awssso, ctx.Cli.Console.AccountId, ctx.Cli.Console.Role)
-	} else if haveAWSEnvVars(ctx) {
-		return consoleViaEnvVars(ctx, duration)
+	// Check our various ENV vars
+	if haveAWSEnvVars(ctx) {
+		return consoleViaEnvVars(ctx)
 	} else if ctx.Cli.Console.AwsProfile != "" {
 		ssoCache := ctx.Settings.Cache.GetSSO()
 		_, err := ssoCache.Roles.GetRoleByProfile(ctx.Cli.Console.AwsProfile, ctx.Settings)
 		if err == nil {
-			return consoleViaSDK(ctx, duration)
+			return consoleViaSDK(ctx)
 		}
 		log.Warnf("AWS_PROFILE=%s was not found in our cache.", ctx.Cli.Console.AwsProfile)
 	}
 
-	// default action is to prompt
-	return consolePrompt(ctx)
+	// fall back to interactive prompting...
+	return ctx.PromptExec(openConsole)
 }
 
 func stsSession(ctx *RunContext) (*sts.Client, error) {
@@ -133,7 +120,7 @@ func stsSession(ctx *RunContext) (*sts.Client, error) {
 	return sts.NewFromConfig(cfg), nil
 }
 
-func consoleViaEnvVars(ctx *RunContext, duration int32) error {
+func consoleViaEnvVars(ctx *RunContext) error {
 	// ask AWS STS for who we are so we can look it up in our cache
 
 	stsHandle, err := stsSession(ctx)
@@ -163,10 +150,10 @@ func consoleViaEnvVars(ctx *RunContext, duration int32) error {
 		SecretAccessKey: ctx.Cli.Console.SecretAccessKey,
 		SessionToken:    ctx.Cli.Console.SessionToken,
 	}
-	return openConsoleAccessKey(ctx, &creds, duration, region, accountid, role)
+	return openConsoleAccessKey(ctx, &creds, ctx.Settings.ConsoleDuration, region, accountid, role)
 }
 
-func consoleViaSDK(ctx *RunContext, duration int32) error {
+func consoleViaSDK(ctx *RunContext) error {
 	awssso := doAuth(ctx)
 	rFlat, err := ctx.Settings.Cache.GetSSO().Roles.GetRoleByProfile(ctx.Cli.Console.AwsProfile, ctx.Settings)
 	if err == nil {
@@ -195,7 +182,7 @@ func consoleViaSDK(ctx *RunContext, duration int32) error {
 	}
 
 	input := sts.GetFederationTokenInput{
-		DurationSeconds: aws.Int32(duration * 60),
+		DurationSeconds: aws.Int32(ctx.Settings.ConsoleDuration * 60),
 		Name:            aws.String(u.Username),
 	}
 	token, err := stsHandle.GetFederationToken(context.TODO(), &input)
@@ -208,32 +195,8 @@ func consoleViaSDK(ctx *RunContext, duration int32) error {
 		SessionToken:    aws.ToString(token.Credentials.SessionToken),
 	}
 
-	return openConsoleAccessKey(ctx, &creds, duration, region,
+	return openConsoleAccessKey(ctx, &creds, ctx.Settings.ConsoleDuration, region,
 		rFlat.AccountId, rFlat.RoleName)
-}
-
-func consolePrompt(ctx *RunContext) error {
-	// use completer to figure out the role
-	fmt.Printf("Please use `exit` or `Ctrl-D` to quit.\n")
-
-	sso, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
-	if err != nil {
-		return err
-	}
-	sso.Refresh(ctx.Settings)
-
-	c := NewTagsCompleter(ctx, sso, openConsole)
-	opts := ctx.Settings.DefaultOptions(c.ExitChecker)
-	opts = append(opts, ctx.Settings.GetColorOptions()...)
-
-	p := prompt.New(
-		c.Executor,
-		c.Complete,
-		opts...,
-	)
-
-	p.Run()
-	return nil
 }
 
 // haveAWSEnvVars returns true if we have all the AWS environment variables we need for a role

@@ -19,9 +19,9 @@ package main
  */
 
 import (
-	"fmt"
+	"context"
 
-	"github.com/c-bata/go-prompt"
+	"github.com/synfinatic/aws-sso-cli/internal/server"
 	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
@@ -31,7 +31,7 @@ type EcsCmd struct {
 }
 
 type EcsRunCmd struct {
-	Port uint16 `kong:"help='TCP port to listen on',env='AWS_SSO_ECS_PORT',required"`
+	Port int `kong:"help='TCP port to listen on',env='AWS_SSO_ECS_PORT',required"`
 }
 
 type EcsLoadCmd struct {
@@ -42,54 +42,35 @@ type EcsLoadCmd struct {
 	Profile   string `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile'"`
 
 	// Other params
-	Port uint16 `kong:"help='TCP port of aws-sso ECS Server',env='AWS_SSO_ECS_PORT',required"`
+	Port int `kong:"help='TCP port of aws-sso ECS Server',env='AWS_SSO_ECS_PORT',required"`
 }
 
 func (cc *EcsRunCmd) Run(ctx *RunContext) error {
-	return nil
+	s, err := server.NewEcsServer(context.TODO(), "", ctx.Cli.Ecs.Run.Port)
+	if err != nil {
+		return err
+	}
+	return s.Serve()
 }
 
 func (cc *EcsLoadCmd) Run(ctx *RunContext) error {
-	sci := NewSelectCliArgs(ctx.Cli.Exec.Arn, ctx.Cli.Exec.AccountId, ctx.Cli.Exec.Role, ctx.Cli.Exec.Profile)
+	sci := NewSelectCliArgs(ctx.Cli.Ecs.Load.Arn, ctx.Cli.Ecs.Load.AccountId, ctx.Cli.Ecs.Load.Role, ctx.Cli.Ecs.Load.Profile)
 	if awssso, err := sci.Update(ctx); err == nil {
 		// successful lookup?
 		return ecsLoadCmd(ctx, awssso, sci.AccountId, sci.RoleName)
 	}
 
-	// nope, auto-complete mode
-	sso, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
-	if err != nil {
-		return err
-	}
-	if err = ctx.Settings.Cache.Expired(sso); err != nil {
-		log.Infof(err.Error())
-		c := &CacheCmd{}
-		if err = c.Run(ctx); err != nil {
-			return err
-		}
-	}
-
-	sso.Refresh(ctx.Settings)
-	fmt.Printf("Please use `exit` or `Ctrl-D` to quit.\n")
-
-	c := NewTagsCompleter(ctx, sso, ecsLoadCmd)
-	opts := ctx.Settings.DefaultOptions(c.ExitChecker)
-	opts = append(opts, ctx.Settings.GetColorOptions()...)
-
-	p := prompt.New(
-		c.Executor,
-		c.Complete,
-		opts...,
-	)
-	p.Run()
-	return nil
+	return ctx.PromptExec(ecsLoadCmd)
 }
 
 // Loads our AWS API creds into the ECS Server
 func ecsLoadCmd(ctx *RunContext, awssso *sso.AWSSSO, accountId int64, role string) error {
-	_ = GetRoleCredentials(ctx, awssso, accountId, role)
-	//	creds := *credsPtr
+	creds := GetRoleCredentials(ctx, awssso, accountId, role)
 
 	// do something
-	return nil
+	c, err := server.NewClient(context.TODO(), ctx.Cli.Ecs.Load.Port)
+	if err != nil {
+		return err
+	}
+	return c.SubmitCreds(creds)
 }
