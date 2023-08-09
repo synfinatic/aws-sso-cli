@@ -104,7 +104,7 @@ release: .validate-release .shasum clean .build-release package ## Build all our
 	cd dist && shasum -a 256 * | gpg --clear-sign >release.sig.asc
 
 .PHONY: run
-run: cmd/aws-sso/*.go  sso/*.go ## build and run using $PROGRAM_ARGS
+run: cmd/aws-sso/*.go sso/*.go ## build and run using $PROGRAM_ARGS
 	go run ./cmd/aws-sso $(PROGRAM_ARGS)
 
 .PHONY: delve
@@ -243,3 +243,8 @@ docs/default-region.png:
 .PHONY: loc
 loc:  ## Print LOC stats
 	wc -l $$(find . -name "*.go")
+
+update-copyright:  ## Update the copyright year on *.go
+	$(shell YEAR=$$(date +%Y) LAST_YEAR=$$(($$(date +%Y)-1)) \
+		sed -i '' -Ee "s|2021-${LAST_YEAR}|2021-${YEAR}|" $$(find . -name "*.go"))
+	@echo "Updated copyright to 2021-$$(date +%Y)"
