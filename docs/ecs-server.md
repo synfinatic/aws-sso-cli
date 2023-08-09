@@ -32,13 +32,13 @@ AWS clients and `aws-sso` should use:
 
 `AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:8444/get-credentials`
 
-**Note:** It is important to _not_ set `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI` as that
-takes precidence for `AWS_CONTAINER_CREDENTIALS_FULL_URI`.
+**Note:** It is important to _not_ set `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`
+as that takes precidence for `AWS_CONTAINER_CREDENTIALS_FULL_URI`.
 
 ## Selecting a role via ECS Server
 
-Before you can assume a role, you must select an IAM role for the aws-sso ecs server to
-present to clients.
+Before you can assume a role, you must select an IAM role for the aws-sso ecs
+server to present to clients.
 
 ```bash 
 AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:8444/get-credentials aws-sso ecs load ...

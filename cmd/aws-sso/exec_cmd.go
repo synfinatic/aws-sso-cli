@@ -53,32 +53,10 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 		ctx.Cli.Exec.Cmd = "cmd.exe"
 	}
 
-	// Did user specify the ARN or account/role?
-	if ctx.Cli.Exec.Profile != "" {
-		awssso := doAuth(ctx)
-		cache := ctx.Settings.Cache.GetSSO()
-		rFlat, err := cache.Roles.GetRoleByProfile(ctx.Cli.Exec.Profile, ctx.Settings)
-		if err != nil {
-			return err
-		}
-
-		return execCmd(ctx, awssso, rFlat.AccountId, rFlat.RoleName)
-	} else if ctx.Cli.Exec.Arn != "" {
-		awssso := doAuth(ctx)
-
-		accountid, role, err := utils.ParseRoleARN(ctx.Cli.Exec.Arn)
-		if err != nil {
-			return err
-		}
-
-		return execCmd(ctx, awssso, accountid, role)
-	} else if ctx.Cli.Exec.AccountId != 0 || ctx.Cli.Exec.Role != "" {
-		if ctx.Cli.Exec.AccountId == 0 || ctx.Cli.Exec.Role == "" {
-			return fmt.Errorf("Please specify both --account and --role")
-		}
-		awssso := doAuth(ctx)
-
-		return execCmd(ctx, awssso, ctx.Cli.Exec.AccountId, ctx.Cli.Exec.Role)
+	sci := NewSelectCliArgs(ctx.Cli.Exec.Arn, ctx.Cli.Exec.AccountId, ctx.Cli.Exec.Role, ctx.Cli.Exec.Profile)
+	if awssso, err := sci.Update(ctx); err == nil {
+		// successful lookup?
+		return execCmd(ctx, awssso, sci.AccountId, sci.RoleName)
 	}
 
 	// Nope, auto-complete mode...

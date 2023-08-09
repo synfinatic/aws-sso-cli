@@ -46,6 +46,8 @@ var CommitID = "unknown"
 var Delta = ""
 var VALID_LOG_LEVELS = []string{"error", "warn", "info", "debug", "trace"}
 
+var AwsSSO *sso.AWSSSO // global
+
 type RunContext struct {
 	Kctx     *kong.Context
 	Cli      *CLI
@@ -125,8 +127,9 @@ type CLI struct {
 	Completions    CompleteCmd       `kong:"cmd,help='Manage shell completions'"`
 	ConfigProfiles ConfigProfilesCmd `kong:"cmd,help='Update ~/.aws/config with AWS SSO profiles from the cache'"`
 	Config         ConfigCmd         `kong:"cmd,help='Run the configuration wizard'"`
-	Version        VersionCmd        `kong:"cmd,help='Print version and exit'"`
+	Ecs            EcsCmd            `kong:"cmd,help='ECS Server commands'"`
 	Setup          SetupCmd          `kong:"cmd,hidden"` // need this so variables are visisble.
+	Version        VersionCmd        `kong:"cmd,help='Print version and exit'"`
 }
 
 func main() {
@@ -323,68 +326,6 @@ func GetRoleCredentials(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, ro
 		log.WithError(err).Warnf("Unable to update cache")
 	}
 	return &creds
-}
-
-var AwsSSO *sso.AWSSSO // global
-
-// Creates a singleton AWSSO object post authentication
-func doAuth(ctx *RunContext) *sso.AWSSSO {
-	if AwsSSO != nil {
-		return AwsSSO
-	}
-	s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
-	if err != nil {
-		log.Fatalf("%s", err.Error())
-	}
-	AwsSSO = sso.NewAWSSSO(s, &ctx.Store)
-	err = AwsSSO.Authenticate(ctx.Settings.UrlAction, ctx.Settings.Browser)
-	if err != nil {
-		log.WithError(err).Fatalf("Unable to authenticate")
-	}
-	if err = ctx.Settings.Cache.Expired(s); err != nil {
-		ssoName, err := ctx.Settings.GetSelectedSSOName(ctx.Cli.SSO)
-		log.Infof("Refreshing AWS SSO role cache for %s, please wait...", ssoName)
-		if err != nil {
-			log.Fatalf(err.Error())
-		}
-		if err = ctx.Settings.Cache.Refresh(AwsSSO, s, ssoName); err != nil {
-			log.WithError(err).Fatalf("Unable to refresh cache")
-		}
-		if err = ctx.Settings.Cache.Save(true); err != nil {
-			log.WithError(err).Errorf("Unable to save cache")
-		}
-
-		// should we update our config??
-		if !ctx.Cli.NoConfigCheck && ctx.Settings.AutoConfigCheck {
-			if ctx.Settings.ConfigProfilesUrlAction != url.ConfigProfilesUndef {
-				cfgFile := utils.GetHomePath("~/.aws/config")
-
-				action, _ := url.NewAction(string(ctx.Settings.ConfigProfilesUrlAction))
-				profiles, err := ctx.Settings.GetAllProfiles(action)
-				if err != nil {
-					log.Warnf("Unable to update %s: %s", cfgFile, err.Error())
-					return AwsSSO
-				}
-
-				if err = profiles.UniqueCheck(ctx.Settings); err != nil {
-					log.Errorf("Unable to update %s: %s", cfgFile, err.Error())
-					return AwsSSO
-				}
-
-				f, err := utils.NewFileEdit(CONFIG_TEMPLATE, profiles)
-				if err != nil {
-					log.Errorf("%s", err)
-					return AwsSSO
-				}
-
-				if err = f.UpdateConfig(true, false, cfgFile); err != nil {
-					log.Errorf("Unable to update %s: %s", cfgFile, err.Error())
-					return AwsSSO
-				}
-			}
-		}
-	}
-	return AwsSSO
 }
 
 func logLevelValidate(level string) error {
