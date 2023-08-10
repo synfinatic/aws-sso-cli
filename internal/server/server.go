@@ -44,14 +44,15 @@ package server
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
+	//	"crypto/rand"
+	//	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
+	"io"
 	"net"
 	"net/http"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
 
@@ -59,7 +60,7 @@ func writeErrorMessage(w http.ResponseWriter, msg string, statusCode int) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(statusCode)
 	if err := json.NewEncoder(w).Encode(map[string]string{"Message": msg}); err != nil {
-		log.Println(err.Error())
+		log.Error(err.Error())
 	}
 }
 
@@ -86,6 +87,7 @@ func writeCredsToResponse(creds *storage.RoleCredentials, w http.ResponseWriter)
 	}
 }
 
+/*
 func generateRandomString() string {
 	b := make([]byte, 30)
 	if _, err := rand.Read(b); err != nil {
@@ -93,6 +95,7 @@ func generateRandomString() string {
 	}
 	return base64.RawURLEncoding.EncodeToString(b)
 }
+*/
 
 type EcsServer struct {
 	listener    net.Listener
@@ -106,9 +109,11 @@ func NewEcsServer(ctx context.Context, authToken string, port int) (*EcsServer, 
 	if err != nil {
 		return nil, err
 	}
-	if authToken == "" {
-		authToken = generateRandomString()
-	}
+	/*
+		if authToken == "" {
+			authToken = generateRandomString()
+		}
+	*/
 
 	e := &EcsServer{
 		listener:  listener,
@@ -117,7 +122,7 @@ func NewEcsServer(ctx context.Context, authToken string, port int) (*EcsServer, 
 
 	router := http.NewServeMux()
 	router.HandleFunc("/", e.DefaultRoute)
-	router.HandleFunc("/load-creds/", e.LoadCredsRoute)
+	router.HandleFunc("/load-creds", e.LoadCredsRoute)
 	e.server.Handler = withLogging(withAuthorizationCheck(e.authToken, router.ServeHTTP))
 
 	return e, nil
@@ -144,17 +149,19 @@ func (e *EcsServer) DefaultRoute(w http.ResponseWriter, r *http.Request) {
 
 // PUT
 func (e *EcsServer) LoadCredsRoute(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
+	defer r.Body.Close()
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		writeErrorMessage(w, err.Error(), http.StatusInternalServerError)
+		log.Errorf("error reading body: %s", err.Error())
 		return
 	}
-	credsStr := r.PostFormValue("creds")
 	creds := &storage.RoleCredentials{}
-	if err = json.Unmarshal([]byte(credsStr), creds); err != nil {
+	if err = json.Unmarshal(body, creds); err != nil {
 		writeErrorMessage(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	log.Infof("creds: %v", spew.Sdump(creds))
 
 	if creds.Expired() {
 		writeErrorMessage(w, "Credentials expired.", http.StatusInternalServerError)

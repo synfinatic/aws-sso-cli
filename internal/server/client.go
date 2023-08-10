@@ -19,7 +19,12 @@ package server
  */
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
 
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
@@ -34,6 +39,30 @@ func NewClient(ctx context.Context, port int) (*Client, error) {
 	}, nil
 }
 
+func (c *Client) LoadUrl() string {
+	return fmt.Sprintf("http://localhost:%d/load-creds", c.port)
+}
+
 func (c *Client) SubmitCreds(creds *storage.RoleCredentials) error {
+	j, err := json.Marshal(creds)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest(http.MethodPut, c.LoadUrl(), bytes.NewBuffer(j))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Errorf("client error: %s", err.Error())
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%s", body)
 	return nil
 }

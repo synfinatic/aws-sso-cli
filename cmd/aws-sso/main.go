@@ -30,6 +30,7 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/awsconfig"
 	"github.com/synfinatic/aws-sso-cli/internal/helper"
 	"github.com/synfinatic/aws-sso-cli/internal/predictor"
+	"github.com/synfinatic/aws-sso-cli/internal/server"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/tags"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
@@ -146,6 +147,7 @@ func main() {
 	tags.SetLogger(log)
 	url.SetLogger(log)
 	utils.SetLogger(log)
+	server.SetLogger(log)
 
 	if err := logLevelValidate(cli.LogLevel); err != nil {
 		log.Fatalf("%s", err.Error())

@@ -24,7 +24,6 @@ package server
  */
 
 import (
-	"log"
 	"net/http"
 	"time"
 )
@@ -44,6 +43,6 @@ func withLogging(handler http.Handler) http.Handler {
 		requestStart := time.Now()
 		w2 := &loggingMiddlewareResponseWriter{w, http.StatusOK}
 		handler.ServeHTTP(w2, r)
-		log.Printf("http: %s: %d %s %s (%s)", r.RemoteAddr, w2.Code, r.Method, r.URL, time.Since(requestStart))
+		log.Infof("http: %s: %d %s %s (%s)", r.RemoteAddr, w2.Code, r.Method, r.URL, time.Since(requestStart))
 	})
 }
