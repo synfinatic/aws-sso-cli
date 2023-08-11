@@ -2,13 +2,22 @@
 
 ## Unreleased
 
+### Bugs
+
+ * Prevent crashing with large number of accounts #520
+
 ### Changes
 
- * [FullTextSearch](docs/config.md) is enabled by default for interactive `list` mode.
+ * [CacheRefresh](docs/config.md#CacheRefresh) now defaults to 168 hours (7 days)
+ * [FullTextSearch](docs/config.md#FullTextSearch) is enabled by default for interactive `list` mode.
+ * [MaxRetry](docs/config.md#MaxRetry) defaults to 10
+ * [MaxBackoff](docs/config.md#MaxBackoff) defaults to 5
 
 ### New Features
 
  * Add full-text search for interactive `list` mode #504
+ * Improve performance refreshing the list of accounts & roles 
+ * Add `MaxRetry` and `MaxBackoff` config options
 
 ## [v1.11.0] - 2023-08-02
 

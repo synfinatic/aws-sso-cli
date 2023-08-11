@@ -27,7 +27,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sso"
-	"github.com/aws/aws-sdk-go-v2/service/sso/types"
+	ssotypes "github.com/aws/aws-sdk-go-v2/service/sso/types"
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	"github.com/stretchr/testify/assert"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
@@ -82,10 +82,14 @@ func TestNewAWSSSO(t *testing.T) {
 
 	defer os.Remove(tfile.Name())
 
+	MAX_BACKOFF_SECONDS = 0 // make unit tests go fast
+
 	c := SSOConfig{
-		StartUrl:  "https://starturl.com/start",
-		SSORegion: "us-east-1",
-		settings:  &Settings{},
+		StartUrl:   "https://starturl.com/start",
+		SSORegion:  "us-east-1",
+		settings:   &Settings{},
+		MaxRetry:   1,
+		MaxBackoff: 1,
 	}
 
 	s := NewAWSSSO(&c, &jstore)
@@ -158,7 +162,7 @@ func TestGetRoles(t *testing.T) {
 			{
 				ListAccountRoles: &sso.ListAccountRolesOutput{
 					NextToken: aws.String("next-token"),
-					RoleList: []types.RoleInfo{
+					RoleList: []ssotypes.RoleInfo{
 						{
 							AccountId: aws.String("000001111111"),
 							RoleName:  aws.String("FooBar"),
@@ -174,7 +178,7 @@ func TestGetRoles(t *testing.T) {
 			{
 				ListAccountRoles: &sso.ListAccountRolesOutput{
 					NextToken: aws.String(""),
-					RoleList: []types.RoleInfo{
+					RoleList: []ssotypes.RoleInfo{
 						{
 							AccountId: aws.String("000001111111"),
 							RoleName:  aws.String("MooCow"),
@@ -184,7 +188,7 @@ func TestGetRoles(t *testing.T) {
 				Error: nil,
 			},
 			{
-				Error: fmt.Errorf("Due to caching, this error shouldn't happen"),
+				Error: fmt.Errorf("Due to caching in AWSSSO, this error shouldn't happen"),
 			},
 		},
 	}
@@ -196,6 +200,11 @@ func TestGetRoles(t *testing.T) {
 		EmailAddress: "foo@bar.com",
 	}
 	rinfo, err := as.GetRoles(aInfo)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, len(rinfo))
+
+	// use cache
+	rinfo, err = as.GetRoles(aInfo)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(rinfo))
 
@@ -239,6 +248,50 @@ func TestGetRoles(t *testing.T) {
 	aInfo = AccountInfo{
 		Id:           0,
 		AccountId:    "00000888888",
+		AccountName:  "MyAccount",
+		EmailAddress: "foo@bar.com",
+	}
+
+	_, err = as.GetRoles(aInfo)
+	assert.Error(t, err)
+
+	// Check our retry logic
+	as.Roles = map[string][]RoleInfo{}
+	as.sso = &mockSsoAPI{
+		Results: []mockSsoAPIResults{
+			{
+				ListAccountRoles: &sso.ListAccountRolesOutput{
+					NextToken: aws.String(""),
+					RoleList:  []ssotypes.RoleInfo{},
+				},
+				Error: &ssotypes.TooManyRequestsException{
+					Message: aws.String("testing"),
+				},
+			},
+			{
+				ListAccountRoles: &sso.ListAccountRolesOutput{
+					NextToken: aws.String(""),
+					RoleList:  []ssotypes.RoleInfo{},
+				},
+				Error: &ssotypes.TooManyRequestsException{
+					Message: aws.String("testing"),
+				},
+			},
+			{
+				ListAccountRoles: &sso.ListAccountRolesOutput{
+					NextToken: aws.String(""),
+					RoleList:  []ssotypes.RoleInfo{},
+				},
+				Error: &ssotypes.TooManyRequestsException{
+					Message: aws.String("testing"),
+				},
+			},
+		},
+	}
+
+	aInfo = AccountInfo{
+		Id:           0,
+		AccountId:    "000001111111",
 		AccountName:  "MyAccount",
 		EmailAddress: "foo@bar.com",
 	}
@@ -291,7 +344,7 @@ func TestGetRoles(t *testing.T) {
 			{
 				ListAccountRoles: &sso.ListAccountRolesOutput{
 					NextToken: aws.String("next-token"),
-					RoleList: []types.RoleInfo{
+					RoleList: []ssotypes.RoleInfo{
 						{
 							AccountId: aws.String("000001111111"),
 							RoleName:  aws.String("FooBar"),
@@ -307,7 +360,7 @@ func TestGetRoles(t *testing.T) {
 			{
 				ListAccountRoles: &sso.ListAccountRolesOutput{
 					NextToken: aws.String(""),
-					RoleList: []types.RoleInfo{
+					RoleList: []ssotypes.RoleInfo{
 						{
 							AccountId: aws.String("000001111111"),
 							RoleName:  aws.String("MooCow"),
@@ -425,12 +478,40 @@ func TestGetAccounts(t *testing.T) {
 		urlAction: "print",
 	}
 
+	// this won't work
+	as.sso = &mockSsoAPI{
+		Results: []mockSsoAPIResults{
+			{
+				ListAccounts: &sso.ListAccountsOutput{
+					NextToken:   aws.String(""),
+					AccountList: []ssotypes.AccountInfo{},
+				},
+				Error: &ssotypes.TooManyRequestsException{
+					Message: aws.String("testing"),
+				},
+			},
+			{
+				ListAccounts: &sso.ListAccountsOutput{
+					NextToken:   aws.String(""),
+					AccountList: []ssotypes.AccountInfo{},
+				},
+				Error: &ssotypes.TooManyRequestsException{
+					Message: aws.String("testing"),
+				},
+			},
+		},
+	}
+
+	_, err = as.GetAccounts()
+	assert.Error(t, err)
+
+	// this time should work
 	as.sso = &mockSsoAPI{
 		Results: []mockSsoAPIResults{
 			{
 				ListAccounts: &sso.ListAccountsOutput{
 					NextToken: aws.String("next-token"),
-					AccountList: []types.AccountInfo{
+					AccountList: []ssotypes.AccountInfo{
 						{
 							AccountId:    aws.String("000001111111"),
 							AccountName:  aws.String("MyAccount"),
@@ -448,7 +529,7 @@ func TestGetAccounts(t *testing.T) {
 			{
 				ListAccounts: &sso.ListAccountsOutput{
 					NextToken: aws.String(""),
-					AccountList: []types.AccountInfo{
+					AccountList: []ssotypes.AccountInfo{
 						{
 							AccountId:    aws.String("00000333333"),
 							AccountName:  aws.String("MyLastAccount"),
@@ -614,7 +695,7 @@ func TestGetRoleCredentials(t *testing.T) {
 		Results: []mockSsoAPIResults{
 			{
 				GetRoleCredentials: &sso.GetRoleCredentialsOutput{
-					RoleCredentials: &types.RoleCredentials{
+					RoleCredentials: &ssotypes.RoleCredentials{
 						AccessKeyId:     aws.String("access-key-id"),
 						Expiration:      42,
 						SecretAccessKey: aws.String("secret-access-key"),

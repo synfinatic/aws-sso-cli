@@ -92,8 +92,10 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"AutoConfigCheck":                           false,
 	"FullTextSearch":                            true,
 	"ProfileFormat":                             sso.DEFAULT_PROFILE_TEMPLATE,
-	"CacheRefresh":                              24, // in hours
+	"CacheRefresh":                              168, // 7 days in hours
 	"Threads":                                   5,
+	"MaxBackoff":                                5, // seconds
+	"MaxRetry":                                  10,
 }
 
 type CLI struct {
