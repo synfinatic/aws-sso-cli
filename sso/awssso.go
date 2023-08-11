@@ -21,9 +21,11 @@ package sso
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"reflect"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -37,6 +39,10 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/gotable"
+)
+
+const (
+	MAX_RETRY_DELAY = 10.0
 )
 
 // Necessary for mocking
@@ -77,11 +83,13 @@ type AWSSSO struct {
 
 func NewAWSSSO(s *SSOConfig, store *storage.SecureStorage) *AWSSSO {
 	oidcSession := ssooidc.New(ssooidc.Options{
-		Region: s.SSORegion,
+		Region:           s.SSORegion,
+		RetryMaxAttempts: 5,
 	})
 
 	ssoSession := sso.New(sso.Options{
-		Region: s.SSORegion,
+		Region:           s.SSORegion,
+		RetryMaxAttempts: 5,
 	})
 
 	as := AWSSSO{
@@ -139,6 +147,8 @@ func (ri RoleInfo) GetAccountId64() int64 {
 }
 
 // GetRoles fetches all the AWS SSO IAM Roles for the given AWS Account
+// Code is running up to X Threads via cache.processSSORoles()
+// and we must stricly protect our as.Roles[] dict
 func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 	as.rolesLock.RLock()
 	roles, ok := as.Roles[account.AccountId]
@@ -151,6 +161,7 @@ func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 	as.Roles[account.AccountId] = []RoleInfo{}
 	as.rolesLock.Unlock()
 
+	// why is this input value locked???
 	as.tokenLock.RLock()
 	input := sso.ListAccountRolesInput{
 		AccessToken: aws.String(as.Token.AccessToken),
@@ -159,26 +170,12 @@ func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 	}
 	as.tokenLock.RUnlock()
 
-	output, err := as.sso.ListAccountRoles(context.TODO(), &input)
-	if err != nil {
-		// sometimes our AccessToken is invalid even though it has not expired
-		// so retry once
-		log.Errorf("Unexpected AccessToken failure; refreshing: %s", err)
-		if err = as.reauthenticate(); err != nil {
-			// failed again... return our cache?
-			as.rolesLock.RLock()
-			defer as.rolesLock.RUnlock()
-			return as.Roles[account.AccountId], err
-		}
-		input.AccessToken = aws.String(as.Token.AccessToken)
-		if output, err = as.sso.ListAccountRoles(context.TODO(), &input); err != nil {
-			as.rolesLock.RLock()
-			defer as.rolesLock.RUnlock()
-			return as.Roles[account.AccountId], err
-		}
-	}
+	output := as.ListAccountRoles(&input)
+
+	// Process the output
 	for i, r := range output.RoleList {
 		if err := as.makeRoleInfo(account, i, r); err != nil {
+			// failed... give up
 			as.rolesLock.RLock()
 			defer as.rolesLock.RUnlock()
 			return as.Roles[account.AccountId], err
@@ -187,12 +184,7 @@ func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 
 	for aws.ToString(output.NextToken) != "" {
 		input.NextToken = output.NextToken
-		output, err = as.sso.ListAccountRoles(context.TODO(), &input)
-		if err != nil {
-			as.rolesLock.RLock()
-			defer as.rolesLock.RUnlock()
-			return as.Roles[account.AccountId], err
-		}
+		output = as.ListAccountRoles(&input)
 
 		as.rolesLock.RLock()
 		roleCount := len(as.Roles[account.AccountId])
@@ -210,6 +202,43 @@ func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 	as.rolesLock.RLock()
 	defer as.rolesLock.RUnlock()
 	return as.Roles[account.AccountId], nil
+}
+
+// ListAccountRoles is a wrapper around sso.ListAccountRoles which does our retry logic
+func (as *AWSSSO) ListAccountRoles(input *sso.ListAccountRolesInput) *sso.ListAccountRolesOutput {
+	output, err := as.sso.ListAccountRoles(context.TODO(), input)
+	if err != nil {
+		switch err.(type) {
+		case *types.TooManyRequestsException:
+			// 429 errors indicate we should wait and then try again
+			sleepSec := rand.Float32() * MAX_RETRY_DELAY // #nosec sleep random amount up MAX_RETRY_DELAY nosec
+			log.Errorf("TooManyRequestsException failure; trying again in %0.2f seconds...", sleepSec)
+			time.Sleep(time.Duration(sleepSec) * time.Second)
+
+		case *types.UnauthorizedException:
+			// if we have to re-auth, keep hold everyone else up
+			as.rolesLock.RLock()
+			log.Errorf("AccessToken Unauthorized Error; refreshing: %s", err.Error())
+
+			if err = as.reauthenticate(); err != nil {
+				// failed hard
+				log.WithError(err).Fatalf("Unexpected auth failure")
+			}
+			as.rolesLock.RUnlock()
+			input.AccessToken = aws.String(as.Token.AccessToken)
+
+		default:
+			log.WithError(err).Fatalf("Unexpected error")
+		}
+
+		// retry the ListAccountRoles after doing our needful...
+		if output, err = as.sso.ListAccountRoles(context.TODO(), input); err != nil {
+			// failed again.  Give up.
+			log.WithError(err).Fatalf("Unexpected error after retry")
+		}
+	}
+
+	return output
 }
 
 // makeRoleInfo takes the sso.types.RoleInfo and adds it onto our as.Roles[accountId] list

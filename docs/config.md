@@ -219,7 +219,7 @@ is also disabled.
 ## Threads
 
 Certain actions when communicating with AWS can be accellerated by running multiple
-parallel threads.  Must be >= 1.  Default is 10 threads.
+parallel threads.  Must be >= 1.  Default is 5 threads.
 
 ## Browser / UrlAction / UrlExecCommand
 
