@@ -20,11 +20,11 @@ package server
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
@@ -33,26 +33,43 @@ type Client struct {
 	port int
 }
 
-func NewClient(ctx context.Context, port int) (*Client, error) {
+func NewClient(port int) *Client {
 	return &Client{
 		port: port,
-	}, nil
+	}
 }
 
-func (c *Client) LoadUrl() string {
-	return fmt.Sprintf("http://localhost:%d/load-creds", c.port)
+func (c *Client) LoadUrl(profile string) string {
+	if profile == "" {
+		return fmt.Sprintf("http://localhost:%d%s", c.port, CREDS_ROUTE)
+	}
+	return fmt.Sprintf("http://localhost:%d%s?profile=%s", c.port, CREDS_ROUTE, url.QueryEscape(profile))
 }
 
-func (c *Client) SubmitCreds(creds *storage.RoleCredentials) error {
-	j, err := json.Marshal(creds)
+type ClientRequest struct {
+	Creds       *storage.RoleCredentials `json:"Creds"`
+	ProfileName string                   `json:"ProfileName"`
+}
+
+func (c *Client) SubmitCreds(creds *storage.RoleCredentials, profile string, slotted bool) error {
+	log.Debugf("loading %s in a slot: %v", profile, slotted)
+	cr := ClientRequest{
+		Creds:       creds,
+		ProfileName: profile,
+	}
+	j, err := json.Marshal(cr)
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest(http.MethodPut, c.LoadUrl(), bytes.NewBuffer(j))
+	var path string
+	if slotted {
+		path = profile
+	}
+	req, err := http.NewRequest(http.MethodPut, c.LoadUrl(path), bytes.NewBuffer(j))
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Type", CHARSET_JSON)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {

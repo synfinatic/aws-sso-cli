@@ -22,6 +22,8 @@ import (
 	"context"
 
 	"github.com/synfinatic/aws-sso-cli/internal/server"
+	//	"github.com/synfinatic/aws-sso-cli/internal/utils"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
@@ -42,7 +44,8 @@ type EcsLoadCmd struct {
 	Profile   string `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile'"`
 
 	// Other params
-	Port int `kong:"help='TCP port of aws-sso ECS Server',env='AWS_SSO_ECS_PORT',required"`
+	Port      int  `kong:"help='TCP port of aws-sso ECS Server',env='AWS_SSO_ECS_PORT',required"`
+	NoDefault bool `kong:"help='Load credentials in a unique slot using the ProfileName as the key'"`
 }
 
 func (cc *EcsRunCmd) Run(ctx *RunContext) error {
@@ -67,10 +70,21 @@ func (cc *EcsLoadCmd) Run(ctx *RunContext) error {
 func ecsLoadCmd(ctx *RunContext, awssso *sso.AWSSSO, accountId int64, role string) error {
 	creds := GetRoleCredentials(ctx, awssso, accountId, role)
 
-	// do something
-	c, err := server.NewClient(context.TODO(), ctx.Cli.Ecs.Load.Port)
+	cache := ctx.Settings.Cache.GetSSO() // ctx.Settings.Cache.Refresh(awssso, ssoConfig, ctx.Cli.SSO)
+	rFlat, err := cache.Roles.GetRole(accountId, role)
 	if err != nil {
 		return err
 	}
-	return c.SubmitCreds(creds)
+
+	// generate our ProfileName if necessary
+	p, err := rFlat.ProfileName(ctx.Settings)
+	if err == nil {
+		rFlat.Profile = p
+	}
+
+	// do something
+	c := server.NewClient(ctx.Cli.Ecs.Load.Port)
+
+	log.Debugf("%s", spew.Sdump(rFlat))
+	return c.SubmitCreds(creds, rFlat.Profile, ctx.Cli.Ecs.Load.NoDefault)
 }
