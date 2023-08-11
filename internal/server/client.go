@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
 
@@ -44,6 +45,10 @@ func (c *Client) LoadUrl(profile string) string {
 		return fmt.Sprintf("http://localhost:%d%s", c.port, CREDS_ROUTE)
 	}
 	return fmt.Sprintf("http://localhost:%d%s?profile=%s", c.port, CREDS_ROUTE, url.QueryEscape(profile))
+}
+
+func (c *Client) ProfileUrl() string {
+	return fmt.Sprintf("http://localhost:%d%s", c.port, PROFILE_ROUTE)
 }
 
 type ClientRequest struct {
@@ -71,15 +76,53 @@ func (c *Client) SubmitCreds(creds *storage.RoleCredentials, profile string, slo
 	}
 	req.Header.Set("Content-Type", CHARSET_JSON)
 	client := &http.Client{}
+	_, err = client.Do(req)
+	return err
+}
+
+func (c *Client) GetProfile() (string, error) {
+	req, err := http.NewRequest(http.MethodGet, c.ProfileUrl(), bytes.NewBuffer([]byte("")))
+	if err != nil {
+		return "", err
+	}
+
+	client := &http.Client{}
+	req.Header.Set("Content-Type", CHARSET_JSON)
+	if err != nil {
+		return "", err
+	}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Errorf("client error: %s", err.Error())
+		return "", err
 	}
 	defer resp.Body.Close()
+
 	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	m := map[string]string{}
+	err = json.Unmarshal(body, &m)
+	if err != nil {
+		return "", err
+	}
+	log.Debugf("resp: %s", spew.Sdump(m))
+
+	return m["profile"], nil
+}
+
+func (c *Client) Delete(profile string) error {
+	req, err := http.NewRequest(http.MethodDelete, c.LoadUrl(profile), bytes.NewBuffer([]byte("")))
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%s", body)
-	return nil
+
+	client := &http.Client{}
+	req.Header.Set("Content-Type", CHARSET_JSON)
+	if err != nil {
+		return err
+	}
+	_, err = client.Do(req)
+	return err
 }

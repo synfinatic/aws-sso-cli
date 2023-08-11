@@ -64,6 +64,7 @@ type EcsServer struct {
 const (
 	CREDS_ROUTE   = "/creds"   // put/get/delete
 	PROFILE_ROUTE = "/profile" // get
+	LIST_ROUTE    = "/"        // get: default route
 	CHARSET_JSON  = "application/json; charset=utf-8"
 )
 
@@ -84,7 +85,7 @@ func NewEcsServer(ctx context.Context, authToken string, port int) (*EcsServer, 
 	}
 
 	router := http.NewServeMux()
-	router.HandleFunc("/", e.DefaultRoute)
+	router.HandleFunc(LIST_ROUTE, e.ListRoute)
 	router.HandleFunc(CREDS_ROUTE, e.CredsRoute)
 	router.HandleFunc(PROFILE_ROUTE, e.ProfileRoute)
 	e.server.Handler = withLogging(withAuthorizationCheck(e.authToken, router.ServeHTTP))
@@ -97,8 +98,8 @@ func (e *EcsServer) Serve() error {
 	return e.server.Serve(e.listener)
 }
 
-// DefaultRoute/catch all always returns invalid
-func (e *EcsServer) DefaultRoute(w http.ResponseWriter, r *http.Request) {
+// ListRoute returns the list of roles
+func (e *EcsServer) ListRoute(w http.ResponseWriter, r *http.Request) {
 	log.Errorf("Invalid request")
 	e.Invalid(w)
 }
@@ -118,14 +119,16 @@ func (e *EcsServer) CredsRoute(w http.ResponseWriter, r *http.Request) {
 	case http.MethodDelete:
 		e.deleteCreds(w, r, profile)
 	default:
-		e.DefaultRoute(w, r)
+		e.Invalid(w)
 	}
 }
 
 // deleteCreds removes our credentials from the cache
 func (e *EcsServer) deleteCreds(w http.ResponseWriter, r *http.Request, profile string) {
 	if profile == "" {
-		e.defaultCreds = &ClientRequest{}
+		e.defaultCreds = &ClientRequest{
+			ProfileName: "",
+		}
 	} else {
 		delete(e.credentials, profile)
 	}
@@ -155,20 +158,26 @@ func (e *EcsServer) getCreds(w http.ResponseWriter, r *http.Request, profile str
 	writeCredsToResponse(c.Creds, w)
 }
 
-// putCreds loads credentials into the cache
-func (e *EcsServer) putCreds(w http.ResponseWriter, r *http.Request, profile string) {
+func (e *EcsServer) getClientRequest(r *http.Request) (*ClientRequest, error) {
 	defer r.Body.Close()
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Errorf("error reading body: %s", err.Error())
-		return
+		return &ClientRequest{}, fmt.Errorf("reading body: %s", err.Error())
 	}
 	creds := &ClientRequest{}
 	if err = json.Unmarshal(body, creds); err != nil {
+		return &ClientRequest{}, fmt.Errorf("parsing json: %s", err.Error())
+	}
+	return creds, nil
+}
+
+// putCreds loads credentials into the cache
+func (e *EcsServer) putCreds(w http.ResponseWriter, r *http.Request, profile string) {
+	creds, err := e.getClientRequest(r)
+	if err != nil {
 		writeMessage(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	if creds.Creds.Expired() {
 		e.Expired(w)
 		return
@@ -183,6 +192,11 @@ func (e *EcsServer) putCreds(w http.ResponseWriter, r *http.Request, profile str
 
 // RoleRoute returns the current ProfileName in the defaultCreds
 func (e *EcsServer) ProfileRoute(w http.ResponseWriter, r *http.Request) {
+	if e.defaultCreds.ProfileName == "" {
+		e.Unavailable(w)
+		return
+	}
+
 	if e.defaultCreds.Creds.Expired() {
 		e.Expired(w)
 		return
@@ -191,7 +205,7 @@ func (e *EcsServer) ProfileRoute(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", CHARSET_JSON)
 	w.WriteHeader(http.StatusOK)
 	profile := e.defaultCreds.ProfileName
-	if err := json.NewEncoder(w).Encode(map[string]string{"ProfileName": profile}); err != nil {
+	if err := json.NewEncoder(w).Encode(map[string]string{"profile": profile}); err != nil {
 		log.Error(err.Error())
 	}
 }
