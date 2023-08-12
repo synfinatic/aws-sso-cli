@@ -38,6 +38,8 @@ DefaultSSO: <name of AWS SSO>
 CacheRefresh: <hours>
 AutoConfigCheck: [False|True]
 Threads: <integer>
+MaxRetry: <integer>
+MaxBackoff: <integer>
 
 Browser: <path to web browser>
 UrlAction: [clip|exec|print|printurl|open|granted-containers|open-url-in-container]
@@ -200,29 +202,47 @@ https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html#API_Assu
 which must not start with `aws:` that your administrator may require you to set
 in order to assume a role with `Via`.
 
-## DefaultSSO
+## Common Config Options
+
+### DefaultSSO
 
 If you only have a single AWS SSO instance, then it doesn't really matter what
 you call it, but if you have two or more, than `Default` is automatically
 selected unless you manually specify it here, on the CLI (`--sso`), or via
 the `AWS_SSO` environment variable.
 
-## CacheRefresh
+### SSO Cache Options
+
+#### CacheRefresh
 
 This is the number of hours between automatically refreshing your AWS SSO cache
 to detect any changes in the roles you have been granted access to.  The default
-is 24 (1 day).  Disable this feature by setting to any value <= 0.
+is 168 (7 days).  Disable this feature by setting to any value <= 0.
 
 **Note:** If this feature is disabled, then [AutoConfigCheck](#autoconfigcheck)
 is also disabled.
 
-## Threads
+#### Threads
 
 Certain actions when communicating with AWS can be accellerated by running multiple
-parallel threads.  Must be >= 1.  Default is 10 threads.
+parallel threads.  Must be >= 1.  Default is 5 threads.  Note that too many threads
+can actually hurt performance for large number of accounts!
 
-## Browser / UrlAction / UrlExecCommand
+#### MaxRetry
 
+Maximum number of attempts before aborting.  Default is 10 which seems optimal
+for <= 50 accounts.  Value must be > 0.
+
+#### MaxBackoff
+
+Maximum number of seconds to wait before retrying.  Too low of a
+value will cause retries to fail more often.  Too high of a value will hurt
+performance.  Default is 5 seconds which seems optional for <= 50 accounts.
+Value must be > 0.
+
+### Browser Integration
+
+#### Browser / UrlAction / UrlExecCommand
 
 `UrlAction` gives you control over how AWS SSO and AWS Console URLs are opened
 in a browser:
@@ -287,7 +307,22 @@ UrlExecCommand:
 so you should specify `/Applications/Firefox.app/Contents/MacOS/firefox` (or as
 appropriate) as the command to execute.
 
-## ConfigProfilesUrlAction
+#### ConsoleDuration
+
+Number of minutes an AWS Console session is valid for (default 60).  If you wish
+to override the default session duration, you can specify the number of minutes
+here or with the `--duration` flag.
+
+Note that even though [AWS documents](
+https://docs.aws.amazon.com/STS/latest/APIReference/API_GetFederationToken.html)
+the API call to get a Console URL to be between 15 minutes and 36 hours, the
+real limit is 12 hours (720 minutes) because AWS SSO sessions [are limited to
+12 hours maximum](
+https://docs.aws.amazon.com/singlesignon/latest/userguide/howtosessionduration.html).
+
+### AWS_PROFILE Integration
+
+#### ConfigProfilesUrlAction
 
 This works just like `UrlAction` above, but is used for setting the default
 `--url-action` in your `~/.aws/config` when generating named AWS profiles for
@@ -302,70 +337,18 @@ Due to limitations with the AWS SDK, only the following options are valid:
  * `granted-containers`
  * `open-url-in-container`
 
-**Note:** This option is required if you also want to use [AutoConfigCheck](
-#autoconfigcheck).
+**Note:** This option is required if you also want to use 
+[AutoConfigCheck](#autoconfigcheck).
 
 **Note:** This config option was previously known as `ConfigUrlAction` which
 has been deprecated.
 
-## ConfigProfilesBinaryPath
+#### ConfigProfilesBinaryPath
 
 Override execution path for `aws-sso` when generating named AWS profiles via the
 [config-profiles](commands.md#config-profiles).
 
-## AutoConfigCheck
-
-When set to `True`, when you AWS SSO roles are automatically refreshed (see
-[CacheRefresh](#cacherefresh)) `aws-sso` will also check to see if any changes
-are warranted in your `~/.aws/config`.
-
-**Note:** This option requires you to also set [ConfigProfilesUrlAction](
-#configprofilesurlaction).
-
-**Note:** This option can be disabled temporarily on the command line by passing
-the `--no-config-check` flag.
-
-## LogLevel / LogLines
-
-By default, the `LogLevel` is 'warn'.  You can override it here or via
-`--log-level` with one of the following values:
-
- * `error`
- * `warn`
- * `info`
- * `debug`
- * `trace`
-
-`LogLines` includes the file name/line and module name with each log for
-advanced debugging.
-
-## ConsoleDuration
-
-Number of minutes an AWS Console session is valid for (default 60).  If you wish
-to override the default session duration, you can specify the number of minutes
-here or with the `--duration` flag.
-
-Note that even though [AWS documents](
-https://docs.aws.amazon.com/STS/latest/APIReference/API_GetFederationToken.html)
-the API call to get a Console URL to be between 15 minutes and 36 hours, the
-real limit is 12 hours (720 minutes) because AWS SSO sessions [are limited to
-12 hours maximum](
-https://docs.aws.amazon.com/singlesignon/latest/userguide/howtosessionduration.html).
-
-## SecureStore / JsonStore
-
-`SecureStore` supports the following backends:
-
- * `file` - Encrypted local files (OS agnostic and default on Linux)
- * `keychain` - macOS [Keychain](https://support.apple.com/guide/mac-help/use-keychains-to-store-passwords-mchlf375f392/mac) (default on macOS)
- * `kwallet` - [KDE Wallet](https://utils.kde.org/projects/kwalletmanager/)
- * `pass` - [pass](https://www.passwordstore.org) (uses GPG on backend)
- * `secret-service` - Freedesktop.org [Secret Service](https://specifications.freedesktop.org/secret-service/latest/re01.html)
- * `wincred` - Windows [Credential Manager](https://support.microsoft.com/en-us/windows/accessing-credential-manager-1b5c916a-6a16-889f-8581-fc16e8165ac0) (default on Windows)
- * `json` - Cleartext JSON file (very insecure and not recommended).  Location
-    can be overridden with `JsonStore`
-
-## ProfileFormat
+#### ProfileFormat
 
 AWS SSO CLI can set an environment variable named `AWS_SSO_PROFILE` with
 any value you can express using a [Go Template](https://pkg.go.dev/text/template)
@@ -407,7 +390,7 @@ with a `{`.
 
 For more information, [see the FAQ](FAQ.md#how-to-configure-profileformat).
 
-## ConfigVariables
+#### ConfigVariables
 
 Define a set of [config settings](
 https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html) for each
@@ -419,17 +402,19 @@ Some examples to consider:
  * `sts_regional_endpoints: regional`
  * `output: json`
 
-## FirstTag
+### Interactive Role Selection
+
+#### FirstTag
 
 When selecting a role, the tag key name at the top of the list will be this value regardless
 of sort order.  Useful if you want `History` or some other tag easily accessible via arrow keys.
 
-## FullTextSearch
+#### FullTextSearch
 
 When set to `true`, searching via interactive exec mode (`aws-sso exec` without role selector args)
 will cause searching to be done via substrings rather than the default prefix based search.
 
-## AccountPrimaryTag
+#### AccountPrimaryTag
 
 When selecting a role, if you first select by role name (via the `Role` tag) you
 will be presented with a list of matching ARNs to select. The
@@ -443,7 +428,7 @@ searched (first match is used):
 
 Set `AccountPrimaryTag` to an empty list to disable this feature.
 
-## PromptColors
+#### PromptColors
 
 `PromptColors` takes a map of prompt options and color options allowing you to
 have complete control of how AWS SSO CLI looks.  You only need to specify the
@@ -493,12 +478,12 @@ Valid high intensity colors:
  * `Turquoise`
  * `White`
 
-## HistoryLimit
+#### HistoryLimit
 
 Limits the number of recently used roles tracked via the History tag.
 Default is last 10 unique roles.  Set to 0 to disable.
 
-## HistoryMinutes
+#### HistoryMinutes
 
 Limits the list of recently used roles tracked via the History tag to
 roles that were last used within the last X minutes.  Set to 0 to not limit
@@ -506,7 +491,9 @@ based on the time.  Default is 1440 minutes (24 hours).
 
 This option has no effect if `HistoryLimit` is set to 0.
 
-## ListFields
+### Advanced Configuration Options
+
+#### ListFields
 
 Specify which fields to display via the `list` command.  Valid options are:
 
@@ -525,7 +512,46 @@ Specify which fields to display via the `list` command.  Valid options are:
  * `SSO` -- AWS SSO instance name
  * `Via` -- Role Chain Via
 
-## EnvVarTags
+#### AutoConfigCheck
+
+When set to `True`, when your AWS SSO roles are automatically refreshed (see
+[CacheRefresh](#cacherefresh)) `aws-sso` will also check to see if any changes
+are warranted in your `~/.aws/config`.
+
+**Note:** This option requires you to also set 
+[ConfigProfilesUrlAction](#configprofilesurlaction).
+
+**Note:** This option can be disabled temporarily on the command line by passing
+the `--no-config-check` flag.
+
+#### LogLevel / LogLines
+
+By default, the `LogLevel` is 'warn'.  You can override it here or via
+`--log-level` with one of the following values:
+
+ * `error`
+ * `warn`
+ * `info`
+ * `debug`
+ * `trace`
+
+`LogLines` includes the file name/line and module name with each log for
+advanced debugging.
+
+#### SecureStore / JsonStore
+
+`SecureStore` supports the following backends:
+
+ * `file` - Encrypted local files (OS agnostic and default on Linux)
+ * `keychain` - macOS [Keychain](https://support.apple.com/guide/mac-help/use-keychains-to-store-passwords-mchlf375f392/mac) (default on macOS)
+ * `kwallet` - [KDE Wallet](https://utils.kde.org/projects/kwalletmanager/)
+ * `pass` - [pass](https://www.passwordstore.org) (uses GPG on backend)
+ * `secret-service` - Freedesktop.org [Secret Service](https://specifications.freedesktop.org/secret-service/latest/re01.html)
+ * `wincred` - Windows [Credential Manager](https://support.microsoft.com/en-us/windows/accessing-credential-manager-1b5c916a-6a16-889f-8581-fc16e8165ac0) (default on Windows)
+ * `json` - Cleartext JSON file (very insecure and not recommended).  Location
+    can be overridden with `JsonStore`
+
+#### EnvVarTags
 
 List of tag keys that should be set as a shell environment variable when
 using the `eval` or `exec` commands.
@@ -535,3 +561,4 @@ controlled by `aws-sso` so any existing value will be overwritten.
 
 **Note:** This feature is not compatible when using roles using the
 `$AWS_PROFILE` via the `config` command.
+

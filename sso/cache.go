@@ -549,7 +549,7 @@ func (c *Cache) addSSORoles(r *Roles, as *AWSSSO) error {
 			case roles := <-results:
 				processSSORoles(roles, cache, r)
 				count++ // increment count only when processing results
-				log.Debugf("proccessed %d results", count)
+				log.Debugf("proccessed %d accounts, added %d roles, total %d", count, len(roles), len(r.GetAllRoles()))
 			case <-ticker.C:
 				log.Warnf("Fetching roles for %d accounts, this might take a while...\n", len(accounts)+1)
 				ticker.Stop()

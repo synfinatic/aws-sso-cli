@@ -33,6 +33,9 @@ type SSOConfig struct {
 	StartUrl      string                 `koanf:"StartUrl" yaml:"StartUrl"`
 	Accounts      map[string]*SSOAccount `koanf:"Accounts" yaml:"Accounts,omitempty"` // key must be a string to avoid parse errors!
 	DefaultRegion string                 `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
+	// passed to AWSSSO from our Settings
+	MaxBackoff int
+	MaxRetry   int
 }
 
 type SSOAccount struct {
@@ -57,6 +60,8 @@ type SSORole struct {
 // Refresh should be called any time you load the SSOConfig into memory or add a role
 // to update the Role -> Account references
 func (c *SSOConfig) Refresh(s *Settings) {
+	c.MaxBackoff = s.MaxBackoff
+	c.MaxRetry = s.MaxRetry
 	for accountId, a := range c.Accounts {
 		a.SetParentConfig(c)
 		for roleName, r := range a.Roles {
