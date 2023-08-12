@@ -5,6 +5,7 @@
  * [How do I logout?](#how-do-i-logout)
  * [When will my credentials expire?](#when-will-my-credentials-expire)
  * [What happens when credentials expire?](#what-happens-when-credentials-expire)
+ * [Why can't aws-sso find my new role?](#why-cant-aws-sso-find-my-new-role)
 
 ##### Advanced Features
 
@@ -63,6 +64,17 @@ see how long your credentials have until they expire, see the [list command](com
 
 The next call to `aws-sso exec` or `aws-sso eval` will automatically refresh them
 as appropriate.
+
+### Why can't aws-sso find my new role?
+
+If you have just been assigned a new PermissionSet in IAM Identity Center, it
+tends to show up in the IAM Identity Center web console 
+(https://xxxxx.awsapps.com/start) before it is made available to the 
+[ListAccountRoles](https://docs.aws.amazon.com/singlesignon/latest/PortalAPIReference/API_ListAccountRoles.html)
+API call.  Unfortunately, this seems to be a limitation with AWS and you just
+have to wait a few minutes.
+
+You can see what the AWS ListAccountRoles API is returning via `aws-sso cache -L debug`t
 
 ### How do I delete all secrets from the macOS keychain?
 
