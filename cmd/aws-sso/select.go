@@ -33,6 +33,37 @@ import (
 
 type CompleterExec = func(*RunContext, *sso.AWSSSO, int64, string) error
 
+// PromptExec runs the interactive prompter and then on success runs our
+// CompleterExec function
+func (ctx *RunContext) PromptExec(exec CompleterExec) error {
+	sso, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
+	if err != nil {
+		return err
+	}
+	if err = ctx.Settings.Cache.Expired(sso); err != nil {
+		log.Infof(err.Error())
+		c := &CacheCmd{}
+		if err = c.Run(ctx); err != nil {
+			return err
+		}
+	}
+
+	sso.Refresh(ctx.Settings)
+	fmt.Printf("Please use `exit` or `Ctrl-D` to quit.\n")
+
+	c := NewTagsCompleter(ctx, sso, exec)
+	opts := ctx.Settings.DefaultOptions(c.ExitChecker)
+	opts = append(opts, ctx.Settings.GetColorOptions()...)
+
+	p := prompt.New(
+		c.Executor,
+		c.Complete,
+		opts...,
+	)
+	p.Run()
+	return nil
+}
+
 type TagsCompleter struct {
 	ctx            *RunContext
 	sso            *sso.SSOConfig
@@ -43,6 +74,7 @@ type TagsCompleter struct {
 	fullTextSearch bool
 }
 
+// NewTagsCompleter creates our TagsCompleter
 func NewTagsCompleter(ctx *RunContext, s *sso.SSOConfig, exec CompleterExec) *TagsCompleter {
 	set := ctx.Settings
 	roleTags := set.Cache.GetRoleTagsSelect()
@@ -88,6 +120,7 @@ func (tc *TagsCompleter) Complete(d prompt.Document) []prompt.Suggest {
 var isRoleARN *regexp.Regexp = regexp.MustCompile(`^arn:aws:iam::\d+:role/[a-zA-Z0-9\+=,\.@_-]+$`)
 var NoSpaceAtEnd *regexp.Regexp = regexp.MustCompile(`\s+$`)
 
+// Executor does the heavy lifting on the TagsCompleter
 func (tc *TagsCompleter) Executor(args string) {
 	args = NoSpaceAtEnd.ReplaceAllString(args, "")
 	if args == "exit" {

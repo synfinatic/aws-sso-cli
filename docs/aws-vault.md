@@ -128,7 +128,7 @@ and configured!
 | Feature                 | aws-vault | aws-sso   | AWS CLI v2 |
 |-------------------------|-----------|-----------|------------|
 | Secure store creds      | Yes       | Yes       | No         |
-| Static AWS API Creds    | Yes       | No *      | Yes        |
+| Static AWS API Creds    | Yes       | No        | Yes        |
 | SAML auth support       | No        | No        | No         |
 | AWS SSO support         | Yes       | Yes       | Yes        |
 | Web Identity support    | Yes       | No        | Yes        |
@@ -140,7 +140,7 @@ and configured!
 | $AWS\_PROFILE templates | No        | Yes       | No         |
 | Role chaining           | Yes       | Yes       | Yes        |
 | CLI auto-complete       | Yes       | Yes       | Yes        |
-| EC2/ECS Metadata server | Yes       | No *      | No         |
+| EC2/ECS Metadata server | Yes       | Yes       | No         |
 | AWS Session tags        | Yes       | No        | Yes        |
 | AWS Transitive tags     | Yes       | No        | Yes        |
 | Firefox Containers      | No        | Yes       | No         |
@@ -155,5 +155,3 @@ and configured!
 | Tags                 | No        | Yes     | No         |
 | Role ARN             | No        | Yes     | No         |
 | AccountId & RoleName | No        | Yes     | No         |
-
-**Note:** Items above marked with a `*` are on the `aws-sso` feature roadmap.

@@ -5,6 +5,7 @@
 ### Bugs
 
  * Prevent crashing with large number of accounts #520
+ * `console` command now always honors the `--duration` flag
 
 ### Changes
 
@@ -15,6 +16,7 @@
 
 ### New Features
 
+ * Add ECS Server mode to support `$AWS_CONTAINER_CREDENTIALS_FULL_URI` #398
  * Add full-text search for interactive `list` mode #504
  * Improve performance refreshing the list of accounts & roles
  * Add `MaxRetry` and `MaxBackoff` config options
