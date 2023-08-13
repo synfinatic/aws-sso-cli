@@ -25,6 +25,8 @@
 
 ##### Security
 
+ * [What is the AWS SSO security policy?](../security.md)
+ * [How do I report a security vulnerability?](../security.md#reporting-a-vulnerability)
  * [Are macOS Keychain items synced?](#are-macos-keychain-items-synced)
  * [How do I delete all secrets from the macOS Keychain?](#how-do-i-delete-all-secrets-from-the-macos-keychain)
  * [Which SecureStore should I use?](#which-securestore-should-i-use)
@@ -37,6 +39,7 @@
  * [Error: Unable to save... org.freedesktop.DBus.Properties](#error-unable-to-save-orgfreedesktopdbusproperties)
  * [Error: Invalid grant provided](#error-invalid-grant-provided)
  * [Error: Unexpected AccessToken failure; refreshing](#error-unexpected-accesstoken-failure-refreshing)
+ * [Warning: Exceeded MaxRetry/MaxBackoff. Consider tuning values.](#warning-exceeded-maxretry-maxbackoff-consider-tuning-values)
 
 ##### Misc
 
@@ -68,8 +71,8 @@ as appropriate.
 ### Why can't aws-sso find my new role?
 
 If you have just been assigned a new PermissionSet in IAM Identity Center, it
-tends to show up in the IAM Identity Center web console 
-(https://xxxxx.awsapps.com/start) before it is made available to the 
+tends to show up in the IAM Identity Center web console
+(https://xxxxx.awsapps.com/start) before it is made available to the
 [ListAccountRoles](https://docs.aws.amazon.com/singlesignon/latest/PortalAPIReference/API_ListAccountRoles.html)
 API call.  Unfortunately, this seems to be a limitation with AWS and you just
 have to wait a few minutes.
@@ -348,6 +351,19 @@ indicate that AWS is throttling requests because the number of
 
 Note: Unlike most errors, this one is not always fatal, but it can cause `aws-sso`
 to behave very poorly.
+
+### Warning: Exceeded MaxRetry/MaxBackoff. Consider tuning values.
+
+While trying to refresh the cache of accounts and roles, `aws-sso` is exceeding
+the rate limits put in place by AWS and that rate limiting is causing
+the number of retries to exceed the [MaxRetry](config.md#maxretry) limit.
+
+This typically will happen with large numbers of accounts and multiple threads.
+
+You may wish to consider reducing the number of [Threads](config.md#threads)
+to reduce chances of this happening (fewer threads can increase performance
+by not incurring the backoff delay penalty) or adjust the MaxRetry and/or
+[MaxBackoff](config.md#maxbackoff) parameters.
 
 ### Are macOS Keychain items synced?
 

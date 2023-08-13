@@ -16,7 +16,7 @@
 ### New Features
 
  * Add full-text search for interactive `list` mode #504
- * Improve performance refreshing the list of accounts & roles 
+ * Improve performance refreshing the list of accounts & roles
  * Add `MaxRetry` and `MaxBackoff` config options
 
 ## [v1.11.0] - 2023-08-02
@@ -27,7 +27,6 @@
  * Fix `process --profile` flag not working
  * Fix `AccountId` still not zero padding in `list` output #503
  * Invalid fields passed to `list` command are now detected instead of an empty column
- 
 
 ### Changes
 

@@ -19,6 +19,7 @@ Other Pages:
  * [Quick Start & Installation Guide](docs/quickstart.md)
  * [Running aws-sso](docs/commands.md)
  * [Configuration](docs/config.md)
+ * [Security Policy](security.md)
  * [Frequently Asked Questions](docs/FAQ.md)
  * [Compared to AWS Vault](docs/aws-vault.md)
  * [Releases](https://github.com/synfinatic/aws-sso-cli/releases)
