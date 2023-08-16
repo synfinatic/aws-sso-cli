@@ -34,8 +34,8 @@ type SSOConfig struct {
 	Accounts      map[string]*SSOAccount `koanf:"Accounts" yaml:"Accounts,omitempty"` // key must be a string to avoid parse errors!
 	DefaultRegion string                 `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
 	// passed to AWSSSO from our Settings
-	MaxBackoff int
-	MaxRetry   int
+	MaxBackoff int `koanf:"-" yaml:"-"`
+	MaxRetry   int `koanf:"-" yaml:"-"`
 }
 
 type SSOAccount struct {
