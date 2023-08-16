@@ -6,6 +6,7 @@
 
  * No longer crash during guided setup if user presses `<Del>` #531
  * No longer error out on simple input errors during guided setup
+ * Do not create invalid `maxretry` and `maxbackoff` in SSO Instance during config #536
 
 ### Changes
 
