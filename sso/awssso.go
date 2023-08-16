@@ -56,6 +56,7 @@ type SsoAPI interface {
 	ListAccountRoles(context.Context, *sso.ListAccountRolesInput, ...func(*sso.Options)) (*sso.ListAccountRolesOutput, error)
 	ListAccounts(context.Context, *sso.ListAccountsInput, ...func(*sso.Options)) (*sso.ListAccountsOutput, error)
 	GetRoleCredentials(context.Context, *sso.GetRoleCredentialsInput, ...func(*sso.Options)) (*sso.GetRoleCredentialsOutput, error)
+	Logout(context.Context, *sso.LogoutInput, ...func(*sso.Options)) (*sso.LogoutOutput, error)
 }
 
 type AWSSSO struct {

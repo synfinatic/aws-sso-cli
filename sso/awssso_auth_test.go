@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/sso"
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
@@ -449,4 +450,75 @@ func TestReauthenticate(t *testing.T) {
 
 	err = as.reauthenticate()
 	assert.Contains(t, err.Error(), "Unable to exec")
+}
+
+func TestLogout(t *testing.T) {
+	tfile, err := os.CreateTemp("", "*storage.json")
+	assert.NoError(t, err)
+
+	jstore, err := storage.OpenJsonStore(tfile.Name())
+	assert.NoError(t, err)
+
+	defer os.Remove(tfile.Name())
+	duration, _ := time.ParseDuration("10s")
+	as := &AWSSSO{
+		key:       "primary",
+		SsoRegion: "us-west-1",
+		StartUrl:  "https://testing.awsapps.com/start",
+		store:     jstore,
+		Roles:     map[string][]RoleInfo{},
+		SSOConfig: &SSOConfig{
+			settings: &Settings{},
+		},
+		Token: storage.CreateTokenResponse{
+			AccessToken:  "access-token",
+			ExpiresIn:    42,
+			ExpiresAt:    time.Now().Add(duration).Unix(),
+			IdToken:      "id-token",
+			RefreshToken: "refresh-token",
+			TokenType:    "token-type",
+		},
+		urlAction: "print",
+	}
+
+	as.sso = &mockSsoAPI{
+		Results: []mockSsoAPIResults{
+			{
+				Logout: &sso.LogoutOutput{},
+				Error:  nil,
+			},
+		},
+	}
+
+	err = as.Logout()
+	assert.NoError(t, err)
+	tr := storage.CreateTokenResponse{}
+	assert.Error(t, as.store.GetCreateTokenResponse(as.key, &tr))
+
+	as.Token.AccessToken = ""
+	as.sso = &mockSsoAPI{
+		Results: []mockSsoAPIResults{
+			{
+				Logout: &sso.LogoutOutput{},
+				Error:  nil,
+			},
+		},
+	}
+
+	err = as.Logout()
+	assert.Error(t, err)
+
+	err = jstore.SaveCreateTokenResponse("primary", storage.CreateTokenResponse{
+		AccessToken:  "access-token",
+		ExpiresIn:    42,
+		ExpiresAt:    time.Now().Add(duration).Unix(),
+		IdToken:      "id-token",
+		RefreshToken: "refresh-token",
+		TokenType:    "token-type",
+	})
+	assert.NoError(t, err)
+	err = as.Logout()
+	assert.NoError(t, err)
+	err = jstore.GetCreateTokenResponse("primary", &storage.CreateTokenResponse{})
+	assert.Error(t, err)
 }

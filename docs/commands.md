@@ -8,6 +8,7 @@
     * [exec](#exec) -- Execute command using specified IAM role in a new shell
     * [flush](#flush) -- Flush AWS SSO/STS credentials from cache
     * [list](#list) -- List all accounts / roles (default command)
+    * [logout](#logout) -- Invalidate all SSO credentials with AWS
     * [process](#process) -- Generate JSON for `credential_process` in ~/.aws/config
     * [tags](#tags) -- List tags
     * [time](#time) -- Print how much time before current STS Token expires
@@ -283,6 +284,16 @@ case-sensitive manner.
 
 ---
 
+### logout
+
+Invalidates all AWS credentials with AWS for the selected SSO instance, 
+including those in your browser session.
+
+If you only wish to remove the credentials from the `aws-sso` secure store, use
+the [flush](#flush) command.
+
+---
+
 ### flush
 
 Flush any cached AWS SSO/STS credentials.  By default, it only flushes the
@@ -298,6 +309,9 @@ Flags:
 **Note:** Flushing non-expired SSO credentials will not cause new credentials to be issued
 on the next call to the AWS SSO API, but rather the existing credentials will be refreshed
 from the browser session.
+
+**Note:** Flushing credentials does not invalidate them with AWS.  If you wish
+to do that, use the [logout](#logout) command.
 
 ---
 
@@ -357,8 +371,14 @@ refuse to run so you will have to either manually edit the file or run
 ### config
 
 Allows you to run through the configuration wizard and update your AWS SSO CLI
-config file (`~/.aws-sso/config.yaml`).  Useful for taking advantage of some of
-the new settings if you've upgraded from a previous version!
+config file (`~/.aws-sso/config.yaml`).   By default, it only does a very basic
+configuration to get started with.  The `--advanced` flag prompts for more 
+settings and is useful for taking advantage of some of the new settings if 
+you've upgraded from a previous version!
+
+Flags:
+
+ * `--advanced` -- Prompts for many more config options
 
 ## Environment Variables
 

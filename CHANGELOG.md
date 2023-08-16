@@ -12,6 +12,11 @@
  * Guided setup is now more simple unless user provides the `--advanced` flag #530
  * Guided setup now strips leading and trailing spaces
 
+### New Features
+
+ * Added [logout](docs/commands.md#logout) command which invalidates the browser
+    session and all credentials #526
+
 ## [v1.12.0] - 2023-08-12
 
 ### Bugs
