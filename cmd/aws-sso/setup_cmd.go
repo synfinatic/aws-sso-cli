@@ -33,16 +33,9 @@ import (
 
 var ranSetup = false
 
-// SetupCmd defines the Kong args for the setup command (which currently doesn't exist)
-type SetupCmd struct{}
-
-// Run executes the setup command
-func (cc *SetupCmd) Run(ctx *RunContext) error {
-	return setupWizard(ctx, false, false)
-}
-
 type ConfigCmd struct {
 	// 	AddSSO bool `kong:"help='Add a new AWS SSO instance'"`
+	Advanced bool `kong:"help='Enable advanced configuration'"`
 }
 
 func (cc *ConfigCmd) Run(ctx *RunContext) error {
@@ -50,10 +43,10 @@ func (cc *ConfigCmd) Run(ctx *RunContext) error {
 		return err
 	}
 
-	return setupWizard(ctx, true, false) // ctx.Cli.Config.AddSSO)
+	return setupWizard(ctx, true, false, ctx.Cli.Config.Advanced) // ctx.Cli.Config.AddSSO)
 }
 
-func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
+func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 	var s = ctx.Settings
 
 	// Don't run setup twice
@@ -87,17 +80,24 @@ func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
 		// - StartUrl/startHostname
 		// - InstanceName
 	} else {
-		instanceName := promptSsoInstance("")
+		instanceName := "Default"
+		if advanced {
+			instanceName = promptSsoInstance("")
+		}
 		startHostname := promptStartUrl("")
 		ssoRegion := promptAwsSsoRegion("")
-		defaultRegion := promptDefaultRegion(ssoRegion)
+
+		defaultRegion := ""
+		if advanced {
+			defaultRegion = promptDefaultRegion(ssoRegion)
+		}
 
 		s = &sso.Settings{
 			SSO:             map[string]*sso.SSOConfig{},
 			UrlAction:       "open",
 			LogLevel:        "error",
 			DefaultRegion:   defaultRegion,
-			ConsoleDuration: 60,
+			ConsoleDuration: 720,
 			CacheRefresh:    168,
 			AutoConfigCheck: false,
 			FullTextSearch:  true,
@@ -113,38 +113,41 @@ func setupWizard(ctx *RunContext, reconfig, addSSO bool) error {
 		}
 	}
 
-	// first, caching
-	s.CacheRefresh = promptCacheRefresh(s.CacheRefresh)
+	if advanced {
+		// first, caching
+		s.CacheRefresh = promptCacheRefresh(s.CacheRefresh)
 
-	if s.CacheRefresh > 0 {
-		s.AutoConfigCheck = promptAutoConfigCheck(s.AutoConfigCheck)
+		if s.CacheRefresh > 0 {
+			s.AutoConfigCheck = promptAutoConfigCheck(s.AutoConfigCheck)
+		}
+
+		// full text search?
+		s.FullTextSearch = promptFullTextSearch(s.FullTextSearch)
+
+		// next how we open URLs
+		s.UrlAction = promptUrlAction(s.UrlAction)
+
+		s.ConfigProfilesUrlAction = promptConfigProfilesUrlAction(s.ConfigProfilesUrlAction, s.UrlAction)
+
+		// do we need urlExecCommand?
+		if s.UrlAction == url.Exec {
+			s.UrlExecCommand = promptUrlExecCommand(s.UrlExecCommand)
+		} else if s.UrlAction.IsContainer() {
+			s.UrlExecCommand = promptUseFirefox(s.UrlExecCommand)
+		} else {
+			s.UrlExecCommand = []string{}
+		}
+
+		// should we prompt user to override default browser?
+		if s.UrlAction == url.Open || s.ConfigProfilesUrlAction == url.ConfigProfilesOpen {
+			s.Browser = promptDefaultBrowser(s.Browser)
+		}
+
+		s.ConsoleDuration = promptConsoleDuration(s.ConsoleDuration)
+		s.HistoryLimit = promptHistoryLimit(s.HistoryLimit)
+		s.HistoryMinutes = promptHistoryMinutes(s.HistoryMinutes)
+		s.LogLevel = promptLogLevel(s.LogLevel)
 	}
-
-	// full text search?
-	s.FullTextSearch = promptFullTextSearch(s.FullTextSearch)
-
-	// next how we open URLs
-	s.UrlAction = promptUrlAction(s.UrlAction)
-	s.ConfigProfilesUrlAction = promptConfigProfilesUrlAction(s.ConfigProfilesUrlAction, s.UrlAction)
-
-	// do we need urlExecCommand?
-	if s.UrlAction == url.Exec {
-		s.UrlExecCommand = promptUrlExecCommand(s.UrlExecCommand)
-	} else if s.UrlAction.IsContainer() {
-		s.UrlExecCommand = promptUseFirefox(s.UrlExecCommand)
-	} else {
-		s.UrlExecCommand = []string{}
-	}
-
-	// should we prompt user to override default browser?
-	if s.UrlAction == url.Open || s.ConfigProfilesUrlAction == url.ConfigProfilesOpen {
-		s.Browser = promptDefaultBrowser(s.Browser)
-	}
-
-	s.ConsoleDuration = promptConsoleDuration(s.ConsoleDuration)
-	s.HistoryLimit = promptHistoryLimit(s.HistoryLimit)
-	s.HistoryMinutes = promptHistoryMinutes(s.HistoryMinutes)
-	s.LogLevel = promptLogLevel(s.LogLevel)
 
 	if err := s.Validate(); err != nil {
 		return err

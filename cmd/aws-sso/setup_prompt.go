@@ -98,29 +98,42 @@ func promptSsoInstance(defaultValue string) string {
 
 	// Name our SSO instance
 	label := "SSO Instance Name (DefaultSSO)"
-	prompt := promptui.Prompt{
-		Label: label,
-		Validate: func(input string) error {
-			if ssoNameRegexp == nil {
-				ssoNameRegexp, _ = regexp.Compile(`^[a-zA-Z0-9-_@:]+$`)
-			}
-			if len(input) > 0 && ssoNameRegexp.Match([]byte(input)) {
-				return nil
-			}
-			return fmt.Errorf("SSO Name must be a valid string")
-		},
-		Default:   defaultValue,
-		Stdout:    &utils.BellSkipper{},
-		Pointer:   promptui.PipeCursor,
-		Templates: makePromptTemplate(label),
+	for val == "" {
+		prompt := promptui.Prompt{
+			Label: label,
+			Validate: func(input string) error {
+				if ssoNameRegexp == nil {
+					ssoNameRegexp, _ = regexp.Compile(`[a-zA-Z0-9-_@:]+`)
+				}
+				if len(input) > 0 && ssoNameRegexp.Match([]byte(input)) {
+					return nil
+				}
+				return fmt.Errorf("SSO Name must be a valid string")
+			},
+			Default:   defaultValue,
+			Stdout:    &utils.BellSkipper{},
+			Pointer:   promptui.PipeCursor,
+			Templates: makePromptTemplate(label),
+		}
+		if val, err = prompt.Run(); err != nil {
+			checkPromptError(err)
+		}
 	}
-	if val, err = prompt.Run(); err != nil {
-		log.Fatal(err)
-	}
-	return val
+	return strings.TrimSpace(val)
 }
 
 var ssoHostnameRegexp *regexp.Regexp
+
+func checkPromptError(err error) {
+	if err.Error() == "^D" {
+		// https://github.com/synfinatic/aws-sso-cli/issues/531
+		log.Errorf("Sorry, <Del> not supported")
+	} else if err.Error() == "^C" {
+		os.Exit(1)
+	} else {
+		log.Error(err)
+	}
+}
 
 func promptStartUrl(defaultValue string) string {
 	var val string
@@ -138,7 +151,7 @@ func promptStartUrl(defaultValue string) string {
 			Validate: func(input string) error {
 				if ssoHostnameRegexp == nil {
 					// users can specify the FQDN or just Hostname
-					regex := fmt.Sprintf(`^([a-zA-Z0-9-]+)(%s)?$`, regexpFQDNSuffix)
+					regex := fmt.Sprintf(`([a-zA-Z0-9-]+)(%s)?`, regexpFQDNSuffix)
 					ssoHostnameRegexp, _ = regexp.Compile(regex)
 				}
 				if len(input) > 0 && len(input) < 64 && ssoHostnameRegexp.Match([]byte(input)) {
@@ -152,14 +165,14 @@ func promptStartUrl(defaultValue string) string {
 			Templates: makePromptTemplate(label),
 		}
 		if val, err = prompt.Run(); err != nil {
-			log.Fatal(err)
+			checkPromptError(err)
 		}
 
+		val = strings.TrimSpace(val)
 		// User input value is either the hostname or full FQDN and
 		// we need the full FQDN
 		if !strings.Contains(val, ".") {
 			val = val + START_FQDN_SUFFIX
-			log.Infof("Using %s", val)
 		}
 
 		if _, err := net.LookupHost(val); err == nil {
@@ -168,6 +181,7 @@ func promptStartUrl(defaultValue string) string {
 			log.Errorf("Unable to resolve %s", val)
 		}
 	}
+	log.Infof("Using %s", val)
 
 	return val
 }
@@ -197,7 +211,7 @@ func promptAwsSsoRegion(defaultValue string) string {
 		Templates:    makeSelectTemplate(label),
 	}
 	if i, _, err = sel.Run(); err != nil {
-		log.Fatal(err)
+		log.Error(err)
 	}
 
 	return items[i].Value
@@ -232,7 +246,7 @@ func promptDefaultRegion(defaultValue string) string {
 		Templates:    makeSelectTemplate(label),
 	}
 	if i, _, err = sel.Run(); err != nil {
-		log.Fatal(err)
+		log.Error(err)
 	}
 
 	return items[i].Value
@@ -252,18 +266,21 @@ func promptUseFirefox(defaultValue []string) []string {
 	}
 
 	label := "Path to Firefox binary (UrlExecCommand)"
-	prompt := promptui.Prompt{
-		Label:     label,
-		Stdout:    &utils.BellSkipper{},
-		Default:   firefoxDefaultBrowserPath(val),
-		Pointer:   promptui.PipeCursor,
-		Validate:  validateBinary,
-		Templates: makePromptTemplate(label),
-	}
-	if val, err = prompt.Run(); err != nil {
-		log.Fatal(err)
+	for val == "" {
+		prompt := promptui.Prompt{
+			Label:     label,
+			Stdout:    &utils.BellSkipper{},
+			Default:   firefoxDefaultBrowserPath(val),
+			Pointer:   promptui.PipeCursor,
+			Validate:  validateBinary,
+			Templates: makePromptTemplate(label),
+		}
+		if val, err = prompt.Run(); err != nil {
+			checkPromptError(err)
+		}
 	}
 
+	val = strings.TrimSpace(val)
 	return []string{
 		val,
 		"%s",
@@ -320,12 +337,12 @@ func promptUrlAction(defaultValue url.Action) url.Action {
 		Templates: makeSelectTemplate(label),
 	}
 	if i, _, err = sel.Run(); err != nil {
-		log.Fatal(err)
+		log.Error(err)
 	}
 
 	action, err := url.NewAction(items[i].Value)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Error(err.Error())
 	}
 	return action
 }
@@ -354,7 +371,7 @@ func promptUrlExecCommand(defaultValue []string) []string {
 	}
 
 	if line, err = prompt.Run(); err != nil {
-		log.Fatal(err)
+		checkPromptError(err)
 	}
 
 	val = append(val, line)
@@ -379,7 +396,7 @@ func promptUrlExecCommand(defaultValue []string) []string {
 			Templates: makePromptTemplate(label),
 		}
 		if line, err = prompt.Run(); err != nil {
-			log.Fatal(err)
+			checkPromptError(err)
 		}
 		if line != "" {
 			val = append(val, line)
@@ -396,17 +413,19 @@ func promptDefaultBrowser(defaultValue string) string {
 	fmt.Printf("\n")
 
 	label := "Specify path to browser to use. Leave empty to use system default (Browser)"
-	prompt := promptui.Prompt{
-		Label:     label,
-		Default:   defaultValue,
-		Stdout:    &utils.BellSkipper{},
-		Pointer:   promptui.PipeCursor,
-		Validate:  validateBinaryOrNone,
-		Templates: makePromptTemplate(label),
-	}
+	for val == "" {
+		prompt := promptui.Prompt{
+			Label:     label,
+			Default:   defaultValue,
+			Stdout:    &utils.BellSkipper{},
+			Pointer:   promptui.PipeCursor,
+			Validate:  validateBinaryOrNone,
+			Templates: makePromptTemplate(label),
+		}
 
-	if val, err = prompt.Run(); err != nil {
-		log.Fatal(err)
+		if val, err = prompt.Run(); err != nil {
+			checkPromptError(err)
+		}
 	}
 
 	return val
@@ -420,23 +439,28 @@ func promptConsoleDuration(defaultValue int32) int32 {
 
 	// https://docs.aws.amazon.com/STS/latest/APIReference/API_GetFederationToken.html
 	label := "Minutes before AWS Console sessions expire (ConsoleDuration)"
-	prompt := promptui.Prompt{
-		Label: label,
-		Validate: func(input string) error {
-			x, err := strconv.ParseInt(input, 10, 64)
-			if err != nil || x > 720 || x < 15 {
-				return fmt.Errorf("Value must be a valid integer between 15 and 720")
-			}
-			return nil
-		},
-		Stdout:    &utils.BellSkipper{},
-		Default:   fmt.Sprintf("%d", defaultValue),
-		Pointer:   promptui.PipeCursor,
-		Templates: makePromptTemplate(label),
+	for val == "" {
+		prompt := promptui.Prompt{
+			Label: label,
+			Validate: func(input string) error {
+				istr := strings.TrimSpace(input)
+				x, err := strconv.ParseInt(istr, 10, 64)
+				if err != nil || x > 720 || x < 15 {
+					return fmt.Errorf("Value must be a valid integer between 15 and 720")
+				}
+				return nil
+			},
+			Stdout:    &utils.BellSkipper{},
+			Default:   fmt.Sprintf("%d", defaultValue),
+			Pointer:   promptui.PipeCursor,
+			Templates: makePromptTemplate(label),
+		}
+		if val, err = prompt.Run(); err != nil {
+			checkPromptError(err)
+		}
 	}
-	if val, err = prompt.Run(); err != nil {
-		log.Fatal(err)
-	}
+
+	val = strings.TrimSpace(val)
 
 	x, _ := strconv.ParseInt(val, 10, 32)
 	return int32(x)
@@ -449,17 +473,20 @@ func promptHistoryLimit(defaultValue int64) int64 {
 	fmt.Printf("\n")
 
 	label := "Maximum number of History items to keep (HistoryLimit)"
-	prompt := promptui.Prompt{
-		Label:     label,
-		Validate:  validateInteger,
-		Stdout:    &utils.BellSkipper{},
-		Default:   fmt.Sprintf("%d", defaultValue),
-		Pointer:   promptui.PipeCursor,
-		Templates: makePromptTemplate(label),
+	for val == "" {
+		prompt := promptui.Prompt{
+			Label:     label,
+			Validate:  validateInteger,
+			Stdout:    &utils.BellSkipper{},
+			Default:   fmt.Sprintf("%d", defaultValue),
+			Pointer:   promptui.PipeCursor,
+			Templates: makePromptTemplate(label),
+		}
+		if val, err = prompt.Run(); err != nil {
+			checkPromptError(err)
+		}
 	}
-	if val, err = prompt.Run(); err != nil {
-		log.Fatal(err)
-	}
+	val = strings.TrimSpace(val)
 
 	x, _ := strconv.ParseInt(val, 10, 64)
 	return x
@@ -472,17 +499,21 @@ func promptHistoryMinutes(defaultValue int64) int64 {
 	fmt.Printf("\n")
 
 	label := "Number of minutes to keep items in History (HistoryMinutes)"
-	prompt := promptui.Prompt{
-		Label:     label,
-		Validate:  validateInteger,
-		Default:   fmt.Sprintf("%d", defaultValue),
-		Stdout:    &utils.BellSkipper{},
-		Pointer:   promptui.PipeCursor,
-		Templates: makePromptTemplate(label),
+	for val == "" {
+		prompt := promptui.Prompt{
+			Label:     label,
+			Validate:  validateInteger,
+			Default:   fmt.Sprintf("%d", defaultValue),
+			Stdout:    &utils.BellSkipper{},
+			Pointer:   promptui.PipeCursor,
+			Templates: makePromptTemplate(label),
+		}
+		if val, err = prompt.Run(); err != nil {
+			checkPromptError(err)
+		}
 	}
-	if val, err = prompt.Run(); err != nil {
-		log.Fatal(err)
-	}
+
+	val = strings.TrimSpace(val)
 
 	x, _ := strconv.ParseInt(val, 10, 64)
 	return x
@@ -512,7 +543,7 @@ func promptLogLevel(defaultValue string) string {
 		Templates:    makeSelectTemplate(label),
 	}
 	if i, _, err = sel.Run(); err != nil {
-		log.Fatal(err)
+		log.Error(err)
 	}
 	return items[i].Value
 }
@@ -543,7 +574,7 @@ func promptAutoConfigCheck(flag bool) bool {
 		Templates:    makeSelectTemplate(label),
 	}
 	if i, _, err = sel.Run(); err != nil {
-		log.WithError(err).Fatalf("Unable to select AutoConfigCheck")
+		log.WithError(err).Error("Unable to select AutoConfigCheck")
 	}
 
 	return yesNoItems[i].Value == "Yes"
@@ -565,7 +596,7 @@ func promptFullTextSearch(flag bool) bool {
 		Templates:    makeSelectTemplate(label),
 	}
 	if i, _, err = sel.Run(); err != nil {
-		log.WithError(err).Fatalf("Unable to select FullTextSearch")
+		log.WithError(err).Error("Unable to select FullTextSearch")
 	}
 
 	return yesNoItems[i].Value == "Yes"
@@ -578,17 +609,20 @@ func promptCacheRefresh(defaultValue int64) int64 {
 	fmt.Printf("\n")
 
 	label := "Hours between AWS SSO cache refresh. 0 to disable. (CacheRefresh)"
-	prompt := promptui.Prompt{
-		Label:     label,
-		Validate:  validateInteger,
-		Default:   fmt.Sprintf("%d", defaultValue),
-		Pointer:   promptui.PipeCursor,
-		Templates: makePromptTemplate(label),
-	}
+	for val == "" {
+		prompt := promptui.Prompt{
+			Label:     label,
+			Validate:  validateInteger,
+			Default:   fmt.Sprintf("%d", defaultValue),
+			Pointer:   promptui.PipeCursor,
+			Templates: makePromptTemplate(label),
+		}
 
-	if val, err = prompt.Run(); err != nil {
-		log.Fatal(err)
+		if val, err = prompt.Run(); err != nil {
+			checkPromptError(err)
+		}
 	}
+	val = strings.TrimSpace(val)
 	x, _ := strconv.ParseInt(val, 10, 64)
 	return x
 }
@@ -647,7 +681,7 @@ func promptConfigProfilesUrlAction(
 	}
 
 	if i, _, err = sel.Run(); err != nil {
-		log.Fatal(err)
+		log.Error(err)
 	}
 
 	ret, _ := url.NewConfigProfilesAction(items[i].Value)
@@ -655,6 +689,7 @@ func promptConfigProfilesUrlAction(
 }
 
 func validateInteger(input string) error {
+	input = strings.TrimSpace(input)
 	_, err := strconv.ParseInt(input, 10, 64)
 	if err != nil {
 		return fmt.Errorf("Value must be a valid integer")
@@ -664,6 +699,7 @@ func validateInteger(input string) error {
 
 // validateBinary ensures the input is a valid binary on the system
 func validateBinary(input string) error {
+	input = strings.TrimSpace(input)
 	s, err := os.Stat(input)
 	if err != nil {
 		return err
@@ -686,6 +722,7 @@ func validateBinary(input string) error {
 // validateBinaryOrNone is just like validateBinary(), but we accept
 // an empty string
 func validateBinaryOrNone(input string) error {
+	input = strings.TrimSpace(input)
 	if input == "" {
 		return nil
 	}
