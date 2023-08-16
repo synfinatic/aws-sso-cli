@@ -121,6 +121,7 @@ type CLI struct {
 	Exec           ExecCmd           `kong:"cmd,help='Execute command using specified IAM role in a new shell'"`
 	Flush          FlushCmd          `kong:"cmd,help='Flush AWS SSO/STS credentials from cache'"`
 	List           ListCmd           `kong:"cmd,help='List all accounts / roles (default command)'"`
+	Logout         LogoutCmd         `kong:"cmd,help='Logout in browser and invalidate all credentials'"`
 	Process        ProcessCmd        `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
 	Static         StaticCmd         `kong:"cmd,help='Manage static AWS API credentials',hidden"`
 	Tags           TagsCmd           `kong:"cmd,help='List tags'"`

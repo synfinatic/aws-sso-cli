@@ -42,6 +42,7 @@ type mockSsoAPIResults struct {
 	ListAccountRoles   *sso.ListAccountRolesOutput
 	ListAccounts       *sso.ListAccountsOutput
 	GetRoleCredentials *sso.GetRoleCredentialsOutput
+	Logout             *sso.LogoutOutput
 	Error              error
 }
 
@@ -70,6 +71,15 @@ func (m *mockSsoAPI) GetRoleCredentials(ctx context.Context, params *sso.GetRole
 	}
 	x, m.Results = m.Results[0], m.Results[1:]
 	return x.GetRoleCredentials, x.Error
+}
+
+func (m *mockSsoAPI) Logout(context.Context, *sso.LogoutInput, ...func(*sso.Options)) (*sso.LogoutOutput, error) {
+	var x mockSsoAPIResults
+	if len(m.Results) == 0 {
+		return &sso.LogoutOutput{}, fmt.Errorf("calling mocked Logout too many times")
+	}
+	x, m.Results = m.Results[0], m.Results[1:]
+	return x.Logout, x.Error
 }
 
 func TestNewAWSSSO(t *testing.T) {

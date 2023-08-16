@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/sso"
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	oidctypes "github.com/aws/aws-sdk-go-v2/service/ssooidc/types"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
@@ -284,4 +285,31 @@ func (as *AWSSSO) createToken() error {
 	}
 
 	return nil
+}
+
+// Logout performs an SSO logout with AWS and invalidates our SSO session
+func (as *AWSSSO) Logout() error {
+	token := as.Token.AccessToken
+
+	if token == "" {
+		// Fetch our access token from our secure store
+		tr := storage.CreateTokenResponse{}
+		if err := as.store.GetCreateTokenResponse(as.key, &tr); err != nil {
+			return err
+		}
+		token = tr.AccessToken
+
+		// delete the value from the store so we don't think we have a valid token
+		if err := as.store.DeleteCreateTokenResponse(as.key); err != nil {
+			log.WithError(err).Errorf("Unable to delete AccessToken from secure store")
+		}
+	}
+
+	input := &sso.LogoutInput{
+		AccessToken: aws.String(token),
+	}
+
+	// do the needful
+	_, err := as.sso.Logout(context.TODO(), input)
+	return err
 }
