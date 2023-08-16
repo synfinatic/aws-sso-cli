@@ -129,7 +129,6 @@ type CLI struct {
 	ConfigProfiles ConfigProfilesCmd `kong:"cmd,help='Update ~/.aws/config with AWS SSO profiles from the cache'"`
 	Config         ConfigCmd         `kong:"cmd,help='Run the configuration wizard'"`
 	Ecs            EcsCmd            `kong:"cmd,help='ECS Server commands'"`
-	Setup          SetupCmd          `kong:"cmd,hidden"` // need this so variables are visisble.
 	Version        VersionCmd        `kong:"cmd,help='Print version and exit'"`
 }
 
@@ -171,7 +170,7 @@ func main() {
 
 	if _, err := os.Stat(cli.ConfigFile); errors.Is(err, os.ErrNotExist) {
 		log.Warnf("No config file found!  Will now prompt you for a basic config...")
-		if err = setupWizard(&runCtx, false, false); err != nil {
+		if err = setupWizard(&runCtx, false, false, runCtx.Cli.Config.Advanced); err != nil {
 			log.Fatalf("%s", err.Error())
 		}
 	} else if err != nil {

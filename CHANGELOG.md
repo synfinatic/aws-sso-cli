@@ -1,5 +1,17 @@
 # AWS SSO CLI Changelog
 
+## Unreleased
+
+### Bugs
+
+ * No longer crash during guided setup if user presses `<Del>` #531
+ * No longer error out on simple input errors during guided setup
+
+### Changes
+
+ * Guided setup is now more simple unless user provides the `--advanced` flag #530
+ * Guided setup now strips leading and trailing spaces
+
 ## [v1.12.0] - 2023-08-12
 
 ### Bugs
