@@ -174,6 +174,10 @@ func main() {
 		if err = setupWizard(&runCtx, false, false, runCtx.Cli.Config.Advanced); err != nil {
 			log.Fatalf("%s", err.Error())
 		}
+		if ctx.Command() == "config" {
+			// we're done.
+			return
+		}
 	} else if err != nil {
 		log.WithError(err).Fatalf("Unable to open config file: %s", cli.ConfigFile)
 	}
