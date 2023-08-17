@@ -125,12 +125,22 @@ func promptSsoInstance(defaultValue string) string {
 var ssoHostnameRegexp *regexp.Regexp
 
 func checkPromptError(err error) {
-	if err.Error() == "^D" {
+	switch err.Error() {
+	case "^D":
 		// https://github.com/synfinatic/aws-sso-cli/issues/531
 		log.Errorf("Sorry, <Del> not supported")
-	} else if err.Error() == "^C" {
-		os.Exit(1)
-	} else {
+	case "^C":
+		log.Fatalf("User aborted.")
+	default:
+		log.Error(err)
+	}
+}
+
+func checkSelectError(err error) {
+	switch err.Error() {
+	case "^C":
+		log.Fatalf("User aborted.")
+	default:
 		log.Error(err)
 	}
 }
@@ -218,7 +228,7 @@ func promptAwsSsoRegion(defaultValue string) string {
 }
 
 func promptDefaultRegion(defaultValue string) string {
-	var i int
+	var i int = -1
 	var err error
 
 	fmt.Printf("\n")
@@ -237,16 +247,18 @@ func promptDefaultRegion(defaultValue string) string {
 	}
 
 	label := "Default region for connecting to AWS services (DefaultRegion):"
-	sel := promptui.Select{
-		Label:        label,
-		Items:        items,
-		CursorPos:    defaultSelect(items, defaultValue),
-		HideSelected: false,
-		Stdout:       &utils.BellSkipper{},
-		Templates:    makeSelectTemplate(label),
-	}
-	if i, _, err = sel.Run(); err != nil {
-		log.Error(err)
+	for i < 0 {
+		sel := promptui.Select{
+			Label:        label,
+			Items:        items,
+			CursorPos:    defaultSelect(items, defaultValue),
+			HideSelected: false,
+			Stdout:       &utils.BellSkipper{},
+			Templates:    makeSelectTemplate(label),
+		}
+		if i, _, err = sel.Run(); err != nil {
+			checkSelectError(err)
+		}
 	}
 
 	return items[i].Value
@@ -288,7 +300,7 @@ func promptUseFirefox(defaultValue []string) []string {
 }
 
 func promptUrlAction(defaultValue url.Action) url.Action {
-	var i int
+	var i int = -1
 	var err error
 
 	fmt.Printf("\n")
@@ -329,15 +341,17 @@ func promptUrlAction(defaultValue url.Action) url.Action {
 	// How should we deal with URLs?  Note we don't support `exec`
 	// here since that is an "advanced" feature
 	label := "Default action to take with URLs (UrlAction):"
-	sel := promptui.Select{
-		Label:     label,
-		CursorPos: defaultSelect(items, dValue),
-		Items:     items,
-		Stdout:    &utils.BellSkipper{},
-		Templates: makeSelectTemplate(label),
-	}
-	if i, _, err = sel.Run(); err != nil {
-		log.Error(err)
+	for i < 0 {
+		sel := promptui.Select{
+			Label:     label,
+			CursorPos: defaultSelect(items, dValue),
+			Items:     items,
+			Stdout:    &utils.BellSkipper{},
+			Templates: makeSelectTemplate(label),
+		}
+		if i, _, err = sel.Run(); err != nil {
+			checkSelectError(err)
+		}
 	}
 
 	action, err := url.NewAction(items[i].Value)
@@ -520,7 +534,7 @@ func promptHistoryMinutes(defaultValue int64) int64 {
 }
 
 func promptLogLevel(defaultValue string) string {
-	var i int
+	var i int = -1
 	var err error
 
 	fmt.Printf("\n")
@@ -534,16 +548,18 @@ func promptLogLevel(defaultValue string) string {
 	}
 
 	label := "Log Level (LogLevel):"
-	sel := promptui.Select{
-		Label:        label,
-		Items:        items,
-		CursorPos:    index(VALID_LOG_LEVELS, defaultValue),
-		HideSelected: false,
-		Stdout:       &utils.BellSkipper{},
-		Templates:    makeSelectTemplate(label),
-	}
-	if i, _, err = sel.Run(); err != nil {
-		log.Error(err)
+	for i < 0 {
+		sel := promptui.Select{
+			Label:        label,
+			Items:        items,
+			CursorPos:    index(VALID_LOG_LEVELS, defaultValue),
+			HideSelected: false,
+			Stdout:       &utils.BellSkipper{},
+			Templates:    makeSelectTemplate(label),
+		}
+		if i, _, err = sel.Run(); err != nil {
+			checkSelectError(err)
+		}
 	}
 	return items[i].Value
 }
@@ -559,44 +575,48 @@ func index(s []string, v string) int {
 }
 
 func promptAutoConfigCheck(flag bool) bool {
-	var i int
+	var i int = -1
 	var err error
 
 	fmt.Printf("\n")
 
 	label := "Auto update ~/.aws/config with latest AWS SSO roles? (AutoConfigCheck)"
-	sel := promptui.Select{
-		Label:        label,
-		Items:        yesNoItems,
-		CursorPos:    yesNoPos(flag),
-		HideSelected: false,
-		Stdout:       &utils.BellSkipper{},
-		Templates:    makeSelectTemplate(label),
-	}
-	if i, _, err = sel.Run(); err != nil {
-		log.WithError(err).Error("Unable to select AutoConfigCheck")
+	for i < 0 {
+		sel := promptui.Select{
+			Label:        label,
+			Items:        yesNoItems,
+			CursorPos:    yesNoPos(flag),
+			HideSelected: false,
+			Stdout:       &utils.BellSkipper{},
+			Templates:    makeSelectTemplate(label),
+		}
+		if i, _, err = sel.Run(); err != nil {
+			checkSelectError(err)
+		}
 	}
 
 	return yesNoItems[i].Value == "Yes"
 }
 
 func promptFullTextSearch(flag bool) bool {
-	var i int
+	var i int = -1
 	var err error
 
 	fmt.Printf("\n")
 
 	label := "Enable full-text search? (FullTextSearch)"
-	sel := promptui.Select{
-		Label:        label,
-		Items:        yesNoItems,
-		CursorPos:    yesNoPos(flag),
-		HideSelected: false,
-		Stdout:       &utils.BellSkipper{},
-		Templates:    makeSelectTemplate(label),
-	}
-	if i, _, err = sel.Run(); err != nil {
-		log.WithError(err).Error("Unable to select FullTextSearch")
+	for i < 0 {
+		sel := promptui.Select{
+			Label:        label,
+			Items:        yesNoItems,
+			CursorPos:    yesNoPos(flag),
+			HideSelected: false,
+			Stdout:       &utils.BellSkipper{},
+			Templates:    makeSelectTemplate(label),
+		}
+		if i, _, err = sel.Run(); err != nil {
+			checkSelectError(err)
+		}
 	}
 
 	return yesNoItems[i].Value == "Yes"
@@ -630,7 +650,7 @@ func promptCacheRefresh(defaultValue int64) int64 {
 func promptConfigProfilesUrlAction(
 	defaultValue url.ConfigProfilesAction, urlAction url.Action) url.ConfigProfilesAction {
 	var err error
-	var i int
+	var i int = -1
 
 	fmt.Printf("\n")
 
@@ -671,17 +691,19 @@ func promptConfigProfilesUrlAction(
 	dValue := string(defaultValue)
 
 	label := "How to open URLs via $AWS_PROFILE? (ConfigProfilesUrlAction)"
-	sel := promptui.Select{
-		Label:        label,
-		Items:        items,
-		CursorPos:    defaultSelect(items, dValue),
-		HideSelected: false,
-		Stdout:       &utils.BellSkipper{},
-		Templates:    makeSelectTemplate(label),
-	}
+	for i < 0 {
+		sel := promptui.Select{
+			Label:        label,
+			Items:        items,
+			CursorPos:    defaultSelect(items, dValue),
+			HideSelected: false,
+			Stdout:       &utils.BellSkipper{},
+			Templates:    makeSelectTemplate(label),
+		}
 
-	if i, _, err = sel.Run(); err != nil {
-		log.Error(err)
+		if i, _, err = sel.Run(); err != nil {
+			checkSelectError(err)
+		}
 	}
 
 	ret, _ := url.NewConfigProfilesAction(items[i].Value)
