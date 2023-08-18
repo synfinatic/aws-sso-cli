@@ -21,6 +21,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/synfinatic/aws-sso-cli/internal/awsconfig"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
@@ -101,29 +102,10 @@ func doAuth(ctx *RunContext) *sso.AWSSSO {
 		// should we update our config??
 		if !ctx.Cli.NoConfigCheck && ctx.Settings.AutoConfigCheck {
 			if ctx.Settings.ConfigProfilesUrlAction != url.ConfigProfilesUndef {
-				cfgFile := utils.GetHomePath("~/.aws/config")
-
 				action, _ := url.NewAction(string(ctx.Settings.ConfigProfilesUrlAction))
-				profiles, err := ctx.Settings.GetAllProfiles(action)
+				err := awsconfig.UpdateAwsConfig(ctx.Settings, action, "", true, false)
 				if err != nil {
-					log.Warnf("Unable to update %s: %s", cfgFile, err.Error())
-					return AwsSSO
-				}
-
-				if err = profiles.UniqueCheck(ctx.Settings); err != nil {
-					log.Errorf("Unable to update %s: %s", cfgFile, err.Error())
-					return AwsSSO
-				}
-
-				f, err := utils.NewFileEdit(CONFIG_TEMPLATE, profiles)
-				if err != nil {
-					log.Errorf("%s", err)
-					return AwsSSO
-				}
-
-				if err = f.UpdateConfig(true, false, cfgFile); err != nil {
-					log.Errorf("Unable to update %s: %s", cfgFile, err.Error())
-					return AwsSSO
+					log.Errorf("Unable to auto-update aws config file: %s", err.Error())
 				}
 			}
 		}

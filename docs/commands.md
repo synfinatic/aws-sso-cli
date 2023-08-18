@@ -84,7 +84,7 @@ Flags:
  * `--open` -- Specify how to open URls: [clip|exec|open]
  * `--print` -- Print profile entries instead of modifying config file
  * `--force` -- Write a new config file without prompting
-
+ * `--aws-config` -- Override path to `~/.aws/config` file
 
 By default, each profile is named according to the [ProfileFormat](
 config.md#profileformat) config option or overridden by the user defined
@@ -386,6 +386,7 @@ Flags:
 
 The following environment variables are honored by `aws-sso`:
 
+ * `AWS_CONFIG_FILE` -- Override default path to `~/.aws/config` file
  * `AWS_SSO_FILE_PASSWORD` -- Password to use with the `file` SecureStore.
  * `AWS_SSO_CONFIG` -- Specify an alternate path to the `aws-sso` config file.
  * `AWS_SSO_BROWSER` -- Override default browser for AWS SSO login.

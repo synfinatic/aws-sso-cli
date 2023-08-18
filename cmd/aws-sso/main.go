@@ -27,7 +27,7 @@ import (
 	"github.com/posener/complete"
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/sirupsen/logrus"
-	"github.com/synfinatic/aws-sso-cli/internal/awsconfig"
+	"github.com/synfinatic/aws-sso-cli/internal/awscreds"
 	"github.com/synfinatic/aws-sso-cli/internal/helper"
 	"github.com/synfinatic/aws-sso-cli/internal/predictor"
 	"github.com/synfinatic/aws-sso-cli/internal/server"
@@ -139,7 +139,7 @@ func main() {
 
 	log = logrus.New()
 	ctx, override := parseArgs(&cli)
-	awsconfig.SetLogger(log)
+	awscreds.SetLogger(log)
 	helper.SetLogger(log)
 	predictor.SetLogger(log)
 	sso.SetLogger(log)

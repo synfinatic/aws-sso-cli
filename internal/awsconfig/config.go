@@ -19,119 +19,77 @@ package awsconfig
  */
 
 import (
-	"fmt"
-	//	"os"
-	"strings"
+	"os"
 
-	"github.com/synfinatic/aws-sso-cli/internal/storage"
+	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
-	"gopkg.in/ini.v1"
+	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
 const (
-	CONFIG_FILE      = "~/.aws/config"
-	CREDENTIALS_FILE = "~/.aws/credentials" // #nosec
+	AWS_CONFIG_FILE = "~/.aws/config"
+	CONFIG_TEMPLATE = `{{range $sso, $struct := . }}{{ range $arn, $profile := $struct }}
+[profile {{ $profile.Profile }}]
+credential_process = {{ $profile.BinaryPath }} -u {{ $profile.Open }} -S "{{ $profile.Sso }}" process --arn {{ $profile.Arn }}
+{{ if len $profile.DefaultRegion }}region = {{ printf "%s\n" $profile.DefaultRegion }}{{ end -}}
+{{ range $key, $value := $profile.ConfigVariables }}{{ $key }} = {{ $value }}
+{{end}}{{end}}{{end}}`
 )
 
-type AwsConfig struct {
-	ConfigFile      string
-	Config          *ini.File
-	CredentialsFile string
-	Credentials     *ini.File
-	Profiles        map[string]map[string]interface{} // profile.go
+// AwsConfigFile determines the correct location for the AWS config file
+func AwsConfigFile(cfile string) string {
+	if cfile != "" {
+		return utils.GetHomePath(cfile)
+	} else if p, ok := os.LookupEnv("AWS_CONFIG_FILE"); ok {
+		return utils.GetHomePath(p)
+	}
+	return utils.GetHomePath(AWS_CONFIG_FILE)
 }
 
-// NewAwsConfig creates a new *AwsConfig struct
-func NewAwsConfig(config, credentials string) (*AwsConfig, error) {
-	var err error
-	a := AwsConfig{}
-	p := utils.GetHomePath(config)
+var stdout = os.Stdout
 
-	if a.Config, err = ini.Load(p); err != nil {
-		return nil, fmt.Errorf("unable to open %s: %s", p, err.Error())
-	} else {
-		a.ConfigFile = config
-	}
-
-	p = utils.GetHomePath(credentials)
-	if a.Credentials, err = ini.Load(p); err == nil {
-		a.CredentialsFile = p
-	}
-
-	return &a, nil
-}
-
-// StaticProfiles returns a list of all the profiles with static API creds
-// stored in ~/.aws/config and ~/.aws/credentials
-func (a *AwsConfig) StaticProfiles() ([]Profile, error) {
-	profiles := []Profile{}
-	creds := a.Credentials
-
-	for _, profile := range a.Config.Sections() {
-		x := strings.Split(profile.Name(), " ")
-		if x[0] != "profile" || len(x) != 2 {
-			log.Errorf("invalid profile: %s", profile.Name())
-			continue
-		}
-
-		if HasStaticCreds(profile) {
-			log.Debugf("Found api keys for %s with in config file", x[1])
-			profiles = append(profiles,
-				Profile{
-					Name:            x[1],
-					AccessKeyId:     profile.Key("aws_access_key_id").String(),
-					SecretAccessKey: profile.Key("aws_secret_access_key").String(),
-					FromConfig:      true,
-				})
-		} else if creds != nil {
-			if cp, err := creds.GetSection(x[1]); err == nil {
-				if cp != nil && HasStaticCreds(cp) {
-					log.Debugf("Found api keys for %s in credentials file", x[1])
-					profiles = append(profiles,
-						Profile{
-							Name:            x[1],
-							AccessKeyId:     cp.Key("aws_access_key_id").String(),
-							SecretAccessKey: cp.Key("aws_secret_access_key").String(),
-							FromConfig:      false,
-						})
-				}
-			}
-		} else {
-			log.Errorf("skipping because no credentials file")
-		}
-	}
-	return profiles, nil
-}
-
-// UpdateSecureStore writes any new role ARN credentials to the provided SecureStorage
-func (a *AwsConfig) UpdateSecureStore(store storage.SecureStorage) error {
-	profiles, err := a.StaticProfiles()
+// PrintAwsConfig just prints what our new AWS config file block would look like
+func PrintAwsConfig(s *sso.Settings, action url.Action) error {
+	profiles, err := getProfileMap(s, action)
 	if err != nil {
 		return err
 	}
 
-	for _, p := range profiles {
-		arn, err := p.GetArn()
-		if err != nil {
-			return err
-		}
-		accountid, username, _ := utils.ParseUserARN(arn)
-
-		creds := storage.StaticCredentials{
-			UserName:        username,
-			AccountId:       accountid,
-			AccessKeyId:     p.AccessKeyId,
-			SecretAccessKey: p.SecretAccessKey,
-		}
-		if err = store.SaveStaticCredentials(arn, creds); err != nil {
-			return err
-		}
+	f, err := utils.NewFileEdit(CONFIG_TEMPLATE, profiles)
+	if err != nil {
+		return err
 	}
-	return nil
+
+	return f.Template.Execute(stdout, profiles)
 }
 
-// Write updates the AWS ~/.aws/config file to use aws-sso via a credential_process
-// and removes the associated ~/.aws/credentials entries
-func (a *AwsConfig) Write() error {
-	return nil
+// UpdateAwsConfig updates our AWS config file, optionally presenting a diff for
+// review or possibly making the change without prompting
+func UpdateAwsConfig(s *sso.Settings, action url.Action, cfile string, diff, force bool) error {
+	profiles, err := getProfileMap(s, action)
+	if err != nil {
+		return err
+	}
+
+	f, err := utils.NewFileEdit(CONFIG_TEMPLATE, profiles)
+	if err != nil {
+		return err
+	}
+
+	oldConfig := AwsConfigFile(cfile)
+	return f.UpdateConfig(diff, force, oldConfig)
+}
+
+// getProfileMap returns our validated sso.ProfileMap
+func getProfileMap(s *sso.Settings, action url.Action) (*sso.ProfileMap, error) {
+	profiles, err := s.GetAllProfiles(action)
+	if err != nil {
+		return profiles, err
+	}
+
+	if err := profiles.UniqueCheck(s); err != nil {
+		return profiles, err
+	}
+
+	return profiles, nil
 }
