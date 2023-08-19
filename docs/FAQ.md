@@ -43,6 +43,7 @@
 
 ##### Misc
 
+ * [AccountName vs AccountAlias](#accountname-vs-accountalias)
  * [How good is the Windows support?](#how-good-is-the-windows-support)
  * [How can I say thanks?](#how-can-I-say-thanks)
  * [What is the story with Homebrew support?](#what-is-the-story-with-homebrew-support)
@@ -436,3 +437,20 @@ has changed.
 
 If you prefer the old way of building locally from source to avoid the warning
 you should use `brew install -s aws-sso-cli` or `brew upgrade -s aws-sso-cli`.
+
+### AccountName vs AccountAlias
+
+Due to poor decisions on my part, this is ugly.  Sorry about that.  With that
+said...
+
+
+ * `AccountName` -- This is defined by the user in the [~/.aws-sso/config.yaml](config.md#name).
+ * `AccountAlias` -- This is defined by the AWS account owner for the account
+    via the AWS Console.  However, this is _not_ the
+    [AWS Account Alias](https://docs.aws.amazon.com/IAM/latest/UserGuide/console_account-alias.html#AboutAccountAlias),
+    but rather the [AWS Account Name](https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-update-root-user.html)
+    which is retrieved via the AWS sso:ListAccount API.
+
+So when you specify `AccountAlias` in the [ProfileFormat](config.md#ProfileFormat)
+or see it in the [list](commands.md#list) command, you're actually using the
+AWS Account Name set by the account owner.
