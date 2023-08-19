@@ -9,6 +9,7 @@
  * Do not create invalid `maxretry` and `maxbackoff` in SSO Instance during config #536
  * Ctrl-C now exits the guided setup
  * Running `aws-sso config` with a missing config file no longer prompts you to back it up #537
+ * Document ugly fact that `AccountAlias` is really the AWS Account Name #534
 
 ### Changes
 

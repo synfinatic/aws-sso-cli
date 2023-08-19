@@ -139,7 +139,7 @@ to make them easier to select.
 
 Alternate name of the account.  Shown as `AccountName` for the list command.
 Not to be confused with the `AccountAlias` which is defined by the account owner
-in AWS.
+in AWS.  For more information, [read the FAQ](FAQ.md#accountname-vs-accountalias)
 
 #### Tags
 
@@ -360,7 +360,7 @@ The following variables are accessible from the `AWSRoleFlat` struct:
  * `Id` -- Unique integer defined by AWS SSO CLI for this role
  * `AccountId` -- AWS Account ID (int64! not zero padded)
  * `AccountIdPad` -- AWS Account ID (zero padded)
- * `AccountAlias` -- AWS Account Alias defined in AWS by the account owner
+ * `AccountAlias` -- [AWS Account Name](FAQ.md#accountname-vs-accountalias) defined in AWS by the account owner
  * `AccountName` -- AWS Account Name defined in `~/.aws-sso/config.yaml`
  * `EmailAddress` -- Root account email address associated with the account in AWS
  * `ExpiresEpoch` -- When your API credentials expire (UNIX epoch)
@@ -498,7 +498,7 @@ This option has no effect if `HistoryLimit` is set to 0.
 Specify which fields to display via the `list` command.  Valid options are:
 
  * `Id` -- Unique row identifier
- * `AccountAlias` -- Account Name from AWS SSO
+ * `AccountAlias` -- [Account Name in AWS](FAQ.md#accountname-vs-accountalias) as defined by the account owner
  * `AccountId` -- AWS Account Id
  * `AccountIdPad` -- AWS Account Id with leading zeros if necessary
  * `AccountName` -- Account Name from config.yaml
