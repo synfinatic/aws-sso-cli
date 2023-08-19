@@ -25,9 +25,11 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"reflect"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
+	"github.com/synfinatic/gotable"
 )
 
 type Client struct {
@@ -110,6 +112,53 @@ func (c *Client) GetProfile() (string, error) {
 	log.Debugf("resp: %s", spew.Sdump(m))
 
 	return m["profile"], nil
+}
+
+type ListProfilesResponse struct {
+	ProfileName  string `json:"ProfileName" header:"ProfileName"`
+	AccountIdPad string `json:"AccountId" header:"AccountIdPad"`
+	RoleName     string `json:"RoleName" header:"RoleName"`
+	Expiration   int64  `json:"Expiration" header:"Expiration"`
+	Expires      string `json:"Expires" header:"Expires"`
+}
+
+// GetHeader is required for GenerateTable()
+func (lpr ListProfilesResponse) GetHeader(fieldName string) (string, error) {
+	v := reflect.ValueOf(lpr)
+	return gotable.GetHeaderTag(v, fieldName)
+}
+
+// ListProfiles returns a list of profiles that are loaded into slots
+func (c *Client) ListProfiles() ([]ListProfilesResponse, error) {
+	lpr := []ListProfilesResponse{}
+	req, err := http.NewRequest(http.MethodGet, c.LoadUrl(""), bytes.NewBuffer([]byte("")))
+	if err != nil {
+		return lpr, err
+	}
+
+	client := &http.Client{}
+	req.Header.Set("Content-Type", CHARSET_JSON)
+	if err != nil {
+		return lpr, err
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return lpr, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return lpr, err
+	}
+
+	err = json.Unmarshal(body, &lpr)
+	if err != nil {
+		return lpr, err
+	}
+	log.Debugf("resp: %s", spew.Sdump(lpr))
+
+	return lpr, nil
 }
 
 func (c *Client) Delete(profile string) error {
