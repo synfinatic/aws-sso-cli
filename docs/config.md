@@ -524,6 +524,10 @@ are warranted in your `~/.aws/config`.
 **Note:** This option can be disabled temporarily on the command line by passing
 the `--no-config-check` flag.
 
+**Note:** If you are using a non-default path for your `~/.aws/config` file, then
+you must be sure to set the `AWS_CONFIG_FILE` environment variable to the correct
+path or disable this configuration option.
+
 #### LogLevel / LogLines
 
 By default, the `LogLevel` is 'warn'.  You can override it here or via

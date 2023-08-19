@@ -19,6 +19,8 @@
 
  * Added [logout](docs/commands.md#logout) command which invalidates the browser
     session and all credentials #526
+ * `AutoConfigCheck` now honors the `$AWS_CONFIG_FILE` variable #540
+ * `config-profiles` now supports the `--aws-config` flag
 
 ## [v1.12.0] - 2023-08-12
 

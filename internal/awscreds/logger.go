@@ -1,4 +1,4 @@
-package awsconfig
+package awscreds
 
 /*
  * AWS SSO CLI

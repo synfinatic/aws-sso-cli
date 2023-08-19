@@ -20,14 +20,12 @@ package main
 
 import (
 	"fmt"
-	"os"
 
+	"github.com/synfinatic/aws-sso-cli/internal/awsconfig"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
 const (
-	AWS_CONFIG_FILE = "~/.aws/config"
 	CONFIG_TEMPLATE = `{{range $sso, $struct := . }}{{ range $arn, $profile := $struct }}
 [profile {{ $profile.Profile }}]
 credential_process = {{ $profile.BinaryPath }} -u {{ $profile.Open }} -S "{{ $profile.Sso }}" process --arn {{ $profile.Arn }}
@@ -37,10 +35,11 @@ credential_process = {{ $profile.BinaryPath }} -u {{ $profile.Open }} -S "{{ $pr
 )
 
 type ConfigProfilesCmd struct {
-	Diff  bool   `kong:"help='Print a diff of changes to the config file instead of modifying it',xor='action'"`
-	Force bool   `kong:"help='Write a new config file without prompting'"`
-	Open  string `kong:"help='Specify how to open URLs: [clip|exec|open|granted-containers|open-url-in-container]'"`
-	Print bool   `kong:"help='Print profile entries instead of modifying config file',xor='action'"`
+	Diff      bool   `kong:"help='Print a diff of changes to the config file instead of modifying it',xor='action'"`
+	Force     bool   `kong:"help='Write a new config file without prompting'"`
+	Open      string `kong:"help='Specify how to open URLs: [clip|exec|open|granted-containers|open-url-in-container]'"`
+	Print     bool   `kong:"help='Print profile entries instead of modifying config file',xor='action'"`
+	AwsConfig string `kong:"help='Path to AWS config file',env='AWS_CONFIG_FILE',default='~/.aws/config'"`
 }
 
 func (cc *ConfigProfilesCmd) Run(ctx *RunContext) error {
@@ -67,35 +66,9 @@ func (cc *ConfigProfilesCmd) Run(ctx *RunContext) error {
 		return err
 	}
 
-	profiles, err := ctx.Settings.GetAllProfiles(urlAction)
-	if err != nil {
-		return err
-	}
-
-	if err := profiles.UniqueCheck(ctx.Settings); err != nil {
-		return err
-	}
-
-	f, err := utils.NewFileEdit(CONFIG_TEMPLATE, profiles)
-	if err != nil {
-		return err
-	}
-
 	if ctx.Cli.ConfigProfiles.Print {
-		return f.Template.Execute(os.Stdout, profiles)
+		return awsconfig.PrintAwsConfig(ctx.Settings, urlAction)
 	}
-
-	oldConfig := awsConfigFile()
-	return f.UpdateConfig(ctx.Cli.ConfigProfiles.Diff, ctx.Cli.ConfigProfiles.Force, oldConfig)
-}
-
-// awsConfigFile returns the path the the users ~/.aws/config
-func awsConfigFile() string {
-	// did user set the value?
-	path := os.Getenv("AWS_CONFIG_FILE")
-	if path == "" {
-		path = utils.GetHomePath(AWS_CONFIG_FILE)
-	}
-	log.Debugf("path = %s", path)
-	return path
+	return awsconfig.UpdateAwsConfig(ctx.Settings, urlAction, ctx.Cli.ConfigProfiles.AwsConfig,
+		ctx.Cli.ConfigProfiles.Diff, ctx.Cli.ConfigProfiles.Force)
 }
