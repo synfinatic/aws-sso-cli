@@ -22,9 +22,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/synfinatic/aws-sso-cli/internal/server"
-	//	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/server"
+	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
@@ -113,6 +113,12 @@ func ecsLoadCmd(ctx *RunContext, awssso *sso.AWSSSO, accountId int64, role strin
 	p, err := rFlat.ProfileName(ctx.Settings)
 	if err == nil {
 		rFlat.Profile = p
+	}
+
+	// save history
+	ctx.Settings.Cache.AddHistory(utils.MakeRoleARN(rFlat.AccountId, rFlat.RoleName))
+	if err := ctx.Settings.Cache.Save(false); err != nil {
+		log.WithError(err).Warnf("Unable to update cache")
 	}
 
 	// do something

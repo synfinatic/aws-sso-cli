@@ -10,6 +10,7 @@
  * Ctrl-C now exits the guided setup
  * Running `aws-sso config` with a missing config file no longer prompts you to back it up #537
  * Document ugly fact that `AccountAlias` is really the AWS Account Name #534
+ * `ecs load` now updates history #519
 
 ### Changes
 
