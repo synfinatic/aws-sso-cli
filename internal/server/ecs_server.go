@@ -51,6 +51,7 @@ import (
 	"net/http"
 
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
+	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
 type EcsServer struct {
@@ -64,7 +65,7 @@ type EcsServer struct {
 const (
 	CREDS_ROUTE   = "/creds"   // put/get/delete
 	PROFILE_ROUTE = "/profile" // get
-	LIST_ROUTE    = "/"        // get: default route
+	DEFAULT_ROUTE = "/"        // get: default route
 	CHARSET_JSON  = "application/json; charset=utf-8"
 )
 
@@ -85,7 +86,7 @@ func NewEcsServer(ctx context.Context, authToken string, port int) (*EcsServer, 
 	}
 
 	router := http.NewServeMux()
-	router.HandleFunc(LIST_ROUTE, e.ListRoute)
+	router.HandleFunc(DEFAULT_ROUTE, e.DefaultRoute)
 	router.HandleFunc(CREDS_ROUTE, e.CredsRoute)
 	router.HandleFunc(PROFILE_ROUTE, e.ProfileRoute)
 	e.server.Handler = withLogging(withAuthorizationCheck(e.authToken, router.ServeHTTP))
@@ -98,8 +99,7 @@ func (e *EcsServer) Serve() error {
 	return e.server.Serve(e.listener)
 }
 
-// ListRoute returns the list of roles
-func (e *EcsServer) ListRoute(w http.ResponseWriter, r *http.Request) {
+func (e *EcsServer) DefaultRoute(w http.ResponseWriter, r *http.Request) {
 	log.Errorf("Invalid request")
 	e.Invalid(w)
 }
@@ -113,12 +113,19 @@ func (e *EcsServer) CredsRoute(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
-		e.getCreds(w, r, profile)
+		if len(profile) > 0 {
+			log.Errorf("trying to getCreds")
+			e.getCreds(w, r, profile)
+		} else {
+			log.Errorf("trying to listCreds")
+			e.listCreds(w, r)
+		}
 	case http.MethodPut:
 		e.putCreds(w, r, profile)
 	case http.MethodDelete:
 		e.deleteCreds(w, r, profile)
 	default:
+		log.Errorf("What?")
 		e.Invalid(w)
 	}
 }
@@ -188,6 +195,26 @@ func (e *EcsServer) putCreds(w http.ResponseWriter, r *http.Request, profile str
 		e.credentials[creds.ProfileName] = creds
 	}
 	e.OK(w)
+}
+
+// listCreds returns the list of roles in our slots
+func (e *EcsServer) listCreds(w http.ResponseWriter, r *http.Request) {
+	resp := []ListProfilesResponse{}
+
+	for _, cr := range e.credentials {
+		exp, _ := utils.TimeRemain(cr.Creds.Expiration/1000, true)
+		resp = append(resp, ListProfilesResponse{
+			ProfileName:  cr.ProfileName,
+			AccountIdPad: cr.Creds.AccountIdStr(),
+			RoleName:     cr.Creds.RoleName,
+			Expiration:   cr.Creds.Expiration / 1000,
+			Expires:      exp,
+		})
+	}
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		log.Error(err.Error())
+	}
 }
 
 // RoleRoute returns the current ProfileName in the defaultCreds

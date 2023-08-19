@@ -97,6 +97,10 @@ named slot based on the `ProfileName` which is either set via [Profile](config.m
 Specify `aws-sso ecs load --slotted ...` and the individual role will be stored in
 it's unique named slot based on it's profile name.
 
+### Listing Profiles
+
+To see a list of profiles loaded in named slots use `aws-sso ecs list`.
+
 ### Querying
 
 Accessing the individual credentials is done via the `profile` query parameter:

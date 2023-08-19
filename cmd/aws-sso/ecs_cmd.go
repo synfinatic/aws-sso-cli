@@ -21,11 +21,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/server"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
+	"github.com/synfinatic/gotable"
 )
 
 const (
@@ -34,6 +37,7 @@ const (
 
 type EcsCmd struct {
 	Run     EcsRunCmd     `kong:"cmd,help='Run the ECS Server'"`
+	List    EcsListCmd    `kong:"cmd,help='List profiles loaded in the ECS Server'"`
 	Load    EcsLoadCmd    `kong:"cmd,help='Load new IAM Role credentials into the ECS Server'"`
 	Unload  EcsUnloadCmd  `kong:"cmd,help='Unload the current IAM Role credentials from the ECS Server'"`
 	Profile EcsProfileCmd `kong:"cmd,help='Get the current role profile name in the default slot'"`
@@ -42,6 +46,8 @@ type EcsCmd struct {
 type EcsRunCmd struct {
 	Port int `kong:"help='TCP port to listen on',env='AWS_SSO_ECS_PORT',default=4144"`
 }
+
+type EcsListCmd struct{}
 
 type EcsLoadCmd struct {
 	// AWS Params
@@ -126,4 +132,35 @@ func ecsLoadCmd(ctx *RunContext, awssso *sso.AWSSSO, accountId int64, role strin
 
 	log.Debugf("%s", spew.Sdump(rFlat))
 	return c.SubmitCreds(creds, rFlat.Profile, ctx.Cli.Ecs.Load.Slotted)
+}
+
+func (cc *EcsListCmd) Run(ctx *RunContext) error {
+	c := server.NewClient(ctx.Cli.Ecs.Profile.Port)
+
+	profiles, err := c.ListProfiles()
+	if err != nil {
+		return err
+	}
+	if len(profiles) == 0 {
+		fmt.Printf("No profiles are stored in any named slots.\n")
+		return nil
+	}
+
+	// sort our results
+	sort.Slice(profiles, func(i, j int) bool {
+		return strings.Compare(profiles[i].ProfileName, profiles[j].ProfileName) < 0
+	})
+
+	tr := []gotable.TableStruct{}
+	for _, row := range profiles {
+		tr = append(tr, row)
+	}
+
+	fields := []string{"ProfileName", "AccountIdPad", "RoleName", "Expires"}
+	err = gotable.GenerateTable(tr, fields)
+	if err != nil {
+		fmt.Printf("\n")
+	}
+
+	return err
 }

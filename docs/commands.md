@@ -72,6 +72,12 @@ Priority is given to:
 
 ---
 
+### ecs 
+
+For information about the ECS Server functionality, see the [ecs-server](ecs-server.md) page.
+
+---
+
 ### config-profiles
 
 Modifies the `~/.aws/config` file to contain a [named profile](
