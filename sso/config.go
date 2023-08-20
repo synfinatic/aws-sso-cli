@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/synfinatic/aws-sso-cli/internal/tags"
+	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
@@ -33,6 +34,10 @@ type SSOConfig struct {
 	StartUrl      string                 `koanf:"StartUrl" yaml:"StartUrl"`
 	Accounts      map[string]*SSOAccount `koanf:"Accounts" yaml:"Accounts,omitempty"` // key must be a string to avoid parse errors!
 	DefaultRegion string                 `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
+
+	// overrides for this SSO Instance
+	AuthUrlAction url.Action `koanf:"AuthUrlAction" yaml:"AuthUrlAction,omitempty"`
+
 	// passed to AWSSSO from our Settings
 	MaxBackoff int `koanf:"-" yaml:"-"`
 	MaxRetry   int `koanf:"-" yaml:"-"`
@@ -62,6 +67,11 @@ type SSORole struct {
 func (c *SSOConfig) Refresh(s *Settings) {
 	c.MaxBackoff = s.MaxBackoff
 	c.MaxRetry = s.MaxRetry
+
+	if c.AuthUrlAction == url.Undef {
+		c.AuthUrlAction = s.UrlAction
+	}
+
 	for accountId, a := range c.Accounts {
 		a.SetParentConfig(c)
 		for roleName, r := range a.Roles {

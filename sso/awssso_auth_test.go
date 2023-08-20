@@ -344,17 +344,96 @@ func TestAuthenticateFailure(t *testing.T) {
 				CreateToken: &ssooidc.CreateTokenOutput{},
 				Error:       fmt.Errorf("some error"),
 			},
+			// fourth test
+			{
+				RegisterClient: &ssooidc.RegisterClientOutput{
+					AuthorizationEndpoint: nil,
+					ClientId:              aws.String("this-is-my-client-id"),
+					ClientSecret:          aws.String("this-is-my-client-secret"),
+					ClientIdIssuedAt:      time.Now().Unix(),
+					ClientSecretExpiresAt: int64(expires),
+					TokenEndpoint:         nil,
+				},
+				Error: nil,
+			},
+			{
+				StartDeviceAuthorization: &ssooidc.StartDeviceAuthorizationOutput{
+					DeviceCode:              aws.String("device-code"),
+					UserCode:                aws.String("user-code"),
+					VerificationUri:         aws.String(""),
+					VerificationUriComplete: aws.String("verification-uri-complete"),
+					ExpiresIn:               int32(expires),
+					Interval:                5,
+				},
+				Error: nil,
+			},
+			// fifth test
+			{
+				RegisterClient: &ssooidc.RegisterClientOutput{
+					AuthorizationEndpoint: nil,
+					ClientId:              aws.String("this-is-my-client-id"),
+					ClientSecret:          aws.String("this-is-my-client-secret"),
+					ClientIdIssuedAt:      time.Now().Unix(),
+					ClientSecretExpiresAt: int64(expires),
+					TokenEndpoint:         nil,
+				},
+				Error: nil,
+			},
+			{
+				StartDeviceAuthorization: &ssooidc.StartDeviceAuthorizationOutput{
+					DeviceCode:              aws.String("device-code"),
+					UserCode:                aws.String("user-code"),
+					VerificationUri:         aws.String("verification-uri"),
+					VerificationUriComplete: aws.String("verification-uri-complete"),
+					ExpiresIn:               int32(expires),
+					Interval:                5,
+				},
+				Error: nil,
+			},
+			// sixth test
+			{
+				RegisterClient: &ssooidc.RegisterClientOutput{
+					AuthorizationEndpoint: nil,
+					ClientId:              aws.String("this-is-my-client-id"),
+					ClientSecret:          aws.String("this-is-my-client-secret"),
+					ClientIdIssuedAt:      time.Now().Unix(),
+					ClientSecretExpiresAt: int64(expires),
+					TokenEndpoint:         nil,
+				},
+				Error: nil,
+			},
+			{
+				StartDeviceAuthorization: &ssooidc.StartDeviceAuthorizationOutput{
+					DeviceCode:              aws.String("device-code"),
+					UserCode:                aws.String("user-code"),
+					VerificationUri:         aws.String("verification-uri"),
+					VerificationUriComplete: aws.String("verification-uri-complete"),
+					ExpiresIn:               int32(expires),
+					Interval:                5,
+				},
+				Error: nil,
+			},
 		},
 	}
 
 	err = as.Authenticate("print", "fake-browser")
-	assert.Contains(t, err.Error(), "some error")
+	assert.Contains(t, err.Error(), "Unable to register client with AWS SSO")
 
 	err = as.Authenticate("print", "fake-browser")
-	assert.Contains(t, err.Error(), "some error")
+	assert.Contains(t, err.Error(), "Unable to start device authorization")
 
 	err = as.Authenticate("print", "fake-browser")
-	assert.Contains(t, err.Error(), "some error")
+	assert.Contains(t, err.Error(), "createToken:")
+
+	err = as.Authenticate("print", "fake-browser")
+	assert.Contains(t, err.Error(), "No valid verification url")
+
+	err = as.Authenticate("invalid", "fake-browser")
+	assert.Contains(t, err.Error(), "Unsupported Open action")
+
+	as.SSOConfig.AuthUrlAction = "invalid"
+	err = as.Authenticate("print", "fake-browser")
+	assert.Contains(t, err.Error(), "Unsupported Open action")
 }
 
 func TestReauthenticate(t *testing.T) {
