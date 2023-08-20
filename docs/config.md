@@ -15,6 +15,7 @@ SSOConfig:
         SSORegion: <AWS Region where AWS SSO is deployed>
         StartUrl: <URL for AWS SSO Portal>
         DefaultRegion: <AWS_DEFAULT_REGION>
+        AuthUrlAction: [clip|exec|print|printurl|open|granted-containers|open-url-in-container]
         Accounts:  # optional block for specifying tags & overrides
             <AccountId>:
                 Name: <Friendly Name of Account>
@@ -128,6 +129,12 @@ selected (most specific to most generic):
  1. At the AWS Account level:`SSOConfig -> <Name of the AWS SSO> -> Accounts -> <AccountId>`
  1. At the AWS SSO Instance level: `SSOConfig -> <AWS SSO Instance>`
  1. At the config file level (default is `us-east-1`)
+
+### AuthUrlAction
+
+Override the global [UrlAction](#urlaction) when authenticating with your SSO provider
+to retrieve an AWS SSO token.  Generally only useful when you wish to use your default
+browser with one `SSOConfig` block to re-use your existing SSO browser authentication cookie.
 
 ### Accounts
 

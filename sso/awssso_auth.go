@@ -110,8 +110,13 @@ func (as *AWSSSO) reauthenticate() error {
 		return fmt.Errorf("Unable to get device auth info from AWS SSO: %s", err.Error())
 	}
 
-	urlOpener := url.NewHandleUrl(url.SSOAuthAction(as.urlAction), auth.VerificationUriComplete,
-		as.browser, as.urlExecCommand)
+	action := as.urlAction
+	if as.SSOConfig.AuthUrlAction != url.Undef {
+		// specific action for authentication?
+		action = as.SSOConfig.AuthUrlAction
+	}
+
+	urlOpener := url.NewHandleUrl(action, auth.VerificationUriComplete, as.browser, as.urlExecCommand)
 	urlOpener.ContainerSettings(as.StoreKey(), DEFAULT_AUTH_COLOR, DEFAULT_AUTH_ICON)
 
 	if err = urlOpener.Open(); err != nil {
@@ -262,7 +267,7 @@ func (as *AWSSSO) createToken() error {
 		} else if errors.As(err, &ape) {
 			time.Sleep(retryInterval)
 		} else {
-			return err
+			return fmt.Errorf("createToken: %s", err.Error())
 		}
 	}
 

@@ -16,6 +16,7 @@
 
  * Guided setup is now more simple unless user provides the `--advanced` flag #530
  * Guided setup now strips leading and trailing spaces for string input
+ * Revert #491 so SSO auth uses Firefox containers
 
 ### New Features
 
@@ -25,6 +26,8 @@
  * `config-profiles` now supports the `--aws-config` flag
  * Added [ecs list](docs/ecs-server.md#listing-profiles) command to list
     profiles in named slots #517
+ * Add [AuthUrlAction](docs/config.md#authurlaction) to override [UrlAction](docs/config.md#urlaction)
+    during SSO Authentication. #524
 
 ## [v1.12.0] - 2023-08-12
 
