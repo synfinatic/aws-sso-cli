@@ -3,15 +3,26 @@ package server
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
+
+// Use format as defined here: https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/credentials/endpointcreds
+type Message struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
 
 // writeMessage returns a JSON message to the caller with the appropriate HTTP Status Code
 func writeMessage(w http.ResponseWriter, msg string, statusCode int) {
 	w.Header().Set("Content-Type", CHARSET_JSON)
 	w.WriteHeader(statusCode)
-	if err := json.NewEncoder(w).Encode(map[string]string{"Message": msg}); err != nil {
+	m := Message{
+		Code:    strconv.Itoa(statusCode),
+		Message: msg,
+	}
+	if err := json.NewEncoder(w).Encode(m); err != nil {
 		log.Error(err.Error())
 	}
 }
