@@ -1,6 +1,6 @@
 # AWS SSO CLI Changelog
 
-## Unreleased
+## [v1.13.0] - 2023-08-21
 
 ### Bugs
 
@@ -570,7 +570,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.12.0...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.13.0...main
+[v1.13.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.12.0
 [v1.12.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.11.0
 [v1.11.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.10.0
 [v1.10.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.9.10
