@@ -100,7 +100,6 @@ func (e *EcsServer) Serve() error {
 }
 
 func (e *EcsServer) DefaultRoute(w http.ResponseWriter, r *http.Request) {
-	log.Errorf("Invalid request")
 	e.Invalid(w)
 }
 
@@ -114,10 +113,8 @@ func (e *EcsServer) CredsRoute(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		if len(profile) > 0 {
-			log.Errorf("trying to getCreds")
 			e.getCreds(w, r, profile)
 		} else {
-			log.Errorf("trying to listCreds")
 			e.listCreds(w, r)
 		}
 	case http.MethodPut:
@@ -125,7 +122,6 @@ func (e *EcsServer) CredsRoute(w http.ResponseWriter, r *http.Request) {
 	case http.MethodDelete:
 		e.deleteCreds(w, r, profile)
 	default:
-		log.Errorf("What?")
 		e.Invalid(w)
 	}
 }

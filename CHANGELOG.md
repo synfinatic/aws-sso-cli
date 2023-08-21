@@ -11,6 +11,7 @@
  * Running `aws-sso config` with a missing config file no longer prompts you to back it up #537
  * Document ugly fact that `AccountAlias` is really the AWS Account Name #534
  * `ecs load` now updates history #519
+ * ECS Server now generates errors per [AWS docs](https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/credentials/endpointcreds)
 
 ### Changes
 
