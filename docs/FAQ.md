@@ -6,6 +6,7 @@
  * [When will my credentials expire?](#when-will-my-credentials-expire)
  * [What happens when credentials expire?](#what-happens-when-credentials-expire)
  * [Why can't aws-sso find my new role?](#why-cant-aws-sso-find-my-new-role)
+ * [Spaces are invalid in Profile names](#spaces-are-invalid-in-profile-names)
 
 ##### Advanced Features
 
@@ -43,7 +44,6 @@
 
 ##### Misc
 
- * [AccountName vs AccountAlias](#accountname-vs-accountalias)
  * [How good is the Windows support?](#how-good-is-the-windows-support)
  * [How can I say thanks?](#how-can-I-say-thanks)
  * [What is the story with Homebrew support?](#what-is-the-story-with-homebrew-support)
@@ -79,6 +79,17 @@ API call.  Unfortunately, this seems to be a limitation with AWS and you just
 have to wait a few minutes.
 
 You can see what the AWS ListAccountRoles API is returning via `aws-sso cache -L debug`t
+
+### Spaces are invalid in Profile names
+
+If your [ProfileFormat](config.md#ProfileFormat) contains either `AccountName`
+or `AccountAlias` you may end up with an invalid Profile name which contains a
+space.
+
+Their are two possible solutions:
+
+ 1. Don't include a space in the [AccountName](config.md#name)
+ 2. Strip/replace the space [via the ProfileFormat option](#how-to-configure-profileformat)
 
 ### How do I delete all secrets from the macOS keychain?
 
@@ -149,12 +160,16 @@ manage the variable.
 <!-- https://github.com/synfinatic/aws-sso-cli/issues/166 -->
 ![](https://user-images.githubusercontent.com/1075352/143502947-1465f68f-0ef5-4de7-a997-ea716facc637.png)
 
-### AccountName vs AccountAlias
+### AccountAlias vs AccountName
 
-The `AccountAlias` is defined in AWS itself and is visible via the
-[iam:ListAccountAliases](
-https://docs.aws.amazon.com/IAM/latest/APIReference/API_ListAccountAliases.html)
-API call.
+Due to poor decisions on my part, this is ugly.  Sorry about that.  With that
+said...
+
+The `AccountAlias` is defined by the AWS account owner for the account
+via the AWS Console.  However, this is _not_ the
+[AWS Account Alias](https://docs.aws.amazon.com/IAM/latest/UserGuide/console_account-alias.html#AboutAccountAlias),
+but rather the [AWS Account Name](https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-update-root-user.html)
+which is retrieved via the AWS sso:ListAccount API.
 
 The `AccountName` is defined explicitly in the `~/.aws-sso/config.yaml` file like this:
 
@@ -169,6 +184,10 @@ SSOConfig:
 ```
 
 or automatically via the [ProfileFormat config option](config.md#profileformat).
+
+So when you specify `AccountAlias` in the [ProfileFormat](config.md#ProfileFormat)
+or see it in the [list](commands.md#list) command, you're actually using the
+AWS Account Name set by the account owner.
 
 ### Defining `$AWS_PROFILE` and `$AWS_SSO_PROFILE` variable names
 
@@ -204,23 +223,30 @@ purposes:
     when you use the [config-profiles](commands.md#config-profiles) command.
 
 By default, `ProfileFormat` is set to `{{ .AccountIdPad }}:{{ .RoleName }}`
-which will generate a value like `02345678901:MyRoleName`.
+which will generate a value like `02345678901:MyRoleName`.  For a complete
+list of available variable names, see [ProfileFormat](config.md#profileformat).
 
-Some examples:
+In my experience you can change the `ProfileFormat` to pretty much any valid
+ASCII string that does not include whitespace or special characters that would
+be evaluated by your shell (`$`, etc) or
+[the AWS configuration file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-using-profiles)
+such as `[`, `]`.  (Note: if you can find official AWS documentation on this
+subject, please let me know!)
 
- * `ProfileFormat: '{{ FirstItem .AccountName .AccountAlias }}'` -- If there
+Some example `ProfileFormat` values:
+
+ * `'{{ FirstItem .AccountName .AccountAlias }}'` -- If there
     is an Account Name set in the config.yaml print that, otherwise print the
     Account Alias defined by the AWS administrator.
- * `ProfileFormat: '{{ .AccountIdPad }}'` -- Pad the AccountId with leading zeros if it is < 12 digits long
- * `ProfileFormat: '{{ .AccountId }}'` -- Print the AccountId as a regular number
- * `ProfileFormat: '{{ StringsJoin ":" .AccountAlias .RoleName }}'` -- Another
+ * `'{{ .AccountIdPad }}'` -- Pad the AccountId with leading zeros if it is < 12 digits long
+ * `'{{ .AccountId }}'` -- Print the AccountId as a regular number
+ * `'{{ StringsJoin ":" .AccountAlias .RoleName }}'` -- Another
     way of writing `{{ .AccountAlias }}:{{ .RoleName }}`
- * `ProfileFormat: '{{ StringReplace " " "_" .AccountAlias }}'` -- Replace any
-    spaces (` `) in the AccountAlias with an underscore (`_`).
- * `ProfileFormat: '{{ FirstItem .AccountName nospaces(.AccountAlias) }}:{{ .RoleName }}'`
+ * `'{{ StringReplace " " "_" .AccountAlias }}'` -- Replace any spaces (` `) in the AccountAlias with an underscore (`_`).
+ * `'{{ FirstItem .AccountName nospaces(.AccountAlias) }}:{{ .RoleName }}'`
     -- Use the Account Name if set, otherwise use the Account Alias (without spaces)
     and then append a colon, followed by the IAM Role Name.
- * `ProfileFormat: '{{ .AccountAlias | kebabcase }}:{{ .RoleName }}'
+ * `'{{ .AccountAlias | kebabcase }}:{{ .RoleName }}'
 	-- Reformat the AWS account alias like `AStringLikeThis` into
 	`a-string-like-this` using the [kebabcase function](
 	http://masterminds.github.io/sprig/strings.html#kebabcase).
@@ -437,20 +463,3 @@ has changed.
 
 If you prefer the old way of building locally from source to avoid the warning
 you should use `brew install -s aws-sso-cli` or `brew upgrade -s aws-sso-cli`.
-
-### AccountName vs AccountAlias
-
-Due to poor decisions on my part, this is ugly.  Sorry about that.  With that
-said...
-
-
- * `AccountName` -- This is defined by the user in the [~/.aws-sso/config.yaml](config.md#name).
- * `AccountAlias` -- This is defined by the AWS account owner for the account
-    via the AWS Console.  However, this is _not_ the
-    [AWS Account Alias](https://docs.aws.amazon.com/IAM/latest/UserGuide/console_account-alias.html#AboutAccountAlias),
-    but rather the [AWS Account Name](https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-update-root-user.html)
-    which is retrieved via the AWS sso:ListAccount API.
-
-So when you specify `AccountAlias` in the [ProfileFormat](config.md#ProfileFormat)
-or see it in the [list](commands.md#list) command, you're actually using the
-AWS Account Name set by the account owner.
