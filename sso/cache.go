@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -465,6 +466,11 @@ func processSSORoles(roles []RoleInfo, cache *SSOCache, r *Roles) {
 	for _, role := range roles {
 		log.Debugf("Processing %s:%s", role.AccountId, role.RoleName)
 		accountId := role.GetAccountId64()
+
+		if strings.ContainsAny(role.AccountName, " \t\n\r\v\f") {
+			log.Debugf("AccountName '%s' contains whitespace, replacing with '-'", role.AccountName)
+			role.AccountName = regexp.MustCompile(`\s+`).ReplaceAllString(role.AccountName, "-")
+		}
 
 		if _, ok := r.Accounts[accountId]; !ok {
 			r.Accounts[accountId] = &AWSAccount{

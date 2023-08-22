@@ -520,6 +520,18 @@ func (suite *CacheTestSuite) TestProcessSSORoles() {
 			SSORegion:    "us-east-2",
 			StartUrl:     "https://fake.awsapps.com/start",
 		},
+		{
+			Id:           1,
+			Arn:          "arn:aws:iam::123456789013:role/testing-whitespace",
+			RoleName:     "testing-whitespace",
+			AccountId:    "123456789013",
+			AccountName:  "My Test  Account",
+			EmailAddress: "testing@domain.com",
+			Expires:      555555555,
+			Region:       "us-east-1",
+			SSORegion:    "us-east-2",
+			StartUrl:     "https://fake.awsapps.com/start",
+		},
 	}
 
 	r := Roles{
@@ -534,7 +546,7 @@ func (suite *CacheTestSuite) TestProcessSSORoles() {
 	}
 
 	processSSORoles(roles, &cache, &r)
-	assert.Len(t, r.Accounts, 1)
+	assert.Len(t, r.Accounts, 2)
 	assert.Len(t, r.Accounts[123456789012].Roles, 1)
 	assert.Equal(t, "MyTestAccount", r.Accounts[123456789012].Alias)
 	assert.Equal(t, "testing@domain.com", r.Accounts[123456789012].EmailAddress)
@@ -545,6 +557,12 @@ func (suite *CacheTestSuite) TestProcessSSORoles() {
 	assert.Equal(t, "123456789012", r.Accounts[123456789012].Roles["testing"].Tags["AccountID"])
 	assert.Equal(t, "testing@domain.com", r.Accounts[123456789012].Roles["testing"].Tags["Email"])
 	assert.Equal(t, "testing", r.Accounts[123456789012].Roles["testing"].Tags["Role"])
+
+	assert.Equal(t, "My-Test-Account", r.Accounts[123456789013].Alias)
+	assert.Equal(t, "arn:aws:iam::123456789013:role/testing-whitespace", r.Accounts[123456789013].Roles["testing-whitespace"].Arn)
+	assert.Len(t, r.Accounts[123456789013].Tags, 0)
+
+	assert.Equal(t, "My-Test-Account", r.Accounts[123456789013].Roles["testing-whitespace"].Tags["AccountAlias"])
 }
 
 func (suite *CacheTestSuite) TestPruneSSO() {
