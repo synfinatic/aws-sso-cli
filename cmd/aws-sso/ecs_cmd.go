@@ -95,8 +95,15 @@ func (cc *EcsProfileCmd) Run(ctx *RunContext) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%s\n", profile)
-	return nil
+
+	if profile.ProfileName == "" {
+		return fmt.Errorf("No profile loaded in ECS Server.")
+	}
+
+	profiles := []server.ListProfilesResponse{
+		profile,
+	}
+	return listProfiles(profiles)
 }
 
 func (cc *EcsUnloadCmd) Run(ctx *RunContext) error {
@@ -146,6 +153,10 @@ func (cc *EcsListCmd) Run(ctx *RunContext) error {
 		return nil
 	}
 
+	return listProfiles(profiles)
+}
+
+func listProfiles(profiles []server.ListProfilesResponse) error {
 	// sort our results
 	sort.Slice(profiles, func(i, j int) bool {
 		return strings.Compare(profiles[i].ProfileName, profiles[j].ProfileName) < 0
@@ -157,7 +168,7 @@ func (cc *EcsListCmd) Run(ctx *RunContext) error {
 	}
 
 	fields := []string{"ProfileName", "AccountIdPad", "RoleName", "Expires"}
-	err = gotable.GenerateTable(tr, fields)
+	err := gotable.GenerateTable(tr, fields)
 	if err != nil {
 		fmt.Printf("\n")
 	}

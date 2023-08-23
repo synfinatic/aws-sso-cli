@@ -44,13 +44,17 @@ func NewClient(port int) *Client {
 
 func (c *Client) LoadUrl(profile string) string {
 	if profile == "" {
-		return fmt.Sprintf("http://localhost:%d%s", c.port, CREDS_ROUTE)
+		return fmt.Sprintf("http://localhost:%d/", c.port)
 	}
-	return fmt.Sprintf("http://localhost:%d%s?profile=%s", c.port, CREDS_ROUTE, url.QueryEscape(profile))
+	return fmt.Sprintf("http://localhost:%d%s/%s", c.port, SLOT_ROUTE, url.QueryEscape(profile))
 }
 
 func (c *Client) ProfileUrl() string {
 	return fmt.Sprintf("http://localhost:%d%s", c.port, PROFILE_ROUTE)
+}
+
+func (c *Client) ListUrl() string {
+	return fmt.Sprintf("http://localhost:%d%s", c.port, SLOT_ROUTE)
 }
 
 type ClientRequest struct {
@@ -78,40 +82,11 @@ func (c *Client) SubmitCreds(creds *storage.RoleCredentials, profile string, slo
 	}
 	req.Header.Set("Content-Type", CHARSET_JSON)
 	client := &http.Client{}
-	_, err = client.Do(req)
-	return err
-}
-
-func (c *Client) GetProfile() (string, error) {
-	req, err := http.NewRequest(http.MethodGet, c.ProfileUrl(), bytes.NewBuffer([]byte("")))
-	if err != nil {
-		return "", err
-	}
-
-	client := &http.Client{}
-	req.Header.Set("Content-Type", CHARSET_JSON)
-	if err != nil {
-		return "", err
-	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", err
+		return err
 	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	m := map[string]string{}
-	err = json.Unmarshal(body, &m)
-	if err != nil {
-		return "", err
-	}
-	log.Debugf("resp: %s", spew.Sdump(m))
-
-	return m["profile"], nil
+	return CheckDoResponse(resp)
 }
 
 type ListProfilesResponse struct {
@@ -120,6 +95,28 @@ type ListProfilesResponse struct {
 	RoleName     string `json:"RoleName" header:"RoleName"`
 	Expiration   int64  `json:"Expiration" header:"Expiration"`
 	Expires      string `json:"Expires" header:"Expires"`
+}
+
+func (c *Client) GetProfile() (ListProfilesResponse, error) {
+	lpr := ListProfilesResponse{}
+	client := &http.Client{}
+	resp, err := client.Get(c.ProfileUrl())
+	if err != nil {
+		return lpr, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return lpr, err
+	}
+
+	if err = json.Unmarshal(body, &lpr); err != nil {
+		return lpr, err
+	}
+	log.Debugf("resp: %s", spew.Sdump(lpr))
+
+	return lpr, nil
 }
 
 // GetHeader is required for GenerateTable()
@@ -131,17 +128,8 @@ func (lpr ListProfilesResponse) GetHeader(fieldName string) (string, error) {
 // ListProfiles returns a list of profiles that are loaded into slots
 func (c *Client) ListProfiles() ([]ListProfilesResponse, error) {
 	lpr := []ListProfilesResponse{}
-	req, err := http.NewRequest(http.MethodGet, c.LoadUrl(""), bytes.NewBuffer([]byte("")))
-	if err != nil {
-		return lpr, err
-	}
-
 	client := &http.Client{}
-	req.Header.Set("Content-Type", CHARSET_JSON)
-	if err != nil {
-		return lpr, err
-	}
-	resp, err := client.Do(req)
+	resp, err := client.Get(c.ListUrl())
 	if err != nil {
 		return lpr, err
 	}
@@ -152,8 +140,7 @@ func (c *Client) ListProfiles() ([]ListProfilesResponse, error) {
 		return lpr, err
 	}
 
-	err = json.Unmarshal(body, &lpr)
-	if err != nil {
+	if err = json.Unmarshal(body, &lpr); err != nil {
 		return lpr, err
 	}
 	log.Debugf("resp: %s", spew.Sdump(lpr))
@@ -172,6 +159,31 @@ func (c *Client) Delete(profile string) error {
 	if err != nil {
 		return err
 	}
-	_, err = client.Do(req)
-	return err
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	return CheckDoResponse(resp)
+}
+
+// ReadClientRequest unmarshals the client's request into our ClientRequest struct
+// used to load new credentials into the server
+func ReadClientRequest(r *http.Request) (*ClientRequest, error) {
+	defer r.Body.Close()
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return &ClientRequest{}, fmt.Errorf("reading body: %s", err.Error())
+	}
+	req := &ClientRequest{}
+	if err = json.Unmarshal(body, req); err != nil {
+		return &ClientRequest{}, fmt.Errorf("parsing json: %s", err.Error())
+	}
+	return req, nil
+}
+
+func CheckDoResponse(resp *http.Response) error {
+	if resp.StatusCode < 200 || resp.StatusCode > 200 {
+		return fmt.Errorf("HTTP Error %d", resp.StatusCode)
+	}
+	return nil
 }

@@ -15,7 +15,7 @@ type Message struct {
 }
 
 // writeMessage returns a JSON message to the caller with the appropriate HTTP Status Code
-func writeMessage(w http.ResponseWriter, msg string, statusCode int) {
+func WriteMessage(w http.ResponseWriter, msg string, statusCode int) {
 	w.Header().Set("Content-Type", CHARSET_JSON)
 	w.WriteHeader(statusCode)
 	m := Message{
@@ -27,28 +27,49 @@ func writeMessage(w http.ResponseWriter, msg string, statusCode int) {
 	}
 }
 
-// withAuthorizationCheck checks our authToken (if set) and returns 404 on error
-func withAuthorizationCheck(authToken string, next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Authorization") != authToken {
-			writeMessage(w, "Invalid authorization token", http.StatusForbidden)
-			return
-		}
-		next.ServeHTTP(w, r)
+// WriteCreds returns the JSON of the provided creds to the HTTP client
+func WriteCreds(w http.ResponseWriter, creds *storage.RoleCredentials) {
+	if creds.Expired() {
+		Expired(w)
+		return
 	}
-}
 
-// writeCredsToResponse generates the appropriate response for ECS Server queries using the
-// provided RoleCredentials
-func writeCredsToResponse(creds *storage.RoleCredentials, w http.ResponseWriter) {
-	err := json.NewEncoder(w).Encode(map[string]string{
+	resp := map[string]string{
 		"AccessKeyId":     creds.AccessKeyId,
 		"SecretAccessKey": creds.SecretAccessKey,
 		"Token":           creds.SessionToken,
 		"Expiration":      creds.ExpireISO8601(),
-	})
-	if err != nil {
-		writeMessage(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
+	JSONResponse(w, resp)
+}
+
+// JSONResponse return a JSON blob as a result
+func JSONResponse(w http.ResponseWriter, jdata interface{}) {
+	w.Header().Set("Content-Type", CHARSET_JSON)
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(jdata); err != nil {
+		log.Error(err.Error())
+		WriteMessage(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// OK returns an OK response
+func OK(w http.ResponseWriter) {
+	WriteMessage(w, "OK", http.StatusOK)
+}
+
+// Expired returns a credentials expired response
+func Expired(w http.ResponseWriter) {
+	WriteMessage(w, "Credentials expired", http.StatusConflict)
+}
+
+// Unavailable returns a credentials unavailable response
+func Unavailable(w http.ResponseWriter) {
+	WriteMessage(w, "Credentials unavailable", http.StatusNotFound)
+}
+
+// Invalid returns an invalid request response
+func Invalid(w http.ResponseWriter) {
+	WriteMessage(w, "Invalid request", http.StatusNotFound)
 }

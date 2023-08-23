@@ -39,17 +39,15 @@ package server
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
@@ -58,14 +56,14 @@ type EcsServer struct {
 	listener     net.Listener
 	authToken    string
 	server       http.Server
-	defaultCreds *ClientRequest
-	credentials  map[string]*ClientRequest
+	DefaultCreds *ClientRequest
+	slottedCreds map[string]*ClientRequest
 }
 
 const (
-	CREDS_ROUTE   = "/creds"   // put/get/delete
-	PROFILE_ROUTE = "/profile" // get
-	DEFAULT_ROUTE = "/"        // get: default route
+	SLOT_ROUTE    = "/slot"    // put/get/delete
+	PROFILE_ROUTE = "/profile" // get name of default creds
+	DEFAULT_ROUTE = "/"        // put/get/delete: default credentials
 	CHARSET_JSON  = "application/json; charset=utf-8"
 )
 
@@ -79,125 +77,79 @@ func NewEcsServer(ctx context.Context, authToken string, port int) (*EcsServer, 
 	e := &EcsServer{
 		listener:  listener,
 		authToken: authToken,
-		defaultCreds: &ClientRequest{
+		DefaultCreds: &ClientRequest{
 			Creds: &storage.RoleCredentials{},
 		},
-		credentials: map[string]*ClientRequest{},
+		slottedCreds: map[string]*ClientRequest{},
 	}
 
 	router := http.NewServeMux()
-	router.HandleFunc(DEFAULT_ROUTE, e.DefaultRoute)
-	router.HandleFunc(CREDS_ROUTE, e.CredsRoute)
-	router.HandleFunc(PROFILE_ROUTE, e.ProfileRoute)
-	e.server.Handler = withLogging(withAuthorizationCheck(e.authToken, router.ServeHTTP))
+	router.Handle(fmt.Sprintf("%s/", SLOT_ROUTE), SlottedHandler{
+		ecs: e,
+	})
+	router.Handle(SLOT_ROUTE, SlottedHandler{
+		ecs: e,
+	})
+	router.Handle(PROFILE_ROUTE, DefaultHandler{
+		ecs: e,
+	})
+	router.Handle(DEFAULT_ROUTE, DefaultHandler{
+		ecs: e,
+	})
+	e.server.Handler = withLogging(WithAuthorizationCheck(e.authToken, router.ServeHTTP))
 
 	return e, nil
 }
 
-// Serve starts the sever and blocks
-func (e *EcsServer) Serve() error {
-	return e.server.Serve(e.listener)
+// deleteCreds removes our slotted credentials from the cache
+func (e *EcsServer) DeleteSlottedCreds(w http.ResponseWriter, r *http.Request, profile string) {
+	delete(e.slottedCreds, profile)
+	OK(w)
 }
 
-func (e *EcsServer) DefaultRoute(w http.ResponseWriter, r *http.Request) {
-	e.Invalid(w)
-}
-
-// CredsRoutef accepts GET, PUT, DELETE to manage our creds.  The path
-// compoent after the first word indicates a named slot.  Lack of a named
-// slot utilizes the defaultCreds
-func (e *EcsServer) CredsRoute(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query()
-	profile := query.Get("profile")
-
-	switch r.Method {
-	case http.MethodGet:
-		if len(profile) > 0 {
-			e.getCreds(w, r, profile)
-		} else {
-			e.listCreds(w, r)
-		}
-	case http.MethodPut:
-		e.putCreds(w, r, profile)
-	case http.MethodDelete:
-		e.deleteCreds(w, r, profile)
-	default:
-		e.Invalid(w)
-	}
-}
-
-// deleteCreds removes our credentials from the cache
-func (e *EcsServer) deleteCreds(w http.ResponseWriter, r *http.Request, profile string) {
-	if profile == "" {
-		e.defaultCreds = &ClientRequest{
-			ProfileName: "",
-		}
-	} else {
-		delete(e.credentials, profile)
-	}
-	e.OK(w)
-}
-
-// getCreds fetches the credentials from the cache
-func (e *EcsServer) getCreds(w http.ResponseWriter, r *http.Request, profile string) {
-	var c *ClientRequest
-	var ok bool
-	if profile == "" {
-		log.Debugf("fetching default creds")
-		c = e.defaultCreds
-	} else {
-		log.Debugf("fetching creds for profile: %s", profile)
-		c, ok = e.credentials[profile]
-		if !ok {
-			e.Unavailable(w)
-			return
-		}
-	}
-
-	if c.Creds.Expired() {
-		e.Expired(w)
+// getCreds fetches the named profile from the cache.
+func (e *EcsServer) GetSlottedCreds(w http.ResponseWriter, r *http.Request, profile string) {
+	log.Debugf("fetching creds for profile: %s", profile)
+	c, ok := e.slottedCreds[profile]
+	if !ok {
+		Unavailable(w)
 		return
 	}
-	writeCredsToResponse(c.Creds, w)
-}
 
-func (e *EcsServer) getClientRequest(r *http.Request) (*ClientRequest, error) {
-	defer r.Body.Close()
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return &ClientRequest{}, fmt.Errorf("reading body: %s", err.Error())
-	}
-	creds := &ClientRequest{}
-	if err = json.Unmarshal(body, creds); err != nil {
-		return &ClientRequest{}, fmt.Errorf("parsing json: %s", err.Error())
-	}
-	return creds, nil
+	JSONResponse(w, c)
 }
 
 // putCreds loads credentials into the cache
-func (e *EcsServer) putCreds(w http.ResponseWriter, r *http.Request, profile string) {
-	creds, err := e.getClientRequest(r)
+func (e *EcsServer) PutSlottedCreds(w http.ResponseWriter, r *http.Request, profile string) {
+	creds, err := ReadClientRequest(r)
+	log.Debugf("processing %s: %s", profile, spew.Sdump(creds))
+
 	if err != nil {
-		writeMessage(w, err.Error(), http.StatusInternalServerError)
+		WriteMessage(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	if creds.Creds.Expired() {
-		e.Expired(w)
+		Expired(w)
 		return
 	}
-	if profile == "" {
-		e.defaultCreds = creds
-	} else {
-		e.credentials[creds.ProfileName] = creds
-	}
-	e.OK(w)
+	e.slottedCreds[creds.ProfileName] = creds
+	log.Debugf("added %s to slots %d", creds.ProfileName, len(e.slottedCreds))
+	OK(w)
 }
 
-// listCreds returns the list of roles in our slots
-func (e *EcsServer) listCreds(w http.ResponseWriter, r *http.Request) {
+// ListSlottedCreds returns the list of roles in our slots
+func (e *EcsServer) ListSlottedCreds(w http.ResponseWriter, r *http.Request) {
 	resp := []ListProfilesResponse{}
 
-	for _, cr := range e.credentials {
+	log.Debugf("slottedCreds: %s", spew.Sdump(e.slottedCreds))
+
+	for _, cr := range e.slottedCreds {
+		if cr.Creds.Expired() {
+			log.Debugf("Skipping expired creds for %s", cr.ProfileName)
+			continue
+		}
+
 		exp, _ := utils.TimeRemain(cr.Creds.Expiration/1000, true)
 		resp = append(resp, ListProfilesResponse{
 			ProfileName:  cr.ProfileName,
@@ -208,55 +160,31 @@ func (e *EcsServer) listCreds(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		log.Error(err.Error())
-	}
+	JSONResponse(w, resp)
 }
 
-// RoleRoute returns the current ProfileName in the defaultCreds
-func (e *EcsServer) ProfileRoute(w http.ResponseWriter, r *http.Request) {
-	if e.defaultCreds.ProfileName == "" {
-		e.Unavailable(w)
-		return
-	}
-
-	if e.defaultCreds.Creds.Expired() {
-		e.Expired(w)
-		return
-	}
-
-	w.Header().Set("Content-Type", CHARSET_JSON)
-	w.WriteHeader(http.StatusOK)
-	profile := e.defaultCreds.ProfileName
-	if err := json.NewEncoder(w).Encode(map[string]string{"profile": profile}); err != nil {
-		log.Error(err.Error())
-	}
-}
-
+// BaseURL returns our the base URL for all requests
 func (e *EcsServer) BaseURL() string {
 	return fmt.Sprintf("http://%s", e.listener.Addr().String())
 }
 
+// AuthToken returns our authToken for authentication
 func (e *EcsServer) AuthToken() string {
 	return e.authToken
 }
 
-// OK returns an OK response
-func (e *EcsServer) OK(w http.ResponseWriter) {
-	writeMessage(w, "OK", http.StatusOK)
+// Serve starts the sever and blocks
+func (e *EcsServer) Serve() error {
+	return e.server.Serve(e.listener)
 }
 
-// Expired returns a credentials expired response
-func (e *EcsServer) Expired(w http.ResponseWriter) {
-	writeMessage(w, "Credentials expired", http.StatusConflict)
-}
-
-// Unavailable returns a credentials unavailable response
-func (e *EcsServer) Unavailable(w http.ResponseWriter) {
-	writeMessage(w, "Credentials unavailable", http.StatusNotFound)
-}
-
-// Invalid returns an invalid request response
-func (e *EcsServer) Invalid(w http.ResponseWriter) {
-	writeMessage(w, "Invalid request", http.StatusNotFound)
+// WithAuthorizationCheck checks our authToken (if set) and returns 404 on error
+func WithAuthorizationCheck(authToken string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != authToken {
+			WriteMessage(w, "Invalid authorization token", http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	}
 }

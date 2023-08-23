@@ -12,6 +12,7 @@
  * [Errors](#errors)
  * [Authentication](#authentication)
  * [HTTPS Transport](#https-transport)
+ * [REST API](#rest-api)
 
 ## Overview
 
@@ -41,7 +42,7 @@ port via the `--port` flag or setting the `AWS_SSO_ECS_PORT` environment variabl
 
 AWS clients and `aws-sso` should use:
 
-`AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:4144/creds`
+`AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:4144/`
 
 ### AWS\_CONTAINER\_CREDENTIALS\_RELATIVE\_URI
 
@@ -111,7 +112,7 @@ To see a list of profiles loaded in named slots use `aws-sso ecs list`.
 
 Accessing the individual credentials is done via the `profile` query parameter:
 
-`export AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:4144/creds?profile=ExampleProfileName`
+`export AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:4144/slot/ExampleProfileName`
 
 Would utilize the `ExampleProfileName` role.  Note that the `profile` parameter
 value must be URL Escaped.
@@ -144,3 +145,20 @@ this feature if you want it!
 
 Support for using [HTTPS](https://github.com/synfinatic/aws-sso-cli/issues/518)
 is TBD.  Please vote for this feature if you want it!
+
+## REST API 
+
+### Default credentials
+
+ * `GET /` -- Fetch default credentials
+ * `GET /profile` -- Fetch profile name of the default credentials
+ * `PUT /` -- Upload default credentials 
+ * `DELETE /` -- Delete default credentials
+
+### Slotted credentials
+
+ * `GET /creds` -- Fetch list of default credentials
+ * `GET /creds/<profile>` -- Fetch credentials of the named profile 
+ * `PUT /creds/<profile>` -- Upload credentials of the named profile 
+ * `DELETE /creds/<profile>` -- Delete credentials of the named profile
+ * `DELETE /creds`  -- Delete all named credentials
