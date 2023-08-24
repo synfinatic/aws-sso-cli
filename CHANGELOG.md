@@ -12,6 +12,7 @@
  * Default profile `AWS_CONTAINER_CREDENTIALS_FULL_URI` is now `http://localhost:4144/`
  * Slotted profile `AWS_CONTAINER_CREDENTIALS_FULL_URI` is now `http://localhost:4144/slot/<profile>`
  * `aws-sso ecs list` and `aws-sso ecs profile` now return the same output format
+ * ECS Server now returns Status Gone/410 on expired credentials
 
 ## [v1.13.0] - 2023-08-21
 

@@ -59,7 +59,7 @@ func (p SlottedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case http.MethodDelete:
 		p.Delete(w, r)
 	default:
-		log.Errorf("WTF slotted")
+		log.Errorf("Invalid request: %s", r.URL.String())
 		Invalid(w)
 	}
 }
@@ -68,21 +68,40 @@ func (p *SlottedHandler) Get(w http.ResponseWriter, r *http.Request) {
 	profile := GetProfileName(r)
 	switch profile {
 	case "":
-		p.ecs.ListSlottedCreds(w, r)
+		lpr := p.ecs.ListSlottedCreds()
+		WriteListProfilesResponse(w, lpr)
+
 	default:
-		p.ecs.GetSlottedCreds(w, r, profile)
+		creds, err := p.ecs.GetSlottedCreds(profile)
+		if err != err {
+			Unavailable(w)
+			return
+		}
+		WriteCreds(w, creds.Creds)
 	}
 }
 
 func (p *SlottedHandler) Put(w http.ResponseWriter, r *http.Request) {
-	profile := GetProfileName(r)
-	p.ecs.PutSlottedCreds(w, r, profile)
+	creds, err := ReadClientRequest(r)
+	if err != nil {
+		InternalServerErrror(w, err)
+		return
+	}
+
+	if err := p.ecs.PutSlottedCreds(creds); err != nil {
+		InternalServerErrror(w, err)
+		return
+	}
+
 	OK(w)
 }
 
 func (p *SlottedHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	profile := GetProfileName(r)
-	p.ecs.DeleteSlottedCreds(w, r, profile)
+	if err := p.ecs.DeleteSlottedCreds(profile); err != nil {
+		Unavailable(w)
+		return
+	}
 	OK(w)
 }
 

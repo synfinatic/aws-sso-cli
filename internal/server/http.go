@@ -14,19 +14,6 @@ type Message struct {
 	Message string `json:"message"`
 }
 
-// writeMessage returns a JSON message to the caller with the appropriate HTTP Status Code
-func WriteMessage(w http.ResponseWriter, msg string, statusCode int) {
-	w.Header().Set("Content-Type", CHARSET_JSON)
-	w.WriteHeader(statusCode)
-	m := Message{
-		Code:    strconv.Itoa(statusCode),
-		Message: msg,
-	}
-	if err := json.NewEncoder(w).Encode(m); err != nil {
-		log.Error(err.Error())
-	}
-}
-
 // WriteCreds returns the JSON of the provided creds to the HTTP client
 func WriteCreds(w http.ResponseWriter, creds *storage.RoleCredentials) {
 	if creds.Expired() {
@@ -61,7 +48,7 @@ func OK(w http.ResponseWriter) {
 
 // Expired returns a credentials expired response
 func Expired(w http.ResponseWriter) {
-	WriteMessage(w, "Credentials expired", http.StatusConflict)
+	WriteMessage(w, "Credentials expired", http.StatusGone)
 }
 
 // Unavailable returns a credentials unavailable response
@@ -72,4 +59,26 @@ func Unavailable(w http.ResponseWriter) {
 // Invalid returns an invalid request response
 func Invalid(w http.ResponseWriter) {
 	WriteMessage(w, "Invalid request", http.StatusNotFound)
+}
+
+// InternalServerErrror returns an internal server error response
+func InternalServerErrror(w http.ResponseWriter, err error) {
+	WriteMessage(w, err.Error(), http.StatusInternalServerError)
+}
+
+// WriteMessage returns a JSON message to the caller with the appropriate HTTP Status Code
+func WriteMessage(w http.ResponseWriter, msg string, statusCode int) {
+	w.Header().Set("Content-Type", CHARSET_JSON)
+	w.WriteHeader(statusCode)
+	m := Message{
+		Code:    strconv.Itoa(statusCode),
+		Message: msg,
+	}
+	if err := json.NewEncoder(w).Encode(m); err != nil {
+		log.Error(err.Error())
+	}
+}
+
+func WriteListProfilesResponse(w http.ResponseWriter, lpr []ListProfilesResponse) {
+	JSONResponse(w, lpr)
 }
