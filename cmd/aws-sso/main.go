@@ -28,9 +28,10 @@ import (
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/internal/awscreds"
+	"github.com/synfinatic/aws-sso-cli/internal/ecs/client"
+	"github.com/synfinatic/aws-sso-cli/internal/ecs/server"
 	"github.com/synfinatic/aws-sso-cli/internal/helper"
 	"github.com/synfinatic/aws-sso-cli/internal/predictor"
-	"github.com/synfinatic/aws-sso-cli/internal/server"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/tags"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
@@ -148,6 +149,7 @@ func main() {
 	url.SetLogger(log)
 	utils.SetLogger(log)
 	server.SetLogger(log)
+	client.SetLogger(log)
 
 	if err := logLevelValidate(cli.LogLevel); err != nil {
 		log.Fatalf("%s", err.Error())

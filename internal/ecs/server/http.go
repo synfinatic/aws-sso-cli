@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
 
@@ -32,7 +33,7 @@ func WriteCreds(w http.ResponseWriter, creds *storage.RoleCredentials) {
 
 // JSONResponse return a JSON blob as a result
 func JSONResponse(w http.ResponseWriter, jdata interface{}) {
-	w.Header().Set("Content-Type", CHARSET_JSON)
+	w.Header().Set("Content-Type", ecs.CHARSET_JSON)
 	w.WriteHeader(http.StatusOK)
 
 	if err := json.NewEncoder(w).Encode(jdata); err != nil {
@@ -68,7 +69,7 @@ func InternalServerErrror(w http.ResponseWriter, err error) {
 
 // WriteMessage returns a JSON message to the caller with the appropriate HTTP Status Code
 func WriteMessage(w http.ResponseWriter, msg string, statusCode int) {
-	w.Header().Set("Content-Type", CHARSET_JSON)
+	w.Header().Set("Content-Type", ecs.CHARSET_JSON)
 	w.WriteHeader(statusCode)
 	m := Message{
 		Code:    strconv.Itoa(statusCode),
@@ -79,6 +80,6 @@ func WriteMessage(w http.ResponseWriter, msg string, statusCode int) {
 	}
 }
 
-func WriteListProfilesResponse(w http.ResponseWriter, lpr []ListProfilesResponse) {
+func WriteListProfilesResponse(w http.ResponseWriter, lpr []ecs.ListProfilesResponse) {
 	JSONResponse(w, lpr)
 }

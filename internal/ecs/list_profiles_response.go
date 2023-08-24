@@ -1,4 +1,4 @@
-package server
+package ecs
 
 /*
  * AWS SSO CLI

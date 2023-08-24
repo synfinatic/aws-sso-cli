@@ -1,4 +1,4 @@
-package server
+package client
 
 /*
  * AWS SSO CLI
@@ -27,6 +27,7 @@ import (
 	"net/url"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
 
@@ -44,25 +45,20 @@ func (c *ECSClient) LoadUrl(profile string) string {
 	if profile == "" {
 		return fmt.Sprintf("http://localhost:%d/", c.port)
 	}
-	return fmt.Sprintf("http://localhost:%d%s/%s", c.port, SLOT_ROUTE, url.QueryEscape(profile))
+	return fmt.Sprintf("http://localhost:%d%s/%s", c.port, ecs.SLOT_ROUTE, url.QueryEscape(profile))
 }
 
 func (c *ECSClient) ProfileUrl() string {
-	return fmt.Sprintf("http://localhost:%d%s", c.port, PROFILE_ROUTE)
+	return fmt.Sprintf("http://localhost:%d%s", c.port, ecs.PROFILE_ROUTE)
 }
 
 func (c *ECSClient) ListUrl() string {
-	return fmt.Sprintf("http://localhost:%d%s", c.port, SLOT_ROUTE)
-}
-
-type ECSClientRequest struct {
-	Creds       *storage.RoleCredentials `json:"Creds"`
-	ProfileName string                   `json:"ProfileName"`
+	return fmt.Sprintf("http://localhost:%d%s", c.port, ecs.SLOT_ROUTE)
 }
 
 func (c *ECSClient) SubmitCreds(creds *storage.RoleCredentials, profile string, slotted bool) error {
 	log.Debugf("loading %s in a slot: %v", profile, slotted)
-	cr := ECSClientRequest{
+	cr := ecs.ECSClientRequest{
 		Creds:       creds,
 		ProfileName: profile,
 	}
@@ -78,7 +74,7 @@ func (c *ECSClient) SubmitCreds(creds *storage.RoleCredentials, profile string, 
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", CHARSET_JSON)
+	req.Header.Set("Content-Type", ecs.CHARSET_JSON)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -87,8 +83,8 @@ func (c *ECSClient) SubmitCreds(creds *storage.RoleCredentials, profile string, 
 	return CheckDoResponse(resp)
 }
 
-func (c *ECSClient) GetProfile() (ListProfilesResponse, error) {
-	lpr := ListProfilesResponse{}
+func (c *ECSClient) GetProfile() (ecs.ListProfilesResponse, error) {
+	lpr := ecs.ListProfilesResponse{}
 	client := &http.Client{}
 	resp, err := client.Get(c.ProfileUrl())
 	if err != nil {
@@ -110,8 +106,8 @@ func (c *ECSClient) GetProfile() (ListProfilesResponse, error) {
 }
 
 // ListProfiles returns a list of profiles that are loaded into slots
-func (c *ECSClient) ListProfiles() ([]ListProfilesResponse, error) {
-	lpr := []ListProfilesResponse{}
+func (c *ECSClient) ListProfiles() ([]ecs.ListProfilesResponse, error) {
+	lpr := []ecs.ListProfilesResponse{}
 	client := &http.Client{}
 	resp, err := client.Get(c.ListUrl())
 	if err != nil {
@@ -139,7 +135,7 @@ func (c *ECSClient) Delete(profile string) error {
 	}
 
 	client := &http.Client{}
-	req.Header.Set("Content-Type", CHARSET_JSON)
+	req.Header.Set("Content-Type", ecs.CHARSET_JSON)
 	if err != nil {
 		return err
 	}
@@ -148,21 +144,6 @@ func (c *ECSClient) Delete(profile string) error {
 		return err
 	}
 	return CheckDoResponse(resp)
-}
-
-// ReadClientRequest unmarshals the client's request into our ClientRequest struct
-// used to load new credentials into the server
-func ReadClientRequest(r *http.Request) (*ECSClientRequest, error) {
-	defer r.Body.Close()
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return &ECSClientRequest{}, fmt.Errorf("reading body: %s", err.Error())
-	}
-	req := &ECSClientRequest{}
-	if err = json.Unmarshal(body, req); err != nil {
-		return &ECSClientRequest{}, fmt.Errorf("parsing json: %s", err.Error())
-	}
-	return req, nil
 }
 
 func CheckDoResponse(resp *http.Response) error {

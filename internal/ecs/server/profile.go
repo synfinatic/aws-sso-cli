@@ -19,7 +19,12 @@ package server
  */
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
+
+	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 )
 
 type ProfileHandler struct {
@@ -40,8 +45,8 @@ func (p ProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			Expired(w)
 			return
 		}
-		lpr := []ListProfilesResponse{
-			NewListProfileRepsonse(p.ecs.DefaultCreds),
+		lpr := []ecs.ListProfilesResponse{
+			ecs.NewListProfileRepsonse(p.ecs.DefaultCreds),
 		}
 		WriteListProfilesResponse(w, lpr)
 
@@ -75,7 +80,7 @@ func (p *DefaultHandler) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p DefaultHandler) Put(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != DEFAULT_ROUTE {
+	if r.URL.Path != ecs.DEFAULT_ROUTE {
 		http.NotFound(w, r)
 		return
 	}
@@ -96,13 +101,28 @@ func (p DefaultHandler) Put(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p DefaultHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != DEFAULT_ROUTE {
+	if r.URL.Path != ecs.DEFAULT_ROUTE {
 		http.NotFound(w, r)
 		return
 	}
 
-	p.ecs.DefaultCreds = &ECSClientRequest{
+	p.ecs.DefaultCreds = &ecs.ECSClientRequest{
 		ProfileName: "",
 	}
 	OK(w)
+}
+
+// ReadClientRequest unmarshals the client's request into our ClientRequest struct
+// used to load new credentials into the server
+func ReadClientRequest(r *http.Request) (*ecs.ECSClientRequest, error) {
+	defer r.Body.Close()
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return &ecs.ECSClientRequest{}, fmt.Errorf("reading body: %s", err.Error())
+	}
+	req := &ecs.ECSClientRequest{}
+	if err = json.Unmarshal(body, req); err != nil {
+		return &ecs.ECSClientRequest{}, fmt.Errorf("parsing json: %s", err.Error())
+	}
+	return req, nil
 }

@@ -48,6 +48,7 @@ import (
 	"net/http"
 
 	// "github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
 
@@ -55,8 +56,8 @@ type EcsServer struct {
 	listener     net.Listener
 	authToken    string
 	server       http.Server
-	DefaultCreds *ECSClientRequest
-	slottedCreds map[string]*ECSClientRequest
+	DefaultCreds *ecs.ECSClientRequest
+	slottedCreds map[string]*ecs.ECSClientRequest
 }
 
 type ExpiredCredentials struct{}
@@ -64,13 +65,6 @@ type ExpiredCredentials struct{}
 func (e *ExpiredCredentials) Error() string {
 	return "Expired Credentials"
 }
-
-const (
-	SLOT_ROUTE    = "/slot"    // put/get/delete
-	PROFILE_ROUTE = "/profile" // get name of default creds
-	DEFAULT_ROUTE = "/"        // put/get/delete: default credentials
-	CHARSET_JSON  = "application/json; charset=utf-8"
-)
 
 // NewEcsServer creates a new ECS Server
 func NewEcsServer(ctx context.Context, authToken string, port int) (*EcsServer, error) {
@@ -82,23 +76,23 @@ func NewEcsServer(ctx context.Context, authToken string, port int) (*EcsServer, 
 	e := &EcsServer{
 		listener:  listener,
 		authToken: authToken,
-		DefaultCreds: &ECSClientRequest{
+		DefaultCreds: &ecs.ECSClientRequest{
 			Creds: &storage.RoleCredentials{},
 		},
-		slottedCreds: map[string]*ECSClientRequest{},
+		slottedCreds: map[string]*ecs.ECSClientRequest{},
 	}
 
 	router := http.NewServeMux()
-	router.Handle(SLOT_ROUTE, SlottedHandler{
+	router.Handle(ecs.SLOT_ROUTE, SlottedHandler{
 		ecs: e,
 	})
-	router.Handle(fmt.Sprintf("%s/", SLOT_ROUTE), SlottedHandler{
+	router.Handle(fmt.Sprintf("%s/", ecs.SLOT_ROUTE), SlottedHandler{
 		ecs: e,
 	})
-	router.Handle(PROFILE_ROUTE, ProfileHandler{
+	router.Handle(ecs.PROFILE_ROUTE, ProfileHandler{
 		ecs: e,
 	})
-	router.Handle(DEFAULT_ROUTE, DefaultHandler{
+	router.Handle(ecs.DEFAULT_ROUTE, DefaultHandler{
 		ecs: e,
 	})
 	e.server.Handler = withLogging(WithAuthorizationCheck(e.authToken, router.ServeHTTP))
@@ -116,7 +110,7 @@ func (e *EcsServer) DeleteSlottedCreds(profile string) error {
 }
 
 // getCreds fetches the named profile from the cache.
-func (e *EcsServer) GetSlottedCreds(profile string) (*ECSClientRequest, error) {
+func (e *EcsServer) GetSlottedCreds(profile string) (*ecs.ECSClientRequest, error) {
 	log.Debugf("fetching creds for profile: %s", profile)
 	c, ok := e.slottedCreds[profile]
 	if !ok {
@@ -126,7 +120,7 @@ func (e *EcsServer) GetSlottedCreds(profile string) (*ECSClientRequest, error) {
 }
 
 // putCreds loads credentials into the cache
-func (e *EcsServer) PutSlottedCreds(creds *ECSClientRequest) error {
+func (e *EcsServer) PutSlottedCreds(creds *ecs.ECSClientRequest) error {
 	if creds.Creds.Expired() {
 		return fmt.Errorf("expired creds")
 	}
@@ -136,8 +130,8 @@ func (e *EcsServer) PutSlottedCreds(creds *ECSClientRequest) error {
 }
 
 // ListSlottedCreds returns the list of roles in our slots
-func (e *EcsServer) ListSlottedCreds() []ListProfilesResponse {
-	resp := []ListProfilesResponse{}
+func (e *EcsServer) ListSlottedCreds() []ecs.ListProfilesResponse {
+	resp := []ecs.ListProfilesResponse{}
 
 	for _, cr := range e.slottedCreds {
 		if cr.Creds.Expired() {
@@ -145,7 +139,7 @@ func (e *EcsServer) ListSlottedCreds() []ListProfilesResponse {
 			continue
 		}
 
-		resp = append(resp, NewListProfileRepsonse(cr))
+		resp = append(resp, ecs.NewListProfileRepsonse(cr))
 	}
 
 	return resp
