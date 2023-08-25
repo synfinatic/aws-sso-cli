@@ -33,12 +33,12 @@ func WriteCreds(w http.ResponseWriter, creds *storage.RoleCredentials) {
 
 // JSONResponse return a JSON blob as a result
 func JSONResponse(w http.ResponseWriter, jdata interface{}) {
-	w.Header().Set("Content-Type", ecs.CHARSET_JSON)
-	w.WriteHeader(http.StatusOK)
-
 	if err := json.NewEncoder(w).Encode(jdata); err != nil {
 		log.Error(err.Error())
 		WriteMessage(w, err.Error(), http.StatusInternalServerError)
+	} else {
+		w.Header().Set("Content-Type", ecs.CHARSET_JSON)
+		w.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -49,7 +49,7 @@ func OK(w http.ResponseWriter) {
 
 // Expired returns a credentials expired response
 func Expired(w http.ResponseWriter) {
-	WriteMessage(w, "Credentials expired", http.StatusGone)
+	WriteMessage(w, "Credentials expired", http.StatusNotFound)
 }
 
 // Unavailable returns a credentials unavailable response
@@ -59,7 +59,7 @@ func Unavailable(w http.ResponseWriter) {
 
 // Invalid returns an invalid request response
 func Invalid(w http.ResponseWriter) {
-	WriteMessage(w, "Invalid request", http.StatusNotFound)
+	WriteMessage(w, "Bad request", http.StatusBadRequest)
 }
 
 // InternalServerErrror returns an internal server error response
@@ -75,9 +75,7 @@ func WriteMessage(w http.ResponseWriter, msg string, statusCode int) {
 		Code:    strconv.Itoa(statusCode),
 		Message: msg,
 	}
-	if err := json.NewEncoder(w).Encode(m); err != nil {
-		log.Error(err.Error())
-	}
+	_ = json.NewEncoder(w).Encode(m)
 }
 
 func WriteListProfilesResponse(w http.ResponseWriter, lpr []ecs.ListProfilesResponse) {

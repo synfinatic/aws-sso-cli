@@ -24,35 +24,53 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 )
 
-type ProfileHandler struct {
+type DefaultHandler struct {
 	ecs *EcsServer
 }
 
-func (p ProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (p DefaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		p.Get(w, r)
-
+	case http.MethodPut:
+		p.Put(w, r)
+	case http.MethodDelete:
+		p.Delete(w, r)
 	default:
 		log.Errorf("Invalid request: %s", r.URL.String())
 		Invalid(w)
 	}
 }
 
-func (p ProfileHandler) Get(w http.ResponseWriter, r *http.Request) {
-	// get the details of the default profile
-	log.Debugf("fetching default profile")
-	if p.ecs.DefaultCreds.ProfileName == "" {
-		Unavailable(w)
+func (p DefaultHandler) Get(w http.ResponseWriter, r *http.Request) {
+	log.Debugf("fetching default creds")
+	WriteCreds(w, p.ecs.DefaultCreds.Creds)
+}
+
+func (p DefaultHandler) Put(w http.ResponseWriter, r *http.Request) {
+	creds, err := ecs.ReadClientRequest(r)
+	if err != nil {
+		WriteMessage(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if p.ecs.DefaultCreds.Creds.Expired() {
+	if creds.Creds.Expired() {
 		Expired(w)
 		return
 	}
-	lpr := []ecs.ListProfilesResponse{
-		ecs.NewListProfileRepsonse(p.ecs.DefaultCreds),
+
+	p.ecs.DefaultCreds = creds
+	OK(w)
+}
+
+func (p DefaultHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	if p.ecs.DefaultCreds.ProfileName == "" {
+		Expired(w)
+		return
 	}
-	WriteListProfilesResponse(w, lpr)
+
+	p.ecs.DefaultCreds = &ecs.ECSClientRequest{
+		ProfileName: "",
+	}
+	OK(w)
 }

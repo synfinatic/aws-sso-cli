@@ -2,7 +2,7 @@ package server
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2022 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2023 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -16,34 +16,14 @@ package server
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * This file is heavily based on that by 99designs:
- * https://github.com/99designs/aws-vault/blob/master/server/ecsserver.go
- *
- * Copyright (c) 2015 99designs
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
  */
 
 import (
 	"net/http"
+	"net/url"
 	"strings"
+
+	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 )
 
 type SlottedHandler struct {
@@ -65,7 +45,7 @@ func (p SlottedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *SlottedHandler) Get(w http.ResponseWriter, r *http.Request) {
-	profile := GetProfileName(r)
+	profile := GetProfileName(r.URL)
 	switch profile {
 	case "":
 		lpr := p.ecs.ListSlottedCreds()
@@ -73,7 +53,7 @@ func (p *SlottedHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	default:
 		creds, err := p.ecs.GetSlottedCreds(profile)
-		if err != err {
+		if err != nil {
 			Unavailable(w)
 			return
 		}
@@ -82,7 +62,7 @@ func (p *SlottedHandler) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *SlottedHandler) Put(w http.ResponseWriter, r *http.Request) {
-	creds, err := ReadClientRequest(r)
+	creds, err := ecs.ReadClientRequest(r)
 	if err != nil {
 		InternalServerErrror(w, err)
 		return
@@ -97,7 +77,7 @@ func (p *SlottedHandler) Put(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *SlottedHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	profile := GetProfileName(r)
+	profile := GetProfileName(r.URL)
 	if err := p.ecs.DeleteSlottedCreds(profile); err != nil {
 		Unavailable(w)
 		return
@@ -106,12 +86,17 @@ func (p *SlottedHandler) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetProfileName returns the name of the profile as defined as /slot/XXXX
-func GetProfileName(r *http.Request) string {
-	parts := strings.SplitN(r.URL.Path, "/", 3)
-	profile := ""
-	if len(parts) > 2 {
-		profile = parts[2]
+func GetProfileName(u *url.URL) string {
+	parts := strings.SplitN(u.Path, "/", 3)
+	switch len(parts) {
+	case 3:
+		if parts[1] != "slot" {
+			return ""
+		}
+
+		return parts[2]
+
+	default:
+		return ""
 	}
-	log.Debugf("parsed profile name: %s", profile)
-	return profile
 }

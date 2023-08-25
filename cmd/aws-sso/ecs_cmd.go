@@ -2,7 +2,7 @@ package main
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2022 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2023 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -20,6 +20,8 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"net"
 
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs/server"
@@ -42,7 +44,11 @@ type EcsRunCmd struct {
 }
 
 func (cc *EcsRunCmd) Run(ctx *RunContext) error {
-	s, err := server.NewEcsServer(context.TODO(), "", ctx.Cli.Ecs.Run.Port)
+	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", ctx.Cli.Ecs.Run.Port))
+	if err != nil {
+		return err
+	}
+	s, err := server.NewEcsServer(context.TODO(), "", l)
 	if err != nil {
 		return err
 	}
