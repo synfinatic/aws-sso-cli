@@ -1,4 +1,4 @@
-package server
+package ecs
 
 /*
  * AWS SSO CLI
@@ -19,16 +19,15 @@ package server
  */
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
-	"golang.org/x/net/nettest"
 )
 
 func TestReadClientRequest(t *testing.T) {
@@ -41,11 +40,39 @@ func TestReadClientRequest(t *testing.T) {
 			AccessKeyId:     "AccessKeyId",
 			SecretAccessKey: "SecretAccessKey",
 			SessionToken:    "SessionToken",
-			Expiration:      soon,
+			Expiration:      soon.UnixMilli(),
 		},
 	}
 	w := httptest.NewRecorder()
-	WriteCreds(w, cr)
+	WriteCreds(w, cr.Creds)
+
+	r := w.Result()
+	outCreds := map[string]string{}
+	err := json.NewDecoder(r.Body).Decode(&outCreds)
+	assert.NoError(t, err)
+	assert.Equal(t, "SessionToken", outCreds["Token"])
+
+	w2 := httptest.NewRecorder()
+
+	cr.Creds.Expiration = time.Now().UnixMilli()
+	WriteCreds(w2, cr.Creds)
+	r = w2.Result()
+	msg := Message{}
+	err = json.NewDecoder(r.Body).Decode(&msg)
+	assert.NoError(t, err)
+	assert.Equal(t, fmt.Sprintf("%d", http.StatusNotFound), msg.Code)
+}
+
+func TestWriteCreds(t *testing.T) {
+	w := httptest.NewRecorder()
+	soon := time.Now().Add(90 * time.Second)
+	creds := &storage.RoleCredentials{
+		AccessKeyId:     "AccessKeyId",
+		SecretAccessKey: "SecretAccessKey",
+		SessionToken:    "Token",
+		Expiration:      soon.UnixMilli(),
+	}
+	WriteCreds(w, creds)
 
 	r := w.Result()
 	outCreds := map[string]string{}
@@ -53,13 +80,13 @@ func TestReadClientRequest(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "Token", outCreds["Token"])
 
-	w2 := httptest.NewRecorder()
+	w = httptest.NewRecorder()
 
 	creds.Expiration = time.Now().UnixMilli()
-	WriteCreds(w2, creds)
-	r = w2.Result()
+	WriteCreds(w, creds)
+	r = w.Result()
 	msg := Message{}
 	err = json.NewDecoder(r.Body).Decode(&msg)
 	assert.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf("%d", http.StatusGone), msg.Code)
+	assert.Equal(t, fmt.Sprintf("%d", http.StatusNotFound), msg.Code)
 }

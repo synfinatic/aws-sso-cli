@@ -38,39 +38,39 @@ func (p DefaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		p.Delete(w, r)
 	default:
 		log.Errorf("Invalid request: %s", r.URL.String())
-		Invalid(w)
+		ecs.Invalid(w)
 	}
 }
 
 func (p DefaultHandler) Get(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("fetching default creds")
-	WriteCreds(w, p.ecs.DefaultCreds.Creds)
+	ecs.WriteCreds(w, p.ecs.DefaultCreds.Creds)
 }
 
 func (p DefaultHandler) Put(w http.ResponseWriter, r *http.Request) {
 	creds, err := ecs.ReadClientRequest(r)
 	if err != nil {
-		WriteMessage(w, err.Error(), http.StatusInternalServerError)
+		ecs.WriteMessage(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if creds.Creds.Expired() {
-		Expired(w)
+		ecs.Expired(w)
 		return
 	}
 
 	p.ecs.DefaultCreds = creds
-	OK(w)
+	ecs.OK(w)
 }
 
 func (p DefaultHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	if p.ecs.DefaultCreds.ProfileName == "" {
-		Expired(w)
+		ecs.Expired(w)
 		return
 	}
 
 	p.ecs.DefaultCreds = &ecs.ECSClientRequest{
 		ProfileName: "",
 	}
-	OK(w)
+	ecs.OK(w)
 }

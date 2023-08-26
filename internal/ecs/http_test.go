@@ -1,4 +1,4 @@
-package server
+package ecs
 
 /*
  * AWS SSO CLI
@@ -24,45 +24,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/synfinatic/aws-sso-cli/internal/ecs"
-	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
-
-func TestWriteCreds(t *testing.T) {
-	w := httptest.NewRecorder()
-	soon := time.Now().Add(90 * time.Second)
-	creds := &storage.RoleCredentials{
-		AccessKeyId:     "AccessKeyId",
-		SecretAccessKey: "SecretAccessKey",
-		SessionToken:    "Token",
-		Expiration:      soon.UnixMilli(),
-	}
-	WriteCreds(w, creds)
-
-	r := w.Result()
-	outCreds := map[string]string{}
-	err := json.NewDecoder(r.Body).Decode(&outCreds)
-	assert.NoError(t, err)
-	assert.Equal(t, "Token", outCreds["Token"])
-
-	w = httptest.NewRecorder()
-
-	creds.Expiration = time.Now().UnixMilli()
-	WriteCreds(w, creds)
-	r = w.Result()
-	msg := Message{}
-	err = json.NewDecoder(r.Body).Decode(&msg)
-	assert.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf("%d", http.StatusNotFound), msg.Code)
-}
 
 func TestWriteListProfilesResponse(t *testing.T) {
 	w := httptest.NewRecorder()
 
-	lpr := []ecs.ListProfilesResponse{
+	lpr := []ListProfilesResponse{
 		{
 			ProfileName:  "000001234567:TestingRole",
 			RoleName:     "TestingRole",
@@ -81,7 +50,7 @@ func TestWriteListProfilesResponse(t *testing.T) {
 	WriteListProfilesResponse(w, lpr)
 
 	r := w.Result()
-	resp := []ecs.ListProfilesResponse{}
+	resp := []ListProfilesResponse{}
 	err := json.NewDecoder(r.Body).Decode(&resp)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(resp))

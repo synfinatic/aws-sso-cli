@@ -1,4 +1,4 @@
-package server
+package ecs
 
 /*
  * AWS SSO CLI
@@ -19,40 +19,22 @@ package server
  */
 
 import (
-	"net/http"
-
-	"github.com/synfinatic/aws-sso-cli/internal/ecs"
+	"github.com/sirupsen/logrus"
 )
 
-type ProfileHandler struct {
-	ecs *EcsServer
+var log *logrus.Logger
+
+func SetLogger(l *logrus.Logger) {
+	log = l
 }
 
-func (p ProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		p.Get(w, r)
-
-	default:
-		log.Errorf("Invalid request: %s", r.URL.String())
-		ecs.Invalid(w)
-	}
+/*
+func GetLogger() *logrus.Logger {
+	return log
 }
+*/
 
-func (p ProfileHandler) Get(w http.ResponseWriter, r *http.Request) {
-	// get the details of the default profile
-	log.Debugf("fetching default profile")
-	if p.ecs.DefaultCreds.ProfileName == "" {
-		ecs.Unavailable(w)
-		return
-	}
-
-	if p.ecs.DefaultCreds.Creds.Expired() {
-		ecs.Expired(w)
-		return
-	}
-	lpr := []ecs.ListProfilesResponse{
-		ecs.NewListProfileRepsonse(p.ecs.DefaultCreds),
-	}
-	ecs.WriteListProfilesResponse(w, lpr)
+// this is configured by cmd/main.go, but we have this here for unit tests
+func init() {
+	log = logrus.New()
 }

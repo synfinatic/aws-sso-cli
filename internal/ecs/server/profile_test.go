@@ -47,7 +47,7 @@ func TestProfileGet(t *testing.T) {
 	res, err := http.Get(url) //nolint
 	assert.NoError(t, err)
 
-	msg := Message{}
+	msg := ecs.Message{}
 	err = json.NewDecoder(res.Body).Decode(&msg)
 	assert.NoError(t, err)
 	assert.Equal(t, fmt.Sprintf("%d", http.StatusNotFound), msg.Code)

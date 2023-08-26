@@ -136,7 +136,7 @@ func (e *EcsServer) Serve() error {
 func WithAuthorizationCheck(authToken string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != authToken {
-			WriteMessage(w, "Invalid authorization token", http.StatusForbidden)
+			ecs.WriteMessage(w, "Invalid authorization token", http.StatusForbidden)
 			return
 		}
 		next.ServeHTTP(w, r)
