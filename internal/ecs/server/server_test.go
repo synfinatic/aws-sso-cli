@@ -19,6 +19,9 @@ package server
  */
 
 import (
+	"context"
+	"fmt"
+	"net/http"
 	"regexp"
 	"testing"
 	"time"
@@ -123,4 +126,38 @@ func TestAuthToken(t *testing.T) {
 func TestExpiredCredentials(t *testing.T) {
 	e := ExpiredCredentials{}
 	assert.Equal(t, "Expired Credentials", e.Error())
+}
+
+func TestServerWithAuth(t *testing.T) {
+	l, err := nettest.NewLocalListener("tcp")
+	assert.NoError(t, err)
+
+	s, err := NewEcsServer(context.TODO(), "AuthToken", l)
+	assert.NoError(t, err)
+
+	go func() {
+		err = s.Serve()
+	}()
+
+	res, err := http.Get(fmt.Sprintf("http://%s/", l.Addr()))
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusForbidden, res.StatusCode)
+	l.Close()
+}
+
+func TestServerWithoutAuth(t *testing.T) {
+	l, err := nettest.NewLocalListener("tcp")
+	assert.NoError(t, err)
+	s, err := NewEcsServer(context.TODO(), "", l)
+	assert.NoError(t, err)
+
+	go func() {
+		err = s.Serve()
+	}()
+
+	res, err := http.Get(fmt.Sprintf("http://%s/", l.Addr()))
+	assert.NoError(t, err)
+	// nothing was loaded yet, so 404
+	assert.Equal(t, http.StatusNotFound, res.StatusCode)
+	l.Close()
 }

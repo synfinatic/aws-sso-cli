@@ -19,6 +19,7 @@ package ecs
  */
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -29,6 +30,32 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
+
+func TestValidate(t *testing.T) {
+	soon := time.Now().Add(90 * time.Second)
+	cr := &ECSClientRequest{
+		ProfileName: "000001111111:TestProfile",
+		Creds: &storage.RoleCredentials{
+			RoleName:        "TestProfile",
+			AccountId:       1111111,
+			AccessKeyId:     "AccessKeyId",
+			SecretAccessKey: "SecretAccessKey",
+			SessionToken:    "SessionToken",
+			Expiration:      soon.UnixMilli(),
+		},
+	}
+
+	err := cr.Validate()
+	assert.NoError(t, err)
+
+	cr.Creds = nil
+	err = cr.Validate()
+	assert.ErrorContains(t, err, "Creds")
+
+	cr.ProfileName = ""
+	err = cr.Validate()
+	assert.ErrorContains(t, err, "ProfileName")
+}
 
 func TestReadClientRequest(t *testing.T) {
 	soon := time.Now().Add(90 * time.Second)
@@ -43,24 +70,27 @@ func TestReadClientRequest(t *testing.T) {
 			Expiration:      soon.UnixMilli(),
 		},
 	}
-	w := httptest.NewRecorder()
-	WriteCreds(w, cr.Creds)
 
-	r := w.Result()
-	outCreds := map[string]string{}
-	err := json.NewDecoder(r.Body).Decode(&outCreds)
+	body, _ := json.Marshal(cr)
+	r := httptest.NewRequest(http.MethodPut, fmt.Sprintf("%s/Foobar", DEFAULT_ROUTE), bytes.NewReader(body))
+	ecr, err := ReadClientRequest(r)
 	assert.NoError(t, err)
-	assert.Equal(t, "SessionToken", outCreds["Token"])
+	assert.Equal(t, "000001111111:TestProfile", ecr.ProfileName)
+	assert.Equal(t, int64(1111111), ecr.Creds.AccountId)
 
-	w2 := httptest.NewRecorder()
+	msg := Message{
+		Code:    "2344",
+		Message: "a message",
+	}
+	body, _ = json.Marshal(msg)
+	r = httptest.NewRequest(http.MethodPut, fmt.Sprintf("%s/Foobar", DEFAULT_ROUTE), bytes.NewReader(body))
+	_, err = ReadClientRequest(r)
+	assert.ErrorContains(t, err, "Missing")
 
-	cr.Creds.Expiration = time.Now().UnixMilli()
-	WriteCreds(w2, cr.Creds)
-	r = w2.Result()
-	msg := Message{}
-	err = json.NewDecoder(r.Body).Decode(&msg)
-	assert.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf("%d", http.StatusNotFound), msg.Code)
+	body = []byte{'{', '[', ','}
+	r = httptest.NewRequest(http.MethodPut, fmt.Sprintf("%s/Foobar", DEFAULT_ROUTE), bytes.NewReader(body))
+	_, err = ReadClientRequest(r)
+	assert.ErrorContains(t, err, "parsing json")
 }
 
 func TestWriteCreds(t *testing.T) {

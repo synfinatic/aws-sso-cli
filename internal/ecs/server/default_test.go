@@ -108,11 +108,13 @@ func TestDefaultPut(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 
+	// Incomplete
 	cr.ProfileName = "TestProfileName"
 	resp, err = submitRequest(t, url, cr)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 
+	// Complete
 	cr.Creds = &storage.RoleCredentials{
 		AccountId:       1111111,
 		RoleName:        "myrole",
@@ -124,6 +126,12 @@ func TestDefaultPut(t *testing.T) {
 	resp, err = submitRequest(t, url, cr)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	// Expired
+	cr.Creds.Expiration = time.Now().UnixMilli()
+	resp, err = submitRequest(t, url, cr)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
 
 func TestDefaultDelete(t *testing.T) {
