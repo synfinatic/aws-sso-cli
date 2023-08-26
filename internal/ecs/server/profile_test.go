@@ -65,12 +65,11 @@ func TestProfileGet(t *testing.T) {
 
 	res, err = http.Get(url) //nolint
 	assert.NoError(t, err)
-	lpr := []ecs.ListProfilesResponse{}
+	lpr := ecs.ListProfilesResponse{}
 	err = json.NewDecoder(res.Body).Decode(&lpr)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(lpr))
-	assert.Equal(t, "000001111111:ProfileName", lpr[0].ProfileName)
-	assert.Equal(t, "ProfileName", lpr[0].RoleName)
+	assert.Equal(t, "000001111111:ProfileName", lpr.ProfileName)
+	assert.Equal(t, "ProfileName", lpr.RoleName)
 
 	ph.ecs.DefaultCreds.Creds.Expiration = time.Now().UnixMilli()
 	res, err = http.Get(url) //nolint
