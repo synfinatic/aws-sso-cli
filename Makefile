@@ -1,4 +1,4 @@
-PROJECT_VERSION := 1.13.0
+PROJECT_VERSION := 1.13.1
 DOCKER_REPO     := synfinatic
 PROJECT_NAME    := aws-sso
 
@@ -85,9 +85,9 @@ package: linux linux-arm64  ## Build deb/rpm packages
 		-v $$(pwd)/dist:/root/dist \
 		-e VERSION=$(PROJECT_VERSION) aws-sso-cli-builder:latest
 
-tags: cmd/aws-sso/*.go sso/*.go internal/*/*.go ## Create tags file for vim, etc
-	@echo Make sure you have Universal Ctags installed: https://github.com/universal-ctags/ctags
-	ctags --recurse=yes --exclude=.git --exclude=\*.sw?  --exclude=dist --exclude=docs
+tags: cmd/aws-sso/*.go sso/*.go internal/*/*.go internal/*/*/*.go ## Create tags file for vim, etc
+	@echo Make sure you have Go Tags installed: https://github.com/jstemmer/gotags 
+	gotags -f tags -sort=true $$(find . -type f -name "*.go")
 
 
 .build-release: windows windows32 linux linux-arm64 darwin darwin-arm64
