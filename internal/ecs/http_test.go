@@ -28,6 +28,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestWriteListProfileResponse(t *testing.T) {
+	w := httptest.NewRecorder()
+
+	lpr := ListProfilesResponse{
+		ProfileName:  "000001234567:TestingRole",
+		RoleName:     "TestingRole",
+		AccountIdPad: "000001234567",
+		Expiration:   23455457475,
+		Expires:      "some string",
+	}
+	WriteListProfileResponse(w, lpr)
+
+	r := w.Result()
+	resp := ListProfilesResponse{}
+	err := json.NewDecoder(r.Body).Decode(&resp)
+	assert.NoError(t, err)
+	assert.Equal(t, "TestingRole", resp.RoleName)
+}
+
 func TestWriteListProfilesResponse(t *testing.T) {
 	w := httptest.NewRecorder()
 

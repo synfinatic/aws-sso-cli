@@ -51,8 +51,6 @@ func (p ProfileHandler) Get(w http.ResponseWriter, r *http.Request) {
 		ecs.Expired(w)
 		return
 	}
-	lpr := []ecs.ListProfilesResponse{
-		ecs.NewListProfileRepsonse(p.ecs.DefaultCreds),
-	}
-	ecs.WriteListProfilesResponse(w, lpr)
+
+	ecs.WriteListProfileResponse(w, ecs.NewListProfileRepsonse(p.ecs.DefaultCreds))
 }

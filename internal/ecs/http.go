@@ -32,12 +32,10 @@ func WriteCreds(w http.ResponseWriter, creds *storage.RoleCredentials) {
 
 // JSONResponse return a JSON blob as a result
 func JSONResponse(w http.ResponseWriter, jdata interface{}) {
+	w.Header().Set("Content-Type", CHARSET_JSON)
 	if err := json.NewEncoder(w).Encode(jdata); err != nil {
 		log.Error(err.Error())
 		WriteMessage(w, err.Error(), http.StatusInternalServerError)
-	} else {
-		w.Header().Set("Content-Type", CHARSET_JSON)
-		w.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -78,5 +76,9 @@ func WriteMessage(w http.ResponseWriter, msg string, statusCode int) {
 }
 
 func WriteListProfilesResponse(w http.ResponseWriter, lpr []ListProfilesResponse) {
+	JSONResponse(w, lpr)
+}
+
+func WriteListProfileResponse(w http.ResponseWriter, lpr ListProfilesResponse) {
 	JSONResponse(w, lpr)
 }
