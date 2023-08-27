@@ -1,11 +1,12 @@
 # AWS SSO CLI Changelog
 
-## [v1.13.1] - 2023-08-23
+## [v1.13.1] - 2023-08-28
 
 ### Bugs
 
  * Fix fetching creds from ECS Server #557
  * Fix ECS Server to be more RESTful and document the API
+ * ECS Server now includes `RoleArn` in output #561
 
 ### Changes 
 

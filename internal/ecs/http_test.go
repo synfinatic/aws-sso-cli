@@ -24,9 +24,45 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
+
+func TestWriteCreds(t *testing.T) {
+	w := httptest.NewRecorder()
+	soon := time.Now().Add(90 * time.Second)
+	creds := &storage.RoleCredentials{
+		AccountId:       1111111,
+		AccessKeyId:     "AccessKeyId",
+		SecretAccessKey: "SecretAccessKey",
+		SessionToken:    "Token",
+		RoleName:        "Rolename",
+		Expiration:      soon.UnixMilli(),
+	}
+	WriteCreds(w, creds)
+
+	r := w.Result()
+	outCreds := map[string]string{}
+	err := json.NewDecoder(r.Body).Decode(&outCreds)
+	assert.NoError(t, err)
+	assert.Equal(t, "AccessKeyId", outCreds["AccessKeyId"])
+	assert.Equal(t, creds.ExpireISO8601(), outCreds["Expiration"])
+	assert.Equal(t, "arn:aws:iam::000001111111:role/Rolename", outCreds["RoleArn"])
+	assert.Equal(t, "SecretAccessKey", outCreds["SecretAccessKey"])
+	assert.Equal(t, "Token", outCreds["Token"])
+
+	w = httptest.NewRecorder()
+
+	creds.Expiration = time.Now().UnixMilli()
+	WriteCreds(w, creds)
+	r = w.Result()
+	msg := Message{}
+	err = json.NewDecoder(r.Body).Decode(&msg)
+	assert.NoError(t, err)
+	assert.Equal(t, fmt.Sprintf("%d", http.StatusNotFound), msg.Code)
+}
 
 func TestWriteListProfileResponse(t *testing.T) {
 	w := httptest.NewRecorder()

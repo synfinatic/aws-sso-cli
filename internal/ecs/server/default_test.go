@@ -74,6 +74,12 @@ func TestDefaultGet(t *testing.T) {
 	res, err = http.Get(url) //nolint
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusNotFound, res.StatusCode)
+
+	// invalid request
+	url = fmt.Sprintf("%s/foo", ts.URL)
+	res, err = http.Get(url) //nolint
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, res.StatusCode)
 }
 
 func submitRequest(t *testing.T, url string, cr ecs.ECSClientRequest) (*http.Response, error) {
