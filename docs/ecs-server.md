@@ -93,7 +93,7 @@ If you would like to remove the default IAM Role credentials:
 
 ## Storing multiple roles at a time
 
-There may be cases where you would like to make multiple roles available at the 
+There may be cases where you would like to make multiple roles available at the
 same time without running multiple copies of the ECS server via `aws-sso ecs run`.
 Each role is stored in a unique named slot based on the `ProfileName` which is
 either set via [Profile](config.md#Profile) or the [ProfileFormat](
@@ -130,8 +130,8 @@ The ECS Server API endpoint generates errors with the following JSON format:
 
 ```json
 {
-    code: "<error code>",
-    message: "<message string>"
+    "code": "<HTTP error code>",
+    "message": "<message>"
 }
 ```
 
@@ -146,19 +146,113 @@ this feature if you want it!
 Support for using [HTTPS](https://github.com/synfinatic/aws-sso-cli/issues/518)
 is TBD.  Please vote for this feature if you want it!
 
-## REST API 
+## REST API
 
 ### Default credentials
 
- * `GET /` -- Fetch default credentials
- * `GET /profile` -- Fetch profile name of the default credentials
- * `PUT /` -- Upload default credentials 
- * `DELETE /` -- Delete default credentials
+#### GET /
+Fetch default credentials.
+
+```json
+{
+    "AccessKeyId": "ASI....",
+    "SecretAccessKeyId": "<Secret Access Key ID>",
+    "Token": "<Temprorary security token>",
+    "Expiration": "<Date in RFC3339 / ISO8601 format>",
+    "RoleArn": "<ARN of the role>",
+}
+```
+
+#### GET /profile
+Fetch profile name of the default credentials.
+
+```json
+{
+    "ProfileName": "<aws-sso profile name>",
+    "AccountId": "<AWS Account ID>",
+    "RoleName": "<IAM Role name>",
+    "Expiration": <Unix epoch seconds>,
+    "Expires": "<how long until expires string>"
+}
+```
+
+#### PUT /
+Upload default credentials.
+
+```json
+{
+    "code": "<HTTP error code>",
+    "message": "<message>"
+}
+```
+
+#### DELETE /
+Delete default credentials.
+
+```json
+{
+    "code": "<HTTP error code>",
+    "message": "<message>"
+}
+```
 
 ### Slotted credentials
 
- * `GET /creds` -- Fetch list of default credentials
- * `GET /creds/<profile>` -- Fetch credentials of the named profile 
- * `PUT /creds/<profile>` -- Upload credentials of the named profile 
- * `DELETE /creds/<profile>` -- Delete credentials of the named profile
- * `DELETE /creds`  -- Delete all named credentials
+#### GET /slot
+Fetch list of default credentials.
+
+```json
+[
+    {
+        "ProfileName": "<profile name>",
+        "AccountId": "<AWS Account ID>",
+        "RoleName": "<IAM Role Name>",
+        "Expiration": <Unix Epoch Seconds>,
+        "Expires": "<how long until expires string>"
+    },
+    <more entries...>
+]
+```
+
+#### GET /slot/\<profile\>
+Fetch credentials of the named profile.
+
+```json
+{
+    "AccessKeyId": "ASI....",
+    "SecretAccessKeyId": "<secret access key id value>",
+    "Token": "<temprorary security token>",
+    "Expiration": "<date in RFC3339 / ISO8601 format>",
+    "RoleArn": "<ARN of the role>",
+}
+```
+
+#### PUT /slot/\<profile\>
+Upload credentials of the named profile.
+
+```json
+{
+    "code": "<HTTP error code>",
+    "message": "<message>"
+}
+```
+
+#### DELETE /slot/\<profile\>
+Delete credentials of the named profile.
+
+```json
+{
+    "code": "<HTTP error code>",
+    "message": "<message>"
+}
+```
+
+#### DELETE /slot
+Delete all named credentials.
+
+```json
+{
+    "code": "<HTTP error code>",
+    "message": "<message>"
+}
+```

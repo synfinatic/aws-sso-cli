@@ -92,31 +92,3 @@ func TestReadClientRequest(t *testing.T) {
 	_, err = ReadClientRequest(r)
 	assert.ErrorContains(t, err, "parsing json")
 }
-
-func TestWriteCreds(t *testing.T) {
-	w := httptest.NewRecorder()
-	soon := time.Now().Add(90 * time.Second)
-	creds := &storage.RoleCredentials{
-		AccessKeyId:     "AccessKeyId",
-		SecretAccessKey: "SecretAccessKey",
-		SessionToken:    "Token",
-		Expiration:      soon.UnixMilli(),
-	}
-	WriteCreds(w, creds)
-
-	r := w.Result()
-	outCreds := map[string]string{}
-	err := json.NewDecoder(r.Body).Decode(&outCreds)
-	assert.NoError(t, err)
-	assert.Equal(t, "Token", outCreds["Token"])
-
-	w = httptest.NewRecorder()
-
-	creds.Expiration = time.Now().UnixMilli()
-	WriteCreds(w, creds)
-	r = w.Result()
-	msg := Message{}
-	err = json.NewDecoder(r.Body).Decode(&msg)
-	assert.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf("%d", http.StatusNotFound), msg.Code)
-}

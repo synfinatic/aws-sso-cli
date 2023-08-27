@@ -15,6 +15,7 @@ type Message struct {
 }
 
 // WriteCreds returns the JSON of the provided creds to the HTTP client
+// https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html
 func WriteCreds(w http.ResponseWriter, creds *storage.RoleCredentials) {
 	if creds.Expired() {
 		Expired(w)
@@ -23,9 +24,10 @@ func WriteCreds(w http.ResponseWriter, creds *storage.RoleCredentials) {
 
 	resp := map[string]string{
 		"AccessKeyId":     creds.AccessKeyId,
+		"Expiration":      creds.ExpireISO8601(),
+		"RoleArn":         creds.RoleArn(),
 		"SecretAccessKey": creds.SecretAccessKey,
 		"Token":           creds.SessionToken,
-		"Expiration":      creds.ExpireISO8601(),
 	}
 	JSONResponse(w, resp)
 }
