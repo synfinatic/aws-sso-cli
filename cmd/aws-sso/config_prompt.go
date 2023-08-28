@@ -363,7 +363,7 @@ func promptUrlAction(defaultValue url.Action) url.Action {
 
 func promptUrlExecCommand(defaultValue []string) []string {
 	var val []string
-	var err error
+	var err error = fmt.Errorf("force one loop")
 	var line, command string
 
 	fmt.Printf("\n")
@@ -374,18 +374,20 @@ func promptUrlExecCommand(defaultValue []string) []string {
 		command = defaultValue[0]
 	}
 
-	label := "Binary to execute to open URLs (UrlExecCommand)"
-	prompt := promptui.Prompt{
-		Label:     label,
-		Default:   command,
-		Stdout:    &utils.BellSkipper{},
-		Validate:  validateBinary,
-		Pointer:   promptui.PipeCursor,
-		Templates: makePromptTemplate(label),
-	}
+	for err != nil {
+		label := "Binary to execute to open URLs (UrlExecCommand)"
+		prompt := promptui.Prompt{
+			Label:     label,
+			Default:   command,
+			Stdout:    &utils.BellSkipper{},
+			Validate:  validateBinary,
+			Pointer:   promptui.PipeCursor,
+			Templates: makePromptTemplate(label),
+		}
 
-	if line, err = prompt.Run(); err != nil {
-		checkPromptError(err)
+		if line, err = prompt.Run(); err != nil {
+			checkPromptError(err)
+		}
 	}
 
 	val = append(val, line)
@@ -402,7 +404,7 @@ func promptUrlExecCommand(defaultValue []string) []string {
 			arg = defaultValue[argNum]
 		}
 		label := fmt.Sprintf("Enter argument #%d or empty string to stop", argNum)
-		prompt = promptui.Prompt{
+		prompt := promptui.Prompt{
 			Label:     label,
 			Default:   arg,
 			Stdout:    &utils.BellSkipper{},
@@ -422,12 +424,12 @@ func promptUrlExecCommand(defaultValue []string) []string {
 
 func promptDefaultBrowser(defaultValue string) string {
 	var val string
-	var err error
+	var err error = fmt.Errorf("force loop once")
 
 	fmt.Printf("\n")
 
 	label := "Specify path to browser to use. Leave empty to use system default (Browser)"
-	for val == "" {
+	for err != nil {
 		prompt := promptui.Prompt{
 			Label:     label,
 			Default:   defaultValue,
@@ -439,6 +441,9 @@ func promptDefaultBrowser(defaultValue string) string {
 
 		if val, err = prompt.Run(); err != nil {
 			checkPromptError(err)
+		} else {
+			// need to trim leading/trailing spaces manually
+			val = strings.TrimSpace(val)
 		}
 	}
 
