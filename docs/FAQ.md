@@ -101,7 +101,7 @@ Their are two possible solutions:
 
 In a word: alpha.
 
-For best experience, I recommend using CommandPrompt (`cmd.exe) instead of PowerShell
+For best experience, I recommend using CommandPrompt (`cmd.exe`) instead of PowerShell
 or MINGW64/bash.  Not that you can't use PowerShell or bash, but there are a number of
 terminal related issues which cause `aws-sso` to behave incorrectly.
 PowerShell and MINGW64/bash users should rely on CLI arguments rather than the
