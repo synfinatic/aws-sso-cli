@@ -30,13 +30,10 @@
     1. Your binary will be created in the `dist` directory
     1. Run `make install` to install in /usr/local/bin
  * Option 5: `go install`:
-    1. Install [GoLang](https://golang.org) v1.17+ and GNU Make
+    1. Install [GoLang](https://golang.org) v1.19+ and GNU Make
     1. `go install github.com/synfinatic/aws-sso-cli/cmd/aws-sso@latest`
 
-Note 1: macOS binaries must be build on macOS to enable Keychain support.
-
-Note 2: Installing via Brew requires XCode since it will be compiled locally
-to avoid code signing errors on macOS.
+Note: macOS binaries must be build on macOS to enable Keychain support.
 
 ### Binaries and Code Signatures
 
@@ -61,7 +58,8 @@ For more information about configuring `aws-sso` read the
 [configuration guide](config.md).
 
 You can re-run through the configuration wizard at any time by running
-`aws-sso config`.
+`aws-sso config`.  By default, this only does a very basic setup; for a more
+advanced setup, use `aws-sso config --advanced`.
 
 ## Enabling auto-completion in your shell
 
@@ -204,7 +202,7 @@ and the `$AWS_PROFILE` environment variable, AWS SSO CLI can support that as wel
 
 #### Configuration
 
-Run: `aws-sso config`
+Run: `aws-sso config-profiles`
 
 This will add the following lines (example) to your `~/.aws/config` file:
 
