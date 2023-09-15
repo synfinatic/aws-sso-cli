@@ -22,6 +22,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -226,6 +227,7 @@ func (as *AWSSSO) getDeviceAuthInfo() (DeviceAuthInfo, error) {
 		VerificationUriComplete: as.DeviceAuth.VerificationUriComplete,
 		UserCode:                as.DeviceAuth.UserCode,
 	}
+	fmt.Fprintf(os.Stderr, "Please verify your login with the following code: %s\n", info.UserCode)
 	return info, nil
 }
 
