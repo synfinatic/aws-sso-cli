@@ -44,9 +44,10 @@ const AWS_FEDERATED_URL = "https://signin.aws.amazon.com/federation"
 
 type ConsoleCmd struct {
 	// Console actually should honor the --region flag
-	Region   string `kong:"help='AWS Region',env='AWS_DEFAULT_REGION',predictor='region'"`
 	Duration int32  `kong:"short='d',help='AWS Session duration in minutes (default 60)'"` // default stored in DEFAULT_CONFIG
 	Prompt   bool   `kong:"short='P',help='Force interactive prompt to select role'"`
+	NoCache  bool   `kong:"help='Do not use cache'"`
+	Region   string `kong:"help='AWS Region',env='AWS_DEFAULT_REGION',predictor='region'"`
 
 	Arn       string `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
 	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNT_ID',predictor='accountId'"`
@@ -66,6 +67,13 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 
 	if ctx.Settings.ConsoleDuration > 0 && (ctx.Settings.ConsoleDuration < 15 || ctx.Settings.ConsoleDuration > 720) {
 		return fmt.Errorf("Invalid --duration %d.  Must be between 15 and 720", ctx.Settings.ConsoleDuration)
+	}
+
+	if ctx.Cli.Console.NoCache {
+		c := &CacheCmd{}
+		if err := c.Run(ctx); err != nil {
+			return err
+		}
 	}
 
 	// do we force interactive prompt?

@@ -1,5 +1,15 @@
 # AWS SSO CLI Changelog
 
+## [Unreleased]
+
+### Changes
+
+ * Print user code during SSO authentication workflow #572
+
+### New Features
+
+ * Add `--no-cache` to `console`, `config-profiles`, `exec` and `list` #574
+
 ## [v1.13.1] - 2023-08-28
 
 ### Bugs

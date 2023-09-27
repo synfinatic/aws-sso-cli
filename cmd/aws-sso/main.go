@@ -125,7 +125,7 @@ type CLI struct {
 	List           ListCmd           `kong:"cmd,help='List all accounts / roles (default command)'"`
 	Logout         LogoutCmd         `kong:"cmd,help='Logout in browser and invalidate all credentials'"`
 	Process        ProcessCmd        `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
-	Static         StaticCmd         `kong:"cmd,help='Manage static AWS API credentials',hidden"`
+	Static         StaticCmd         `kong:"cmd,hidden,help='Manage static AWS API credentials'"`
 	Tags           TagsCmd           `kong:"cmd,help='List tags'"`
 	Time           TimeCmd           `kong:"cmd,help='Print how much time before current STS Token expires'"`
 	Completions    CompleteCmd       `kong:"cmd,help='Manage shell completions'"`

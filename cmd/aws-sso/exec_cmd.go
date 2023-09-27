@@ -34,6 +34,7 @@ type ExecCmd struct {
 	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNT_ID',predictor='accountId'"`
 	Role      string `kong:"short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE_NAME',predictor='role'"`
 	Profile   string `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile'"`
+	NoCache   bool   `kong:"help='Do not use cache'"`
 	NoRegion  bool   `kong:"short='n',help='Do not set AWS_DEFAULT_REGION from config.yaml'"`
 
 	// Exec Params
@@ -56,6 +57,13 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 	if awssso, err := sci.Update(ctx); err == nil {
 		// successful lookup?
 		return execCmd(ctx, awssso, sci.AccountId, sci.RoleName)
+	}
+
+	if ctx.Cli.Exec.NoCache {
+		c := &CacheCmd{}
+		if err = c.Run(ctx); err != nil {
+			return err
+		}
 	}
 
 	return ctx.PromptExec(execCmd)

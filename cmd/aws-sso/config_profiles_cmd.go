@@ -60,7 +60,7 @@ func (cc *ConfigProfilesCmd) Run(ctx *RunContext) error {
 
 	urlAction, _ := url.NewAction(string(action))
 
-	// refresh our cache
+	// always refresh our cache
 	c := &CacheCmd{}
 	if err = c.Run(ctx); err != nil {
 		return err
