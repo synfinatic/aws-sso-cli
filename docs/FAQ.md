@@ -71,14 +71,17 @@ as appropriate.
 
 ### Why can't aws-sso find my new role?
 
-If you have just been assigned a new PermissionSet in IAM Identity Center, it
+Most likely, this is because the aws-sso [cache](config.md#CacheRefresh) is out of
+date.  You can force a refresh of the cache by running [aws-sso cache](commands.md#cache).
+
+Note, if you have just been assigned a new PermissionSet in IAM Identity Center, it
 tends to show up in the IAM Identity Center web console
-(https://xxxxx.awsapps.com/start) before it is made available to the
+(https://xxxxx.awsapps.com/start) before it is made available to `aws-sso` via the
 [ListAccountRoles](https://docs.aws.amazon.com/singlesignon/latest/PortalAPIReference/API_ListAccountRoles.html)
 API call.  Unfortunately, this seems to be a limitation with AWS and you just
 have to wait a few minutes.
 
-You can see what the AWS ListAccountRoles API is returning via `aws-sso cache -L debug`t
+You can see what the AWS ListAccountRoles API is returning via `aws-sso cache -L debug`
 
 ### Spaces are invalid in Profile names
 
