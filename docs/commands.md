@@ -437,7 +437,7 @@ The following environment variables are specific to `aws-sso`:
  * `AWS_SSO` -- AWS SSO instance name
 
 
-**Note:** AWS SSO does set `$AWS_PROFILE` to avoid problems with the AWS tooling
+**Note:** AWS SSO does _NOT_ set `$AWS_PROFILE` to avoid problems with the AWS tooling
 and SDK.
 
 ## Shell Helpers
