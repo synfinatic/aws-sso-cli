@@ -206,6 +206,8 @@ func (as *AWSSSO) startDeviceAuthorization() error {
 	log.Debugf("Created OIDC device code for %s (expires in: %ds)",
 		as.StoreKey(), as.DeviceAuth.ExpiresIn)
 
+	fmt.Fprintf(os.Stderr, "\tVerify this code in your browser: %s\n", as.DeviceAuth.UserCode)
+
 	return nil
 }
 
@@ -227,7 +229,6 @@ func (as *AWSSSO) getDeviceAuthInfo() (DeviceAuthInfo, error) {
 		VerificationUriComplete: as.DeviceAuth.VerificationUriComplete,
 		UserCode:                as.DeviceAuth.UserCode,
 	}
-	fmt.Fprintf(os.Stderr, "Please verify your login with the following code: %s\n", info.UserCode)
 	return info, nil
 }
 
