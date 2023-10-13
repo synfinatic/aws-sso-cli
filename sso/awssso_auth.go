@@ -36,6 +36,7 @@ import (
 const (
 	DEFAULT_AUTH_COLOR = "blue"
 	DEFAULT_AUTH_ICON  = "fingerprint"
+	VERIFY_MSG         = "\n\tVerify this code in your browser: %s\n"
 )
 
 // Authenticate retrieves an AWS SSO AccessToken from our cache or by
@@ -206,7 +207,7 @@ func (as *AWSSSO) startDeviceAuthorization() error {
 	log.Debugf("Created OIDC device code for %s (expires in: %ds)",
 		as.StoreKey(), as.DeviceAuth.ExpiresIn)
 
-	fmt.Fprintf(os.Stderr, "\tVerify this code in your browser: %s\n", as.DeviceAuth.UserCode)
+	fmt.Fprintf(os.Stderr, VERIFY_MSG, as.DeviceAuth.UserCode)
 
 	return nil
 }
