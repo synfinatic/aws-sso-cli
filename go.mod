@@ -19,13 +19,13 @@ require (
 	github.com/stretchr/testify v1.7.1
 	github.com/synfinatic/gotable v0.0.3
 	github.com/willabides/kongplete v0.2.0
-	golang.org/x/crypto v0.12.0 // indirect
+	golang.org/x/crypto v0.14.0 // indirect
 )
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.17.6-0.20230224191550-a8b24ddf773d
 	github.com/riywo/loginshell v0.0.0-20200815045211-7d26008be1ab
-	golang.org/x/term v0.11.0
+	golang.org/x/term v0.13.0
 	gopkg.in/ini.v1 v1.66.4
 )
 
@@ -58,7 +58,7 @@ require (
 	github.com/spf13/cast v1.3.1 // indirect
 
 	// see: https://github.com/sirupsen/logrus/issues/1275
-	golang.org/x/sys v0.11.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 
@@ -75,7 +75,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.12.4
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.14.4
 	github.com/aws/aws-sdk-go-v2/service/sts v1.18.5
-	golang.org/x/net v0.14.0
+	golang.org/x/net v0.17.0
 )
 
 require (
