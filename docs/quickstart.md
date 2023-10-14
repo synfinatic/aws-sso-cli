@@ -117,7 +117,7 @@ for the [completions command](commands.md#completions).
 
 There are three preferred ways of using `aws-sso` to make AWS API calls:
 
- 1. Use a helper script for selecting profiles by name with auto-complete
+ 1. Use the `aws-sso-profile` helper script for selecting profiles by name with auto-complete
  1. Use the [exec](commands.md#exec) command for the interactive search
  1. Use the `$AWS_PROFILE` variable
 
@@ -269,7 +269,7 @@ This causes each role to have it's own isolated container so you can have
 multiple AWS Console sessions active at a time.
 
 Using Firefox containers requires a special configuration in your `~/.aws-sso/config.yaml`
-[as described here](config.md#firefoxopenurlincontainer).
+[as described here](config.md#open-url-in-firefox-container).
 
 Regardless if you are using Firefox containers or not, using `aws-sso` to login is straight
 forward:

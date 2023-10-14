@@ -28,7 +28,8 @@ and every role you wish to assume and use.
 via an interactive auto-complete experience with automatic and user-defined
 metadata (tags) and exports the necessary [AWS STS Token credentials](
 https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_use-resources.html#using-temp-creds-sdk-cli)
-to your shell environment in a variety of ways.
+to your shell environment in a variety of ways.  It even supports sharing
+credentials via the [AWS ECS Task IAM Role](ecs-server.md).
 
 As part of the goal of improving the end-user experience with AWS SSO, it also
 supports using [multiple AWS Web Console sessions](quickstart.md#aws-console-access)
@@ -43,7 +44,7 @@ and many other quality of life improvements!
     or interactive search
  * Ability to select roles based on [user-defined](config.md#tags)
     and auto-discovered tags
- * Support for [multiple active AWS Console sessions](config.md#firefoxopenurlincontainer)
+ * Support for [multiple active AWS Console sessions](quickstart.md#aws-console-access)
  * Guided setup to help you configure `aws-sso` the first time you run
  * Advanced configuration available to [adjust colors](config.md#PromptColors)
     and generate [named profiles via templates](config.md#ProfileFormat)
