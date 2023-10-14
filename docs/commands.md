@@ -1,25 +1,4 @@
-# Running aws-sso
-
- * [Common Flags](#common-flags)
- * [Commands](#commands)
-    * [cache](#cache) -- Force reload of cached AWS SSO role info and config.yaml
-    * [console](#console) -- Open AWS Console using specified AWS role/profile
-    * [eval](#eval) -- Print AWS environment vars for use with `eval $(aws-sso eval ...)`
-    * [exec](#exec) -- Execute command using specified IAM role in a new shell
-    * [flush](#flush) -- Flush AWS SSO/STS credentials from cache
-    * [list](#list) -- List all accounts / roles (default command)
-    * [logout](#logout) -- Invalidate all SSO credentials with AWS
-    * [process](#process) -- Generate JSON for `credential_process` in ~/.aws/config
-    * [tags](#tags) -- List tags
-    * [time](#time) -- Print how much time before current STS Token expires
-    * [completions](#completions) -- Manage shell completions
-    * [config-profiles](#config-profiles) -- Update ~/.aws/config with AWS SSO profiles from the cache
-	* [config](#config) -- Run through the configuration wizard and update your AWS SSO config
-    * `version` -- Print version and exit
- * [Environment Variables](#environment-variables)
- * [Shell Helpers](#shell-helpers)
-    * [aws-sso-profile](#aws-sso-profile)
-    * [aws-sso-clear](#aws-sso-clear)
+# aws-sso commands
 
 ## Common Flags
 
@@ -459,8 +438,8 @@ If you want to pass specific args to `aws-sso-profile` you can use the
 Currently the following shells are supported:
 
  <!-- markdown-link-check-disable -->
- * [bash](/internal/helper/bash_profile.sh)
- * [zsh](/internal/helper/zshrc.sh)
+ * [bash](https://github.com/synfinatic/aws-sso-cli/blob/main/internal/helper/bash_profile.sh)
+ * [zsh](https://github.com/synfinatic/aws-sso-cli/blob/main/internal/helper/zshrc.sh)
  * [fish - TBD](https://github.com/synfinatic/aws-sso-cli/issues/361)
  <!-- markdown-link-check-enable-->
 

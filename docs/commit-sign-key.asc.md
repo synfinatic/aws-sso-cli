@@ -1,3 +1,4 @@
+```
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 Comment: GPGTools - http://gpgtools.org
 
@@ -299,3 +300,4 @@ ZjXh22nMCvBmYDYN3LiQUGcd2pJHch+AWkrM/hqaxbHFnm2vXNIxb/hTtJNjpyob
 OrVJxYghO+1Id+H8dPo5FcHPMyg=
 =byig
 -----END PGP PUBLIC KEY BLOCK-----
+```

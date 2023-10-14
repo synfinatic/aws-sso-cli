@@ -1,19 +1,5 @@
 # Using ECS Server Mode
 
- * [Overview](#overview)
- * [Starting the ECS Server](#starting-the-ecs-server)
- * [Environment variables](#environment-variables)
-   * [AWS\_CONTAINER\_CREDENTIALS\_FULL\_URI](#aws-container-credentials-full-uri)
-   * [AWS\_CONTAINER\_CREDENTIALS\_RELATIVE\_URI](#aws-container-credentials-relative-uri)
- * [Selecting a role via ECS Server](#selecting-a-role-via-ecs-server)
- * [Assuming a role via ECS Server](#assuming-a-role-via-ecs-server)
- * [Unloading role credentials](#unloading-role-credentials)
- * [Storing multiple roles at a time](#storing-multiple-roles-at-a-time)
- * [Errors](#errors)
- * [Authentication](#authentication)
- * [HTTPS Transport](#https-transport)
- * [REST API](#rest-api)
-
 ## Overview
 
 AWS provides the ability for [ECS Tasks to assume an IAM role](
@@ -214,7 +200,7 @@ Fetch list of default credentials.
 ]
 ```
 
-#### GET /slot/\<profile\>
+#### GET /slot/&lt;profile&gt;
 Fetch credentials of the named profile.
 
 ```json
@@ -227,7 +213,7 @@ Fetch credentials of the named profile.
 }
 ```
 
-#### PUT /slot/\<profile\>
+#### PUT /slot/&lt;profile&gt;
 Upload credentials of the named profile.
 
 ```json
@@ -237,7 +223,7 @@ Upload credentials of the named profile.
 }
 ```
 
-#### DELETE /slot/\<profile\>
+#### DELETE /slot/&lt;profile&gt;
 Delete credentials of the named profile.
 
 ```json
