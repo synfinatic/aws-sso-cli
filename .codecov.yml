@@ -1,0 +1,12 @@
+coverage:
+  precision: 2
+  round: up
+  range: 80..100
+  status:
+    project:
+      target: auto
+      threshold: 0%
+      paths:
+        - internal/*
+        - sso/*
+
