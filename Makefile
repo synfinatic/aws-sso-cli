@@ -249,3 +249,10 @@ update-copyright:  ## Update the copyright year on *.go
 	$(shell YEAR=$$(date +%Y) LAST_YEAR=$$(($$(date +%Y)-1)) \
 		sed -i '' -Ee "s|2021-${LAST_YEAR}|2021-${YEAR}|" $$(find . -name "*.go"))
 	@echo "Updated copyright to 2021-$$(date +%Y)"
+
+serve-docs:  ## Run mkdoc server on localhost:8000
+	mkdocs serve 
+
+upload-docs:  ## Upload docs to github 
+	mkdocs gh-deploy
+

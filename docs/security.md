@@ -13,7 +13,7 @@ https://github.com/synfinatic/aws-sso-cli/issues/new?assignees=&labels=security&
 If you believe the public visibility of the information of the bug would
 place other `aws-sso` users at risk, then you may email me at:
 `synfinatic@gmail.com`.  GPG encrypting your email in those situations is
-encouraged and you should use [this GPG Key](docs/commit-sign-key.asc).
+encouraged and you should use [this GPG Key](commit-sign-key.asc.md).
 
 ## Security Model
 

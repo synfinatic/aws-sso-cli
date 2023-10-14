@@ -1,8 +1,6 @@
 # AWS SSO CLI vs AWS Vault
 
- * [How AWS Vault and the AWS CLI v2 tooling works](#how-aws-vault-and-the-aws-cli-v2-tooling-works)
- * [How AWS SSO CLI is different](#how-aws-sso-cli-is-different)
- * [Feature Comparison](#feature-comparison)
+## Overview
 
 Note: I believe this page to be accurate as of `aws-vault` v6.3.1 and
 `aws-sso` v1.9.0. If you believe anything on this page is in error, please [let me know](
@@ -15,8 +13,7 @@ First, I really like `aws-vault`, I've used in the past and really love
 how it fixes a lot of the security issues related to the standard
 AWS CLI tooling. Overall, it's got a great and useful feature set!
 
-Second, as I state at the top of the [Readme](../README.md), AWS SSO CLI
-is focused on integrating with [AWS SSO](
+However, AWS SSO CLI is focused on integrating with [AWS SSO](
 https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html).  If
 you're using the older [SAML integration](
 https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_saml.html)
@@ -29,7 +26,7 @@ Last, I want to point out that my tool uses the same [secure storage library](
 https://github.com/99designs/keyring) that 99designs wrote for `aws-vault`
 so thanks to them for making that available!
 
-### How AWS Vault and the AWS CLI v2 tooling works
+## How AWS Vault and the AWS CLI v2 tooling works
 
 Because of it's early focus on securely managing [static AWS API
 credentials](
@@ -82,7 +79,7 @@ and roles, but at scale (and AWS SSO is obviously designed for larger
 organizations) this becomes a problem that each user must deal with and
 neither AWS CLI tooling or `aws-vault` really provide any substantive help.
 
-### How AWS SSO CLI is different
+## How AWS SSO CLI is different
 
 AWS SSO CLI on the otherhand started life focused on integrating with AWS SSO.
 I made the decision early on to support accessing AWS SSO Roles
@@ -123,7 +120,7 @@ If this sounds interesting, maybe it's worth checking out [the demos](demos.md)
 or jumping ahead to the [Quickstart Guide](quickstart.md) to get it installed
 and configured!
 
-### Feature Comparison
+## Feature Comparison
 
 | Feature                 | aws-vault | aws-sso   | AWS CLI v2 |
 |-------------------------|-----------|-----------|------------|

@@ -1,17 +1,5 @@
 # AWS SSO CLI Quick Start & Installation Guide
 
- * [Installation](#installation)
- * [Guided Configuration](#guided-configuration)
- * [Enabling auto-completion in your shell](#enabling-auto-completion-in-your-shell)
-    * [First time aws-sso users](#first-time-aws-sso-users)
-    * [Upgrading from before v1.9.0](#upgrading-from-before-v190)
-    * [Upgrading from after v1.9.0](#upgrading-from-after-v190)
- * [Use `aws-sso` on the CLI for AWS API calls](#use-aws-sso-on-the-cli-for-aws-api-calls)
-    * [`aws-sso-profile` helper script](#aws-sso-profile-helper-script)
-    * [Using the `exec` command](#using-the-exec-command)
-    * [Using the `$AWS_PROFILE` variable](#using-the-aws-profile-variable)
- * [AWS Console Access](#aws-console-access)
-
 ## Installation
 
  * Option 1: [Download binary](https://github.com/synfinatic/aws-sso-cli/releases)
@@ -42,9 +30,10 @@ https://github.com/synfinatic/aws-sso-cli/releases) are not signed with keys
 trusted by Apple or Microsoft and may generate warnings on macOS and Windows.
 
 Packages and binaries are however automatically built and signed via
-[Github Action](../.github/workflows/build-release.yml) with my [PGP code
-signing key](code-sign-key.asc).  Note that this is a _different_ PGP key from
-the one I use to [sign my commits](commit-sign-key.asc).
+[Github Action](
+https://github.com/synfinatic/aws-sso-cli/blob/main/.github/workflows/build-release.yml)
+ with my [PGP code signing key](code-sign-key.asc.md).  Note that this is a
+_different_ PGP key from the one I use to [sign my commits](commit-sign-key.asc.md).
 
 Users who are paranoid (think SolarWinds) are strongly encouraged to build
 binaries themselves.
@@ -171,7 +160,7 @@ Cons:
 
 ### Using the `exec` command
 
-Use the [exec](../README.md#exec) command to create a new shell with the
+Use the [exec](commands.md#exec) command to create a new shell with the
 necessary AWS STS environment variables set to access AWS.
 
 #### Usage
@@ -253,7 +242,7 @@ credentials, it is calling `aws-sso`.  The first time it does this for a role,
 `aws-sso` will talk to AWS STS to get some credentials and then cache the result.
 This may (or may not) require human inteaction to authenticate via your SSO
 provider.  Future calls will then use the cached STS credentials until they
-expire or are [flushed](../README.md#flush).
+expire or are [flushed](commands.md#flush).
 
 Pros:
 
