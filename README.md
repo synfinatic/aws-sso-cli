@@ -3,10 +3,15 @@
 [![codeql-analysis](https://github.com/synfinatic/aws-sso-cli/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/synfinatic/aws-sso-cli/actions/workflows/codeql-analysis.yml)
 [![golangci-lint](https://github.com/synfinatic/aws-sso-cli/actions/workflows/golangci-lint.yaml/badge.svg)](https://github.com/synfinatic/aws-sso-cli/actions/workflows/golangci-lint.yaml)
 [![Report Card Badge](https://goreportcard.com/badge/github.com/synfinatic/aws-sso-cli)](https://goreportcard.com/report/github.com/synfinatic/aws-sso-cli)
-[![License Badge](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://raw.githubusercontent.com/synfinatic/aws-sso-cli/main/LICENSE)
+[![License Badge](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://raw.githubusercontent.com/synfinatic/aws-sso-cli/main/LICENSE.md)
 [![Codecov Badge](https://codecov.io/gh/synfinatic/aws-sso-cli/branch/main/graph/badge.svg?token=F8454GS4HS)](https://codecov.io/gh/synfinatic/aws-sso-cli)
+[![Publish Docs](https://github.com/synfinatic/aws-sso-cli/actions/workflows/update-mkdocs.yaml/badge.svg)](https://github.com/synfinatic/aws-sso-cli/actions/workflows/update-mkdocs.yaml)
+[![Last Release](https://img.shields.io/github/v/release/synfinatic/aws-sso-cli)](https://github.com/synfinatic/aws-sso-cli/releases/)
 
-[Documentation](https://synfinatic.github.io/aws-sso-cli/) | [ChangeLog](CHANGELOG.md) | [Releases](https://github.com/synfinatic/aws-sso-cli/releases) | [License](LICENSE.md)
+
+[Documentation](https://synfinatic.github.io/aws-sso-cli/) | 
+[ChangeLog](CHANGELOG.md) | 
+[Releases](https://github.com/synfinatic/aws-sso-cli/releases)
 
 
 AWS SSO CLI is a secure replacement for using the [aws configure sso](
