@@ -146,7 +146,7 @@ config.md#SSOCOnfig) blocks) then a few comments:
     https://github.com/synfinatic/aws-sso-cli/issues/382).  Instead you must
     first `export AWS_SSO=<name>` and then run the command.
 
-## Security 
+## Security
 
 ### How do I delete all secrets from the macOS keychain?
 
@@ -387,6 +387,14 @@ You may wish to consider reducing the number of [Threads](config.md#threads)
 to reduce chances of this happening (fewer threads can increase performance
 by not incurring the backoff delay penalty) or adjust the MaxRetry and/or
 [MaxBackoff](config.md#maxbackoff) parameters.
+
+### Warning: Fetching roles for 46 accounts, this might take a while...
+
+Due to the AWS API and rate limits, users with many AWS Accounts may see
+this warning.  If this happens more often than is acceptable, you can
+set [CacheRefresh](config.md#CacheRefresh) to a higher value
+(cache roles for longer) or you can completely disable the auto-refresh of
+the cache by setting `CacheRefresh` to `0`.
 
 ## Misc
 

@@ -280,13 +280,15 @@ https://yaml.org/spec/1.2-old/spec.html#id2774228) like `%`.
 
 Examples:
 
+##### Open URL In Default Browser
+
 ```yaml
-# Open the AWS Console in your default browser
 UrlAction: open
 ```
 
+##### Open URL In Non-Default Browser
+
 ```yaml
-# Open the AWS Console using Brave on MacOS
 UrlAction: exec
 UrlExecCommand:
     - open
@@ -296,9 +298,10 @@ UrlExecCommand:
     - "%s"
 ```
 
+##### Open URL in Firefox Container
+
 ```yaml
-# Use Granted Containers on MacOS
-UrlAction: granted-containers
+UrlAction: open-url-in-container
 UrlExecCommand:
     - /Applications/Firefox.app/Contents/MacOS/firefox
     - "%s"

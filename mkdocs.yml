@@ -12,13 +12,13 @@ plugins:
 
 nav:
   - 'Home': index.md
+  - 'Demos': demos.md
+  - 'Quickstart': quickstart.md
   - 'User Guide':
-    - 'Quickstart': quickstart.md
     - 'Configuration': config.md
     - 'Commands & Usage': commands.md 
     - 'Frequently Asked Questions': FAQ.md
     - 'ECS Server Mode': ecs-server.md
-    - 'Demos': demos.md
   - 'About':
     - 'License': license.md
     - 'Compared to aws-vault': aws-vault.md
