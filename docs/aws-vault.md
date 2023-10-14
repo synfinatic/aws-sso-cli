@@ -130,20 +130,19 @@ and configured!
 | AWS SSO support         | Yes       | Yes       | Yes        |
 | Web Identity support    | Yes       | No        | Yes        |
 | Open AWS web console    | Yes       | Yes       | No         |
-| SSO Role discovery      | No        | Yes       | No         |
-| Read ~/.aws/config      | Yes       | N/A       | Yes        |
+| Bulk SSO Role discovery | No        | Yes       | No         |
+| Read ~/.aws/config      | Yes       | No        | Yes        |
 | Write ~/.aws/config     | No        | Yes       | Yes        |
 | User defined ENV vars   | No        | Yes       | No         |
 | $AWS\_PROFILE templates | No        | Yes       | No         |
 | Role chaining           | Yes       | Yes       | Yes        |
 | CLI auto-complete       | Yes       | Yes       | Yes        |
 | EC2/ECS Metadata server | Yes       | Yes       | No         |
-| AWS Session tags        | Yes       | No        | Yes        |
-| AWS Transitive tags     | Yes       | No        | Yes        |
 | Firefox Containers      | No        | Yes       | No         |
 | Exec new shell with AWS creds    | Yes  | Yes   | No     |
 | Detect $AWS\_PROFILE collision   | No   | Yes   | Yes    |
 | Add AWS creds into current shell | No   | Yes   | No     |
+
 
 | Select Role Via      | aws-vault | aws-sso | AWS CLI v2 |
 |----------------------|-----------|---------|------------|
