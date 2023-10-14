@@ -39,7 +39,7 @@ As part of the goal of improving the end-user experience with AWS SSO, it also
 supports using [multiple AWS Web Console sessions](https://synfinatic.github.io/aws-sso-cli/quickstart/#aws-console-access)
 and many other quality of life improvements!
 
-### Key Features
+## Key Features
 
  * Enhanced security over stock AWS tooling
  * Auto-discover your AWS SSO roles and [manage](https://synfinatic.github.io/aws-sso-cli/commands/#config)
