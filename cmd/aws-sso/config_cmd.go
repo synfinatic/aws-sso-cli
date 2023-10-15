@@ -104,6 +104,7 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 			HistoryLimit:    10,
 			HistoryMinutes:  1440,
 			UrlExecCommand:  []string{},
+			ProfileFormat:   DEFAULT_PROFILE_FORMAT,
 		}
 
 		s.SSO[instanceName] = &sso.SSOConfig{
@@ -112,6 +113,8 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 			DefaultRegion: defaultRegion,
 		}
 	}
+
+	s.ProfileFormat = promptProfileFormat(s.ProfileFormat)
 
 	if advanced {
 		// first, caching

@@ -398,7 +398,7 @@ functions, but a few custom functions are available:
 single-quote (`'`) the value because because `ProfileFormat` values often start
 with a `{`.
 
-For more information, [see the FAQ](FAQ.md#how-to-configure-profileformat).
+For more information, [see the FAQ](FAQ.md#profiles-and-tags).
 
 #### ConfigVariables
 
