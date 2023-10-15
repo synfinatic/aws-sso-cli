@@ -26,7 +26,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.21.2
 	github.com/riywo/loginshell v0.0.0-20200815045211-7d26008be1ab
 	golang.org/x/term v0.13.0
-	gopkg.in/ini.v1 v1.66.4
+	gopkg.in/ini.v1 v1.67.0
 )
 
 require (
