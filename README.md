@@ -1,17 +1,20 @@
 # AWS SSO CLI
-![Tests](https://github.com/synfinatic/aws-sso-cli/workflows/Tests/badge.svg)
-[![codeql-analysis](https://github.com/synfinatic/aws-sso-cli/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/synfinatic/aws-sso-cli/actions/workflows/codeql-analysis.yml)
+
+[![Tests](https://github.com/synfinatic/aws-sso-cli/actions/workflows/tests.yml/badge.svg)](https://github.com/synfinatic/aws-sso-cli/actions/workflows/tests.yml)
+[![CodeQL](https://github.com/synfinatic/aws-sso-cli/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/synfinatic/aws-sso-cli/actions/workflows/codeql-analysis.yml)
 [![golangci-lint](https://github.com/synfinatic/aws-sso-cli/actions/workflows/golangci-lint.yaml/badge.svg)](https://github.com/synfinatic/aws-sso-cli/actions/workflows/golangci-lint.yaml)
-[![Report Card Badge](https://goreportcard.com/badge/github.com/synfinatic/aws-sso-cli)](https://goreportcard.com/report/github.com/synfinatic/aws-sso-cli)
+[![Go Report Card](https://goreportcard.com/badge/github.com/synfinatic/aws-sso-cli)](https://goreportcard.com/report/github.com/synfinatic/aws-sso-cli)
 [![License Badge](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://raw.githubusercontent.com/synfinatic/aws-sso-cli/main/LICENSE.md)
 [![Codecov Badge](https://codecov.io/gh/synfinatic/aws-sso-cli/branch/main/graph/badge.svg?token=F8454GS4HS)](https://codecov.io/gh/synfinatic/aws-sso-cli)
+[![Check Markdown Links](https://github.com/synfinatic/aws-sso-cli/actions/workflows/md-links-check.yml/badge.svg)](https://github.com/synfinatic/aws-sso-cli/actions/workflows/md-links-check.yml)
 [![Publish Docs](https://github.com/synfinatic/aws-sso-cli/actions/workflows/update-mkdocs.yaml/badge.svg)](https://github.com/synfinatic/aws-sso-cli/actions/workflows/update-mkdocs.yaml)
+[![Build Release Binaries](https://github.com/synfinatic/aws-sso-cli/actions/workflows/build-release.yml/badge.svg)](https://github.com/synfinatic/aws-sso-cli/actions/workflows/build-release.yml)
 [![Last Release](https://img.shields.io/github/v/release/synfinatic/aws-sso-cli)](https://github.com/synfinatic/aws-sso-cli/releases/)
 
 
 [Documentation](https://synfinatic.github.io/aws-sso-cli/) | 
-[ChangeLog](CHANGELOG.md) | 
-[Releases](https://github.com/synfinatic/aws-sso-cli/releases)
+[Demos](https://synfinatic.github.io/aws-sso-cli/demos/) |
+[ChangeLog](CHANGELOG.md)
 
 ## About
 

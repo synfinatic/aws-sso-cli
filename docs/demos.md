@@ -1,12 +1,13 @@
 # AWS SSO CLI Demos
 
+
 ### Inital setup via the wizard
 
 Showing how to get started with AWS SSO CLI using the configuration wizard and how
 to use the `exec` command to select a role via the powerful interactive interface.
 
 <!-- setup -->
-[![asciicast](https://asciinema.org/a/614407.svg)](https://asciinema.org/a/614407)
+![asciicast](asciicast/wizard.cast)
 
 ---
 
@@ -16,7 +17,7 @@ The `aws-sso-profile` shell integration is the easiest way to source the
 necessary AWS API credentials into your current shell.
 
 <!-- profile -->
-[![asciicast](https://asciinema.org/a/614412.svg)](https://asciinema.org/a/614412)
+![asciicast](asciicast/using-aws-sso-profile.cast)
 
 ---
 
@@ -26,7 +27,7 @@ Do you want to just use the `$AWS_PROFILE` environment variable?  Well, AWS SSO 
 supports that too!  This demo shows you how to set it up and use it.
 
 <!-- config-profiles -->
-[![asciicast](https://asciinema.org/a/614413.svg)](https://asciinema.org/a/614413)
+![asciicast](asciicast/using-aws-profile.cast)
 
 ---
 
