@@ -23,6 +23,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             # CUSTOM_DOMAIN: optionaldomain.com
           CONFIG_FILE: mkdocs.yml
-          EXTRA_PACKAGES: mkdocs-asciinema
+          # EXTRA_PACKAGES: build-base
           # GITHUB_DOMAIN: github.myenterprise.com
           REQUIREMENTS: docs/requirements.txt
