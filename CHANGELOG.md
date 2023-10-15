@@ -1,5 +1,19 @@
 # AWS SSO CLI Changelog
 
+## [Unreleased]
+
+### Bugs
+
+### New Features
+
+ * Config Wizard now prompts for `ProfileFormat` #590
+
+### Changes
+
+ * Documentation is now built via Docker #587
+ * Improved demos in documentation #551
+ * Update many dependencies
+
 ## [v1.14.0] - 2023-10-13
 
 ### Bugs
