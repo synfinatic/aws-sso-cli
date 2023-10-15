@@ -33,4 +33,4 @@ jobs:
       run: make .build-tests
     
     - name: Upload to codecov
-      uses: codecov/codecov-action@v2
+      uses: codecov/codecov-action@v3
