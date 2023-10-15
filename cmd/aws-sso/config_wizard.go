@@ -24,6 +24,7 @@ import (
 	"os"
 	"regexp"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -34,8 +35,10 @@ import (
 )
 
 const (
-	START_URL_FORMAT  = "https://%s/start"
-	START_FQDN_SUFFIX = ".awsapps.com"
+	START_URL_FORMAT       = "https://%s/start"
+	START_FQDN_SUFFIX      = ".awsapps.com"
+	NICE_PROFILE_FORMAT    = "{{ FirstItem .AccountName (.AccountAlias | nospace) }}:{{ .RoleName }}"
+	DEFAULT_PROFILE_FORMAT = "{{ .AccountIdPad }}:{{ .RoleName }}"
 )
 
 type selectOptions struct {
@@ -625,6 +628,62 @@ func promptFullTextSearch(flag bool) bool {
 	}
 
 	return yesNoItems[i].Value == "Yes"
+}
+
+func promptProfileFormat(value string) string {
+	var err error
+	var i int = -1
+
+	items := []selectOptions{
+		{
+			Name:  fmt.Sprintf("Default:\t%s", DEFAULT_PROFILE_FORMAT),
+			Value: DEFAULT_PROFILE_FORMAT,
+		},
+		{
+			Name:  fmt.Sprintf("Friendly:\t%s", NICE_PROFILE_FORMAT),
+			Value: NICE_PROFILE_FORMAT,
+		},
+	}
+
+	hasValue := false
+	for _, v := range items {
+		if v.Value == value {
+			hasValue = true
+			break
+		}
+	}
+	if !hasValue {
+		items = slices.Insert(items, 0, selectOptions{
+			Name:  fmt.Sprintf("Custom:\t%s", value),
+			Value: value,
+		})
+	}
+
+	idx := 0
+	for i := range items {
+		if items[i].Value == value {
+			idx = 0
+			break
+		}
+	}
+
+	fmt.Printf("\n")
+	label := "ProfileFormat for Profile/$AWS_PROFILE:"
+	for i < 0 {
+		sel := promptui.Select{
+			Label:        label,
+			Items:        items,
+			CursorPos:    idx,
+			HideSelected: false,
+			Stdout:       &utils.BellSkipper{},
+			Templates:    makeSelectTemplate(label),
+		}
+		if i, _, err = sel.Run(); err != nil {
+			checkSelectError(err)
+		}
+	}
+
+	return items[i].Value
 }
 
 func promptCacheRefresh(defaultValue int64) int64 {

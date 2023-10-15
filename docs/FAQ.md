@@ -220,17 +220,6 @@ you should use `brew install -s aws-sso-cli` or `brew upgrade -s aws-sso-cli`.
 
 ## Profiles and Tags
 
-### Spaces are invalid in Profile names
-
-If your [ProfileFormat](config.md#ProfileFormat) contains either `AccountName`
-or `AccountAlias` you may end up with an invalid Profile name which contains a
-space.
-
-Their are two possible solutions:
-
- 1. Don't include a space in the [AccountName](config.md#name)
- 2. Strip/replace the space [via the ProfileFormat option](#how-to-configure-profileformat)
-
 ### AccountAlias vs AccountName
 
 Due to poor decisions on my part, this is ugly.  Sorry about that.  With that
@@ -308,24 +297,38 @@ Some example `ProfileFormat` values:
 
  * `'{{ FirstItem .AccountName .AccountAlias }}'` -- If there
     is an Account Name set in the config.yaml print that, otherwise print the
-    Account Alias defined by the AWS administrator.
+    Account Name defined by the AWS account owner.
  * `'{{ .AccountIdPad }}'` -- Pad the AccountId with leading zeros if it is < 12 digits long
  * `'{{ .AccountId }}'` -- Print the AccountId as a regular number
  * `'{{ StringsJoin ":" .AccountAlias .RoleName }}'` -- Another
     way of writing `{{ .AccountAlias }}:{{ .RoleName }}`
  * `'{{ StringReplace " " "_" .AccountAlias }}'` -- Replace any spaces (` `) in the AccountAlias with an underscore (`_`).
- * `'{{ FirstItem .AccountName nospaces(.AccountAlias) }}:{{ .RoleName }}'`
-    -- Use the Account Name if set, otherwise use the Account Alias (without spaces)
+ * `'{{ FirstItem .AccountName (nospace .AccountAlias) }}:{{ .RoleName }}'`
+    -- Use the Account Name if set, otherwise use the Account Alias (without spaces via
+    [nospace](http://masterminds.github.io/sprig/strings.html#nospace))
     and then append a colon, followed by the IAM Role Name.
- * `'{{ .AccountAlias | kebabcase }}:{{ .RoleName }}'
+ * `'{{ kebabcase .AccountAlias }}:{{ .RoleName }}'
 	-- Reformat the AWS account alias like `AStringLikeThis` into
 	`a-string-like-this` using the [kebabcase function](
 	http://masterminds.github.io/sprig/strings.html#kebabcase).
 
-For a full list of available variables, [see here](config.md#profileformat).
+For a full list of available variables and functions, see the
+[ProfileFormat config option](config.md#profileformat).
 
 To see a list of values across your roles for a given variable, you can use
 the [list](index.md#list) command.
+
+### Spaces are invalid in Profile names
+
+If your [ProfileFormat](config.md#ProfileFormat) contains either `AccountName`
+or `AccountAlias` you may end up with an invalid Profile name which contains a
+space.
+
+Their are two possible solutions:
+
+ 1. Don't include a space in the [AccountName](config.md#name)
+ 2. Strip/replace the space [via the ProfileFormat option](#how-to-configure-profileformat)
+
 
 ### What are the purpose of the Tags?
 
