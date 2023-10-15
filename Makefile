@@ -81,7 +81,7 @@ DOWNLOAD_URL ?= https://github.com/synfinatic/aws-sso-cli/archive/refs/tags/v$(P
 
 .PHONY: package
 package: linux linux-arm64  ## Build deb/rpm packages
-	docker build -t aws-sso-cli-builder:latest .
+	docker build -t aws-sso-cli-builder:latest -f Dockerfile.package .
 	docker run --rm \
 		-v $$(pwd)/dist:/root/dist \
 		-e VERSION=$(PROJECT_VERSION) aws-sso-cli-builder:latest
