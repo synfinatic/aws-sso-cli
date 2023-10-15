@@ -1,7 +1,7 @@
 # NOTE: multiple `make` commands could be replaced with
 # `make release` in future if all binaries are built on MacOS machine
 
-name: Build Release binaries
+name: Release Binaries
 
 on:
   # Workflow executes when a new release is created

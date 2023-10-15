@@ -1,4 +1,4 @@
-name: Check Markdown links
+name: Check Markdown Links
 
 on: 
   push:
@@ -19,4 +19,4 @@ jobs:
     - uses: gaurav-nelson/github-action-markdown-link-check@v1
       with:
         folder-path: ./docs
-        file-path: ./README.md ./CHANGELOG.md
+        file-path: ./README.md ./LICENSE.md ./CHANGELOG.md
