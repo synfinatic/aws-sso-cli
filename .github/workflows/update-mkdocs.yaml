@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Deploy docs
         uses: synfinatic/mkdocs-deploy-gh-pages@bump-mkdocs
