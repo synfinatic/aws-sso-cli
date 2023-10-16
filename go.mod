@@ -9,7 +9,7 @@ require (
 	github.com/atotto/clipboard v0.1.4
 	github.com/c-bata/go-prompt v0.2.5 // 0.2.6 is broken
 	github.com/davecgh/go-spew v1.1.1
-	github.com/goccy/go-yaml v1.9.4
+	github.com/goccy/go-yaml v1.11.2
 	github.com/hexops/gotextdiff v1.0.3
 	github.com/knadh/koanf v1.5.0
 	github.com/manifoldco/promptui v0.9.0
