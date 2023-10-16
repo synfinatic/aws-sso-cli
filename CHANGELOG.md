@@ -4,6 +4,8 @@
 
 ### Bugs
 
+ * Fix bug where JsonStore was not being created #612
+
 ### New Features
 
  * Config Wizard now prompts for `ProfileFormat` #590

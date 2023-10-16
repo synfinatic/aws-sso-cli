@@ -20,7 +20,9 @@ package storage
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 
 	// "github.com/davecgh/go-spew/spew"
@@ -38,9 +40,9 @@ type JsonStore struct {
 }
 
 // OpenJsonStore opens our insecure JSON storage backend
-func OpenJsonStore(fileName string) (*JsonStore, error) {
+func OpenJsonStore(filename string) (*JsonStore, error) {
 	cache := JsonStore{
-		filename:            fileName,
+		filename:            filename,
 		RegisterClient:      map[string]RegisterClientData{},
 		StartDeviceAuth:     map[string]StartDeviceAuthData{},
 		CreateTokenResponse: map[string]CreateTokenResponse{},
@@ -48,10 +50,14 @@ func OpenJsonStore(fileName string) (*JsonStore, error) {
 		StaticCredentials:   map[string]StaticCredentials{},
 	}
 
-	cacheBytes, err := os.ReadFile(fileName)
-	if err != nil {
-		log.Infof("Creating new cache file: %s", fileName)
-	} else if len(cacheBytes) > 0 {
+	cacheBytes, err := os.ReadFile(filename)
+	if errors.Is(err, fs.ErrNotExist) {
+		return &cache, nil
+	} else if err != nil {
+		return &cache, fmt.Errorf("Unable to open %s: %s", filename, err.Error())
+	}
+
+	if len(cacheBytes) > 0 {
 		err = json.Unmarshal(cacheBytes, &cache)
 	}
 
@@ -66,6 +72,7 @@ func (jc *JsonStore) save() error {
 		log.WithError(err).Errorf("Unable to marshal json")
 		return err
 	}
+
 	err = utils.EnsureDirExists(jc.filename)
 	if err != nil {
 		return err
