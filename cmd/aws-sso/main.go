@@ -84,23 +84,23 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"PromptColors.SelectedSuggestionTextColor":  "White",
 	"PromptColors.SuggestionBGColor":            "Cyan",
 	"PromptColors.SuggestionTextColor":          "White",
+	"AutoConfigCheck":                           false,
+	"CacheRefresh":                              168, // 7 days in hours
+	"ConfigProfilesUrlAction":                   "open",
+	"ConsoleDuration":                           60,
 	"DefaultRegion":                             "us-east-1",
+	"DefaultSSO":                                "Default",
+	"FirefoxOpenUrlInContainer":                 false,
+	"FullTextSearch":                            true,
 	"HistoryLimit":                              10,
 	"HistoryMinutes":                            1440, // 24hrs
 	"ListFields":                                DEFAULT_LIST_FIELDS,
-	"ConsoleDuration":                           60,
-	"UrlAction":                                 "open",
-	"ConfigProfilesUrlAction":                   "open",
-	"LogLevel":                                  "warn",
-	"DefaultSSO":                                "Default",
-	"FirefoxOpenUrlInContainer":                 false,
-	"AutoConfigCheck":                           false,
-	"FullTextSearch":                            true,
-	"ProfileFormat":                             sso.DEFAULT_PROFILE_TEMPLATE,
-	"CacheRefresh":                              168, // 7 days in hours
-	"Threads":                                   5,
 	"MaxBackoff":                                5, // seconds
 	"MaxRetry":                                  10,
+	"ProfileFormat":                             sso.DEFAULT_PROFILE_TEMPLATE,
+	"UrlAction":                                 "open",
+	"LogLevel":                                  "warn",
+	"Threads":                                   5,
 }
 
 type CLI struct {
@@ -123,7 +123,8 @@ type CLI struct {
 	Exec           ExecCmd           `kong:"cmd,help='Execute command using specified IAM role in a new shell'"`
 	Flush          FlushCmd          `kong:"cmd,help='Flush AWS SSO/STS credentials from cache'"`
 	List           ListCmd           `kong:"cmd,help='List all accounts / roles (default command)'"`
-	Logout         LogoutCmd         `kong:"cmd,help='Logout in browser and invalidate all credentials'"`
+	Login          LoginCmd          `kong:"cmd,help='Login to AWS SSO'"`
+	Logout         LogoutCmd         `kong:"cmd,help='Logout from AWS SSO and invalidate all credentials'"`
 	Process        ProcessCmd        `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
 	Static         StaticCmd         `kong:"cmd,hidden,help='Manage static AWS API credentials'"`
 	Tags           TagsCmd           `kong:"cmd,help='List tags'"`
@@ -192,32 +193,58 @@ func main() {
 		log.Fatalf("%s", err.Error())
 	}
 
-	// Load the secure store data
-	switch runCtx.Settings.SecureStore {
-	case "json":
-		sfile := utils.GetHomePath(JSON_STORE_FILE)
-		if runCtx.Settings.JsonStore != "" {
-			sfile = utils.GetHomePath(runCtx.Settings.JsonStore)
-		}
-		runCtx.Store, err = storage.OpenJsonStore(sfile)
+	switch ctx.Command() {
+	case "ecs run":
+		break // do nothing
+
+	case "login", "ecs list", "ecs unload", "ecs profile":
+		// Initialize our AwsSSO variable & SecureStore
+		c := &runCtx
+		s, err := c.Settings.GetSelectedSSO(c.Cli.SSO)
 		if err != nil {
-			log.WithError(err).Fatalf("Unable to open JsonStore %s", sfile)
+			log.Fatalf("%s", err.Error())
 		}
-		log.Warnf("Using insecure json file for SecureStore: %s", sfile)
-	default:
-		cfg, err := storage.NewKeyringConfig(runCtx.Settings.SecureStore, CONFIG_DIR)
-		if err != nil {
-			log.WithError(err).Fatalf("Unable to create SecureStore")
-		}
-		runCtx.Store, err = storage.OpenKeyring(cfg)
-		if err != nil {
-			log.WithError(err).Fatalf("Unable to open SecureStore %s", runCtx.Settings.SecureStore)
+
+		loadSecureStore(c)
+		AwsSSO = sso.NewAWSSSO(s, &c.Store)
+
+	default: // includes "ecs load"
+		// make sure we have authenticated via AWS SSO and init SecureStore
+		loadSecureStore(&runCtx)
+		if !checkAuth(&runCtx) {
+			log.Fatalf("Must run `aws-sso login` before running `aws-sso %s`", ctx.Command())
 		}
 	}
 
 	err = ctx.Run(&runCtx)
 	if err != nil {
 		log.Fatalf("Error running command: %s", err.Error())
+	}
+}
+
+// loadSecureStore loads our secure store data for future access
+func loadSecureStore(ctx *RunContext) {
+	var err error
+	switch ctx.Settings.SecureStore {
+	case "json":
+		sfile := utils.GetHomePath(JSON_STORE_FILE)
+		if ctx.Settings.JsonStore != "" {
+			sfile = utils.GetHomePath(ctx.Settings.JsonStore)
+		}
+		ctx.Store, err = storage.OpenJsonStore(sfile)
+		if err != nil {
+			log.WithError(err).Fatalf("Unable to open JsonStore %s", sfile)
+		}
+		log.Warnf("Using insecure json file for SecureStore: %s", sfile)
+	default:
+		cfg, err := storage.NewKeyringConfig(ctx.Settings.SecureStore, CONFIG_DIR)
+		if err != nil {
+			log.WithError(err).Fatalf("Unable to create SecureStore")
+		}
+		ctx.Store, err = storage.OpenKeyring(cfg)
+		if err != nil {
+			log.WithError(err).Fatalf("Unable to open SecureStore %s", ctx.Settings.SecureStore)
+		}
 	}
 }
 

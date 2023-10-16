@@ -35,12 +35,18 @@
 ### New Features
 
  * Config Wizard now prompts for `ProfileFormat` #590
+ * Add `login` command #291
 
 ### Changes
 
- * Documentation is now built via Docker #587
+ * Documentation is now managed by [mkdocs](https://www.mkdocs.org)
  * Improved demos in documentation #551
  * Update many dependencies
+ * Add dependabot
+
+### Deprecated
+
+ * `aws-sso flush -t sso` should not be used.  Use `aws-sso logout` instead.
 
 ## [v1.14.0] - 2023-10-13
 
@@ -321,9 +327,11 @@
  * Renamed the `config` command to update `~/.aws/config` to be `config-profiles`
      which is hopefully more clear
  * `config` command now runs the configuration wizard
- * Deprecated `ConfigUrlAction` option.  Will be automatically upgraded by
-    the `aws-sso config` wizard.
  * `ConfigProfilesUrlAction` replaces `ConfigUrlAction`
+
+### Deprecated
+ * `ConfigUrlAction` option.  Will be automatically upgraded by
+    the `aws-sso config` wizard.
 
 ### Bugs
 
