@@ -34,11 +34,6 @@ func (cc *LogoutCmd) Run(ctx *RunContext) error {
 	}
 	awssso := sso.NewAWSSSO(s, &ctx.Store)
 
-	// Call logout to invalidate our session
-	if err := awssso.Logout(); err != nil {
-		log.WithError(err).Errorf("Unable to logout of AWS IAM Identity Center")
-	}
-
 	// this is what we do anyways
 	flushSso(ctx, awssso)
 	flushSts(ctx, awssso)

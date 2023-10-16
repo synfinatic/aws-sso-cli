@@ -25,7 +25,6 @@ import (
 type CacheCmd struct{}
 
 func (cc *CacheCmd) Run(ctx *RunContext) error {
-	awssso := doAuth(ctx)
 	s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
 	if err != nil {
 		log.Fatalf("%s", err.Error())
@@ -36,7 +35,7 @@ func (cc *CacheCmd) Run(ctx *RunContext) error {
 		log.Fatalf(err.Error())
 	}
 
-	err = ctx.Settings.Cache.Refresh(awssso, s, ssoName)
+	err = ctx.Settings.Cache.Refresh(AwsSSO, s, ssoName)
 	if err != nil {
 		return fmt.Errorf("Unable to refresh role cache: %s", err.Error())
 	}
