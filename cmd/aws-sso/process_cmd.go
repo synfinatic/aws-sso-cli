@@ -25,7 +25,6 @@ import (
 	// log "github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
-	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
 type ProcessCmd struct {
@@ -67,8 +66,7 @@ func (cc *ProcessCmd) Run(ctx *RunContext) error {
 		return fmt.Errorf("Please specify --arn or --account and --role")
 	}
 
-	awssso := doAuth(ctx)
-	return credentialProcess(ctx, awssso, account, role)
+	return credentialProcess(ctx, account, role)
 }
 
 type CredentialProcessOutput struct {
@@ -99,8 +97,8 @@ func (cpo *CredentialProcessOutput) Output() (string, error) {
 	return string(b), nil
 }
 
-func credentialProcess(ctx *RunContext, awssso *sso.AWSSSO, accountId int64, role string) error {
-	creds := GetRoleCredentials(ctx, awssso, accountId, role)
+func credentialProcess(ctx *RunContext, accountId int64, role string) error {
+	creds := GetRoleCredentials(ctx, AwsSSO, accountId, role)
 
 	cpo := NewCredentialsProcessOutput(creds)
 	out, err := cpo.Output()

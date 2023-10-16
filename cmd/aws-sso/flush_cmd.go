@@ -23,7 +23,7 @@ import (
 
 // FlushCmd defines the Kong args for the flush command
 type FlushCmd struct {
-	Type string `kong:"short='t',default='sts',enum='sts,sso,all',help='Type of credentials to flush [sts|sso|all]'"`
+	Type string `kong:"short='t',default='sts',enum='sts,sso,all',help='Type of credentials to flush [sts|sso|all] (deprecated)'"`
 }
 
 // Run executes the flush command
@@ -50,8 +50,10 @@ func (cc *FlushCmd) Run(ctx *RunContext) error {
 	return nil
 }
 
+// flushSso is stupid and doesn't do anything useful really because
+// AWS will gladly re-issue new security token just based on your
+// DeviceAuthorization token
 func flushSso(ctx *RunContext, awssso *sso.AWSSSO) {
-	// Deleting the token response invalidates all our STS tokens
 	err := ctx.Store.DeleteCreateTokenResponse(awssso.StoreKey())
 	if err != nil {
 		log.WithError(err).Errorf("Unable to delete TokenResponse")
@@ -60,6 +62,7 @@ func flushSso(ctx *RunContext, awssso *sso.AWSSSO) {
 	}
 }
 
+// flushSts flushes our IAM STS Role credentials from the secure store
 func flushSts(ctx *RunContext, awssso *sso.AWSSSO) {
 	cache := ctx.Settings.Cache.GetSSO()
 	for _, role := range cache.Roles.GetAllRoles() {

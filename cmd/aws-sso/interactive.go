@@ -31,7 +31,7 @@ import (
 	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
-type CompleterExec = func(*RunContext, *sso.AWSSSO, int64, string) error
+type CompleterExec = func(*RunContext, int64, string) error
 
 // PromptExec runs the interactive prompter and then on success runs our
 // CompleterExec function
@@ -149,8 +149,8 @@ func (tc *TagsCompleter) Executor(args string) {
 	if err != nil {
 		log.Fatalf("Unable to parse %s: %s", roleArn, err.Error())
 	}
-	awsSSO := doAuth(tc.ctx)
-	err = tc.exec(tc.ctx, awsSSO, aId, rName)
+
+	err = tc.exec(tc.ctx, aId, rName)
 	if err != nil {
 		log.Fatalf("Unable to exec: %s", err.Error())
 	}
