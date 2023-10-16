@@ -36,18 +36,13 @@ func (cc *TagsCmd) Run(ctx *RunContext) error {
 	cache := ctx.Settings.Cache.GetSSO()
 	if ctx.Cli.Tags.ForceUpdate {
 		s := set.SSO[ctx.Cli.SSO]
-		awssso := sso.NewAWSSSO(s, &ctx.Store)
-		err := awssso.Authenticate(ctx.Settings.UrlAction, ctx.Settings.Browser)
-		if err != nil {
-			log.WithError(err).Fatalf("Unable to authenticate")
-		}
 
 		ssoName, err := ctx.Settings.GetSelectedSSOName(ctx.Cli.SSO)
 		if err != nil {
 			log.Fatalf(err.Error())
 		}
 
-		err = set.Cache.Refresh(awssso, s, ssoName)
+		err = set.Cache.Refresh(AwsSSO, s, ssoName)
 		if err != nil {
 			log.WithError(err).Fatalf("Unable to refresh role cache")
 		}

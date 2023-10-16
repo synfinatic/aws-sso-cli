@@ -19,98 +19,52 @@ package main
  */
 
 import (
-	"fmt"
-
 	"github.com/synfinatic/aws-sso-cli/internal/awsconfig"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
-type SelectCliArgs struct {
-	Arn       string
-	AccountId int64
-	RoleName  string
-	Profile   string
+type LoginCmd struct{}
+
+func (cc *LoginCmd) Run(ctx *RunContext) error {
+	doAuth(ctx)
+	return nil
 }
 
-type InvalidArgsError struct {
-	msg string
-	arg string
-}
-
-func (e *InvalidArgsError) Error() string {
-	if e.arg != "" {
-		return fmt.Sprintf(e.msg, e.arg)
-	}
-	return fmt.Sprintf(e.msg)
-}
-
-type NoRoleSelectedError struct{}
-
-func (e *NoRoleSelectedError) Error() string {
-	return "Unable to select role"
-}
-
-func NewSelectCliArgs(arn string, accountId int64, role, profile string) *SelectCliArgs {
-	return &SelectCliArgs{
-		Arn:       arn,
-		AccountId: accountId,
-		RoleName:  role,
-		Profile:   profile,
-	}
-}
-
-func (a *SelectCliArgs) Update(ctx *RunContext) (*sso.AWSSSO, error) {
-	if a.Profile != "" {
-		awssso := doAuth(ctx)
-		cache := ctx.Settings.Cache.GetSSO()
-		rFlat, err := cache.Roles.GetRoleByProfile(a.Profile, ctx.Settings)
+// checkAuth craetes a singleton AWSSO object and checks to see if
+// we have a valid SSO authentication token.  If this is false, then
+// we need to call doAuth()
+func checkAuth(ctx *RunContext) bool {
+	if AwsSSO == nil {
+		s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
 		if err != nil {
-			return awssso, &InvalidArgsError{msg: "Invalid --profile %s", arg: a.Profile}
+			log.Fatalf("%s", err.Error())
 		}
 
-		a.AccountId = rFlat.AccountId
-		a.RoleName = rFlat.RoleName
-
-		return awssso, nil
+		AwsSSO = sso.NewAWSSSO(s, &ctx.Store)
 	}
 
-	if a.Arn != "" {
-		awssso := doAuth(ctx)
-		accountId, role, err := utils.ParseRoleARN(a.Arn)
-		if err != nil {
-			return awssso, &InvalidArgsError{msg: "Invalid --arn %s", arg: a.Arn}
-		}
-		a.AccountId = accountId
-		a.RoleName = role
-
-		return awssso, nil
-	}
-
-	if a.AccountId != 0 && a.RoleName != "" {
-		return doAuth(ctx), nil
-	} else if a.AccountId != 0 || a.RoleName != "" {
-		return &sso.AWSSSO{}, &InvalidArgsError{msg: "Must specify both --account and --role"}
-	}
-
-	return &sso.AWSSSO{}, &NoRoleSelectedError{}
+	return AwsSSO.ValidAuthToken()
 }
 
-// Creates a singleton AWSSO object post authentication
-func doAuth(ctx *RunContext) *sso.AWSSSO {
-	if AwsSSO != nil {
-		return AwsSSO
+// doAuth creates a singleton AWSSO object post authentication
+func doAuth(ctx *RunContext) {
+	if checkAuth(ctx) {
+		// nothing to do here
+		log.Infof("You are already logged in. :)")
+		return
 	}
+
+	err := AwsSSO.Authenticate(ctx.Settings.UrlAction, ctx.Settings.Browser)
+	if err != nil {
+		log.WithError(err).Fatalf("Unable to authenticate")
+	}
+
 	s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
 	if err != nil {
 		log.Fatalf("%s", err.Error())
 	}
-	AwsSSO = sso.NewAWSSSO(s, &ctx.Store)
-	err = AwsSSO.Authenticate(ctx.Settings.UrlAction, ctx.Settings.Browser)
-	if err != nil {
-		log.WithError(err).Fatalf("Unable to authenticate")
-	}
+
 	if err = ctx.Settings.Cache.Expired(s); err != nil {
 		ssoName, err := ctx.Settings.GetSelectedSSOName(ctx.Cli.SSO)
 		log.Infof("Refreshing AWS SSO role cache for %s, please wait...", ssoName)
@@ -135,5 +89,4 @@ func doAuth(ctx *RunContext) *sso.AWSSSO {
 			}
 		}
 	}
-	return AwsSSO
 }
