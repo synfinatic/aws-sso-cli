@@ -18,7 +18,7 @@ require (
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/stretchr/testify v1.7.1
 	github.com/synfinatic/gotable v0.0.3
-	github.com/willabides/kongplete v0.2.0
+	github.com/willabides/kongplete v0.3.0
 	golang.org/x/crypto v0.14.0 // indirect
 )
 
@@ -85,4 +85,5 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.45 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.37 // indirect
 	github.com/aws/smithy-go v1.15.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 )
