@@ -82,9 +82,7 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 	}
 	region := ctx.Settings.GetDefaultRegion(accountid, role, ctx.Cli.Eval.NoRegion)
 
-	awssso := doAuth(ctx)
-
-	for k, v := range execShellEnvs(ctx, awssso, accountid, role, region) {
+	for k, v := range execShellEnvs(ctx, accountid, role, region) {
 		if isBashLike() {
 			if len(v) == 0 {
 				fmt.Printf("unset %s\n", k)
