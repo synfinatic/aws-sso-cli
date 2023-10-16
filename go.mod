@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/99designs/keyring v1.2.2
 	github.com/Masterminds/sprig/v3 v3.2.3
-	github.com/alecthomas/kong v0.7.1
+	github.com/alecthomas/kong v0.8.1
 	github.com/atotto/clipboard v0.1.4
 	github.com/c-bata/go-prompt v0.2.5 // 0.2.6 is broken
 	github.com/davecgh/go-spew v1.1.1
