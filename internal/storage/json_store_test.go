@@ -29,6 +29,28 @@ import (
 
 const TEST_JSON_STORE_FILE = "./testdata/store.json"
 
+func TestNewFile(t *testing.T) {
+	fname := "./testdata/new-store.json"
+	defer os.Remove(fname)
+	s, err := OpenJsonStore(fname)
+	assert.Nil(t, err)
+
+	assert.Error(t, s.GetRegisterClientData("foobar", &RegisterClientData{}))
+
+	err = s.save()
+	assert.Nil(t, err)
+}
+
+func TestBadFilePerms(t *testing.T) {
+	fname := "./testdata/new-store.json"
+	defer os.Remove(fname)
+	err := os.WriteFile(fname, []byte{}, 0000)
+	assert.NoError(t, err)
+
+	_, err = OpenJsonStore(fname)
+	assert.Error(t, err)
+}
+
 type JsonStoreTestSuite struct {
 	suite.Suite
 	json     *JsonStore
