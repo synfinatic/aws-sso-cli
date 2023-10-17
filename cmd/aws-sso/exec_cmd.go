@@ -19,6 +19,7 @@ package main
  */
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -57,6 +58,9 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 	if awssso, err := sci.Update(ctx); err == nil {
 		// successful lookup?
 		return execCmd(ctx, awssso, sci.AccountId, sci.RoleName)
+	} else if !errors.Is(err, &NoRoleSelectedError{}) {
+		// invalid arguments, not missing
+		return err
 	}
 
 	if ctx.Cli.Exec.NoCache {

@@ -6,6 +6,7 @@
 
  * Fix bug where JsonStore was not being created #612
  * Fix fish shell completion
+ * Do not fall back to interactive prompt when provided CLI args #567
 
 ### New Features
 

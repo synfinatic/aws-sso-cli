@@ -34,6 +34,24 @@ type SelectCliArgs struct {
 	Profile   string
 }
 
+type InvalidArgsError struct {
+	msg string
+	arg string
+}
+
+func (e *InvalidArgsError) Error() string {
+	if e.arg != "" {
+		return fmt.Sprintf(e.msg, e.arg)
+	}
+	return fmt.Sprintf(e.msg)
+}
+
+type NoRoleSelectedError struct{}
+
+func (e *NoRoleSelectedError) Error() string {
+	return "Unable to select role"
+}
+
 func NewSelectCliArgs(arn string, accountId int64, role, profile string) *SelectCliArgs {
 	return &SelectCliArgs{
 		Arn:       arn,
@@ -44,32 +62,39 @@ func NewSelectCliArgs(arn string, accountId int64, role, profile string) *Select
 }
 
 func (a *SelectCliArgs) Update(ctx *RunContext) (*sso.AWSSSO, error) {
-	if a.AccountId != 0 && a.RoleName != "" {
-		return doAuth(ctx), nil
-	} else if a.Profile != "" {
+	if a.Profile != "" {
 		awssso := doAuth(ctx)
 		cache := ctx.Settings.Cache.GetSSO()
 		rFlat, err := cache.Roles.GetRoleByProfile(a.Profile, ctx.Settings)
 		if err != nil {
-			return awssso, err
+			return awssso, &InvalidArgsError{msg: "Invalid --profile %s", arg: a.Profile}
 		}
 
 		a.AccountId = rFlat.AccountId
 		a.RoleName = rFlat.RoleName
 
 		return awssso, nil
-	} else if a.Arn != "" {
+	}
+
+	if a.Arn != "" {
 		awssso := doAuth(ctx)
 		accountId, role, err := utils.ParseRoleARN(a.Arn)
 		if err != nil {
-			return awssso, err
+			return awssso, &InvalidArgsError{msg: "Invalid --arn %s", arg: a.Arn}
 		}
 		a.AccountId = accountId
 		a.RoleName = role
 
 		return awssso, nil
 	}
-	return &sso.AWSSSO{}, fmt.Errorf("Please specify both --account and --role")
+
+	if a.AccountId != 0 && a.RoleName != "" {
+		return doAuth(ctx), nil
+	} else if a.AccountId != 0 || a.RoleName != "" {
+		return &sso.AWSSSO{}, &InvalidArgsError{msg: "Must specify both --account and --role"}
+	}
+
+	return &sso.AWSSSO{}, &NoRoleSelectedError{}
 }
 
 // Creates a singleton AWSSO object post authentication
