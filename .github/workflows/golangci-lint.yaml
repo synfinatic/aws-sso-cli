@@ -2,13 +2,9 @@
 name: golangci-lint
 on:
   push:
-    tags:
-      - v*
     branches:
       - main
   pull_request:
-    branches: 
-      - main
     paths:
       - '.github/**'
       - 'cmd/**'
