@@ -21,6 +21,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -86,18 +87,23 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 	if awssso, err := sci.Update(ctx); err == nil {
 		// successful lookup?
 		return openConsole(ctx, awssso, sci.AccountId, sci.RoleName)
+	} else if !errors.Is(err, &NoRoleSelectedError{}) {
+		// invalid arguments, not missing
+		return err
 	}
 
 	// Check our various ENV vars
 	if haveAWSEnvVars(ctx) {
 		return consoleViaEnvVars(ctx)
-	} else if ctx.Cli.Console.AwsProfile != "" {
+	}
+
+	if ctx.Cli.Console.AwsProfile != "" { // ENV variable check
 		ssoCache := ctx.Settings.Cache.GetSSO()
 		_, err := ssoCache.Roles.GetRoleByProfile(ctx.Cli.Console.AwsProfile, ctx.Settings)
 		if err == nil {
 			return consoleViaSDK(ctx)
 		}
-		log.Warnf("AWS_PROFILE=%s was not found in our cache.", ctx.Cli.Console.AwsProfile)
+		return fmt.Errorf("AWS_PROFILE=%s was not found in our cache.", ctx.Cli.Console.AwsProfile)
 	}
 
 	// fall back to interactive prompting...

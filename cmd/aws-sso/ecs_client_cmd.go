@@ -19,6 +19,7 @@ package main
  */
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -59,6 +60,9 @@ func (cc *EcsLoadCmd) Run(ctx *RunContext) error {
 	if awssso, err := sci.Update(ctx); err == nil {
 		// successful lookup?
 		return ecsLoadCmd(ctx, awssso, sci.AccountId, sci.RoleName)
+	} else if !errors.Is(err, &NoRoleSelectedError{}) {
+		// invalid arguments, not missing
+		return err
 	}
 
 	return ctx.PromptExec(ecsLoadCmd)
