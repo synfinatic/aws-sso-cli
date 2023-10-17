@@ -4,3 +4,4 @@ function __complete_aws-sso
     and set COMP_LINE "$COMP_LINE "
     {{ .Executable }}
 end
+complete -f -c aws-sso -a "(__complete_aws-sso)"

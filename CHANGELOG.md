@@ -5,6 +5,7 @@
 ### Bugs
 
  * Fix bug where JsonStore was not being created #612
+ * Fix fish shell completion
 
 ### New Features
 

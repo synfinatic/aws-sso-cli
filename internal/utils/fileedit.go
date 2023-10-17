@@ -115,6 +115,10 @@ func (f *FileEdit) GenerateNewFile(configFile string) ([]byte, error) {
 	// read & write up to the prefix
 	input, err := os.Open(configFile)
 	if err != nil {
+		if err = EnsureDirExists(configFile); err != nil {
+			return []byte{}, err
+		}
+
 		input, err = os.Create(configFile)
 		if err != nil {
 			return []byte{}, err
