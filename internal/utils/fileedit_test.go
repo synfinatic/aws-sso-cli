@@ -60,8 +60,25 @@ func TestFileEdit(t *testing.T) {
 	assert.Equal(t, []byte(
 		fmt.Sprintf(FILE_TEMPLATE, CONFIG_PREFIX, "foo", CONFIG_SUFFIX)), fBytes)
 
-	// can't open file
-	err = fe.UpdateConfig(false, true, "/this/directory/and/the/file/in/it/doesn't/exist")
+	// create the base path
+	badfile := "./this/doesnt/exist"
+	err = fe.UpdateConfig(false, true, badfile)
+	assert.NoError(t, err)
+	defer os.Remove(badfile)
+
+	// can't treat a file like a directory though :)
+	baddir := "./thisdoesntwork"
+	err = os.Mkdir(baddir, 0400) // need read access to pass EnsureDirExists()
+	assert.NoError(t, err)
+	defer func() {
+		_ = os.Chmod(baddir, 0777)
+		os.Remove(baddir)
+	}()
+	err = fe.UpdateConfig(false, true, fmt.Sprintf("%s/foo", baddir))
+	assert.Error(t, err)
+
+	// can't create this path
+	err = fe.UpdateConfig(false, true, "/cant/write/to/root/filesystem")
 	assert.Error(t, err)
 
 	// setup logger for testing
