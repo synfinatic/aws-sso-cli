@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Changes
+
+ * Remove `config`, `config-profiles` and `completions` commands
+    and replace with `setup`
+
 ## [v1.14.1] - 2023-10-17
 
 ### Bugs
@@ -48,7 +53,7 @@
  * ECS Server now includes `RoleArn` in output #561
  * Fix selection of default browser in advanced guided setup #563
 
-### Changes 
+### Changes
 
  * ECS Server API is now more RESTful and fully document the API
  * Default profile `AWS_CONTAINER_CREDENTIALS_FULL_URI` is now `http://localhost:4144/`
