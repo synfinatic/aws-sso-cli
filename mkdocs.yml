@@ -37,4 +37,3 @@ nav:
       - 'Commit Signing Key': commit-sign-key.asc.md
   - 'Developer Notes':
     - 'Release New Version': release.md
-    - 'Documentation': docs.md

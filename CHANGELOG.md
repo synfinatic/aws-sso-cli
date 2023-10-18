@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v1.14.1] - 2023-10-17
+
 ### Bugs
 
  * Fix bug where JsonStore was not being created #612
@@ -618,7 +620,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.14.0...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.14.1...main
+[v1.14.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.14.1
 [v1.14.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.14.0
 [v1.13.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.13.0
 [v1.13.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.12.0
