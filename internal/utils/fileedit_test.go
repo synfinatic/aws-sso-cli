@@ -93,7 +93,7 @@ func TestFileEdit(t *testing.T) {
 	assert.NoError(t, err)
 	err = fe.UpdateConfig(false, true, tfile2.Name())
 	assert.NoError(t, err)
-	assert.Contains(t, hook.LastEntry().Message, "no changes made to")
+	assert.Contains(t, hook.LastEntry().Message, "No changes made to")
 
 	// can't eval template
 	fe, err = NewFileEdit("{{ .Test }}", []string{})

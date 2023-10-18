@@ -33,17 +33,18 @@ import (
 
 var ranSetup = false
 
-type ConfigCmd struct {
+type WizardCmd struct {
 	// 	AddSSO bool `kong:"help='Add a new AWS SSO instance'"`
 	Advanced bool `kong:"help='Enable advanced configuration'"`
+	Reconfig bool `kong:"hidden,negatable,help='Reconfig mode'"`
 }
 
-func (cc *ConfigCmd) Run(ctx *RunContext) error {
+func (cc *WizardCmd) Run(ctx *RunContext) error {
 	if err := backupConfig(ctx.Cli.ConfigFile); err != nil {
 		return err
 	}
 
-	return setupWizard(ctx, true, false, ctx.Cli.Config.Advanced) // ctx.Cli.Config.AddSSO)
+	return setupWizard(ctx, ctx.Cli.Setup.Wizard.Reconfig, false, ctx.Cli.Setup.Wizard.Advanced)
 }
 
 func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
@@ -58,7 +59,7 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 	fmt.Printf(`
 **********************************************************************
 * Do you have questions?  Do you like reading docs?  We've got docs! *
-* https://github.com/synfinatic/aws-sso-cli/blob/main/docs/config.md *
+*         https://synfinatic.github.io/aws-sso-cli/                  *
 **********************************************************************
 
 `)

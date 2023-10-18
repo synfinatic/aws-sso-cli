@@ -51,13 +51,54 @@ Priority is given to:
 
 ---
 
-### ecs 
+### ecs
 
 For information about the ECS Server functionality, see the [ecs-server](ecs-server.md) page.
 
 ---
 
-### config-profiles
+### setup
+
+#### setup all
+
+Runs the initial setup of `aws-sso`.  By default it will run through the setup wizard,
+shell script installation and configuration of your AWS SSO enabled profiles in `~/.aws/config`.
+
+#### setup wizard
+
+Allows you to run through the configuration wizard and update your AWS SSO CLI
+config file (`~/.aws-sso/config.yaml`).   By default, it only does a very basic
+configuration to get started with.  The `--advanced` flag prompts for more
+settings and is useful for taking advantage of some of the new settings if
+you've upgraded from a previous version!
+
+Flags:
+
+ * `--advanced` -- Prompts for many more config options
+
+#### setup shell
+
+Configures your appropriate shell configuration file to add auto-complete
+and [Shell Helpers](#shell-helpers) functionality for commands, flags and
+options. Must restart your shell for this to take effect.
+
+For more information about this feature, please read [the quickstart](
+quickstart.md#enabling-auto-completion-in-your-shell).
+
+Flags:
+
+ * `--install` -- Install the new v1.9+ shell completions scripts
+ * `--uninstall` -- Uninstall the new v1.9+ shell completions scripts
+ * `--uninstall-pre-19` -- Uninstall the legacy pre-v1.9 scripts
+ * `--shell <shell>` -- Override the detected shell
+ * `--shell-script <file>` -- Override the default shell script file to modify
+
+**Note:** You should uninstall the older pre-v1.9 completions before installing
+the new version.  Once the new version is installed, `--uninstall-pre-19` will
+refuse to run so you will have to either manually edit the file or run
+`--uninstall`, then `--uninstall-pre-19` and finally `--install` again.
+
+#### setup aws-config
 
 Modifies the `~/.aws/config` file to contain a [named profile](
 https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-using-profiles)
@@ -278,7 +319,7 @@ used to fetch IAM Role credentials.
 
 ### logout
 
-Invalidates all AWS credentials with AWS for the selected SSO instance, 
+Invalidates all AWS credentials with AWS for the selected SSO instance,
 including those in your browser session.
 
 If you only wish to remove the credentials from the `aws-sso` secure store, use
@@ -332,17 +373,30 @@ By default the following key/values are available as tags to your roles:
 
 ---
 
-### time
+### setup
 
-Print a string containing the number of hours and minutes that the current
-AWS Role's STS credentials are valid for in the format of `HHhMMm`
+#### setup all
 
-**Note:** This command is only useful when you have STS credentials configured
-in your shell via [eval](#eval) or [exec](#exec).
+Runs the initial setup of `aws-sso`.  By default it will run through the setup wizard,
+shell script installation and configuration of your AWS SSO enabled profiles in `~/.aws/config`.
 
----
+Flags:
 
-### completions
+ * `--advanced` -- Run the setup wizard with advanced config options
+
+#### setup wizard
+
+Allows you to run through the configuration wizard and update your AWS SSO CLI
+config file (`~/.aws-sso/config.yaml`).   By default, it only does a very basic
+configuration to get started with.  The `--advanced` flag prompts for more
+settings that many users find useful.  For a full list of config options
+see the [config page](config.md).
+
+Flags:
+
+ * `--advanced` -- Prompts for many more config options
+
+#### setup shell
 
 Configures your appropriate shell configuration file to add auto-complete
 and [Shell Helpers](#shell-helpers) functionality for commands, flags and
@@ -364,17 +418,67 @@ the new version.  Once the new version is installed, `--uninstall-pre-19` will
 refuse to run so you will have to either manually edit the file or run
 `--uninstall`, then `--uninstall-pre-19` and finally `--install` again.
 
-### config
+#### setup aws-config
 
-Allows you to run through the configuration wizard and update your AWS SSO CLI
-config file (`~/.aws-sso/config.yaml`).   By default, it only does a very basic
-configuration to get started with.  The `--advanced` flag prompts for more 
-settings and is useful for taking advantage of some of the new settings if 
-you've upgraded from a previous version!
+Modifies the `~/.aws/config` file to contain a [named profile](
+https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-using-profiles)
+for every role accessible via AWS SSO CLI.
 
 Flags:
 
- * `--advanced` -- Prompts for many more config options
+ * `--diff` -- Print a diff of changes to the config file instead of modifying it
+ * `--open` -- Specify how to open URls: [clip|exec|open]
+ * `--print` -- Print profile entries instead of modifying config file
+ * `--force` -- Write a new config file without prompting
+ * `--aws-config` -- Override path to `~/.aws/config` file
+
+By default, each profile is named according to the [ProfileFormat](
+config.md#profileformat) config option or overridden by the user defined
+[Profile](config.md#profile) option on a role by role basis.
+
+For each profile generated, it will specify a [list of settings](
+https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html) as defined
+by the [ConfigVariables](config.md#configvariables) setting in the
+`~/.aws-sso/config.yaml`.
+
+For more information on this feature, [read the Quickstart Guide](
+quickstart.md#integrating-with-the-aws-profile-variable).
+
+Unlike with other ways to use AWS SSO CLI, the AWS IAM STS credentials will
+_automatically refresh_.  This means, if you do not have a valid AWS SSO token,
+you will be prompted to authentiate via your SSO provider and subsequent
+requests to obtain new IAM STS credentials will automatically happen as needed.
+
+**Note:** Due to a limitation in the AWS tooling, `print` and `printurl` are not
+supported values for `--url-action`.  Hence, you must use `open` or `exec` to
+auto-open URLs in your browser (recommended) or `clip` to automatically copy
+URLs to your clipboard.  _No user prompting is possible._
+
+**Note:** You should run this command any time your list of AWS roles changes
+in order to update the `~/.aws/config` file or enable [AutoConfigCheck](
+config.md#autoconfigcheck) and [ConfigProfilesUrlAction](
+config.md#configprofilesurlaction).
+
+**Note:** If `ConfigProfilesUrlAction` is set, then `--open` is optional,
+otherwise it is required.
+
+**Note:** It is important that you do _NOT_ remove the `# BEGIN_AWS_SSO_CLI` and
+`# END_AWS_SSO_CLI` lines from your config file!  These markers are used to track
+which profiles are managed by AWS SSO CLI.
+
+**Note:** This command does not honor the `--sso` option as it operates on all
+of the configured AWS SSO instances in the `~/.aws-sso/config.yaml` file.
+---
+
+### time
+
+Print a string containing the number of hours and minutes that the current
+AWS Role's STS credentials are valid for in the format of `HHhMMm`
+
+**Note:** This command is only useful when you have STS credentials configured
+in your shell via [eval](#eval) or [exec](#exec).
+
+---
 
 ## Environment Variables
 

@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Changes
+
+ * Remove `config`, `config-profiles` and `completions` commands
+    and replace with `setup`
+
 ## [v1.14.2] - 2023-10-19
 
 ### Bugs
