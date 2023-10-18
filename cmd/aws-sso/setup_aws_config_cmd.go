@@ -34,7 +34,7 @@ credential_process = {{ $profile.BinaryPath }} -u {{ $profile.Open }} -S "{{ $pr
 {{end}}{{end}}{{end}}`
 )
 
-type ConfigProfilesCmd struct {
+type AwsConfigCmd struct {
 	Diff      bool   `kong:"help='Print a diff of changes to the config file instead of modifying it',xor='action'"`
 	Force     bool   `kong:"help='Write a new config file without prompting'"`
 	Open      string `kong:"help='Specify how to open URLs: [clip|exec|open|granted-containers|open-url-in-container]'"`
@@ -42,12 +42,14 @@ type ConfigProfilesCmd struct {
 	AwsConfig string `kong:"help='Path to AWS config file',env='AWS_CONFIG_FILE',default='~/.aws/config'"`
 }
 
-func (cc *ConfigProfilesCmd) Run(ctx *RunContext) error {
+func (cc *AwsConfigCmd) Run(ctx *RunContext) error {
 	var err error
 	var action url.ConfigProfilesAction
 
-	if ctx.Cli.ConfigProfiles.Open != "" {
-		if action, err = url.NewConfigProfilesAction(ctx.Cli.ConfigProfiles.Open); err != nil {
+	awsConfig := ctx.Cli.Setup.AwsConfig
+
+	if awsConfig.Open != "" {
+		if action, err = url.NewConfigProfilesAction(awsConfig.Open); err != nil {
 			return err
 		}
 	} else {
@@ -66,9 +68,9 @@ func (cc *ConfigProfilesCmd) Run(ctx *RunContext) error {
 		return err
 	}
 
-	if ctx.Cli.ConfigProfiles.Print {
+	if awsConfig.Print {
 		return awsconfig.PrintAwsConfig(ctx.Settings, urlAction)
 	}
-	return awsconfig.UpdateAwsConfig(ctx.Settings, urlAction, ctx.Cli.ConfigProfiles.AwsConfig,
-		ctx.Cli.ConfigProfiles.Diff, ctx.Cli.ConfigProfiles.Force)
+	return awsconfig.UpdateAwsConfig(ctx.Settings, urlAction, awsConfig.AwsConfig,
+		awsConfig.Diff, awsConfig.Force)
 }
