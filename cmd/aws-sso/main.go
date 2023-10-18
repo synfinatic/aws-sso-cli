@@ -56,6 +56,7 @@ type RunContext struct {
 	Cli      *CLI
 	Settings *sso.Settings // unified config & cache
 	Store    storage.SecureStorage
+	Override sso.OverrideSettings
 }
 
 const (
@@ -116,24 +117,22 @@ type CLI struct {
 	Threads       int    `kong:"help='Override number of threads for talking to AWS'"`
 
 	// Commands
-	Cache          CacheCmd          `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
-	Console        ConsoleCmd        `kong:"cmd,help='Open AWS Console using specificed AWS role/profile'"`
-	Default        DefaultCmd        `kong:"cmd,hidden,default='1'"` // list command without args
-	Eval           EvalCmd           `kong:"cmd,help='Print AWS environment vars for use with eval $(aws-sso eval ...)'"`
-	Exec           ExecCmd           `kong:"cmd,help='Execute command using specified IAM role in a new shell'"`
-	Flush          FlushCmd          `kong:"cmd,help='Flush AWS SSO/STS credentials from cache'"`
-	List           ListCmd           `kong:"cmd,help='List all accounts / roles (default command)'"`
-	Login          LoginCmd          `kong:"cmd,help='Login to AWS SSO'"`
-	Logout         LogoutCmd         `kong:"cmd,help='Logout from AWS SSO and invalidate all credentials'"`
-	Process        ProcessCmd        `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
-	Static         StaticCmd         `kong:"cmd,hidden,help='Manage static AWS API credentials'"`
-	Tags           TagsCmd           `kong:"cmd,help='List tags'"`
-	Time           TimeCmd           `kong:"cmd,help='Print how much time before current STS Token expires'"`
-	Completions    CompleteCmd       `kong:"cmd,help='Manage shell completions'"`
-	ConfigProfiles ConfigProfilesCmd `kong:"cmd,help='Update ~/.aws/config with AWS SSO profiles from the cache'"`
-	Config         ConfigCmd         `kong:"cmd,help='Run the configuration wizard'"`
-	Ecs            EcsCmd            `kong:"cmd,help='ECS Server commands'"`
-	Version        VersionCmd        `kong:"cmd,help='Print version and exit'"`
+	Cache   CacheCmd   `kong:"cmd,help='Update cached AWS SSO role info'"`
+	Console ConsoleCmd `kong:"cmd,help='Open AWS Console using specificed AWS role/profile'"`
+	Default DefaultCmd `kong:"cmd,hidden,default='1'"` // list command without args
+	Eval    EvalCmd    `kong:"cmd,help='Print AWS environment vars for use with eval $(aws-sso eval ...)'"`
+	Exec    ExecCmd    `kong:"cmd,help='Execute command using specified IAM role in a new shell'"`
+	Flush   FlushCmd   `kong:"cmd,help='Flush AWS SSO/STS credentials from cache'"`
+	List    ListCmd    `kong:"cmd,help='List all accounts / roles (default command)'"`
+	Login   LoginCmd   `kong:"cmd,help='Login to AWS SSO'"`
+	Logout  LogoutCmd  `kong:"cmd,help='Logout from AWS SSO and invalidate all credentials'"`
+	Process ProcessCmd `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
+	Static  StaticCmd  `kong:"cmd,hidden,help='Manage static AWS API credentials'"`
+	Tags    TagsCmd    `kong:"cmd,help='List tags'"`
+	Time    TimeCmd    `kong:"cmd,help='Print how much time before current STS Token expires'"`
+	Setup   SetupCmd   `kong:"cmd,help='Setup aws-sso'"`
+	Ecs     EcsCmd     `kong:"cmd,help='ECS Server commands'"`
+	Version VersionCmd `kong:"cmd,help='Print version and exit'"`
 }
 
 func main() {
@@ -159,8 +158,9 @@ func main() {
 	}
 
 	runCtx := RunContext{
-		Kctx: ctx,
-		Cli:  &cli,
+		Kctx:     ctx,
+		Cli:      &cli,
+		Override: override,
 	}
 
 	switch ctx.Command() {
@@ -176,10 +176,16 @@ func main() {
 
 	if _, err := os.Stat(cli.ConfigFile); errors.Is(err, os.ErrNotExist) {
 		log.Warnf("No config file found!  Will now prompt you for a basic config...")
-		if err = setupWizard(&runCtx, false, false, runCtx.Cli.Config.Advanced); err != nil {
-			log.Fatalf("%s", err.Error())
+		setup := SetupAllCmd{}
+		runCtx.Cli.Setup.Wizard.Reconfig = false
+		runCtx.Cli.Setup.AwsConfig.Diff = true
+
+		if err = setup.Run(&runCtx); err != nil {
+			return
 		}
-		if ctx.Command() == "config" {
+
+		switch ctx.Command() {
+		case "setup", "setup all", "setup wizard", "setup shell", "setup aws-config", "login":
 			// we're done.
 			return
 		}
@@ -190,15 +196,15 @@ func main() {
 	cacheFile := utils.GetHomePath(INSECURE_CACHE_FILE)
 
 	if runCtx.Settings, err = sso.LoadSettings(cli.ConfigFile, cacheFile, DEFAULT_CONFIG, override); err != nil {
-		log.Fatalf("%s", err.Error())
+		log.Fatalf("unable to load settings: %s", err.Error())
 	}
 
 	switch ctx.Command() {
-	case "ecs run":
+	case "ecs run", "setup wizard", "setup all":
 		break // do nothing
 
 	case "login", "ecs list", "ecs unload", "ecs profile":
-		// Initialize our AwsSSO variable & SecureStore
+		// Initialize our AwsSSO variable & SecureStore, but don't do any auth
 		c := &runCtx
 		s, err := c.Settings.GetSelectedSSO(c.Cli.SSO)
 		if err != nil {
@@ -208,7 +214,7 @@ func main() {
 		loadSecureStore(c)
 		AwsSSO = sso.NewAWSSSO(s, &c.Store)
 
-	default: // includes "ecs load"
+	default: // includes "ecs load", "setup shell" & "setup aws-config"
 		// make sure we have authenticated via AWS SSO and init SecureStore
 		loadSecureStore(&runCtx)
 		if !checkAuth(&runCtx) {
