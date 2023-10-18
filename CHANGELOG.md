@@ -1,5 +1,12 @@
 # AWS SSO CLI Changelog
 
+## v2.beta 
+
+### Changes
+
+* Remove `config`, `config-profiles` and `completions` commands
+    and replace with `setup`
+
 ## [Unreleased]
 
 ### Bugs 
