@@ -19,6 +19,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ vars.GO_VERSION }}
+
       - name: Run Makefile
         run: |
           make package
@@ -41,6 +46,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ vars.GO_VERSION }}
 
       - name: Run Makefile
         run: |
