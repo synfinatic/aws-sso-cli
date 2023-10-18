@@ -327,3 +327,30 @@ func SSOAuthAction(action Action) Action {
 	}
 	return action
 }
+
+const AWS_FEDERATED_URL_FORMAT = "https://%s.signin.%s/federation"
+
+// AWSFederatedUrl generates the region/partition specific URL for the AWS
+// Federated endpoint for IAM Identity Center
+// https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_enable-console-custom-url.html
+func AWSFederatedUrl(ssoRegion string) string {
+	if strings.HasPrefix(ssoRegion, "cn-") {
+		// china
+		return fmt.Sprintf(AWS_FEDERATED_URL_FORMAT, ssoRegion, "amazonaws.com.cn")
+	} else if strings.HasPrefix(ssoRegion, "us-gov-") {
+		// US Gov
+		return fmt.Sprintf(AWS_FEDERATED_URL_FORMAT, ssoRegion, "amazonaws-us-gov.com")
+	}
+	// Default
+	return fmt.Sprintf(AWS_FEDERATED_URL_FORMAT, ssoRegion, "aws.amazon.com")
+}
+
+// AWSConsoleUrl generates the partition specific URL for the AWS Console
+func AWSConsoleUrl(ssoRegion, region string) string {
+	if strings.HasPrefix(ssoRegion, "cn-") {
+		return fmt.Sprintf("https://console.amazonaws.cn/console/home?region=%s", region)
+	} else if strings.HasPrefix(ssoRegion, "us-gov-") {
+		return fmt.Sprintf("https://console.amazonaws-us-gov.com/console/home?region=%s", region)
+	}
+	return fmt.Sprintf("https://console.aws.amazon.com/console/home?region=%s", region)
+}

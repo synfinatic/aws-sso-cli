@@ -261,3 +261,25 @@ func TestSSOAuthAction(t *testing.T) {
 	assert.Equal(t, a, SSOAuthAction(GrantedContainer))
 	assert.Equal(t, a, SSOAuthAction(OpenUrlContainer))
 }
+
+func TestAWSFederatedUrl(t *testing.T) {
+	u := AWSFederatedUrl("us-east-1")
+	assert.Equal(t, u, "https://us-east-1.signin.aws.amazon.com/federation")
+
+	u = AWSFederatedUrl("cn-north-1")
+	assert.Equal(t, u, "https://cn-north-1.signin.amazonaws.com.cn/federation")
+
+	u = AWSFederatedUrl("us-gov-east-1")
+	assert.Equal(t, u, "https://us-gov-east-1.signin.amazonaws-us-gov.com/federation")
+}
+
+func TestAWSConsoleUrl(t *testing.T) {
+	u := AWSConsoleUrl("cn-north-1", "cn-northwest-1")
+	assert.Equal(t, u, "https://console.amazonaws.cn/console/home?region=cn-northwest-1")
+
+	u = AWSConsoleUrl("us-gov-east-1", "us-gov-west-1")
+	assert.Equal(t, u, "https://console.amazonaws-us-gov.com/console/home?region=us-gov-west-1")
+
+	u = AWSConsoleUrl("us-east-1", "us-west-2")
+	assert.Equal(t, u, "https://console.aws.amazon.com/console/home?region=us-west-2")
+}

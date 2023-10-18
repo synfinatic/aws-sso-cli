@@ -2,9 +2,14 @@
 
 ## [Unreleased]
 
-### Bugs 
+### Bugs
 
- * Fix `console` command when accessing China #634
+ * Fix `console` command when accessing China/US Gov #634
+
+### Changes
+
+ * Now use region/partition specific API Endpoint when retrieving AWS Console URLs from
+    IAM Identity Center #634
 
 ## [v1.14.1] - 2023-10-17
 
@@ -46,7 +51,7 @@
  * ECS Server now includes `RoleArn` in output #561
  * Fix selection of default browser in advanced guided setup #563
 
-### Changes 
+### Changes
 
  * ECS Server API is now more RESTful and fully document the API
  * Default profile `AWS_CONTAINER_CREDENTIALS_FULL_URI` is now `http://localhost:4144/`

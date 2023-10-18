@@ -41,8 +41,6 @@ import (
 	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
-const AWS_FEDERATED_URL_FORMAT = "https://%s.signin.aws.amazon.com/federation"
-
 type ConsoleCmd struct {
 	// Console actually should honor the --region flag
 	Duration int32  `kong:"short='d',help='AWS Session duration in minutes (default 60)'"` // default stored in DEFAULT_CONFIG
@@ -282,6 +280,7 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials,
 	loginResponse := LoginResponse{}
 	err = json.Unmarshal(body, &loginResponse)
 	if err != nil {
+		log.Tracef("LoginResponse body: %s", body)
 		return fmt.Errorf("Error parsing Login response: %s", err.Error())
 	}
 
@@ -294,7 +293,7 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials,
 	login := LoginUrlParams{
 		SsoRegion:   AwsSSO.SsoRegion,
 		Issuer:      issuer,
-		Destination: fmt.Sprintf("https://console.aws.amazon.com/console/home?region=%s", region),
+		Destination: url.AWSConsoleUrl(AwsSSO.SsoRegion, region),
 		SigninToken: loginResponse.SigninToken,
 	}
 
@@ -332,7 +331,7 @@ type SigninTokenUrlParams struct {
 
 func (stup *SigninTokenUrlParams) GetUrl() string {
 	return fmt.Sprintf("%s?Action=getSigninToken&SessionDuration=%d&Session=%s",
-		fmt.Sprintf(AWS_FEDERATED_URL_FORMAT, stup.SsoRegion), stup.SessionDuration, stup.Session.Encode())
+		url.AWSFederatedUrl(stup.SsoRegion), stup.SessionDuration, stup.Session.Encode())
 }
 
 type SessionUrlParams struct {
@@ -355,6 +354,6 @@ type LoginUrlParams struct {
 
 func (lup *LoginUrlParams) GetUrl() string {
 	return fmt.Sprintf("%s?Action=login&Issuer=%s&Destination=%s&SigninToken=%s",
-		fmt.Sprintf(AWS_FEDERATED_URL_FORMAT, lup.SsoRegion), lup.Issuer, lup.Destination,
+		url.AWSFederatedUrl(lup.SsoRegion), lup.Issuer, lup.Destination,
 		lup.SigninToken)
 }
