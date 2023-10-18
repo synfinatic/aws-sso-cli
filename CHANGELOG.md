@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Bugs 
+
+ * Fix `console` command when accessing China #634
+
 ## [v1.14.1] - 2023-10-17
 
 ### Bugs

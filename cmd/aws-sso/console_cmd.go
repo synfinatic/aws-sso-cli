@@ -41,7 +41,7 @@ import (
 	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
-const AWS_FEDERATED_URL = "https://signin.aws.amazon.com/federation"
+const AWS_FEDERATED_URL_FORMAT = "https://%s.signin.aws.amazon.com/federation"
 
 type ConsoleCmd struct {
 	// Console actually should honor the --region flag
@@ -255,6 +255,7 @@ func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role stri
 func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials,
 	duration int32, region string, accountId int64, role string) error {
 	signin := SigninTokenUrlParams{
+		SsoRegion:       AwsSSO.SsoRegion,
 		SessionDuration: duration * 60,
 		Session: SessionUrlParams{
 			AccessKeyId:     creds.AccessKeyId,
@@ -291,6 +292,7 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials,
 	issuer := sso.StartUrl
 
 	login := LoginUrlParams{
+		SsoRegion:   AwsSSO.SsoRegion,
 		Issuer:      issuer,
 		Destination: fmt.Sprintf("https://console.aws.amazon.com/console/home?region=%s", region),
 		SigninToken: loginResponse.SigninToken,
@@ -323,13 +325,14 @@ type LoginResponse struct {
 }
 
 type SigninTokenUrlParams struct {
+	SsoRegion       string
 	SessionDuration int32
 	Session         SessionUrlParams // URL encoded SessionUrlParams
 }
 
 func (stup *SigninTokenUrlParams) GetUrl() string {
 	return fmt.Sprintf("%s?Action=getSigninToken&SessionDuration=%d&Session=%s",
-		AWS_FEDERATED_URL, stup.SessionDuration, stup.Session.Encode())
+		fmt.Sprintf(AWS_FEDERATED_URL_FORMAT, stup.SsoRegion), stup.SessionDuration, stup.Session.Encode())
 }
 
 type SessionUrlParams struct {
@@ -344,6 +347,7 @@ func (sup *SessionUrlParams) Encode() string {
 }
 
 type LoginUrlParams struct {
+	SsoRegion   string
 	Issuer      string
 	Destination string
 	SigninToken string
@@ -351,6 +355,6 @@ type LoginUrlParams struct {
 
 func (lup *LoginUrlParams) GetUrl() string {
 	return fmt.Sprintf("%s?Action=login&Issuer=%s&Destination=%s&SigninToken=%s",
-		AWS_FEDERATED_URL, lup.Issuer, lup.Destination,
+		fmt.Sprintf(AWS_FEDERATED_URL_FORMAT, lup.SsoRegion), lup.Issuer, lup.Destination,
 		lup.SigninToken)
 }
