@@ -63,7 +63,7 @@ UrlAction: print
 FirefoxOpenUrlInContainer: true
 SecureStore: json
 JsonStore: ./testdata/store.json
-ProfileFormat: "{{.AccountName}}/{{.RoleName}}"
+ProfileFormat: '{{.AccountName}}/{{.RoleName}}'
 AccountPrimaryTag:
   - AccountAlias
 ConfigUrlAction: open
