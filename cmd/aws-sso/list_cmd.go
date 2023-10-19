@@ -36,7 +36,6 @@ type ListCmd struct {
 	CSV        bool     `kong:"help='Generate CSV instead of a table',xor='listfields'"`
 	Prefix     string   `kong:"short='P',help='Filter based on the <FieldName>=<Prefix>'"`
 	Fields     []string `kong:"optional,arg,help='Fields to display',env='AWS_SSO_FIELDS',predictor='fieldList',xor='listfields'"`
-	NoCache    bool     `kong:"help='Do not use cache'"`
 	Sort       string   `kong:"short='s',help='Sort results by the <FieldName>',default='AccountId',env='AWS_SSO_FIELD_SORT',predictor='fieldList'"`
 	Reverse    bool     `kong:"help='Reverse sort results',env='AWS_SSO_FIELD_SORT_REVERSE'"`
 }
@@ -53,13 +52,6 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 	if ctx.Cli.List.ListFields {
 		listAllFields()
 		return nil
-	}
-
-	if ctx.Cli.List.NoCache {
-		c := &CacheCmd{}
-		if err = c.Run(ctx); err != nil {
-			return err
-		}
 	}
 
 	if ctx.Cli.List.Prefix != "" {
