@@ -4,8 +4,11 @@
 
 ### Changes
 
+ * Require running `aws-sso login`.  No more auto-login.  #291
  * Remove `config`, `config-profiles` and `completions` commands
     and replace with `setup`
+ * Remove `--no-cache` flag
+ * New default [ProfileFormat](docs/config.md#ProfileFormat) uses AccountAlias instead of AccountId
 
 ## [v1.14.3] - 2024-01-15
 
