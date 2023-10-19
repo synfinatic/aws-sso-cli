@@ -34,9 +34,6 @@ import (
 	"github.com/synfinatic/gotable"
 )
 
-// Note: the Profile template uses the struct field names, not the header names!
-const DEFAULT_PROFILE_TEMPLATE = "{{.AccountIdPad}}:{{.RoleName}}"
-
 // main struct holding all our Roles discovered via AWS SSO and
 // via the config.yaml
 type Roles struct {
@@ -351,7 +348,7 @@ func (r *AWSRoleFlat) ExpiresIn() (string, error) {
 }
 
 // RoleProfile returns either the user-defined Profile value for the role from
-// the config.yaml or the generated Profile using the ProfileFormat template
+// the config.yaml
 func (r *AWSRoleFlat) ProfileName(s *Settings) (string, error) {
 	if len(r.Profile) > 0 {
 		return r.Profile, nil
@@ -359,7 +356,7 @@ func (r *AWSRoleFlat) ProfileName(s *Settings) (string, error) {
 
 	format := s.ProfileFormat
 	if len(format) == 0 {
-		format = DEFAULT_PROFILE_TEMPLATE
+		return "", fmt.Errorf("set ProfileFormat in your ~/.aws-sso/config.yaml")
 	}
 
 	// our custom functions

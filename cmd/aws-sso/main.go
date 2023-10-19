@@ -98,7 +98,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"ListFields":                                DEFAULT_LIST_FIELDS,
 	"MaxBackoff":                                5, // seconds
 	"MaxRetry":                                  10,
-	"ProfileFormat":                             sso.DEFAULT_PROFILE_TEMPLATE,
+	"ProfileFormat":                             DEFAULT_PROFILE_FORMAT,
 	"UrlAction":                                 "open",
 	"LogLevel":                                  "warn",
 	"Threads":                                   5,
