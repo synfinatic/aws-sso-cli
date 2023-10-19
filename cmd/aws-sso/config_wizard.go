@@ -37,8 +37,8 @@ import (
 const (
 	START_URL_FORMAT       = "https://%s/start"
 	START_FQDN_SUFFIX      = ".awsapps.com"
-	NICE_PROFILE_FORMAT    = "{{ FirstItem .AccountName (.AccountAlias | nospace) }}:{{ .RoleName }}"
-	DEFAULT_PROFILE_FORMAT = "{{ .AccountIdPad }}:{{ .RoleName }}"
+	DEFAULT_PROFILE_FORMAT = "{{ FirstItem .AccountName (.AccountAlias | nospace) }}:{{ .RoleName }}"
+	OLD_PROFILE_FORMAT     = "{{ .AccountIdPad }}:{{ .RoleName }}"
 )
 
 type selectOptions struct {
@@ -636,12 +636,12 @@ func promptProfileFormat(value string) string {
 
 	items := []selectOptions{
 		{
-			Name:  fmt.Sprintf("Default:\t%s", DEFAULT_PROFILE_FORMAT),
+			Name:  fmt.Sprintf("Recommended:\t%s", DEFAULT_PROFILE_FORMAT),
 			Value: DEFAULT_PROFILE_FORMAT,
 		},
 		{
-			Name:  fmt.Sprintf("Friendly:\t%s", NICE_PROFILE_FORMAT),
-			Value: NICE_PROFILE_FORMAT,
+			Name:  fmt.Sprintf("Old default:\t%s", OLD_PROFILE_FORMAT),
+			Value: OLD_PROFILE_FORMAT,
 		},
 	}
 

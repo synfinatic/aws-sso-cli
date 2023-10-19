@@ -44,6 +44,7 @@ func TestAwsConfigFile(t *testing.T) {
 
 func TestGetProfileMap(t *testing.T) {
 	s := &sso.Settings{
+		ProfileFormat: "{{ .AccountId }}:{{ .RoleName }}",
 		Cache: &sso.Cache{
 			SSO: map[string]*sso.SSOCache{
 				"Default": {
@@ -96,6 +97,7 @@ func TestGetProfileMap(t *testing.T) {
 
 func TestPrintAwsConfig(t *testing.T) {
 	s := &sso.Settings{
+		ProfileFormat: "{{ .AccountIdPad }}:{{ .RoleName }}",
 		Cache: &sso.Cache{
 			SSO: map[string]*sso.SSOCache{
 				"Default": {
@@ -165,6 +167,7 @@ func TestPrintAwsConfig(t *testing.T) {
 
 func TestUpdateAwsConfig(t *testing.T) {
 	s := &sso.Settings{
+		ProfileFormat: "{{ .AccountIdPad }}:{{ .RoleName }}",
 		Cache: &sso.Cache{
 			SSO: map[string]*sso.SSOCache{
 				"Default": {
