@@ -336,7 +336,7 @@ const AWS_FEDERATED_URL_FORMAT = "https://%s.signin.%s/federation"
 func AWSFederatedUrl(ssoRegion string) string {
 	if strings.HasPrefix(ssoRegion, "cn-") {
 		// china
-		return fmt.Sprintf(AWS_FEDERATED_URL_FORMAT, ssoRegion, "amazonaws.com.cn")
+		return fmt.Sprintf(AWS_FEDERATED_URL_FORMAT, ssoRegion, "amazonaws.cn")
 	} else if strings.HasPrefix(ssoRegion, "us-gov-") {
 		// US Gov
 		return fmt.Sprintf(AWS_FEDERATED_URL_FORMAT, ssoRegion, "amazonaws-us-gov.com")
