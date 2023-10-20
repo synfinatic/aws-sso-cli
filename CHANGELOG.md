@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v1.14.2] - 2023-10-19
+
 ### Bugs
 
  * Fix `console` command when accessing China/US Gov #634
@@ -629,7 +631,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.14.1...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.14.2...main
+[v1.14.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.14.2
 [v1.14.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.14.1
 [v1.14.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.14.0
 [v1.13.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.13.0
