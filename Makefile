@@ -64,7 +64,7 @@ uninstall:  ## Uninstall binary from $INSTALL_PREFIX
 	rm $(INSTALL_PREFIX)/bin/$(PROJECT_NAME)
 
 release-brew:  ## Create a PR against homebrew to bump the version 
-	brew bump-formula-pr --version $(PROJECT_VERSION) aws-sso-cli
+	brew update && brew bump-formula-pr --version $(PROJECT_VERSION) aws-sso-cli
 
 release-tag:  ## Tag our current HEAD as v$(PROJECT_VERSION)
 	git tag -sa v$(PROJECT_VERSION) -m 'release $(PROJECT_VERSION)'
