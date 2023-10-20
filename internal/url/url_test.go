@@ -21,6 +21,8 @@ package url
 import (
 	"bytes"
 	"fmt"
+	"net"
+	"net/url"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -260,4 +262,50 @@ func TestSSOAuthAction(t *testing.T) {
 	a, _ = NewAction("open")
 	assert.Equal(t, a, SSOAuthAction(GrantedContainer))
 	assert.Equal(t, a, SSOAuthAction(OpenUrlContainer))
+}
+
+func TestAWSFederatedUrl(t *testing.T) {
+	u := AWSFederatedUrl("us-east-1")
+	assert.Equal(t, u, "https://us-east-1.signin.aws.amazon.com/federation")
+	pUrl, err := url.Parse(u)
+	assert.NoError(t, err)
+	_, err = net.LookupIP(pUrl.Hostname())
+	assert.NoError(t, err)
+
+	u = AWSFederatedUrl("cn-north-1")
+	assert.Equal(t, u, "https://cn-north-1.signin.amazonaws.cn/federation")
+	pUrl, err = url.Parse(u)
+	assert.NoError(t, err)
+	_, err = net.LookupIP(pUrl.Hostname())
+	assert.NoError(t, err)
+
+	u = AWSFederatedUrl("us-gov-east-1")
+	assert.Equal(t, u, "https://us-gov-east-1.signin.amazonaws-us-gov.com/federation")
+	pUrl, err = url.Parse(u)
+	assert.NoError(t, err)
+	_, err = net.LookupIP(pUrl.Hostname())
+	assert.NoError(t, err)
+}
+
+func TestAWSConsoleUrl(t *testing.T) {
+	u := AWSConsoleUrl("cn-north-1", "cn-northwest-1")
+	assert.Equal(t, u, "https://console.amazonaws.cn/console/home?region=cn-northwest-1")
+	pUrl, err := url.Parse(u)
+	assert.NoError(t, err)
+	_, err = net.LookupIP(pUrl.Hostname())
+	assert.NoError(t, err)
+
+	u = AWSConsoleUrl("us-gov-east-1", "us-gov-west-1")
+	assert.Equal(t, u, "https://console.amazonaws-us-gov.com/console/home?region=us-gov-west-1")
+	pUrl, err = url.Parse(u)
+	assert.NoError(t, err)
+	_, err = net.LookupIP(pUrl.Hostname())
+	assert.NoError(t, err)
+
+	u = AWSConsoleUrl("us-east-1", "us-west-2")
+	assert.Equal(t, u, "https://console.aws.amazon.com/console/home?region=us-west-2")
+	pUrl, err = url.Parse(u)
+	assert.NoError(t, err)
+	_, err = net.LookupIP(pUrl.Hostname())
+	assert.NoError(t, err)
 }
