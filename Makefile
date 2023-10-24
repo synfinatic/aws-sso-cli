@@ -63,10 +63,13 @@ install: $(DIST_DIR)$(PROJECT_NAME)  ## install binary in $INSTALL_PREFIX
 uninstall:  ## Uninstall binary from $INSTALL_PREFIX
 	rm $(INSTALL_PREFIX)/bin/$(PROJECT_NAME)
 
-release-brew:  ## Create a PR against homebrew to bump the version 
+release-check:  ## check to see if we are ready to release
+	VERSION=v$(PROJECT_VERSION) ./scripts/release-check.sh
+
+release-brew: release-check  ## Create a PR against homebrew to bump the version
 	brew update && brew bump-formula-pr --version $(PROJECT_VERSION) aws-sso-cli
 
-release-tag:  ## Tag our current HEAD as v$(PROJECT_VERSION)
+release-tag: release-check  ## Tag our current HEAD as v$(PROJECT_VERSION)
 	git tag -sa v$(PROJECT_VERSION) -m 'release $(PROJECT_VERSION)'
 	git push --tags
 
@@ -87,13 +90,13 @@ package: linux linux-arm64  ## Build deb/rpm packages
 		-e VERSION=$(PROJECT_VERSION) aws-sso-cli-builder:latest
 
 tags: cmd/aws-sso/*.go sso/*.go internal/*/*.go internal/*/*/*.go ## Create tags file for vim, etc
-	@echo Make sure you have Go Tags installed: https://github.com/jstemmer/gotags 
+	@echo Make sure you have Go Tags installed: https://github.com/jstemmer/gotags
 	gotags -f tags -sort=true $$(find . -type f -name "*.go")
 
 
 .build-release: windows windows32 linux linux-arm64 darwin darwin-arm64
 
-.validate-release: ALL
+.validate-release: ALL release-check
 	@TAG=$$(./$(DIST_DIR)$(PROJECT_NAME) version 2>/dev/null | grep '(v$(PROJECT_VERSION))'); \
 		if test -z "$$TAG"; then \
 		echo "Build tag from does not match PROJECT_VERSION=v$(PROJECT_VERSION) in Makefile:" ; \
@@ -105,11 +108,11 @@ release: .validate-release .shasum clean .build-release package ## Build all our
 	cd dist && shasum -a 256 * | gpg --clear-sign >release.sig.asc
 
 .PHONY: run
-run: cmd/aws-sso/*.go sso/*.go ## build and run using $PROGRAM_ARGS
+run:  ## build and run using $PROGRAM_ARGS
 	go run ./cmd/aws-sso $(PROGRAM_ARGS)
 
 .PHONY: delve
-delve: cmd/aws-sso/*.go sso/*.go ## debug binary using $PROGRAM_ARGS
+delve: ## debug binary using $PROGRAM_ARGS
 	dlv debug ./cmd/aws-sso -- $(PROGRAM_ARGS)
 
 clean-all: clean ## clean _everything_
@@ -250,7 +253,7 @@ update-copyright:  ## Update the copyright year on *.go
 		sed -i '' -Ee "s|2021-${LAST_YEAR}|2021-${YEAR}|" $$(find . -name "*.go"))
 	@echo "Updated copyright to 2021-$$(date +%Y)"
 
-serve-docs:  ## Run mkdocs server on localhost:8000 
+serve-docs:  ## Run mkdocs server on localhost:8000
 	docker build -t synfinatic/mkdocs-material:latest -f Dockerfile.mkdocs .
 	docker run --rm \
 		-v $$(pwd):/docs \
