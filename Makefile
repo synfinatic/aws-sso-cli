@@ -63,14 +63,13 @@ install: $(DIST_DIR)$(PROJECT_NAME)  ## install binary in $INSTALL_PREFIX
 uninstall:  ## Uninstall binary from $INSTALL_PREFIX
 	rm $(INSTALL_PREFIX)/bin/$(PROJECT_NAME)
 
-release-check:  ## check to see if we are ready to release
+release-brew: ## Create a PR against homebrew to bump the version
 	VERSION=v$(PROJECT_VERSION) ./scripts/release-check.sh
-
-release-brew: release-check  ## Create a PR against homebrew to bump the version
 	brew update && brew bump-formula-pr --version $(PROJECT_VERSION) aws-sso-cli
 
-release-tag: release-check  ## Tag our current HEAD as v$(PROJECT_VERSION)
+release-tag: ## Tag our current HEAD as v$(PROJECT_VERSION)
 	git tag -sa v$(PROJECT_VERSION) -m 'release $(PROJECT_VERSION)'
+	VERSION=v$(PROJECT_VERSION) ./scripts/release-check.sh
 	git push --tags
 
 #DOWNLOAD_URL := https://synfin.net/misc/aws-sso-cli.$(PROJECT_VERSION).tar.gz
