@@ -70,7 +70,7 @@ require (
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.19.1
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.43
-	github.com/aws/aws-sdk-go-v2/service/iam v1.23.0
+	github.com/aws/aws-sdk-go-v2/service/iam v1.24.0
 	github.com/aws/aws-sdk-go-v2/service/sso v1.15.2
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.17.3
 	github.com/aws/aws-sdk-go-v2/service/sts v1.23.2
