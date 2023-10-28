@@ -106,15 +106,13 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 
 type CLI struct {
 	// Common Arguments
-	Browser       string `kong:"short='b',help='Path to browser to open URLs with',env='AWS_SSO_BROWSER'"`
-	ConfigFile    string `kong:"name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
-	LogLevel      string `kong:"short='L',name='level',help='Logging level [error|warn|info|debug|trace] (default: warn)'"`
-	Lines         bool   `kong:"help='Print line number in logs'"`
-	UrlAction     string `kong:"short='u',help='How to handle URLs [clip|exec|open|print|printurl|granted-containers|open-url-in-container] (default: open)'"`
-	SSO           string `kong:"short='S',help='Override default AWS SSO Instance',env='AWS_SSO',predictor='sso'"`
-	STSRefresh    bool   `kong:"help='Force refresh of STS Token Credentials'"`
-	NoConfigCheck bool   `kong:"help='Disable automatic ~/.aws/config updates'"`
-	Threads       int    `kong:"help='Override number of threads for talking to AWS'"`
+	Browser    string `kong:"short='b',help='Path to browser to open URLs with',env='AWS_SSO_BROWSER'"`
+	ConfigFile string `kong:"name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
+	LogLevel   string `kong:"short='L',name='level',help='Logging level [error|warn|info|debug|trace] (default: warn)'"`
+	Lines      bool   `kong:"help='Print line number in logs'"`
+	UrlAction  string `kong:"short='u',help='How to handle URLs [clip|exec|open|print|printurl|granted-containers|open-url-in-container] (default: open)'"`
+	SSO        string `kong:"short='S',help='Override default AWS SSO Instance',env='AWS_SSO',predictor='sso'"`
+	STSRefresh bool   `kong:"help='Force refresh of STS Token Credentials'"`
 
 	// Commands
 	Cache   CacheCmd   `kong:"cmd,help='Update cached AWS SSO role info'"`
@@ -295,12 +293,20 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 		log.Fatalf("Invalid --url-action %s", cli.UrlAction)
 	}
 
+	// only cache and login commands have `--threads` flag
+	threads := 0
+	if cli.Login.Threads > 0 {
+		threads = cli.Login.Threads
+	} else if cli.Cache.Threads > 0 {
+		threads = cli.Cache.Threads
+	}
+
 	override := sso.OverrideSettings{
 		Browser:    cli.Browser,
 		DefaultSSO: cli.SSO,
 		LogLevel:   cli.LogLevel,
 		LogLines:   cli.Lines,
-		Threads:    cli.Threads,
+		Threads:    threads,
 		UrlAction:  action,
 	}
 
