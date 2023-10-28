@@ -5,6 +5,9 @@
 ### Changes
 
  * Require running `aws-sso login`.  No more auto-login.  #291
+    * `login` does a quick cache invalidation check using the number of AWS Accounts #576
+ * `aws-sso` commands other than `cache` and `login` no longer can trigger a cache refresh or
+    update of `~/.aws/config` file
  * Remove `config`, `config-profiles` and `completions` commands
     and replace with `setup`
  * Remove `--no-cache` flag

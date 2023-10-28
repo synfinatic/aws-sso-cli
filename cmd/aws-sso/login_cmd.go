@@ -19,15 +19,54 @@ package main
  */
 
 import (
-	"github.com/synfinatic/aws-sso-cli/internal/awsconfig"
-	"github.com/synfinatic/aws-sso-cli/internal/url"
+	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
-type LoginCmd struct{}
+type LoginCmd struct {
+	NoConfigCheck bool `kong:"help='Disable automatic ~/.aws/config updates'"`
+	Threads       int  `kong:"help='Override number of threads for talking to AWS'"`
+}
 
 func (cc *LoginCmd) Run(ctx *RunContext) error {
 	doAuth(ctx)
+
+	log.Debugf("Checking the current active accounts vs. our cache")
+	ssoAccounts, err := AwsSSO.GetAccounts()
+	if err != nil {
+		return err
+	}
+
+	ssoName, err := ctx.Settings.GetSelectedSSOName(ctx.Cli.SSO)
+	if err != nil {
+		log.Fatalf("%s", err.Error())
+	}
+	cachedAccounts := ctx.Settings.Cache.SSO[ssoName].Roles.Accounts
+
+	delta := false
+	if len(ssoAccounts) == len(cachedAccounts) {
+		// make sure our cache has every account that SSO returns
+		for _, accountInfo := range ssoAccounts {
+			id, _ := utils.AccountIdToInt64(accountInfo.AccountId)
+			if _, ok := cachedAccounts[id]; !ok {
+				delta = true
+			}
+		}
+	} else {
+		delta = true
+	}
+
+	if delta {
+		log.Infof("The AWS Accounts you have access to has changed.  Updating cache...")
+		cache := CacheCmd{
+			NoConfigCheck: cc.NoConfigCheck,
+			Threads:       cc.Threads,
+		}
+		if err = cache.Run(ctx); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -58,35 +97,5 @@ func doAuth(ctx *RunContext) {
 	err := AwsSSO.Authenticate(ctx.Settings.UrlAction, ctx.Settings.Browser)
 	if err != nil {
 		log.WithError(err).Fatalf("Unable to authenticate")
-	}
-
-	s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
-	if err != nil {
-		log.Fatalf("%s", err.Error())
-	}
-
-	if err = ctx.Settings.Cache.Expired(s); err != nil {
-		ssoName, err := ctx.Settings.GetSelectedSSOName(ctx.Cli.SSO)
-		log.Infof("Refreshing AWS SSO role cache for %s, please wait...", ssoName)
-		if err != nil {
-			log.Fatalf(err.Error())
-		}
-		if err = ctx.Settings.Cache.Refresh(AwsSSO, s, ssoName); err != nil {
-			log.WithError(err).Fatalf("Unable to refresh cache")
-		}
-		if err = ctx.Settings.Cache.Save(true); err != nil {
-			log.WithError(err).Errorf("Unable to save cache")
-		}
-
-		// should we update our config??
-		if !ctx.Cli.NoConfigCheck && ctx.Settings.AutoConfigCheck {
-			if ctx.Settings.ConfigProfilesUrlAction != url.ConfigProfilesUndef {
-				action, _ := url.NewAction(string(ctx.Settings.ConfigProfilesUrlAction))
-				err := awsconfig.UpdateAwsConfig(ctx.Settings, action, "", true, false)
-				if err != nil {
-					log.Errorf("Unable to auto-update aws config file: %s", err.Error())
-				}
-			}
-		}
 	}
 }
