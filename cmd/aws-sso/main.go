@@ -120,7 +120,6 @@ type CLI struct {
 	Default DefaultCmd `kong:"cmd,hidden,default='1'"` // list command without args
 	Eval    EvalCmd    `kong:"cmd,help='Print AWS environment vars for use with eval $(aws-sso eval ...)'"`
 	Exec    ExecCmd    `kong:"cmd,help='Execute command using specified IAM role in a new shell'"`
-	Flush   FlushCmd   `kong:"cmd,help='Flush AWS SSO/STS credentials from cache'"`
 	List    ListCmd    `kong:"cmd,help='List all accounts / roles (default command)'"`
 	Login   LoginCmd   `kong:"cmd,help='Login to AWS SSO'"`
 	Logout  LogoutCmd  `kong:"cmd,help='Logout from AWS SSO and invalidate all credentials'"`

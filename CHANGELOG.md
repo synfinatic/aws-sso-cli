@@ -2,16 +2,22 @@
 
 ## [Unreleased]
 
-### Changes
+### New Features
 
  * Require running `aws-sso login`.  No more auto-login.  #291
-    * `login` does a quick cache invalidation check using the number of AWS Accounts #576
+ * `login` does a quick cache invalidation check using the AWS AccountIDs #576
+ * New default [ProfileFormat](docs/config.md#ProfileFormat) uses AccountAlias instead of AccountId
+
+### Changes
+
  * `aws-sso` commands other than `cache` and `login` no longer can trigger a cache refresh or
     update of `~/.aws/config` file
+
+### Removed Commands and Flags
  * Remove `config`, `config-profiles` and `completions` commands
     and replace with `setup`
- * Remove `--no-cache` flag
- * New default [ProfileFormat](docs/config.md#ProfileFormat) uses AccountAlias instead of AccountId
+ * Remove `flush` command.  Use `logout`
+ * Remove `--no-cache` fla
 
 ## [v1.14.2] - 2023-10-19
 
