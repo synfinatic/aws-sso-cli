@@ -17,7 +17,9 @@
  * Remove `config`, `config-profiles` and `completions` commands
     and replace with `setup`
  * Remove `flush` command.  Use `logout`
- * Remove `--no-cache` fla
+ * Remove `--no-cache` flag
+ * Remove `CacheRefresh` configuration option.  `aws-sso` will only update the cache
+    when you ask it to via `aws-sso cache`
 
 ## [v1.14.3] - 2024-01-15
 
@@ -134,7 +136,7 @@
 
 ### Changes
 
- * [CacheRefresh](docs/config.md#CacheRefresh) now defaults to 168 hours (7 days)
+ * `CacheRefresh` now defaults to 168 hours (7 days)
  * [FullTextSearch](docs/config.md#FullTextSearch) is enabled by default for interactive `list` mode.
  * [MaxRetry](docs/config.md#MaxRetry) defaults to 10
  * [MaxBackoff](docs/config.md#MaxBackoff) defaults to 5

@@ -686,31 +686,6 @@ func promptProfileFormat(value string) string {
 	return items[i].Value
 }
 
-func promptCacheRefresh(defaultValue int64) int64 {
-	var val string
-	var err error
-
-	fmt.Printf("\n")
-
-	label := "Hours between AWS SSO cache refresh. 0 to disable. (CacheRefresh)"
-	for val == "" {
-		prompt := promptui.Prompt{
-			Label:     label,
-			Validate:  validateInteger,
-			Default:   fmt.Sprintf("%d", defaultValue),
-			Pointer:   promptui.PipeCursor,
-			Templates: makePromptTemplate(label),
-		}
-
-		if val, err = prompt.Run(); err != nil {
-			checkPromptError(err)
-		}
-	}
-	val = strings.TrimSpace(val)
-	x, _ := strconv.ParseInt(val, 10, 64)
-	return x
-}
-
 func promptConfigProfilesUrlAction(
 	defaultValue url.ConfigProfilesAction, urlAction url.Action) url.ConfigProfilesAction {
 	var err error

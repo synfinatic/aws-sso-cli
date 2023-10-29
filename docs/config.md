@@ -36,7 +36,6 @@ SSOConfig:
 # See description below for these options
 DefaultRegion: <AWS_DEFAULT_REGION>
 DefaultSSO: <name of AWS SSO>
-CacheRefresh: <hours>
 AutoConfigCheck: [False|True]
 Threads: <integer>
 MaxRetry: <integer>
@@ -219,15 +218,6 @@ selected unless you manually specify it here, on the CLI (`--sso`), or via
 the `AWS_SSO` environment variable.
 
 ### SSO Cache Options
-
-#### CacheRefresh
-
-This is the number of hours between automatically refreshing your AWS SSO cache
-to detect any changes in the roles you have been granted access to.  The default
-is 168 (7 days).  Disable this feature by setting to any value <= 0.
-
-**Note:** If this feature is disabled, then [AutoConfigCheck](#autoconfigcheck)
-is also disabled.
 
 #### Threads
 
@@ -526,10 +516,6 @@ Specify which fields to display via the `list` command.  Valid options are:
  * `Via` -- Role Chain Via
 
 #### AutoConfigCheck
-
-When set to `True`, when your AWS SSO roles are automatically refreshed (see
-[CacheRefresh](#cacherefresh)) `aws-sso` will also check to see if any changes
-are warranted in your `~/.aws/config`.
 
 **Note:** This option requires you to also set 
 [ConfigProfilesUrlAction](#configprofilesurlaction).

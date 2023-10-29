@@ -50,19 +50,6 @@ func (cc *TagsCmd) Run(ctx *RunContext) error {
 		if err != nil {
 			log.WithError(err).Errorf("Unable to save cache")
 		}
-	} else {
-		s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
-		if err != nil {
-			return err
-		}
-
-		if err := set.Cache.Expired(s); err != nil {
-			log.Warn(err.Error())
-			c := &CacheCmd{}
-			if err = c.Run(ctx); err != nil {
-				return err
-			}
-		}
 	}
 	roles := []*sso.AWSRoleFlat{}
 
