@@ -40,13 +40,6 @@ func (ctx *RunContext) PromptExec(exec CompleterExec) error {
 	if err != nil {
 		return err
 	}
-	if err = ctx.Settings.Cache.Expired(sso); err != nil {
-		log.Infof(err.Error())
-		c := &CacheCmd{}
-		if err = c.Run(ctx); err != nil {
-			return err
-		}
-	}
 
 	sso.Refresh(ctx.Settings)
 	fmt.Printf("Please use `exit` or `Ctrl-D` to quit.\n")

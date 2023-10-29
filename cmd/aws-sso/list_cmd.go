@@ -45,7 +45,6 @@ var DEFAULT_LIST_FIELDS []string = []string{"AccountIdPad", "AccountAlias", "Rol
 
 // what should this actually do?
 func (cc *ListCmd) Run(ctx *RunContext) error {
-	var err error
 	var prefixSearch []string
 
 	// If `-f` then print our fields and exit
@@ -70,17 +69,6 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 		}
 	}
 
-	s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
-	if err != nil {
-		return err
-	}
-	if err = ctx.Settings.Cache.Expired(s); err != nil {
-		c := &CacheCmd{}
-		if err = c.Run(ctx); err != nil {
-			log.WithError(err).Errorf("Unable to refresh local cache")
-		}
-	}
-
 	fields := ctx.Settings.ListFields
 	if len(ctx.Cli.List.Fields) > 0 {
 		fields = ctx.Cli.List.Fields
@@ -100,19 +88,6 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 type DefaultCmd struct{}
 
 func (cc *DefaultCmd) Run(ctx *RunContext) error {
-	s, err := ctx.Settings.GetSelectedSSO("")
-	if err != nil {
-		return err
-	}
-
-	// update cache?
-	if err = ctx.Settings.Cache.Expired(s); err != nil {
-		c := &CacheCmd{}
-		if err = c.Run(ctx); err != nil {
-			log.WithError(err).Errorf("Unable to refresh local cache")
-		}
-	}
-
 	return printRoles(ctx, ctx.Settings.ListFields, false, []string{}, "AccountId", false)
 }
 

@@ -9,7 +9,7 @@ see how long your credentials have until they expire, see the [list command](com
 
 ### Why can't aws-sso find my new role?
 
-Most likely, this is because the aws-sso [cache](config.md#CacheRefresh) is out of
+Most likely, this is because the aws-sso cache is out of
 date.  You can force a refresh of the cache by running [aws-sso cache](commands.md#cache).
 
 Note, if you have just been assigned a new PermissionSet in IAM Identity Center, it
@@ -387,10 +387,7 @@ by not incurring the backoff delay penalty) or adjust the MaxRetry and/or
 ### Warning: Fetching roles for 46 accounts, this might take a while...
 
 Due to the AWS API and rate limits, users with many AWS Accounts may see
-this warning.  If this happens more often than is acceptable, you can
-set [CacheRefresh](config.md#CacheRefresh) to a higher value
-(cache roles for longer) or you can completely disable the auto-refresh of
-the cache by setting `CacheRefresh` to `0`.
+this warning.  
 
 --
 
