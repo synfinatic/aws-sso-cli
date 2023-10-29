@@ -271,7 +271,7 @@ hours, but you can force this data to be refreshed immediately.
 
 Flags:
 
- * `--no-config-check` -- Disable automatic `~/.aws/config` updates if the cache is refreshed 
+ * `--no-config-check` -- Disable automatic `~/.aws/config` updates if the cache is refreshed
  * `--threads <count>` -- Override the number of threads used to refresh the list of AWS SSO Roles
 
 ---
@@ -316,13 +316,13 @@ case-sensitive manner.
 Login via AWS IAM Identity Center (AWS SSO) and retrieve a security token
 used to fetch IAM Role credentials.
 
-As part of the login process, `aws-sso` will fetch a list of AWS Accounts 
+As part of the login process, `aws-sso` will fetch a list of AWS Accounts
 and compare that to the cached list.  If the AWS Accounts changes, it will
 force a [cache refresh](#cache) of the list of AWS Accounts and Roles.
 
 Flags:
 
- * `--no-config-check` -- Disable automatic `~/.aws/config` updates if the cache is refreshed 
+ * `--no-config-check` -- Disable automatic `~/.aws/config` updates if the cache is refreshed
  * `--threads <count>` -- Override the number of threads used to refresh the list of AWS SSO Roles
 
 ---
