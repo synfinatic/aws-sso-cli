@@ -2,24 +2,10 @@
 
 ## General Usage
 
-### How do I logout?
-
-There are two different kinds of AWS credentials that `aws-sso` deals with:
-
- 1. Your AWS IAM STS credentials for interacting with the AWS API
- 1. Your AWS SSO session tokens used to generate your AWS IAM STS credentials
-
-See the [flush command](commands.md#flush) for how to flush either or both of these.
-
 ### When will my credentials expire?
 
 Your credentials will expire based on how long your administrator allows. To
 see how long your credentials have until they expire, see the [list command](commands.md#list).
-
-### What happens when credentials expire?
-
-The next call to `aws-sso exec` or `aws-sso eval` will automatically refresh them
-as appropriate.
 
 ### Why can't aws-sso find my new role?
 
@@ -35,6 +21,7 @@ have to wait a few minutes.
 
 You can see what the AWS ListAccountRoles API is returning via `aws-sso cache -L debug`
 
+--
 
 ## Advanced Features
 
@@ -146,6 +133,8 @@ config.md#SSOCOnfig) blocks) then a few comments:
     https://github.com/synfinatic/aws-sso-cli/issues/382).  Instead you must
     first `export AWS_SSO=<name>` and then run the command.
 
+--
+
 ## Security
 
 ### How do I delete all secrets from the macOS keychain?
@@ -217,6 +206,8 @@ has changed.
 
 If you prefer the old way of building locally from source to avoid the warning
 you should use `brew install -s aws-sso-cli` or `brew upgrade -s aws-sso-cli`.
+
+--
 
 ## Profiles and Tags
 
@@ -341,6 +332,8 @@ roles in larger scale deployments with lots of AWS Accounts. AWS SSO CLI adds
 a number of tags by default for each role and a full list of tags can be viewed
 by using the [tags](commands.md#tags) command.
 
+--
+
 ## Errors and their meaning
 
 ### Error: Invalid grant provided
@@ -398,6 +391,8 @@ this warning.  If this happens more often than is acceptable, you can
 set [CacheRefresh](config.md#CacheRefresh) to a higher value
 (cache roles for longer) or you can completely disable the auto-refresh of
 the cache by setting `CacheRefresh` to `0`.
+
+--
 
 ## Misc
 
