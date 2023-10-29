@@ -200,7 +200,7 @@ func main() {
 	case "ecs run", "setup wizard", "setup all":
 		break // do nothing
 
-	case "login", "ecs list", "ecs unload", "ecs profile":
+	case "list", "login", "ecs list", "ecs unload", "ecs profile":
 		// Initialize our AwsSSO variable & SecureStore, but don't do any auth
 		c := &runCtx
 		s, err := c.Settings.GetSelectedSSO(c.Cli.SSO)
