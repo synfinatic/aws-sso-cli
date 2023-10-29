@@ -419,6 +419,8 @@ The version of the Docker Go SDK used by `aws-sso` is higher than the version su
 by your Docker daemon.  Run `export DOCKER_API_VERSION=1.45` (set the version
 appropriate based on the error message) to fix.
 
+--
+
 ## Misc
 
 ### What is the story with Homebrew support?

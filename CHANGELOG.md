@@ -5,6 +5,9 @@
 ### Changes
 
  * Now require `login` as a seperate step for better security #291
+ * Remove `flush` command.  Use `logout`
+ * `aws-sso` commands other than `cache` and `login` no longer can trigger a cache refresh without
+    update of `~/.aws/config` file
 
 ## [v1.17.0] - 2024-07-10
 

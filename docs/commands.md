@@ -322,34 +322,6 @@ used to fetch IAM Role credentials.
 Invalidates all AWS credentials with AWS for the selected SSO instance,
 including those in your browser session.
 
-If you only wish to remove the credentials from the `aws-sso` secure store, use
-the [flush](#flush) command.
-
----
-
-### flush
-
-Flush any cached AWS SSO/STS credentials.  By default, it only flushes the
-temporary STS IAM role credentials for the selected SSO instance.
-
-Flags:
-
- * `--type`, `-t` -- Type of credentials to flush:
-    * `sts` -- Flush temporary STS credentials for IAM roles
-    * `sso` -- Flush temporary AWS SSO credentials (deprecated)
-    * `all` -- Flush temporary STS and SSO credentials (deprecated)
-
-**Note:** Flushing non-expired SSO credentials will not cause new credentials to be issued
-on the next call to the AWS SSO API, but rather the existing credentials will be refreshed
-from the browser session.
-
-**Note:** Flushing credentials does not invalidate them with AWS.  If you wish
-to do that, use the [logout](#logout) command.
-
-**Note:** Flushing the `sso` credentials is deprecated.  In the future, this
-command will accept no arguments and only support flushing the STS credentials
-from the security store.  Use the [logout](#logout) command instead of `-t sso`.
-
 ---
 
 ### tags
@@ -405,7 +377,6 @@ the new version.  Once the new version is installed, `--uninstall-pre-19` will
 refuse to run so you will have to either manually edit the file or run
 `--uninstall`, then `--uninstall-pre-19` and finally `--install` again.
 
-
 ## Environment Variables
 
 ### Honored Variables
@@ -455,7 +426,6 @@ The following environment variables are specific to `aws-sso`:
  * `AWS_SSO_PROFILE` -- User customizable varible using the
     [ProfileFormat](config.md#profileformat) template
  * `AWS_SSO` -- AWS SSO instance name
-
 
 **Note:** AWS SSO does _NOT_ set `$AWS_PROFILE` to avoid problems with the AWS tooling
 and SDK.
