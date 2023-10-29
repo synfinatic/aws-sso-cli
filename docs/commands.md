@@ -268,6 +268,11 @@ hours, but you can force this data to be refreshed immediately.
 Cache data is also automatically updated anytime the `config.yaml` file is
 modified.
 
+Flags:
+
+ * `--no-config-check` -- Disable automatic `~/.aws/config` updates if the cache is refreshed
+ * `--threads <count>` -- Override the number of threads used to refresh the list of AWS SSO Roles
+
 ---
 
 ### list

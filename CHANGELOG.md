@@ -11,6 +11,7 @@
  * Update cache during login when relevant settings in the config.yaml changes #555
  * Add support for `$AWS_SHARED_CREDENTIALS_FILE` #914
  * Add support for `~/.config/aws-sso` #330
+ * Detect running the config wizard on remote hosts and limit UrlAction #757
 
 ### Changes
 
