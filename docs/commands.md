@@ -319,8 +319,8 @@ used to fetch IAM Role credentials.
 
 ### logout
 
-Invalidates all AWS credentials with AWS for the selected SSO instance,
-including those in your browser session.
+Invalidates the AWS Identity Center AccessToken (used to fetch new IAM Credentials)
+for the selected SSO instance and removes all IAM Role Credentials cached in the `aws-sso` secure store.
 
 ---
 

@@ -2,24 +2,10 @@
 
 ## General Usage
 
-### How do I logout?
-
-There are two different kinds of AWS credentials that `aws-sso` deals with:
-
- 1. Your AWS IAM STS credentials for interacting with the AWS API
- 1. Your AWS SSO session tokens used to generate your AWS IAM STS credentials
-
-See the [flush command](commands.md#flush) for how to flush either or both of these.
-
 ### When will my credentials expire?
 
 Your credentials will expire based on how long your administrator allows. To
 see how long your credentials have until they expire, see the [list command](commands.md#list).
-
-### What happens when credentials expire?
-
-The next call to `aws-sso exec` or `aws-sso eval` will automatically refresh them
-as appropriate.
 
 ### Why can't aws-sso find my new role?
 
@@ -28,12 +14,14 @@ date.  You can force a refresh of the cache by running [aws-sso cache](commands.
 
 Note, if you have just been assigned a new PermissionSet in IAM Identity Center, it
 tends to show up in the IAM Identity Center web console
-(https://xxxxx.awsapps.com/start) before it is made available to `aws-sso` via the
+(`https://xxxxx.awsapps.com/start`) before it is made available to `aws-sso` via the
 [ListAccountRoles](https://docs.aws.amazon.com/singlesignon/latest/PortalAPIReference/API_ListAccountRoles.html)
 API call.  Unfortunately, this seems to be a limitation with AWS and you just
 have to wait a few minutes.
 
 You can see what the AWS ListAccountRoles API is returning via `aws-sso cache -L debug`
+
+--
 
 ## Advanced Features
 
@@ -110,14 +98,14 @@ If you wish to use auto-complete with a different AWS SSO instance, you must
 first set the `AWS_SSO` environment variable in your shell:
 
 ```bash
-$ export AWS_SSO=OtherInstance
-$ aws-sso console ...
+export AWS_SSO=OtherInstance
+aws-sso console ...
 ```
 
 Note, the following shorter version of specifying it as a single command does not work:
 
 ```bash
-$ AWS_SSO=OtherInstance aws-sso console ...
+AWS_SSO=OtherInstance aws-sso console ...
 ```
 
 ### Firefox container color/icon doesn't change
@@ -159,6 +147,7 @@ The alternative is to run the [ECS Server](ecs-server.md) locally and then
 use [ssh port forwarding](remote-ssh.md) to make all the IAM credentials stored
 in the ECS Server which can then be available to any remote host you login to.
 
+--
 
 ## Security
 
@@ -231,6 +220,8 @@ has changed.
 
 If you prefer the old way of building locally from source to avoid the warning
 you should use `brew install -s aws-sso-cli` or `brew upgrade -s aws-sso-cli`.
+
+--
 
 ## Profiles and Tags
 
@@ -321,10 +312,9 @@ Some example `ProfileFormat` values:
     -- Use the Account Name if set, otherwise use the Account Alias (without spaces via
     [nospace](http://masterminds.github.io/sprig/strings.html#nospace))
     and then append a colon, followed by the IAM Role Name.
- * `'{{ kebabcase .AccountAlias }}:{{ .RoleName }}'
-	-- Reformat the AWS account alias like `AStringLikeThis` into
-	`a-string-like-this` using the [kebabcase function](
-	http://masterminds.github.io/sprig/strings.html#kebabcase).
+ * `'{{ kebabcase .AccountAlias }}:{{ .RoleName }}'`
+    -- Reformat the AWS account alias like `AStringLikeThis` into `a-string-like-this` using 
+    the [kebabcase function](http://masterminds.github.io/sprig/strings.html#kebabcase).
 
 For a full list of available variables and functions, see the
 [ProfileFormat config option](config.md#profileformat).
@@ -343,7 +333,6 @@ Their are two possible solutions:
  1. Don't include a space in the [AccountName](config.md#name)
  2. Strip/replace the space [via the ProfileFormat option](#how-to-configure-profileformat)
 
-
 ### What are the purpose of the Tags?
 
 Tags are key/value pairs that you can use to search for roles to assume when
@@ -354,6 +343,8 @@ the `Account` and `Role` levels.  These tags make it easier to manage many
 roles in larger scale deployments with lots of AWS Accounts. AWS SSO CLI adds
 a number of tags by default for each role and a full list of tags can be viewed
 by using the [tags](commands.md#tags) command.
+
+--
 
 ## Errors and their meaning
 
@@ -461,5 +452,3 @@ Occasionally, someone will ask about giving me a few bucks, but I really don't
 need any money.  If you still would like to throw a few bucks my way, I'd much
 rather you donate to [Second Harvest Food Bank](https://www.shfb.org/) which
 is local to me and could put your money to better work than I would.
-
-

@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-### Changes
+### New Features
 
  * Now require `login` as a seperate step for better security #291
  * Remove `flush` command.  Use `logout`
@@ -361,7 +361,7 @@
     `ConfigProfilesUrlAction` #387
  * Add support for Granted Containers Firefox plugin #400
  * `UrlAction` and `ConfigProfilesUrlAction` now support `open-url-in-container` and
-	`granted-containers`
+   granted-containers`
 
 ### Changes
 
@@ -407,6 +407,7 @@
  * `ConfigProfilesUrlAction` replaces `ConfigUrlAction`
 
 ### Deprecated
+
  * `ConfigUrlAction` option.  Will be automatically upgraded by
     the `aws-sso config` wizard.
 
@@ -528,6 +529,7 @@
 ## [v1.7.0] - 2022-01-09
 
 ### New Features
+
  * Add `Via` and `SSO` to possible `list` command output fields
  * Add `SSO` to list of valid ProfileFormat template variables
  * Improve ProfileFormat documentation
@@ -548,10 +550,12 @@
 ## [v1.6.1] - 2021-12-31
 
 ### New Features
+
  * The `Via` role option is now a searchable tag #199
  * The `tags` command now returns the keys in sorted order
 
 ### Bug Fixes
+
  * Consistently pad AccountID with zeros whenever necessary
  * Detect role chain loops using `Via` #194
  * AccountAlias/AccountName tags are inconsistenly applied/missing #201
@@ -561,29 +565,35 @@
  * cache now handles multiple AWS SSO Instances correctly which fixes numerous issues #219
 
 ### Changes
+
  * Reduce number of warnings #205
 
 ## [v1.6.0] - 2021-12-24
 
 ### Breaking Changes
+
  * Fix issue with missing colon in parsed/generated Role ARNs for missing AWS region #192
 
 ### New Features
+
  * Setup now prompts for `LogLevel`
  * Suppress bogus warning when saving Role credentials in `wincred` store #183
  * Add support for role chaining using `Via` tag #38
  * Cache file is now versioned for better compatibility across versions of `aws-sso` #195
 
 ### Bug Fixes
+
  * Incorrect `--level` value now correctly tells user the correct name of the flag
  * `exec` command now uses `cmd.exe` when no command is specified
 
 ## [v1.5.1] - 2021-12-15
 
 ### New Features
+
  * Setup now prompts for `HistoryMinutes` and `HistoryLimit`
 
 ### Bug Fixes
+
  * Setup now uses a smaller cursor which doesn't hide the character
  * Fix setup bug where the SSO Instance was always called `Default`
  * Setup no longer accepts invalid characters for strings #178
@@ -592,37 +602,43 @@
 ## [v1.5.0] - 2021-12-14
 
 ### New Features
+
  * Add `HistoryMinutes` option to limit history by time, not just count #139
 
 ### Changes
+
  * Now use macOS `login` Keychain instead of `AWSSSOCli` #150
  * All secure storage methods now store a single entry instead of multiple entries
  * Replace `console --use-sts` with `console --prompt` #169
  * Improve password prompting for file based keyring #171
 
 ### Bug Fixes
+
  * file keyring will no longer infinitely prompt for new password
 
 ## [v1.4.0] - 2021-11-25
 
 ### Breaking Changes
+
  * Standardize on `AWS_SSO` prefix for environment variables
  * Remove `--region` flag for `eval` and `exec` commands
  * `console -use-env` is now `console --use-sts` to be more clear
  * Building aws-sso now requires Go v1.17+
 
 ### New Features
+
  * Add a simple wizard to configure aws-sso on first run if no ~/.aws-sso/config.yaml
-	file exists
+   file exists
  * Update interactive selected item color schme to stand our better. #138
  * Add `eval --clear` and `eval --refresh`
  * Add full support for `DefaultRegion` in config.yaml
- * Add `--no-region` flag for `eval and `exec` commands
+ * Add `--no-region` flag for `eval` and `exec` commands
  * Add `process` command for AWS credential_process in ~/.aws/config #157
  * Add `ConsoleDuration` config option #159
  * Improve documentation of environment variables
 
 ### Bug Fixes
+
  * `exec` now updates the ENV vars of the forked processs rather than our own process
  * `eval` no longer prints URLs #145
  * Will no longer overwrite user defined AWS_DEFAULT_REGION #152
@@ -670,10 +686,10 @@
  * Rework how defaults are handled/settings loaded
  * Remove references to `duration` in config which don't do anything
  * Add additional config file options:
-	- UrlAction
-	- LogLevel
-	- LogLines
-	- DefaultSSO
+      * UrlAction
+      * LogLevel
+      * LogLines
+      * DefaultSSO
  * Replace `--print-url` with `--url-action` #81
  * Add support for `DefaultRegion` in config file  #30
  * `console` command now supports `--region`
