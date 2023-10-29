@@ -99,31 +99,6 @@ func (c *Cache) GetSSO() *SSOCache {
 	return c.SSO[c.ssoName]
 }
 
-// Expired returns if our Roles cache data is too old.
-// If configFile is a valid file, we check the lastModificationTime of that file
-// vs. the ConfigCreatedAt to determine if the cache needs to be updated
-func (c *Cache) Expired(s *SSOConfig) error {
-	if c.Version < CACHE_VERSION {
-		return fmt.Errorf("Local cache is out of date; current cache version %d is less than %d", c.Version, CACHE_VERSION)
-	}
-
-	// negative values disable refresh
-	if s.settings.CacheRefresh <= 0 {
-		return nil
-	}
-
-	ttl := s.settings.CacheRefresh * 60 * 60 // convert hours to seconds
-	cache := c.GetSSO()
-	if cache.LastUpdate+ttl < time.Now().Unix() {
-		return fmt.Errorf("Local cache is out of date; TTL has been exceeded.")
-	}
-
-	if s.CreatedAt() > c.ConfigCreatedAt {
-		return fmt.Errorf("Local cache is out of date; config.yaml modified.")
-	}
-	return nil
-}
-
 func (c *Cache) CacheFile() string {
 	return c.settings.cacheFile
 }

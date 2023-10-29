@@ -53,7 +53,6 @@ type Settings struct {
 	DefaultRegion             string                   `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
 	ConsoleDuration           int32                    `koanf:"ConsoleDuration" yaml:"ConsoleDuration,omitempty"`
 	JsonStore                 string                   `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
-	CacheRefresh              int64                    `koanf:"CacheRefresh" yaml:"CacheRefresh,omitempty"`
 	Threads                   int                      `koanf:"Threads" yaml:"Threads,omitempty"`
 	MaxBackoff                int                      `koanf:"MaxBackoff" yaml:"MaxBackoff,omitempty"`
 	MaxRetry                  int                      `koanf:"MaxRetry" yaml:"MaxRetry,omitempty"`
