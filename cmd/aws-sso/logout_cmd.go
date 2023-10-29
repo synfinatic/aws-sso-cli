@@ -34,10 +34,23 @@ func (cc *LogoutCmd) Run(ctx *RunContext) error {
 	}
 	awssso := sso.NewAWSSSO(s, &ctx.Store)
 
-	// this is what we do anyways
-	flushSso(ctx, awssso)
 	flushSts(ctx, awssso)
+	return awssso.Logout() // invalidate our AccessToken
+}
 
-	// Everything is gone
-	return nil
+// flushSts flushes our IAM STS Role credentials from the secure store
+func flushSts(ctx *RunContext, awssso *sso.AWSSSO) {
+	cache := ctx.Settings.Cache.GetSSO()
+	for _, role := range cache.Roles.GetAllRoles() {
+		if !role.IsExpired() {
+			if err := ctx.Store.DeleteRoleCredentials(role.Arn); err != nil {
+				log.WithError(err).Errorf("Unable to delete STS token for %s", role.Arn)
+			}
+		}
+	}
+	if err := ctx.Settings.Cache.MarkRolesExpired(); err != nil {
+		log.Errorf(err.Error())
+	} else {
+		log.Infof("Deleted cached AWS STS credentials for %s", awssso.StoreKey())
+	}
 }
