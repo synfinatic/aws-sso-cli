@@ -391,8 +391,6 @@ this warning.
 
 --
 
---
-
 ## Misc
 
 ### What is the story with Homebrew support?

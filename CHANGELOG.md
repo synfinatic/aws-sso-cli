@@ -18,7 +18,9 @@
  * Remove `config`, `config-profiles` and `completions` commands
     and replace with `setup`
  * Remove `flush` command.  Use `logout`
- * Remove `--no-cache` fla
+ * Remove `--no-cache` flag
+ * Remove `CacheRefresh` configuration option.  `aws-sso` will only update the cache
+    when you ask it to via `aws-sso cache`
 
 ## [Unreleased]
 
