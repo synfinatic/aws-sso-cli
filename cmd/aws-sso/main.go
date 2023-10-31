@@ -85,7 +85,6 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"PromptColors.SelectedSuggestionTextColor":  "White",
 	"PromptColors.SuggestionBGColor":            "Cyan",
 	"PromptColors.SuggestionTextColor":          "White",
-	"AutoConfigCheck":                           false,
 	"ConfigProfilesUrlAction":                   "open",
 	"ConsoleDuration":                           60,
 	"DefaultRegion":                             "us-east-1",

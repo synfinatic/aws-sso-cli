@@ -36,7 +36,6 @@ SSOConfig:
 # See description below for these options
 DefaultRegion: <AWS_DEFAULT_REGION>
 DefaultSSO: <name of AWS SSO>
-AutoConfigCheck: [False|True]
 Threads: <integer>
 MaxRetry: <integer>
 MaxBackoff: <integer>
@@ -327,6 +326,9 @@ https://docs.aws.amazon.com/singlesignon/latest/userguide/howtosessionduration.h
 
 #### ConfigProfilesUrlAction
 
+Setting `ConfigProfilesUrlAction` enables automatically updating your `~/.aws/config`
+file any time the list of IAM Roles you are given access to changes.
+
 This works just like `UrlAction` above, but is used for setting the default
 `--url-action` in your `~/.aws/config` when generating named AWS profiles for
 use with `$AWS_PROFILE` and the default value for the [config-profiles](
@@ -339,9 +341,6 @@ Due to limitations with the AWS SDK, only the following options are valid:
  * `open`
  * `granted-containers`
  * `open-url-in-container`
-
-**Note:** This option is required if you also want to use 
-[AutoConfigCheck](#autoconfigcheck).
 
 **Note:** This config option was previously known as `ConfigUrlAction` which
 has been deprecated.
@@ -514,18 +513,6 @@ Specify which fields to display via the `list` command.  Valid options are:
  * `RoleName` -- Role name
  * `SSO` -- AWS SSO instance name
  * `Via` -- Role Chain Via
-
-#### AutoConfigCheck
-
-**Note:** This option requires you to also set 
-[ConfigProfilesUrlAction](#configprofilesurlaction).
-
-**Note:** This option can be disabled temporarily on the command line by passing
-the `--no-config-check` flag.
-
-**Note:** If you are using a non-default path for your `~/.aws/config` file, then
-you must be sure to set the `AWS_CONFIG_FILE` environment variable to the correct
-path or disable this configuration option.
 
 #### LogLevel / LogLines
 

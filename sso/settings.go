@@ -56,7 +56,6 @@ type Settings struct {
 	Threads                   int                      `koanf:"Threads" yaml:"Threads,omitempty"`
 	MaxBackoff                int                      `koanf:"MaxBackoff" yaml:"MaxBackoff,omitempty"`
 	MaxRetry                  int                      `koanf:"MaxRetry" yaml:"MaxRetry,omitempty"`
-	AutoConfigCheck           bool                     `koanf:"AutoConfigCheck" yaml:"AutoConfigCheck,omitempty"`
 	FirefoxOpenUrlInContainer bool                     `koanf:"FirefoxOpenUrlInContainer" yaml:"FirefoxOpenUrlInContainer,omitempty"` // deprecated
 	UrlAction                 url.Action               `koanf:"UrlAction" yaml:"UrlAction"`
 	Browser                   string                   `koanf:"Browser" yaml:"Browser,omitempty"`

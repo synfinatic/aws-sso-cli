@@ -25,6 +25,7 @@
  * Remove `CacheRefresh` configuration option.  `aws-sso` will only update the cache
     when you ask it to via `aws-sso cache`
  * Remove `tags --force-update` flag
+ * Remove `AutoConfigCheck` configuration option.
 
 ## [v1.14.3] - 2024-01-15
 
