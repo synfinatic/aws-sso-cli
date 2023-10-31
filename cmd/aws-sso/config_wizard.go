@@ -582,30 +582,6 @@ func index(s []string, v string) int {
 	return 0
 }
 
-func promptAutoConfigCheck(flag bool) bool {
-	var i int = -1
-	var err error
-
-	fmt.Printf("\n")
-
-	label := "Auto update ~/.aws/config with latest AWS SSO roles? (AutoConfigCheck)"
-	for i < 0 {
-		sel := promptui.Select{
-			Label:        label,
-			Items:        yesNoItems,
-			CursorPos:    yesNoPos(flag),
-			HideSelected: false,
-			Stdout:       &utils.BellSkipper{},
-			Templates:    makeSelectTemplate(label),
-		}
-		if i, _, err = sel.Run(); err != nil {
-			checkSelectError(err)
-		}
-	}
-
-	return yesNoItems[i].Value == "Yes"
-}
-
 func promptFullTextSearch(flag bool) bool {
 	var i int = -1
 	var err error

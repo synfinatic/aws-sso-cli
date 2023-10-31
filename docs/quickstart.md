@@ -211,7 +211,7 @@ For more information about this feature, see the following sections of the confi
 docs:
 
  * [ProfileFormat](config.md#profileformat) and [Profile](config.md#profile)
- * [AutoConfigCheck / ConfigUrlAction](config.md#autoconfigcheck-configurlaction)
+ * [ConfigProfilesUrlAction](config.md#configprofilesurlaction)
  * [ConfigVariables](config.md#configvariables)
 
 
