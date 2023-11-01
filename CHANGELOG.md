@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Bugs
+
+ * No longer ignore the `--threads` CLI option
+
 ### New Features
 
  * Require running `aws-sso login`.  No more auto-login.  #291
@@ -20,6 +24,7 @@
  * Remove `--no-cache` flag
  * Remove `CacheRefresh` configuration option.  `aws-sso` will only update the cache
     when you ask it to via `aws-sso cache`
+ * Remove `tags --force-update` flag
 
 ## [v1.14.3] - 2024-01-15
 
