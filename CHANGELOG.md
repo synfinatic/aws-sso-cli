@@ -2,6 +2,10 @@
 
 ## v2.beta 
 
+### Bugs
+
+ * No longer ignore the `--threads` CLI option
+
 ### New Features
 
 * Remove `config`, `config-profiles` and `completions` commands
@@ -21,6 +25,7 @@
  * Remove `--no-cache` flag
  * Remove `CacheRefresh` configuration option.  `aws-sso` will only update the cache
     when you ask it to via `aws-sso cache`
+ * Remove `tags --force-update` flag
 
 ## [Unreleased]
 
