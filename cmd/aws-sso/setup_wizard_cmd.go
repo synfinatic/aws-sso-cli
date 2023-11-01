@@ -99,7 +99,6 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 			LogLevel:        "error",
 			DefaultRegion:   defaultRegion,
 			ConsoleDuration: 720,
-			AutoConfigCheck: false,
 			FullTextSearch:  true,
 			HistoryLimit:    10,
 			HistoryMinutes:  1440,
@@ -117,8 +116,6 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 	s.ProfileFormat = promptProfileFormat(s.ProfileFormat)
 
 	if advanced {
-		s.AutoConfigCheck = promptAutoConfigCheck(s.AutoConfigCheck)
-
 		// full text search?
 		s.FullTextSearch = promptFullTextSearch(s.FullTextSearch)
 

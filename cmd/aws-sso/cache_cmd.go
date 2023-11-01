@@ -53,13 +53,11 @@ func (cc *CacheCmd) Run(ctx *RunContext) error {
 	}
 
 	// should we update our config??
-	if !ctx.Cli.Cache.NoConfigCheck && ctx.Settings.AutoConfigCheck {
-		if ctx.Settings.ConfigProfilesUrlAction != url.ConfigProfilesUndef {
-			action, _ := url.NewAction(string(ctx.Settings.ConfigProfilesUrlAction))
-			err := awsconfig.UpdateAwsConfig(ctx.Settings, action, "", true, false)
-			if err != nil {
-				log.Errorf("Unable to auto-update aws config file: %s", err.Error())
-			}
+	if !ctx.Cli.Cache.NoConfigCheck && ctx.Settings.ConfigProfilesUrlAction != url.ConfigProfilesUndef {
+		action, _ := url.NewAction(string(ctx.Settings.ConfigProfilesUrlAction))
+		err := awsconfig.UpdateAwsConfig(ctx.Settings, action, "", true, false)
+		if err != nil {
+			log.Errorf("Unable to auto-update aws config file: %s", err.Error())
 		}
 	}
 
