@@ -381,7 +381,6 @@ By default, `ProfileFormat` is set to `{{ .AccountIdPad }}:{{ .RoleName }}`.
 AWS SSO CLI uses [sprig](http://masterminds.github.io/sprig/) for most of its
 functions, but a few custom functions are available:
 
- * `AccountIdStr(x)` -- Converts the `.AccountId` variable to a string.  Deprecated.  Use `.AccountIdPad` variable instead.
  * `EmptyString(x)` -- Returns true/false if the value `x` is an empty string
  * `FirstItem([]x)` -- Returns the first item in a list that is not an empty string
  * `StringsJoin(x, []y)` -- Joins the items in `y` with the string `x`
