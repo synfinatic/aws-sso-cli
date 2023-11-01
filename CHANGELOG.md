@@ -17,15 +17,22 @@
  * `aws-sso` commands other than `cache` and `login` no longer can trigger a cache refresh or
     update of `~/.aws/config` file
 
-### Removed Commands and Flags
+### Removed Commands, Config Options and Flags
  * Remove `config`, `config-profiles` and `completions` commands
     and replace with `setup`
- * Remove `flush` command.  Use `logout`
+ * Remove `flush` command.  Use `logout` instead
  * Remove `--no-cache` flag
  * Remove `CacheRefresh` configuration option.  `aws-sso` will only update the cache
     when you ask it to via `aws-sso cache`
  * Remove `tags --force-update` flag
  * Remove `AutoConfigCheck` configuration option.
+ * Remove references to all deprecated features:
+    * `AccountIdStr()` function for `ProfileFormat`.
+    * `AccountIdStr` field is replaced by `AccountIdPad` in `list` command and `ListFields` in config.yaml
+    * `ARN` field is replaced by `Arn` in `list` command and `ListFields` in config.yaml
+    * `ExpiresStr` field is replaced by `Expires` in `list` command and `ListFields` in config.yaml
+    * `FirefoxOpenUrlInContainer` config option 
+    * `ConfigUrlAction` config option 
 
 ## [v1.14.2] - 2023-10-19
 

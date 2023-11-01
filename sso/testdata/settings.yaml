@@ -60,7 +60,6 @@ SSOConfig:
 DefaultSSO: Default                       
 Browser: /Applications/Firefox.app
 UrlAction: print
-FirefoxOpenUrlInContainer: true
 SecureStore: json
 JsonStore: ./testdata/store.json
 ProfileFormat: '{{.AccountName}}/{{.RoleName}}'

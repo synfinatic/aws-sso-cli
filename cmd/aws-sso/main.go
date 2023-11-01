@@ -89,7 +89,6 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"ConsoleDuration":                           60,
 	"DefaultRegion":                             "us-east-1",
 	"DefaultSSO":                                "Default",
-	"FirefoxOpenUrlInContainer":                 false,
 	"FullTextSearch":                            true,
 	"HistoryLimit":                              10,
 	"HistoryMinutes":                            1440, // 24hrs
