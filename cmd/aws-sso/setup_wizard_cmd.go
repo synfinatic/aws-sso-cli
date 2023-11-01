@@ -65,16 +65,7 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 `)
 
 	if reconfig {
-		// migrate old boolean flag to enum
-		if s.FirefoxOpenUrlInContainer {
-			s.UrlAction = url.OpenUrlContainer
-		}
-
-		// upgrade deprecated config option
-		if s.ConfigUrlAction != "" && s.ConfigProfilesUrlAction == "" {
-			s.ConfigProfilesUrlAction, _ = url.NewConfigProfilesAction(s.ConfigUrlAction)
-			s.ConfigUrlAction = ""
-		}
+		// Usually this is where we do migrations & upgrades for deprecations
 		// skips:
 		// - SSORegion
 		// - DefaultRegion
