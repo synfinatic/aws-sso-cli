@@ -117,7 +117,7 @@ func doAuth(ctx *RunContext) *sso.AWSSSO {
 		if err != nil {
 			log.Fatalf(err.Error())
 		}
-		if err = ctx.Settings.Cache.Refresh(AwsSSO, s, ssoName); err != nil {
+		if err = ctx.Settings.Cache.Refresh(AwsSSO, s, ssoName, ctx.Cli.Threads); err != nil {
 			log.WithError(err).Fatalf("Unable to refresh cache")
 		}
 		if err = ctx.Settings.Cache.Save(true); err != nil {

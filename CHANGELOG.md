@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Bugs
+
+ * No longer ignore the `--threads` CLI option
+
 ### New Features
 
  * Add support for HTTP Auth/`$AWS_CONTAINER_AUTHORIZATION_TOKEN` env variable #516

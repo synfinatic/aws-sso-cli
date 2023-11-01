@@ -278,7 +278,7 @@ func (c *Cache) deleteOldHistory() {
 
 // Refresh updates our cached Roles based on AWS SSO & our Config
 // but does not save this data!
-func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string) error {
+func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads int) error {
 	// Only refresh once per execution
 	if c.refreshed {
 		return nil
@@ -314,7 +314,7 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string) error {
 	c.SSO[ssoName].ConfigHash = config.GetConfigHash(c.settings.ProfileFormat)
 
 	// load our AWSSSO & Config
-	r, err := c.NewRoles(sso, config)
+	r, err := c.NewRoles(sso, config, threads)
 	if err != nil {
 		return err
 	}
@@ -426,7 +426,7 @@ func (c *Cache) GetRole(arn string) (*AWSRoleFlat, error) {
 
 // Merges the AWS SSO and our Config file to create our Roles struct
 // which is defined in cache_roles.go
-func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
+func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig, threads int) (*Roles, error) {
 	r := Roles{
 		SSORegion:     config.SSORegion,
 		StartUrl:      config.StartUrl,
@@ -435,7 +435,7 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig) (*Roles, error) {
 		ssoName:       config.settings.DefaultSSO,
 	}
 
-	if err := c.addSSORoles(&r, as); err != nil {
+	if err := c.addSSORoles(&r, as, threads); err != nil {
 		return &Roles{}, err
 	}
 
@@ -507,7 +507,7 @@ func processSSORoles(roles []RoleInfo, cache *SSOCache, r *Roles) {
 }
 
 // addSSORoles retrieves all the SSO Roles from AWS SSO and places them in r
-func (c *Cache) addSSORoles(r *Roles, as *AWSSSO) error {
+func (c *Cache) addSSORoles(r *Roles, as *AWSSSO, threads int) error {
 	cache := c.GetSSO()
 
 	accounts, err := as.GetAccounts()
@@ -531,9 +531,9 @@ func (c *Cache) addSSORoles(r *Roles, as *AWSSSO) error {
 	// Per #448, doing this serially is too slow for many accounts.  Hence,
 	// we'll use a worker pool.
 	if len(accounts) > 0 {
-		workers := 1
-		if c.settings.Threads > 0 {
-			workers = c.settings.Threads
+		workers := c.settings.Threads
+		if threads > 0 {
+			workers = threads
 		}
 		if workers > len(accounts) {
 			workers = len(accounts)
