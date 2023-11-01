@@ -26,31 +26,12 @@ import (
 )
 
 type TagsCmd struct {
-	AccountId   int64  `kong:"name='account',short='A',help='Filter results based on AWS AccountID'"`
-	Role        string `kong:"short='R',help='Filter results based on AWS Role Name'"`
-	ForceUpdate bool   `kong:"help='Force account/role cache update'"`
+	AccountId int64  `kong:"name='account',short='A',help='Filter results based on AWS AccountID'"`
+	Role      string `kong:"short='R',help='Filter results based on AWS Role Name'"`
 }
 
 func (cc *TagsCmd) Run(ctx *RunContext) error {
-	set := ctx.Settings
 	cache := ctx.Settings.Cache.GetSSO()
-	if ctx.Cli.Tags.ForceUpdate {
-		s := set.SSO[ctx.Cli.SSO]
-
-		ssoName, err := ctx.Settings.GetSelectedSSOName(ctx.Cli.SSO)
-		if err != nil {
-			log.Fatalf(err.Error())
-		}
-
-		err = set.Cache.Refresh(AwsSSO, s, ssoName)
-		if err != nil {
-			log.WithError(err).Fatalf("Unable to refresh role cache")
-		}
-		err = set.Cache.Save(true)
-		if err != nil {
-			log.WithError(err).Errorf("Unable to save cache")
-		}
-	}
 	roles := []*sso.AWSRoleFlat{}
 
 	// If user has specified an account (or account + role) then limit

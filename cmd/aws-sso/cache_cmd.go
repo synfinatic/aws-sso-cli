@@ -41,7 +41,7 @@ func (cc *CacheCmd) Run(ctx *RunContext) error {
 		log.Fatalf(err.Error())
 	}
 
-	err = ctx.Settings.Cache.Refresh(AwsSSO, s, ssoName)
+	err = ctx.Settings.Cache.Refresh(AwsSSO, s, ssoName, ctx.Cli.Cache.Threads)
 	if err != nil {
 		return fmt.Errorf("Unable to refresh role cache: %s", err.Error())
 	}
