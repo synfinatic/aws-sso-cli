@@ -29,10 +29,11 @@ import (
 
 type EvalCmd struct {
 	// AWS Params
-	Arn       string `kong:"short='a',help='ARN of role to assume',predictor='arn'"`
-	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',predictor='accountId'"`
-	Role      string `kong:"short='R',help='Name of AWS Role to assume',predictor='role'"`
-	Profile   string `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile'"`
+	Arn          string `kong:"short='a',help='ARN of role to assume',predictor='arn'"`
+	AccountAlias string `kong:"name='accountAlias',help='AWS AccountAlias of role to assume',predictor='accountAlias'"`
+	AccountId    int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',predictor='accountId'"`
+	Role         string `kong:"short='R',help='Name of AWS Role to assume',predictor='role'"`
+	Profile      string `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile'"`
 
 	Clear    bool   `kong:"short='c',help='Generate \"unset XXXX\" commands to clear environment'"`
 	NoRegion bool   `kong:"short='n',help='Do not set/clear AWS_DEFAULT_REGION from config.yaml'"`
@@ -77,8 +78,15 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 		// if CLI args are speecified, use that
 		role = ctx.Cli.Eval.Role
 		accountid = ctx.Cli.Eval.AccountId
+	} else if ctx.Cli.Eval.AccountAlias != "" && ctx.Cli.Eval.Role != "" && ctx.Cli.Eval.AccountId == 0 {
+		role = ctx.Cli.Eval.Role
+		for accountID, thisSSO := range ctx.Settings.Cache.GetSSO().Roles.Accounts {
+			if thisSSO.Alias == ctx.Cli.Eval.AccountAlias {
+				accountid = accountID
+			}
+		}
 	} else {
-		return fmt.Errorf("Please specify --refresh, --clear, --arn, or --account and --role")
+		return fmt.Errorf("Please specify --refresh, --clear, --arn, --account, or --accountAlias and --role")
 	}
 	region := ctx.Settings.GetDefaultRegion(accountid, role, ctx.Cli.Eval.NoRegion)
 

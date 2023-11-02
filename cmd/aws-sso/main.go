@@ -25,6 +25,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/posener/complete"
+
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/internal/awscreds"
@@ -243,13 +244,14 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 	kongplete.Complete(parser,
 		kongplete.WithPredictors(
 			map[string]complete.Predictor{
-				"accountId": p.AccountComplete(),
-				"arn":       p.ArnComplete(),
-				"fieldList": p.FieldListComplete(),
-				"profile":   p.ProfileComplete(),
-				"region":    p.RegionComplete(),
-				"role":      p.RoleComplete(),
-				"sso":       p.SsoComplete(),
+				"accountAlias": p.AccountAliasComplete(),
+				"accountId":    p.AccountComplete(),
+				"arn":          p.ArnComplete(),
+				"fieldList":    p.FieldListComplete(),
+				"profile":      p.ProfileComplete(),
+				"region":       p.RegionComplete(),
+				"role":         p.RoleComplete(),
+				"sso":          p.SsoComplete(),
 			},
 		),
 	)

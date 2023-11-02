@@ -30,11 +30,12 @@ import (
 )
 
 type Predictor struct {
-	configFile string
-	accountids []string
-	arns       []string
-	roles      []string
-	profiles   []string
+	configFile   string
+	accountAlias []string
+	accountids   []string
+	arns         []string
+	roles        []string
+	profiles     []string
 }
 
 // NewPredictor loads our cache file (if exists) and loads the values
@@ -117,6 +118,10 @@ func (p *Predictor) FieldListComplete() complete.Predictor {
 	}
 
 	return complete.PredictSet(set...)
+}
+
+func (p *Predictor) AccountAliasComplete() complete.Predictor {
+	return complete.PredictSet(p.accountAlias...)
 }
 
 // AccountComplete returns a list of all the valid AWS Accounts we have in the cache
