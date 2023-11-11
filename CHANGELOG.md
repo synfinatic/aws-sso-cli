@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### New Features
+
+ * Update cache during login when relevant settings in the config.yaml changes #555
+
+### Changes
+
+ * Bump cache file version to 4.
+
 ## [v2.0.0-beta1] - 2023-11-11
 
 ### Bugs
