@@ -19,7 +19,7 @@ fi
 
 DATE=$(date +%Y-%m-%d)
 if [ -z "$(grep -F "## [${TAG}] - " CHANGELOG.md)" ]; then
-    echo "Error: CHANGELOG.md is missing our [$TAG]"
+    echo "Error: CHANGELOG.md is missing our [$TAG] - $DATE"
     ERROR=1
 elif [ -z "$(grep -F "## [${TAG}] - $DATE" CHANGELOG.md)" ]; then
     echo "Error: CHANGELOG.md has [${TAG}] but wrong date"

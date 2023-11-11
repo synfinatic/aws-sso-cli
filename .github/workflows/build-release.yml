@@ -6,7 +6,7 @@ name: Release Binaries
 on:
   # Workflow executes when a new release is created
   release:
-    types: [created]
+    types: [published]
 
 jobs:
   # most binaries can be built on linux machine which is the most cost-efficient on GitHub actions
