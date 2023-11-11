@@ -2,6 +2,8 @@
 
 ## v2.beta 
 
+## [v2.0.0-beta1] - 2023-11-11
+
 ### Bugs
 
  * No longer ignore the `--threads` CLI option
