@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v2.0.0-beta1] - 2023-11-11
+
 ### Bugs
 
  * No longer ignore the `--threads` CLI option
@@ -671,7 +673,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.14.2...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.0.0-beta1...main
+[v2.0.0-beta1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.0.0-beta1
 [v1.14.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.14.2
 [v1.14.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.14.1
 [v1.14.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.14.0
