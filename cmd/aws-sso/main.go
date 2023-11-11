@@ -56,6 +56,7 @@ type RunContext struct {
 	Cli      *CLI
 	Settings *sso.Settings // unified config & cache
 	Store    storage.SecureStorage
+	Override sso.OverrideSettings
 }
 
 const (
@@ -84,55 +85,48 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"PromptColors.SelectedSuggestionTextColor":  "White",
 	"PromptColors.SuggestionBGColor":            "Cyan",
 	"PromptColors.SuggestionTextColor":          "White",
+	"ConfigProfilesUrlAction":                   "open",
+	"ConsoleDuration":                           60,
 	"DefaultRegion":                             "us-east-1",
+	"DefaultSSO":                                "Default",
+	"FullTextSearch":                            true,
 	"HistoryLimit":                              10,
 	"HistoryMinutes":                            1440, // 24hrs
 	"ListFields":                                DEFAULT_LIST_FIELDS,
-	"ConsoleDuration":                           60,
-	"UrlAction":                                 "open",
-	"ConfigProfilesUrlAction":                   "open",
-	"LogLevel":                                  "warn",
-	"DefaultSSO":                                "Default",
-	"FirefoxOpenUrlInContainer":                 false,
-	"AutoConfigCheck":                           false,
-	"FullTextSearch":                            true,
-	"ProfileFormat":                             sso.DEFAULT_PROFILE_TEMPLATE,
-	"CacheRefresh":                              168, // 7 days in hours
-	"Threads":                                   5,
 	"MaxBackoff":                                5, // seconds
 	"MaxRetry":                                  10,
+	"ProfileFormat":                             DEFAULT_PROFILE_FORMAT,
+	"UrlAction":                                 "open",
+	"LogLevel":                                  "warn",
+	"Threads":                                   5,
 }
 
 type CLI struct {
 	// Common Arguments
-	Browser       string `kong:"short='b',help='Path to browser to open URLs with',env='AWS_SSO_BROWSER'"`
-	ConfigFile    string `kong:"name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
-	LogLevel      string `kong:"short='L',name='level',help='Logging level [error|warn|info|debug|trace] (default: warn)'"`
-	Lines         bool   `kong:"help='Print line number in logs'"`
-	UrlAction     string `kong:"short='u',help='How to handle URLs [clip|exec|open|print|printurl|granted-containers|open-url-in-container] (default: open)'"`
-	SSO           string `kong:"short='S',help='Override default AWS SSO Instance',env='AWS_SSO',predictor='sso'"`
-	STSRefresh    bool   `kong:"help='Force refresh of STS Token Credentials'"`
-	NoConfigCheck bool   `kong:"help='Disable automatic ~/.aws/config updates'"`
-	Threads       int    `kong:"help='Override number of threads for talking to AWS'"`
+	Browser    string `kong:"short='b',help='Path to browser to open URLs with',env='AWS_SSO_BROWSER'"`
+	ConfigFile string `kong:"name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG'"`
+	LogLevel   string `kong:"short='L',name='level',help='Logging level [error|warn|info|debug|trace] (default: warn)'"`
+	Lines      bool   `kong:"help='Print line number in logs'"`
+	UrlAction  string `kong:"short='u',help='How to handle URLs [clip|exec|open|print|printurl|granted-containers|open-url-in-container] (default: open)'"`
+	SSO        string `kong:"short='S',help='Override default AWS SSO Instance',env='AWS_SSO',predictor='sso'"`
+	STSRefresh bool   `kong:"help='Force refresh of STS Token Credentials'"`
 
 	// Commands
-	Cache          CacheCmd          `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
-	Console        ConsoleCmd        `kong:"cmd,help='Open AWS Console using specificed AWS role/profile'"`
-	Default        DefaultCmd        `kong:"cmd,hidden,default='1'"` // list command without args
-	Eval           EvalCmd           `kong:"cmd,help='Print AWS environment vars for use with eval $(aws-sso eval ...)'"`
-	Exec           ExecCmd           `kong:"cmd,help='Execute command using specified IAM role in a new shell'"`
-	Flush          FlushCmd          `kong:"cmd,help='Flush AWS SSO/STS credentials from cache'"`
-	List           ListCmd           `kong:"cmd,help='List all accounts / roles (default command)'"`
-	Logout         LogoutCmd         `kong:"cmd,help='Logout in browser and invalidate all credentials'"`
-	Process        ProcessCmd        `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
-	Static         StaticCmd         `kong:"cmd,hidden,help='Manage static AWS API credentials'"`
-	Tags           TagsCmd           `kong:"cmd,help='List tags'"`
-	Time           TimeCmd           `kong:"cmd,help='Print how much time before current STS Token expires'"`
-	Completions    CompleteCmd       `kong:"cmd,help='Manage shell completions'"`
-	ConfigProfiles ConfigProfilesCmd `kong:"cmd,help='Update ~/.aws/config with AWS SSO profiles from the cache'"`
-	Config         ConfigCmd         `kong:"cmd,help='Run the configuration wizard'"`
-	Ecs            EcsCmd            `kong:"cmd,help='ECS Server commands'"`
-	Version        VersionCmd        `kong:"cmd,help='Print version and exit'"`
+	Cache   CacheCmd   `kong:"cmd,help='Update cached AWS SSO role info'"`
+	Console ConsoleCmd `kong:"cmd,help='Open AWS Console using specificed AWS role/profile'"`
+	Default DefaultCmd `kong:"cmd,hidden,default='1'"` // list command without args
+	Eval    EvalCmd    `kong:"cmd,help='Print AWS environment vars for use with eval $(aws-sso eval ...)'"`
+	Exec    ExecCmd    `kong:"cmd,help='Execute command using specified IAM role in a new shell'"`
+	List    ListCmd    `kong:"cmd,help='List all accounts / roles (default command)'"`
+	Login   LoginCmd   `kong:"cmd,help='Login to AWS SSO'"`
+	Logout  LogoutCmd  `kong:"cmd,help='Logout from AWS SSO and invalidate all credentials'"`
+	Process ProcessCmd `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
+	Static  StaticCmd  `kong:"cmd,hidden,help='Manage static AWS API credentials'"`
+	Tags    TagsCmd    `kong:"cmd,help='List tags'"`
+	Time    TimeCmd    `kong:"cmd,help='Print how much time before current STS Token expires'"`
+	Setup   SetupCmd   `kong:"cmd,help='Setup aws-sso'"`
+	Ecs     EcsCmd     `kong:"cmd,help='ECS Server commands'"`
+	Version VersionCmd `kong:"cmd,help='Print version and exit'"`
 }
 
 func main() {
@@ -158,8 +152,9 @@ func main() {
 	}
 
 	runCtx := RunContext{
-		Kctx: ctx,
-		Cli:  &cli,
+		Kctx:     ctx,
+		Cli:      &cli,
+		Override: override,
 	}
 
 	switch ctx.Command() {
@@ -175,10 +170,16 @@ func main() {
 
 	if _, err := os.Stat(cli.ConfigFile); errors.Is(err, os.ErrNotExist) {
 		log.Warnf("No config file found!  Will now prompt you for a basic config...")
-		if err = setupWizard(&runCtx, false, false, runCtx.Cli.Config.Advanced); err != nil {
-			log.Fatalf("%s", err.Error())
+		setup := SetupAllCmd{}
+		runCtx.Cli.Setup.Wizard.Reconfig = false
+		runCtx.Cli.Setup.AwsConfig.Diff = true
+
+		if err = setup.Run(&runCtx); err != nil {
+			return
 		}
-		if ctx.Command() == "config" {
+
+		switch ctx.Command() {
+		case "setup", "setup all", "setup wizard", "setup shell", "setup aws-config", "login":
 			// we're done.
 			return
 		}
@@ -189,35 +190,61 @@ func main() {
 	cacheFile := utils.GetHomePath(INSECURE_CACHE_FILE)
 
 	if runCtx.Settings, err = sso.LoadSettings(cli.ConfigFile, cacheFile, DEFAULT_CONFIG, override); err != nil {
-		log.Fatalf("%s", err.Error())
+		log.Fatalf("unable to load settings: %s", err.Error())
 	}
 
-	// Load the secure store data
-	switch runCtx.Settings.SecureStore {
-	case "json":
-		sfile := utils.GetHomePath(JSON_STORE_FILE)
-		if runCtx.Settings.JsonStore != "" {
-			sfile = utils.GetHomePath(runCtx.Settings.JsonStore)
-		}
-		runCtx.Store, err = storage.OpenJsonStore(sfile)
+	switch ctx.Command() {
+	case "ecs run", "setup wizard", "setup all":
+		break // do nothing
+
+	case "list", "login", "ecs list", "ecs unload", "ecs profile":
+		// Initialize our AwsSSO variable & SecureStore, but don't do any auth
+		c := &runCtx
+		s, err := c.Settings.GetSelectedSSO(c.Cli.SSO)
 		if err != nil {
-			log.WithError(err).Fatalf("Unable to open JsonStore %s", sfile)
+			log.Fatalf("%s", err.Error())
 		}
-		log.Warnf("Using insecure json file for SecureStore: %s", sfile)
-	default:
-		cfg, err := storage.NewKeyringConfig(runCtx.Settings.SecureStore, CONFIG_DIR)
-		if err != nil {
-			log.WithError(err).Fatalf("Unable to create SecureStore")
-		}
-		runCtx.Store, err = storage.OpenKeyring(cfg)
-		if err != nil {
-			log.WithError(err).Fatalf("Unable to open SecureStore %s", runCtx.Settings.SecureStore)
+
+		loadSecureStore(c)
+		AwsSSO = sso.NewAWSSSO(s, &c.Store)
+
+	default: // includes "ecs load", "setup shell" & "setup aws-config"
+		// make sure we have authenticated via AWS SSO and init SecureStore
+		loadSecureStore(&runCtx)
+		if !checkAuth(&runCtx) {
+			log.Fatalf("Must run `aws-sso login` before running `aws-sso %s`", ctx.Command())
 		}
 	}
 
 	err = ctx.Run(&runCtx)
 	if err != nil {
 		log.Fatalf("Error running command: %s", err.Error())
+	}
+}
+
+// loadSecureStore loads our secure store data for future access
+func loadSecureStore(ctx *RunContext) {
+	var err error
+	switch ctx.Settings.SecureStore {
+	case "json":
+		sfile := utils.GetHomePath(JSON_STORE_FILE)
+		if ctx.Settings.JsonStore != "" {
+			sfile = utils.GetHomePath(ctx.Settings.JsonStore)
+		}
+		ctx.Store, err = storage.OpenJsonStore(sfile)
+		if err != nil {
+			log.WithError(err).Fatalf("Unable to open JsonStore %s", sfile)
+		}
+		log.Warnf("Using insecure json file for SecureStore: %s", sfile)
+	default:
+		cfg, err := storage.NewKeyringConfig(ctx.Settings.SecureStore, CONFIG_DIR)
+		if err != nil {
+			log.WithError(err).Fatalf("Unable to create SecureStore")
+		}
+		ctx.Store, err = storage.OpenKeyring(cfg)
+		if err != nil {
+			log.WithError(err).Fatalf("Unable to open SecureStore %s", ctx.Settings.SecureStore)
+		}
 	}
 }
 
@@ -262,12 +289,20 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 		log.Fatalf("Invalid --url-action %s", cli.UrlAction)
 	}
 
+	// only cache and login commands have `--threads` flag
+	threads := 0
+	if cli.Login.Threads > 0 {
+		threads = cli.Login.Threads
+	} else if cli.Cache.Threads > 0 {
+		threads = cli.Cache.Threads
+	}
+
 	override := sso.OverrideSettings{
 		Browser:    cli.Browser,
 		DefaultSSO: cli.SSO,
 		LogLevel:   cli.LogLevel,
 		LogLines:   cli.Lines,
-		Threads:    cli.Threads,
+		Threads:    threads,
 		UrlAction:  action,
 	}
 

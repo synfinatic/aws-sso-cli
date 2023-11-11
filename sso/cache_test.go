@@ -325,25 +325,6 @@ func (suite *CacheTestSuite) TestDeleteOldHistory() {
 	assert.Contains(t, hook.LastEntry().Message, "Unable to parse")
 }
 
-func (suite *CacheTestSuite) TestExpired() {
-	t := suite.T()
-	s := SSOConfig{
-		settings: &Settings{
-			CacheRefresh: 24,
-		},
-	}
-	assert.Error(t, suite.cache.Expired(&s))
-	s.settings.CacheRefresh = 0
-	assert.NoError(t, suite.cache.Expired(&s))
-
-	// invalid version
-	c := &Cache{
-		Version: 1, // invalid
-	}
-	err := c.Expired(&s)
-	assert.Error(t, err)
-}
-
 func (suite *CacheTestSuite) TestGetRole() {
 	t := suite.T()
 	r, _ := suite.cache.GetRole(TEST_ROLE_ARN)

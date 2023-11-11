@@ -26,7 +26,7 @@ import (
 	"github.com/willabides/kongplete"
 )
 
-type CompleteCmd struct {
+type ShellCmd struct {
 	Install        bool   `kong:"short='I',help='Install shell completions',xor='action'"`
 	Uninstall      bool   `kong:"short='U',help='Uninstall shell completions',xor='action'"`
 	UninstallPre19 bool   `kong:"help='Uninstall pre-v1.9 shell completion integration',xor='action',xor='shell,script'"`
@@ -34,16 +34,18 @@ type CompleteCmd struct {
 	ShellScript    string `kong:"help='Override file to (un)install shell completions',xor='script'"`
 }
 
-func (cc *CompleteCmd) Run(ctx *RunContext) error {
+func (cc *ShellCmd) Run(ctx *RunContext) error {
 	var err error
 
-	if ctx.Cli.Completions.Install {
+	shell := ctx.Cli.Setup.Shell
+
+	if shell.Install {
 		// install the current auto-complete helper
-		err = helper.InstallHelper(ctx.Cli.Completions.Shell, ctx.Cli.Completions.ShellScript)
-	} else if ctx.Cli.Completions.Uninstall {
+		err = helper.InstallHelper(shell.Shell, shell.ShellScript)
+	} else if shell.Uninstall {
 		// uninstall the current auto-complete helper
-		err = helper.UninstallHelper(ctx.Cli.Completions.Shell, ctx.Cli.Completions.ShellScript)
-	} else if ctx.Cli.Completions.UninstallPre19 {
+		err = helper.UninstallHelper(shell.Shell, shell.ShellScript)
+	} else if shell.UninstallPre19 {
 		// make sure we haven't installed our new completions first...
 		if files := hasV19Installed(); len(files) == 0 {
 			for _, f := range files {
@@ -62,7 +64,7 @@ func (cc *CompleteCmd) Run(ctx *RunContext) error {
 	}
 
 	if err == nil {
-		log.Info("please restart your shell for the changes to take effect")
+		log.Info("Please restart your shell for the changes to take effect")
 	}
 	return err
 }

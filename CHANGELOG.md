@@ -2,6 +2,40 @@
 
 ## [Unreleased]
 
+## [v2.0.0-beta1] - 2023-11-11
+
+### Bugs
+
+ * No longer ignore the `--threads` CLI option
+
+### New Features
+
+ * Require running `aws-sso login`.  No more auto-login.  #291
+ * `login` does a quick cache invalidation check using the AWS AccountIDs #576
+ * New default [ProfileFormat](docs/config.md#ProfileFormat) uses AccountAlias instead of AccountId
+
+### Changes
+
+ * `aws-sso` commands other than `cache` and `login` no longer can trigger a cache refresh or
+    update of `~/.aws/config` file
+
+### Removed Commands, Config Options and Flags
+ * Remove `config`, `config-profiles` and `completions` commands
+    and replace with `setup`
+ * Remove `flush` command.  Use `logout` instead
+ * Remove `--no-cache` flag
+ * Remove `CacheRefresh` configuration option.  `aws-sso` will only update the cache
+    when you ask it to via `aws-sso cache`
+ * Remove `tags --force-update` flag
+ * Remove `AutoConfigCheck` configuration option.
+ * Remove references to all deprecated features:
+    * `AccountIdStr()` function for `ProfileFormat`.
+    * `AccountIdStr` field is replaced by `AccountIdPad` in `list` command and `ListFields` in config.yaml
+    * `ARN` field is replaced by `Arn` in `list` command and `ListFields` in config.yaml
+    * `ExpiresStr` field is replaced by `Expires` in `list` command and `ListFields` in config.yaml
+    * `FirefoxOpenUrlInContainer` config option 
+    * `ConfigUrlAction` config option 
+
 ## [v1.14.2] - 2023-10-19
 
 ### Bugs
@@ -24,12 +58,18 @@
 ### New Features
 
  * Config Wizard now prompts for `ProfileFormat` #590
+ * Add `login` command #291
 
 ### Changes
 
- * Documentation is now built via Docker #587
+ * Documentation is now managed by [mkdocs](https://www.mkdocs.org)
  * Improved demos in documentation #551
  * Update many dependencies
+ * Add dependabot
+
+### Deprecated
+
+ * `aws-sso flush -t sso` should not be used.  Use `aws-sso logout` instead.
 
 ## [v1.14.0] - 2023-10-13
 
@@ -100,7 +140,7 @@
 
 ### Changes
 
- * [CacheRefresh](docs/config.md#CacheRefresh) now defaults to 168 hours (7 days)
+ * `CacheRefresh` now defaults to 168 hours (7 days)
  * [FullTextSearch](docs/config.md#FullTextSearch) is enabled by default for interactive `list` mode.
  * [MaxRetry](docs/config.md#MaxRetry) defaults to 10
  * [MaxBackoff](docs/config.md#MaxBackoff) defaults to 5
@@ -310,9 +350,11 @@
  * Renamed the `config` command to update `~/.aws/config` to be `config-profiles`
      which is hopefully more clear
  * `config` command now runs the configuration wizard
- * Deprecated `ConfigUrlAction` option.  Will be automatically upgraded by
-    the `aws-sso config` wizard.
  * `ConfigProfilesUrlAction` replaces `ConfigUrlAction`
+
+### Deprecated
+ * `ConfigUrlAction` option.  Will be automatically upgraded by
+    the `aws-sso config` wizard.
 
 ### Bugs
 
@@ -631,7 +673,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.14.2...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.0.0-beta1...main
+[v2.0.0-beta1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.0.0-beta1
 [v1.14.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.14.2
 [v1.14.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.14.1
 [v1.14.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.14.0

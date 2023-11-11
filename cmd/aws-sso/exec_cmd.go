@@ -35,7 +35,6 @@ type ExecCmd struct {
 	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNT_ID',predictor='accountId'"`
 	Role      string `kong:"short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE_NAME',predictor='role'"`
 	Profile   string `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile'"`
-	NoCache   bool   `kong:"help='Do not use cache'"`
 	NoRegion  bool   `kong:"short='n',help='Do not set AWS_DEFAULT_REGION from config.yaml'"`
 
 	// Exec Params
@@ -55,26 +54,19 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 	}
 
 	sci := NewSelectCliArgs(ctx.Cli.Exec.Arn, ctx.Cli.Exec.AccountId, ctx.Cli.Exec.Role, ctx.Cli.Exec.Profile)
-	if awssso, err := sci.Update(ctx); err == nil {
+	if err := sci.Update(ctx); err == nil {
 		// successful lookup?
-		return execCmd(ctx, awssso, sci.AccountId, sci.RoleName)
+		return execCmd(ctx, sci.AccountId, sci.RoleName)
 	} else if !errors.Is(err, &NoRoleSelectedError{}) {
 		// invalid arguments, not missing
 		return err
-	}
-
-	if ctx.Cli.Exec.NoCache {
-		c := &CacheCmd{}
-		if err = c.Run(ctx); err != nil {
-			return err
-		}
 	}
 
 	return ctx.PromptExec(execCmd)
 }
 
 // Executes Cmd+Args in the context of the AWS Role creds
-func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) error {
+func execCmd(ctx *RunContext, accountid int64, role string) error {
 	region := ctx.Settings.GetDefaultRegion(ctx.Cli.Exec.AccountId, ctx.Cli.Exec.Role, ctx.Cli.Exec.NoRegion)
 
 	ctx.Settings.Cache.AddHistory(utils.MakeRoleARN(accountid, role))
@@ -91,7 +83,7 @@ func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) 
 
 	// add the variables we need for AWS to the executor without polluting our
 	// own process
-	for k, v := range execShellEnvs(ctx, awssso, accountid, role, region) {
+	for k, v := range execShellEnvs(ctx, accountid, role, region) {
 		log.Debugf("Setting %s = %s", k, v)
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
@@ -99,9 +91,9 @@ func execCmd(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) 
 	return cmd.Run()
 }
 
-func execShellEnvs(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role, region string) map[string]string {
+func execShellEnvs(ctx *RunContext, accountid int64, role, region string) map[string]string {
 	var err error
-	credsPtr := GetRoleCredentials(ctx, awssso, accountid, role)
+	credsPtr := GetRoleCredentials(ctx, AwsSSO, accountid, role)
 	creds := *credsPtr
 
 	ssoName, _ := ctx.Settings.GetSelectedSSOName(ctx.Cli.SSO)

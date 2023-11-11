@@ -52,6 +52,7 @@ func TestCacheRolesTestSuite(t *testing.T) {
 	f.Close()
 
 	settings := &Settings{
+		ProfileFormat:  "{{ .AccountIdPad }}:{{ .RoleName }}",
 		HistoryLimit:   1,
 		HistoryMinutes: 90,
 		DefaultSSO:     "Default",
@@ -198,6 +199,10 @@ func (suite *CacheRolesTestSuite) TestProfileName() {
 	p, err = r.ProfileName(settings)
 	assert.NoError(t, err)
 	assert.Equal(t, "ourcompany_control_tower_playground:AWSADMINISTRATORACCESS", p)
+
+	settings.ProfileFormat = ""
+	_, err = r.ProfileName(settings)
+	assert.Error(t, err)
 }
 
 func (suite *CacheRolesTestSuite) TestGetRoleByProfile() {

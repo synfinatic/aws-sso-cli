@@ -21,6 +21,12 @@ A clear and concise description of what the bug is.
  1. Command...
  2. ???
 
+**Note:** You do not need to redact AWS AccountIDs from outputs or config.
+[Per Amazon](https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-identifiers.html#),
+"While account IDs, like any identifying information, should be
+used and shared carefully, they are not considered secret,
+sensitive, or confidential information."
+
 **Expected behavior:**
 A clear and concise description of what you expected to happen.
 
