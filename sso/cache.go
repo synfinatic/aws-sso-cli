@@ -32,12 +32,13 @@ import (
 )
 
 const (
-	CACHE_VERSION      = 3
+	CACHE_VERSION      = 4
 	SLOW_FETCH_SECONDS = 2 // number of seconds before notifying users
 )
 
 type SSOCache struct {
 	LastUpdate int64    `json:"LastUpdate,omitempty"` // when these records for this SSO were updated
+	ConfigHash string   `json:"ConfigHash,omitempty"` // SHA256 of ProfileName + SSOConfig.Accounts
 	History    []string `json:"History,omitempty"`
 	Roles      *Roles   `json:"Roles,omitempty"`
 	name       string   // name of this SSO Instance
@@ -123,6 +124,12 @@ func (c *Cache) Save(updateTime bool) error {
 		return fmt.Errorf("Unable to write %s: %s", c.CacheFile(), err.Error())
 	}
 	return nil
+}
+
+// Check to see if our cache needs to be refreshed
+func (c *SSOCache) NeedsRefresh(s *SSOConfig, settings *Settings) bool {
+	checkHash := s.GetConfigHash(settings.ProfileFormat)
+	return checkHash != c.ConfigHash
 }
 
 // AddHistory adds a role ARN to the History list up to the max number of entries
@@ -279,6 +286,7 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads 
 
 	// zero out our current roles cache entries so they don't get merged
 	c.SSO[ssoName].Roles = &Roles{}
+	c.SSO[ssoName].ConfigHash = config.GetConfigHash(c.settings.ProfileFormat)
 
 	// load our AWSSSO & Config
 	r, err := c.NewRoles(sso, config, threads)

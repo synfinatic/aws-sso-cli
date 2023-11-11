@@ -41,6 +41,20 @@ func (cc *LoginCmd) Run(ctx *RunContext) error {
 	if err != nil {
 		log.Fatalf("%s", err.Error())
 	}
+
+	needsRefresh := ctx.Settings.Cache.SSO[ssoName].NeedsRefresh(ctx.Settings.SSO[ssoName], ctx.Settings)
+
+	if needsRefresh {
+		log.Infof("Detected config file changes; automatically refreshing our cache...")
+		c := &CacheCmd{
+			NoConfigCheck: ctx.Cli.Login.NoConfigCheck,
+			Threads:       ctx.Cli.Login.Threads,
+		}
+		if err = c.Run(ctx); err != nil {
+			log.WithError(err).Errorf("Unable to refresh local cache")
+		}
+	}
+
 	cachedAccounts := ctx.Settings.Cache.SSO[ssoName].Roles.Accounts
 
 	delta := false
