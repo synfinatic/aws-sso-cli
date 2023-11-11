@@ -1,9 +1,10 @@
 {
   "ConfigCreatedAt": 1635710861,
-  "Version": 3,
+  "Version": 4,
   "SSO": {
     "Default": {
       "LastUpdate": 1635913188,
+      "ConfigHash": "xxx",
       "Roles": {
         "Accounts": {
           "025823461518": {
