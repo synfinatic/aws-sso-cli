@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Bugs 
+
+ * Running `aws-sso setup` always generated a fatal error #693 
+
 ### New Features
 
  * Update cache during login when relevant settings in the config.yaml changes #555

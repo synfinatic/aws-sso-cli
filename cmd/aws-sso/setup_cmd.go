@@ -77,7 +77,5 @@ func (cc *SetupAllCmd) Run(ctx *RunContext) error {
 
 	awsConfig := AwsConfigCmd{}
 	ctx.Cli.Setup.AwsConfig.Diff = true
-	err = awsConfig.Run(ctx)
-	log.WithError(err).Fatalf("AWS Config failure")
-	return nil
+	return awsConfig.Run(ctx)
 }
