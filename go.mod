@@ -19,7 +19,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/synfinatic/gotable v0.0.3
 	github.com/willabides/kongplete v0.2.0
-	golang.org/x/crypto v0.14.0 // indirect
+	golang.org/x/crypto v0.15.0 // indirect
 )
 
 require (
@@ -74,7 +74,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.15.2
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.17.3
 	github.com/aws/aws-sdk-go-v2/service/sts v1.23.2
-	golang.org/x/net v0.17.0
+	golang.org/x/net v0.18.0
 )
 
 require (
