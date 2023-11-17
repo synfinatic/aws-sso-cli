@@ -36,7 +36,6 @@ type ListCmd struct {
 	CSV        bool     `kong:"help='Generate CSV instead of a table',xor='listfields'"`
 	Prefix     string   `kong:"short='P',help='Filter based on the <FieldName>=<Prefix>'"`
 	Fields     []string `kong:"optional,arg,help='Fields to display',env='AWS_SSO_FIELDS',predictor='fieldList',xor='listfields'"`
-	NoCache    bool     `kong:"help='Do not use cache'"`
 	Sort       string   `kong:"short='s',help='Sort results by the <FieldName>',default='AccountId',env='AWS_SSO_FIELD_SORT',predictor='fieldList'"`
 	Reverse    bool     `kong:"help='Reverse sort results',env='AWS_SSO_FIELD_SORT_REVERSE'"`
 }
@@ -46,20 +45,12 @@ var DEFAULT_LIST_FIELDS []string = []string{"AccountIdPad", "AccountAlias", "Rol
 
 // what should this actually do?
 func (cc *ListCmd) Run(ctx *RunContext) error {
-	var err error
 	var prefixSearch []string
 
 	// If `-f` then print our fields and exit
 	if ctx.Cli.List.ListFields {
 		listAllFields()
 		return nil
-	}
-
-	if ctx.Cli.List.NoCache {
-		c := &CacheCmd{}
-		if err = c.Run(ctx); err != nil {
-			return err
-		}
 	}
 
 	if ctx.Cli.List.Prefix != "" {
@@ -75,17 +66,6 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 		}
 		if !utils.StrListContains(prefixSearch[0], validFields) {
 			return fmt.Errorf("--prefix <FieldName> must be a valid field: %s", prefixSearch[0])
-		}
-	}
-
-	s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
-	if err != nil {
-		return err
-	}
-	if err = ctx.Settings.Cache.Expired(s); err != nil {
-		c := &CacheCmd{}
-		if err = c.Run(ctx); err != nil {
-			log.WithError(err).Errorf("Unable to refresh local cache")
 		}
 	}
 
@@ -108,19 +88,6 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 type DefaultCmd struct{}
 
 func (cc *DefaultCmd) Run(ctx *RunContext) error {
-	s, err := ctx.Settings.GetSelectedSSO("")
-	if err != nil {
-		return err
-	}
-
-	// update cache?
-	if err = ctx.Settings.Cache.Expired(s); err != nil {
-		c := &CacheCmd{}
-		if err = c.Run(ctx); err != nil {
-			log.WithError(err).Errorf("Unable to refresh local cache")
-		}
-	}
-
 	return printRoles(ctx, ctx.Settings.ListFields, false, []string{}, "AccountId", false)
 }
 
@@ -195,15 +162,6 @@ func printRoles(ctx *RunContext, fields []string, csv bool, prefixSearch []strin
 	if csv {
 		err = gotable.GenerateCSV(tr, fields)
 	} else {
-		// Determine when our AWS SSO session expires
-		// list doesn't call doAuth() so we have to initialize our global *AwsSSO manually
-		var s *sso.SSOConfig
-		s, err = ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
-		if err != nil {
-			log.Fatalf("%s", err.Error())
-		}
-		AwsSSO = sso.NewAWSSSO(s, &ctx.Store)
-
 		expires := ""
 		ctr := storage.CreateTokenResponse{}
 		if err := ctx.Store.GetCreateTokenResponse(AwsSSO.StoreKey(), &ctr); err != nil {

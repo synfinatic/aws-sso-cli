@@ -37,8 +37,8 @@ import (
 const (
 	START_URL_FORMAT       = "https://%s/start"
 	START_FQDN_SUFFIX      = ".awsapps.com"
-	NICE_PROFILE_FORMAT    = "{{ FirstItem .AccountName (.AccountAlias | nospace) }}:{{ .RoleName }}"
-	DEFAULT_PROFILE_FORMAT = "{{ .AccountIdPad }}:{{ .RoleName }}"
+	DEFAULT_PROFILE_FORMAT = "{{ FirstItem .AccountName (.AccountAlias | nospace) }}:{{ .RoleName }}"
+	OLD_PROFILE_FORMAT     = "{{ .AccountIdPad }}:{{ .RoleName }}"
 )
 
 type selectOptions struct {
@@ -582,30 +582,6 @@ func index(s []string, v string) int {
 	return 0
 }
 
-func promptAutoConfigCheck(flag bool) bool {
-	var i int = -1
-	var err error
-
-	fmt.Printf("\n")
-
-	label := "Auto update ~/.aws/config with latest AWS SSO roles? (AutoConfigCheck)"
-	for i < 0 {
-		sel := promptui.Select{
-			Label:        label,
-			Items:        yesNoItems,
-			CursorPos:    yesNoPos(flag),
-			HideSelected: false,
-			Stdout:       &utils.BellSkipper{},
-			Templates:    makeSelectTemplate(label),
-		}
-		if i, _, err = sel.Run(); err != nil {
-			checkSelectError(err)
-		}
-	}
-
-	return yesNoItems[i].Value == "Yes"
-}
-
 func promptFullTextSearch(flag bool) bool {
 	var i int = -1
 	var err error
@@ -636,12 +612,12 @@ func promptProfileFormat(value string) string {
 
 	items := []selectOptions{
 		{
-			Name:  fmt.Sprintf("Default:\t%s", DEFAULT_PROFILE_FORMAT),
+			Name:  fmt.Sprintf("Recommended:\t%s", DEFAULT_PROFILE_FORMAT),
 			Value: DEFAULT_PROFILE_FORMAT,
 		},
 		{
-			Name:  fmt.Sprintf("Friendly:\t%s", NICE_PROFILE_FORMAT),
-			Value: NICE_PROFILE_FORMAT,
+			Name:  fmt.Sprintf("Old default:\t%s", OLD_PROFILE_FORMAT),
+			Value: OLD_PROFILE_FORMAT,
 		},
 	}
 
@@ -684,31 +660,6 @@ func promptProfileFormat(value string) string {
 	}
 
 	return items[i].Value
-}
-
-func promptCacheRefresh(defaultValue int64) int64 {
-	var val string
-	var err error
-
-	fmt.Printf("\n")
-
-	label := "Hours between AWS SSO cache refresh. 0 to disable. (CacheRefresh)"
-	for val == "" {
-		prompt := promptui.Prompt{
-			Label:     label,
-			Validate:  validateInteger,
-			Default:   fmt.Sprintf("%d", defaultValue),
-			Pointer:   promptui.PipeCursor,
-			Templates: makePromptTemplate(label),
-		}
-
-		if val, err = prompt.Run(); err != nil {
-			checkPromptError(err)
-		}
-	}
-	val = strings.TrimSpace(val)
-	x, _ := strconv.ParseInt(val, 10, 64)
-	return x
 }
 
 func promptConfigProfilesUrlAction(

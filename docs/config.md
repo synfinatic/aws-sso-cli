@@ -36,8 +36,6 @@ SSOConfig:
 # See description below for these options
 DefaultRegion: <AWS_DEFAULT_REGION>
 DefaultSSO: <name of AWS SSO>
-CacheRefresh: <hours>
-AutoConfigCheck: [False|True]
 Threads: <integer>
 MaxRetry: <integer>
 MaxBackoff: <integer>
@@ -220,15 +218,6 @@ the `AWS_SSO` environment variable.
 
 ### SSO Cache Options
 
-#### CacheRefresh
-
-This is the number of hours between automatically refreshing your AWS SSO cache
-to detect any changes in the roles you have been granted access to.  The default
-is 168 (7 days).  Disable this feature by setting to any value <= 0.
-
-**Note:** If this feature is disabled, then [AutoConfigCheck](#autoconfigcheck)
-is also disabled.
-
 #### Threads
 
 Certain actions when communicating with AWS can be accellerated by running multiple
@@ -334,6 +323,9 @@ https://docs.aws.amazon.com/singlesignon/latest/userguide/howtosessionduration.h
 
 #### ConfigProfilesUrlAction
 
+Setting `ConfigProfilesUrlAction` enables automatically updating your `~/.aws/config`
+file any time the list of IAM Roles you are given access to changes.
+
 This works just like `UrlAction` above, but is used for setting the default
 `--url-action` in your `~/.aws/config` when generating named AWS profiles for
 use with `$AWS_PROFILE` and the default value for the [config-profiles](
@@ -346,9 +338,6 @@ Due to limitations with the AWS SDK, only the following options are valid:
  * `open`
  * `granted-containers`
  * `open-url-in-container`
-
-**Note:** This option is required if you also want to use 
-[AutoConfigCheck](#autoconfigcheck).
 
 **Note:** This config option was previously known as `ConfigUrlAction` which
 has been deprecated.
@@ -389,7 +378,6 @@ By default, `ProfileFormat` is set to `{{ .AccountIdPad }}:{{ .RoleName }}`.
 AWS SSO CLI uses [sprig](http://masterminds.github.io/sprig/) for most of its
 functions, but a few custom functions are available:
 
- * `AccountIdStr(x)` -- Converts the `.AccountId` variable to a string.  Deprecated.  Use `.AccountIdPad` variable instead.
  * `EmptyString(x)` -- Returns true/false if the value `x` is an empty string
  * `FirstItem([]x)` -- Returns the first item in a list that is not an empty string
  * `StringsJoin(x, []y)` -- Joins the items in `y` with the string `x`
@@ -521,22 +509,6 @@ Specify which fields to display via the `list` command.  Valid options are:
  * `RoleName` -- Role name
  * `SSO` -- AWS SSO instance name
  * `Via` -- Role Chain Via
-
-#### AutoConfigCheck
-
-When set to `True`, when your AWS SSO roles are automatically refreshed (see
-[CacheRefresh](#cacherefresh)) `aws-sso` will also check to see if any changes
-are warranted in your `~/.aws/config`.
-
-**Note:** This option requires you to also set 
-[ConfigProfilesUrlAction](#configprofilesurlaction).
-
-**Note:** This option can be disabled temporarily on the command line by passing
-the `--no-config-check` flag.
-
-**Note:** If you are using a non-default path for your `~/.aws/config` file, then
-you must be sure to set the `AWS_CONFIG_FILE` environment variable to the correct
-path or disable this configuration option.
 
 #### LogLevel / LogLines
 

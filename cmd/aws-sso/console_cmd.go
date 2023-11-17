@@ -38,14 +38,12 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
-	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
 type ConsoleCmd struct {
 	// Console actually should honor the --region flag
 	Duration int32  `kong:"short='d',help='AWS Session duration in minutes (default 60)'"` // default stored in DEFAULT_CONFIG
 	Prompt   bool   `kong:"short='P',help='Force interactive prompt to select role'"`
-	NoCache  bool   `kong:"help='Do not use cache'"`
 	Region   string `kong:"help='AWS Region',env='AWS_DEFAULT_REGION',predictor='region'"`
 
 	Arn       string `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
@@ -68,13 +66,6 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 		return fmt.Errorf("Invalid --duration %d.  Must be between 15 and 720", ctx.Settings.ConsoleDuration)
 	}
 
-	if ctx.Cli.Console.NoCache {
-		c := &CacheCmd{}
-		if err := c.Run(ctx); err != nil {
-			return err
-		}
-	}
-
 	// do we force interactive prompt?
 	if ctx.Cli.Console.Prompt {
 		return ctx.PromptExec(openConsole)
@@ -82,9 +73,9 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 
 	// Check our CLI args
 	sci := NewSelectCliArgs(ctx.Cli.Console.Arn, ctx.Cli.Console.AccountId, ctx.Cli.Console.Role, ctx.Cli.Console.Profile)
-	if awssso, err := sci.Update(ctx); err == nil {
+	if err := sci.Update(ctx); err == nil {
 		// successful lookup?
-		return openConsole(ctx, awssso, sci.AccountId, sci.RoleName)
+		return openConsole(ctx, sci.AccountId, sci.RoleName)
 	} else if !errors.Is(err, &NoRoleSelectedError{}) {
 		// invalid arguments, not missing
 		return err
@@ -166,10 +157,9 @@ func consoleViaEnvVars(ctx *RunContext) error {
 }
 
 func consoleViaSDK(ctx *RunContext) error {
-	awssso := doAuth(ctx)
 	rFlat, err := ctx.Settings.Cache.GetSSO().Roles.GetRoleByProfile(ctx.Cli.Console.AwsProfile, ctx.Settings)
 	if err == nil {
-		return openConsole(ctx, awssso, rFlat.AccountId, rFlat.RoleName)
+		return openConsole(ctx, rFlat.AccountId, rFlat.RoleName)
 	}
 
 	region := ctx.Settings.DefaultRegion
@@ -229,7 +219,7 @@ func haveAWSEnvVars(ctx *RunContext) bool {
 }
 
 // opens the AWS console or just prints the URL
-func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) error {
+func openConsole(ctx *RunContext, accountid int64, role string) error {
 	region := ctx.Settings.GetDefaultRegion(accountid, role, false)
 	if ctx.Cli.Console.Region != "" {
 		region = ctx.Cli.Console.Region
@@ -245,7 +235,7 @@ func openConsole(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role stri
 		log.WithError(err).Warnf("Unable to update cache")
 	}
 
-	creds := GetRoleCredentials(ctx, awssso, accountid, role)
+	creds := GetRoleCredentials(ctx, AwsSSO, accountid, role)
 	return openConsoleAccessKey(ctx, creds, duration, region, accountid, role)
 }
 

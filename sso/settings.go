@@ -44,39 +44,35 @@ const (
 )
 
 type Settings struct {
-	configFile                string                   // name of this file
-	cacheFile                 string                   // name of cache file; always passed in via CLI args
-	Cache                     *Cache                   `yaml:"-"` // our cache data
-	SSO                       map[string]*SSOConfig    `koanf:"SSOConfig" yaml:"SSOConfig,omitempty"`
-	DefaultSSO                string                   `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`   // specify default SSO by key
-	SecureStore               string                   `koanf:"SecureStore" yaml:"SecureStore,omitempty"` // json or keyring
-	DefaultRegion             string                   `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
-	ConsoleDuration           int32                    `koanf:"ConsoleDuration" yaml:"ConsoleDuration,omitempty"`
-	JsonStore                 string                   `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
-	CacheRefresh              int64                    `koanf:"CacheRefresh" yaml:"CacheRefresh,omitempty"`
-	Threads                   int                      `koanf:"Threads" yaml:"Threads,omitempty"`
-	MaxBackoff                int                      `koanf:"MaxBackoff" yaml:"MaxBackoff,omitempty"`
-	MaxRetry                  int                      `koanf:"MaxRetry" yaml:"MaxRetry,omitempty"`
-	AutoConfigCheck           bool                     `koanf:"AutoConfigCheck" yaml:"AutoConfigCheck,omitempty"`
-	FirefoxOpenUrlInContainer bool                     `koanf:"FirefoxOpenUrlInContainer" yaml:"FirefoxOpenUrlInContainer,omitempty"` // deprecated
-	UrlAction                 url.Action               `koanf:"UrlAction" yaml:"UrlAction"`
-	Browser                   string                   `koanf:"Browser" yaml:"Browser,omitempty"`
-	ConfigUrlAction           string                   `koanf:"ConfigUrlAction" yaml:"ConfigUrlAction,omitempty"` // deprecated
-	ConfigProfilesBinaryPath  string                   `koanf:"ConfigProfilesBinaryPath" yaml:"ConfigProfilesBinaryPath,omitempty"`
-	ConfigProfilesUrlAction   url.ConfigProfilesAction `koanf:"ConfigProfilesUrlAction" yaml:"ConfigProfilesUrlAction,omitempty"`
-	UrlExecCommand            []string                 `koanf:"UrlExecCommand" yaml:"UrlExecCommand,omitempty"` // string or list
-	LogLevel                  string                   `koanf:"LogLevel" yaml:"LogLevel,omitempty"`
-	LogLines                  bool                     `koanf:"LogLines" yaml:"LogLines,omitempty"`
-	HistoryLimit              int64                    `koanf:"HistoryLimit" yaml:"HistoryLimit,omitempty"`
-	HistoryMinutes            int64                    `koanf:"HistoryMinutes" yaml:"HistoryMinutes,omitempty"`
-	ProfileFormat             string                   `koanf:"ProfileFormat" yaml:"ProfileFormat,omitempty"`
-	AccountPrimaryTag         []string                 `koanf:"AccountPrimaryTag" yaml:"AccountPrimaryTag,omitempty"`
-	FirstTag                  string                   `koanf:"FirstTag" yaml:"FirstTag,omitempty"`
-	PromptColors              PromptColors             `koanf:"PromptColors" yaml:"PromptColors,omitempty"` // go-prompt colors
-	ListFields                []string                 `koanf:"ListFields" yaml:"ListFields,omitempty"`
-	ConfigVariables           map[string]interface{}   `koanf:"ConfigVariables" yaml:"ConfigVariables,omitempty"`
-	EnvVarTags                []string                 `koanf:"EnvVarTags" yaml:"EnvVarTags,omitempty"`
-	FullTextSearch            bool                     `koanf:"FullTextSearch" yaml:"FullTextSearch"`
+	configFile               string                   // name of this file
+	cacheFile                string                   // name of cache file; always passed in via CLI args
+	Cache                    *Cache                   `yaml:"-"` // our cache data
+	SSO                      map[string]*SSOConfig    `koanf:"SSOConfig" yaml:"SSOConfig,omitempty"`
+	DefaultSSO               string                   `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`   // specify default SSO by key
+	SecureStore              string                   `koanf:"SecureStore" yaml:"SecureStore,omitempty"` // json or keyring
+	DefaultRegion            string                   `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
+	ConsoleDuration          int32                    `koanf:"ConsoleDuration" yaml:"ConsoleDuration,omitempty"`
+	JsonStore                string                   `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
+	Threads                  int                      `koanf:"Threads" yaml:"Threads,omitempty"`
+	MaxBackoff               int                      `koanf:"MaxBackoff" yaml:"MaxBackoff,omitempty"`
+	MaxRetry                 int                      `koanf:"MaxRetry" yaml:"MaxRetry,omitempty"`
+	UrlAction                url.Action               `koanf:"UrlAction" yaml:"UrlAction"`
+	Browser                  string                   `koanf:"Browser" yaml:"Browser,omitempty"`
+	ConfigProfilesBinaryPath string                   `koanf:"ConfigProfilesBinaryPath" yaml:"ConfigProfilesBinaryPath,omitempty"`
+	ConfigProfilesUrlAction  url.ConfigProfilesAction `koanf:"ConfigProfilesUrlAction" yaml:"ConfigProfilesUrlAction,omitempty"`
+	UrlExecCommand           []string                 `koanf:"UrlExecCommand" yaml:"UrlExecCommand,omitempty"` // string or list
+	LogLevel                 string                   `koanf:"LogLevel" yaml:"LogLevel,omitempty"`
+	LogLines                 bool                     `koanf:"LogLines" yaml:"LogLines,omitempty"`
+	HistoryLimit             int64                    `koanf:"HistoryLimit" yaml:"HistoryLimit,omitempty"`
+	HistoryMinutes           int64                    `koanf:"HistoryMinutes" yaml:"HistoryMinutes,omitempty"`
+	ProfileFormat            string                   `koanf:"ProfileFormat" yaml:"ProfileFormat,omitempty"`
+	AccountPrimaryTag        []string                 `koanf:"AccountPrimaryTag" yaml:"AccountPrimaryTag,omitempty"`
+	FirstTag                 string                   `koanf:"FirstTag" yaml:"FirstTag,omitempty"`
+	PromptColors             PromptColors             `koanf:"PromptColors" yaml:"PromptColors,omitempty"` // go-prompt colors
+	ListFields               []string                 `koanf:"ListFields" yaml:"ListFields,omitempty"`
+	ConfigVariables          map[string]interface{}   `koanf:"ConfigVariables" yaml:"ConfigVariables,omitempty"`
+	EnvVarTags               []string                 `koanf:"EnvVarTags" yaml:"EnvVarTags,omitempty"`
+	FullTextSearch           bool                     `koanf:"FullTextSearch" yaml:"FullTextSearch"`
 }
 
 // GetDefaultRegion scans the config settings file to pick the most local DefaultRegion from the tree
@@ -222,47 +218,8 @@ func (s *Settings) Validate() error {
 // applyDeprecations migrates old config options to the new one and returns true
 // if we made a change
 func (s *Settings) applyDeprecations() bool {
-	var change = false
-	var err error
-
-	// Upgrade ConfigUrlAction to ConfigProfilesUrlAction because we want to
-	// deprecate ConfigUrlAction.
-	if s.ConfigUrlAction != "" && s.ConfigProfilesUrlAction == "" {
-		s.ConfigProfilesUrlAction, err = url.NewConfigProfilesAction(s.ConfigUrlAction)
-		if err != nil {
-			log.Warnf("Invalid value for ConfigUrlAction: %s", s.ConfigUrlAction)
-		}
-		s.ConfigUrlAction = string(url.Undef) // disable old value so it is omitempty
-		change = true
-	}
-
-	// Upgrade FirefoxOpenUrlInContainer to UrlAction = open-url-in-container
-	if s.FirefoxOpenUrlInContainer {
-		s.UrlAction = url.OpenUrlContainer
-		s.FirefoxOpenUrlInContainer = false // disable old value so it is omitempty
-		change = true
-	}
-
-	// ExpiresStr => Expires in v1.11.0
-	// AccountIdStr => AccountIdPad v1.11.0
-	// ARN => Arn v1.11.0
-	if len(s.ListFields) > 0 {
-		for i, v := range s.ListFields {
-			switch v {
-			case "ExpiresStr":
-				s.ListFields[i] = "Expires"
-			case "AccountIdStr":
-				s.ListFields[i] = "AccountIdPad"
-			case "ARN":
-				s.ListFields[i] = "Arn"
-			}
-		}
-	}
-
-	// AccountIdStr .AccountId => .AccountIdPad in v1.11.0
-	s.ProfileFormat = strings.ReplaceAll(s.ProfileFormat, "AccountIdStr .AccountId", ".AccountIdPad")
-
-	return change
+	// no deprecations yet in v2.0 :)
+	return false
 }
 
 // Save overwrites the current config file with our settings (not recommended)

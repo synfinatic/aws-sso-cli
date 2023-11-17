@@ -1,4 +1,4 @@
-PROJECT_VERSION := 1.14.2
+PROJECT_VERSION := 2.0.0-beta1
 DOCKER_REPO     := synfinatic
 PROJECT_NAME    := aws-sso
 
@@ -27,16 +27,13 @@ ifeq ($(PROJECT_DELTA),)
 PROJECT_DELTA             :=
 endif
 
-VERSION_PKG               := $(shell echo $(PROJECT_VERSION) | sed 's/^v//g')
 LICENSE                   := GPLv3
 URL                       := https://github.com/$(DOCKER_REPO)/$(PROJECT_NAME)
 DESCRIPTION               := AWS SSO CLI
+GOBFLAGS                  := -trimpath
 BUILDINFOS                ?= $(shell date +%FT%T%z)$(BUILDINFOSDET)
 LDFLAGS                   := -X "main.Version=$(PROJECT_VERSION)" -X "main.Delta=$(PROJECT_DELTA)" -X "main.Buildinfos=$(BUILDINFOS)" -X "main.Tag=$(PROJECT_TAG)" -X "main.CommitID=$(PROJECT_COMMIT)"
 OUTPUT_NAME               := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)  # default for current platform
-
-# go build flags
-GOBFLAGS                  := -trimpath
 
 # supported platforms for `make release`
 WINDOWS_BIN               := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)-windows-amd64.exe
@@ -64,13 +61,18 @@ uninstall:  ## Uninstall binary from $INSTALL_PREFIX
 	rm $(INSTALL_PREFIX)/bin/$(PROJECT_NAME)
 
 release-brew: ## Create a PR against homebrew to bump the version
-	VERSION=v$(PROJECT_VERSION) ./scripts/release-check.sh
+	VERSION=$(PROJECT_VERSION) ./scripts/release-check.sh
 	brew update && brew bump-formula-pr --version $(PROJECT_VERSION) aws-sso-cli
 
 release-tag: ## Tag our current HEAD as v$(PROJECT_VERSION)
 	git tag -sa v$(PROJECT_VERSION) -m 'release $(PROJECT_VERSION)'
-	VERSION=v$(PROJECT_VERSION) ./scripts/release-check.sh
+	VERSION=$(PROJECT_VERSION) ./scripts/release-check.sh
 	git push --tags
+
+release-tag-force: ## Force update tag our current HEAD as v$(PROJECT_VERSION)
+	git tag -f -sa v$(PROJECT_VERSION) -m 'release $(PROJECT_VERSION)'
+	VERSION=$(PROJECT_VERSION) ./scripts/release-check.sh
+	git push -f --tags
 
 #DOWNLOAD_URL := https://synfin.net/misc/aws-sso-cli.$(PROJECT_VERSION).tar.gz
 DOWNLOAD_URL ?= https://github.com/synfinatic/aws-sso-cli/archive/refs/tags/v$(PROJECT_VERSION).tar.gz
@@ -95,7 +97,7 @@ tags: cmd/aws-sso/*.go sso/*.go internal/*/*.go internal/*/*/*.go ## Create tags
 
 .build-release: windows windows32 linux linux-arm64 darwin darwin-arm64
 
-.validate-release: ALL release-check
+.validate-release: ALL
 	@TAG=$$(./$(DIST_DIR)$(PROJECT_NAME) version 2>/dev/null | grep '(v$(PROJECT_VERSION))'); \
 		if test -z "$$TAG"; then \
 		echo "Build tag from does not match PROJECT_VERSION=v$(PROJECT_VERSION) in Makefile:" ; \

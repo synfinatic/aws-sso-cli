@@ -87,7 +87,7 @@ func (f *FileEdit) UpdateConfig(printDiff, force bool, configFile string) error 
 
 	if len(diff) == 0 {
 		// do nothing if there is no diff
-		log.Infof("no changes made to %s", configFile)
+		log.Infof("No changes made to %s", configFile)
 		return nil
 	}
 

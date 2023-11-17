@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/synfinatic/aws-sso-cli/internal/url"
 )
 
 func TestGetRoleMatches(t *testing.T) {
@@ -79,4 +80,36 @@ func TestGetRoleMatches(t *testing.T) {
 
 	no := accounts["123456789012"].HasRole("arn:aws:iam::123456789012:role/MissingRole")
 	assert.False(t, no)
+}
+
+func TestRefresh(t *testing.T) {
+	settings := &Settings{
+		ProfileFormat: "{{ .AccountIdPad }}:{{ .RoleName }}",
+		UrlAction:     url.Open,
+		MaxBackoff:    60,
+		MaxRetry:      3,
+	}
+
+	c := &SSOConfig{
+		settings: settings,
+		Accounts: map[string]*SSOAccount{
+			"123456789012": nil,
+		},
+	}
+	c.Refresh(settings) // no crash
+	assert.Equal(t, *(c.Accounts["123456789012"]), SSOAccount{config: c})
+
+	assert.Equal(t, c.AuthUrlAction, url.Open)
+	assert.Equal(t, c.MaxBackoff, 60)
+	assert.Equal(t, c.MaxRetry, 3)
+	assert.Equal(t, c.settings, settings)
+
+	c.Accounts["123456789012"].Roles = map[string]*SSORole{}
+	c.Accounts["123456789012"].Roles["FooBar"] = nil
+
+	c.Refresh(settings) // no crash
+	assert.Equal(t, *(c.Accounts["123456789012"].Roles["FooBar"]), SSORole{
+		ARN:     "arn:aws:iam::123456789012:role/FooBar",
+		account: c.Accounts["123456789012"],
+	})
 }

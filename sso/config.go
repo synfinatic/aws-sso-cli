@@ -19,6 +19,9 @@ package sso
  */
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -73,8 +76,16 @@ func (c *SSOConfig) Refresh(s *Settings) {
 	}
 
 	for accountId, a := range c.Accounts {
+		if a == nil {
+			c.Accounts[accountId] = &SSOAccount{}
+			a = c.Accounts[accountId]
+		}
 		a.SetParentConfig(c)
 		for roleName, r := range a.Roles {
+			if r == nil {
+				c.Accounts[accountId].Roles[roleName] = &SSORole{}
+				r = a.Roles[roleName]
+			}
 			r.SetParentAccount(a)
 			r.ARN = utils.MakeRoleARNs(accountId, roleName)
 		}
@@ -151,6 +162,16 @@ func (s *SSOConfig) GetRole(accountId int64, role string) (*SSORole, error) {
 		}
 	}
 	return &SSORole{}, fmt.Errorf("Unable to find %s:%s", id, role)
+}
+
+// GetConfigHash generates a SHA256 to be used to see if there are
+// any changes which require updating our cache
+func (s *SSOConfig) GetConfigHash(profileFormat string) string {
+	hash := sha256.New()
+	hash.Write([]byte(profileFormat))
+	b, _ := json.Marshal(s.Accounts)
+	hash.Write(b)
+	return hex.EncodeToString(hash.Sum(nil))
 }
 
 // HasRole returns true/false if the given Account has the provided arn

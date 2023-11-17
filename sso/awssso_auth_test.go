@@ -241,21 +241,67 @@ func TestAuthenticate(t *testing.T) {
 		},
 	}
 
+	assert.False(t, as.ValidAuthToken())
+
 	err = as.Authenticate("print", "fake-browser")
 	assert.NoError(t, err)
+	assert.True(t, as.ValidAuthToken())
 	assert.Equal(t, "access-token", as.Token.AccessToken)
 	assert.Equal(t, int32(expires), as.Token.ExpiresIn)
 	assert.Equal(t, "id-token", as.Token.IdToken)
 	assert.Equal(t, "refresh-token", as.Token.RefreshToken)
 	assert.Equal(t, "token-type", as.Token.TokenType)
 
-	err = as.Authenticate("", "")
-	assert.NoError(t, err)
+	// We should now have a valid auth token
+	assert.True(t, as.ValidAuthToken())
 	assert.Equal(t, "access-token", as.Token.AccessToken)
 	assert.Equal(t, int32(expires), as.Token.ExpiresIn)
 	assert.Equal(t, "id-token", as.Token.IdToken)
 	assert.Equal(t, "refresh-token", as.Token.RefreshToken)
 	assert.Equal(t, "token-type", as.Token.TokenType)
+}
+
+func TestValidAuthToken(t *testing.T) {
+	tfile, err := os.CreateTemp("", "*storage.json")
+	assert.NoError(t, err)
+
+	jstore, err := storage.OpenJsonStore(tfile.Name())
+	assert.NoError(t, err)
+
+	defer os.Remove(tfile.Name())
+
+	as := &AWSSSO{
+		SsoRegion: "us-west-1",
+		StartUrl:  "https://testing.awsapps.com/start",
+		store:     jstore,
+		SSOConfig: &SSOConfig{
+			settings: &Settings{},
+		},
+	}
+
+	token := storage.CreateTokenResponse{
+		AccessToken:  "access_token",
+		ExpiresIn:    0,
+		ExpiresAt:    0,
+		IdToken:      "id_token",
+		RefreshToken: "refresh_token",
+		TokenType:    "token_type",
+	}
+	key := as.StoreKey()
+	err = jstore.SaveCreateTokenResponse(key, token)
+	assert.NoError(t, err)
+	assert.False(t, as.ValidAuthToken())
+
+	token.ExpiresAt = 99999
+	err = jstore.SaveCreateTokenResponse(key, token)
+	assert.NoError(t, err)
+	assert.False(t, as.ValidAuthToken())
+
+	token.ExpiresIn = int32(^int(0) >> 1)
+	token.ExpiresAt = 99999999999
+	err = jstore.SaveCreateTokenResponse(key, token)
+	assert.NoError(t, err)
+	assert.True(t, as.ValidAuthToken())
 }
 
 func TestAuthenticateFailure(t *testing.T) {
