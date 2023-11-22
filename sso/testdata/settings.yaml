@@ -4,7 +4,7 @@ SSOConfig:
         StartUrl: https://d-754545454.awsapps.com/start
         DefaultRegion: us-east-1
         Accounts:
-            258234615182:
+            "25823461518":
                 Name: OurCompany Control Tower Playground
                 DefaultRegion: eu-west-1
                 Tags:
@@ -15,11 +15,11 @@ SSOConfig:
                     Tags:
                       Test: value
                       Foo: Bar
-                  LimitedAccess:
+                  LimitedAccess: # doesn't exist in the cache
                     Tags:
                       Test: value
                       Foo: Moo
-            833365043586:
+            "833365043586":
                 Name: Log archive
                 Tags:
                   Type: Sub Account
@@ -29,11 +29,11 @@ SSOConfig:
                       Test: logs
                       Foo: Bar
                       Can: Man
-            502470824893:
+            "502470824893":
                 Name: Audit
                 Tags:
                   Type: Sub Account
-            707513610766:
+            "707513610766":
                 Name: Dev Account
                 Tags:
                   Type: Sub Account
@@ -41,7 +41,7 @@ SSOConfig:
         SSORegion: us-east-1
         StartUrl: https://d-755555555.awsapps.com/start
         Accounts:
-            182347455:
+            "182347455":
                 Name: Whatever
                 Roles:
                   AWSAdministratorAccess:
@@ -52,17 +52,18 @@ SSOConfig:
       SSORegion: us-east-1
       StartUrl: https://d-88888888888.awsapps.com/start
       Accounts:
-        0012345678912:
+        "0012345678912":
           Name: MyTestName
           Roles:
             FooBar:
+        "000000555555":
 
 DefaultSSO: Default                       
 Browser: /Applications/Firefox.app
 UrlAction: print
 SecureStore: json
 JsonStore: ./testdata/store.json
-ProfileFormat: '{{.AccountName}}/{{.RoleName}}'
+ProfileFormat: '{{if ne .SSO "Default"}}{{.SSO}}:{{end}}{{.AccountName}}/{{.RoleName}}'
 AccountPrimaryTag:
   - AccountAlias
 ConfigUrlAction: open

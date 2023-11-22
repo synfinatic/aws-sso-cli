@@ -79,6 +79,7 @@ func (r *Roles) GetAllRoles() []*AWSRoleFlat {
 	for _, id := range r.AccountIds() {
 		for roleName := range r.Accounts[id].Roles {
 			flat, _ := r.GetRole(id, roleName)
+			flat.SSO = r.ssoName // hack around not detected
 			ret = append(ret, flat)
 		}
 	}

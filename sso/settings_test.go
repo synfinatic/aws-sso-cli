@@ -184,6 +184,7 @@ func (suite *SettingsTestSuite) TestGetDefaultRegion() {
 	clearEnv()
 	defer clearEnv()
 
+	// These tests should match our cache, not settings
 	assert.Equal(t, "ca-central-1", suite.settings.GetDefaultRegion(258234615182, "AWSAdministratorAccess", false))
 	assert.Equal(t, "eu-west-1", suite.settings.GetDefaultRegion(258234615182, "LimitedAccess", false))
 	assert.Equal(t, "us-east-1", suite.settings.GetDefaultRegion(833365043586, "AWSAdministratorAccess:", false))
@@ -233,24 +234,35 @@ func (suite *SettingsTestSuite) TestGetEnvVarTags() {
 
 func (suite *SettingsTestSuite) TestGetAllProfiles() {
 	t := suite.T()
+	over := OverrideSettings{}
+	defaults := map[string]interface{}{}
+	settings, err := LoadSettings(TEST_SETTINGS_FILE, TEST_CACHE_FILE, defaults, over)
+	assert.Nil(t, err)
 
 	getExecutable = func() (string, error) { return "", fmt.Errorf("failed") }
-	_, err := suite.settings.GetAllProfiles("open firefox")
+	_, err = settings.GetAllProfiles("open firefox")
 	assert.Error(t, err)
 
 	getExecutable = os.Executable
 
-	profiles, err := suite.settings.GetAllProfiles("open firefox")
+	profiles, err := settings.GetAllProfiles("open firefox")
 	assert.NoError(t, err)
 
-	assert.Len(t, *profiles, 1)
+	// 3 SSOConfigs
+	assert.Len(t, *profiles, 3)
 	assert.Contains(t, *profiles, "Default")
 
+	// Check Bug292
 	p := *profiles
-	d := p["Default"]
-	assert.Len(t, d, 19)
+	assert.Len(t, p["Bug292"], 1)
 
-	x, ok := d["arn:aws:iam::833365043586:role/AWSAdministratorAccess"]
+	// Check Another
+	assert.Len(t, p["Another"], 1)
+
+	// Check the Default config
+	assert.Len(t, p["Default"], 20)
+
+	x, ok := p["Default"]["arn:aws:iam::833365043586:role/AWSAdministratorAccess"]
 	assert.True(t, ok)
 
 	assert.Equal(t, x.Arn, "arn:aws:iam::833365043586:role/AWSAdministratorAccess")
@@ -260,25 +272,24 @@ func (suite *SettingsTestSuite) TestGetAllProfiles() {
 	assert.Equal(t, "Log archive/AWSAdministratorAccess", x.Profile)
 	assert.Equal(t, "Default", x.Sso)
 
-	assert.NoError(t, profiles.UniqueCheck(suite.settings))
+	assert.NoError(t, profiles.UniqueCheck(settings))
 
 	assert.False(t, profiles.IsDuplicate("testing"))
 	assert.True(t, profiles.IsDuplicate("Log archive/AWSAdministratorAccess"))
 
-	oldFormat := suite.settings.ProfileFormat
+	oldFormat := settings.ProfileFormat
 	// generates duplicates
-	suite.settings.ProfileFormat = "{{ .AccountId }}"
-	assert.Error(t, profiles.UniqueCheck(suite.settings))
+	settings.ProfileFormat = "{{ .AccountId }}"
+	assert.Error(t, profiles.UniqueCheck(settings))
 
 	// unable to generate a profile
-	suite.settings.ProfileFormat = "{{ .UniqueCheckFailure }}"
-	assert.Error(t, profiles.UniqueCheck(suite.settings))
+	settings.ProfileFormat = "{{ .UniqueCheckFailure }}"
+	assert.Error(t, profiles.UniqueCheck(settings))
 
-	suite.settings.ProfileFormat = "{{ .GetAllProfilesFailure }}"
-	_, err = suite.settings.GetAllProfiles("open firefox")
+	settings.ProfileFormat = "{{ .GetAllProfilesFailure }}"
+	_, err = settings.GetAllProfiles("open firefox")
 	assert.Error(t, err)
-
-	suite.settings.ProfileFormat = oldFormat
+	settings.ProfileFormat = oldFormat
 }
 
 func (suite *SettingsTestSuite) TestValidate() {

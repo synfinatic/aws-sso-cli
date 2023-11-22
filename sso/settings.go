@@ -95,24 +95,23 @@ func (s *Settings) GetDefaultRegion(id int64, roleName string, noRegion bool) st
 		return ""
 	}
 
-	role := s.DefaultRegion
-
+	region := s.DefaultRegion
 	if c, ok := s.SSO[s.DefaultSSO]; ok {
 		if c.DefaultRegion != "" {
-			role = c.DefaultRegion
+			region = c.DefaultRegion
 		}
 		if a, ok := c.Accounts[accountId]; ok {
 			if a.DefaultRegion != "" {
-				role = a.DefaultRegion
+				region = a.DefaultRegion
 			}
 			if r, ok := a.Roles[roleName]; ok {
 				if r.DefaultRegion != "" {
-					role = r.DefaultRegion
+					region = r.DefaultRegion
 				}
 			}
 		}
 	}
-	return role
+	return region
 }
 
 var DEFAULT_ACCOUNT_PRIMARY_TAGS []string = []string{
@@ -434,17 +433,20 @@ func (p *ProfileMap) UniqueCheck(s *Settings) error {
 	profileUniqueCheck := map[string][]string{} // ProfileName() => Arn
 
 	for ssoName, sso := range s.Cache.SSO {
-		for _, role := range sso.Roles.GetAllRoles() {
-			profile, err := role.ProfileName(s)
+		for _, roleFlat := range sso.Roles.GetAllRoles() {
+			if roleFlat.SSO == "" {
+				roleFlat.SSO = ssoName
+			}
+			profile, err := roleFlat.ProfileName(s)
 			if err != nil {
 				return err
 			}
 
 			if match, duplicate := profileUniqueCheck[profile]; duplicate {
 				return fmt.Errorf("Duplicate profile name '%s' for:\n%s: %s\n%s: %s",
-					profile, match[0], match[1], ssoName, role.Arn)
+					profile, match[0], match[1], ssoName, roleFlat.Arn)
 			}
-			profileUniqueCheck[profile] = []string{ssoName, role.Arn}
+			profileUniqueCheck[profile] = []string{ssoName, roleFlat.Arn}
 		}
 	}
 

@@ -76,10 +76,22 @@ func OpenCache(f string, s *Settings) (*Cache, error) {
 	c := &cache
 	c.deleteOldHistory()
 	for ssoName, _ := range s.SSO {
+		if c.SSO[ssoName] == nil {
+			c.SSO[ssoName] = NewSSOCache()
+		}
 		c.addConfigRoles(c.SSO[ssoName].Roles, s.SSO[ssoName])
 	}
 
 	return c, err
+}
+
+// Initialize a new SSOCache object
+func NewSSOCache() *SSOCache {
+	return &SSOCache{
+		Roles: &Roles{
+			Accounts: map[int64]*AWSAccount{},
+		},
+	}
 }
 
 // GetSSO returns the current SSOCache object for the current SSO instance

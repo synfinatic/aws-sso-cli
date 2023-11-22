@@ -53,15 +53,15 @@ func TestCompletions(t *testing.T) {
 
 	c = p.RoleComplete()
 	assert.NotNil(t, c)
-	assert.Equal(t, 7, len(c.Predict(args)))
+	assert.Equal(t, 8, len(c.Predict(args)))
 
 	c = p.ArnComplete()
 	assert.NotNil(t, c)
-	assert.Equal(t, 19, len(c.Predict(args)))
+	assert.Equal(t, 20, len(c.Predict(args)))
 
 	c = p.ProfileComplete()
 	assert.NotNil(t, c)
-	assert.Equal(t, 19, len(c.Predict(args)))
+	assert.Equal(t, 20, len(c.Predict(args)))
 
 	c = p.RegionComplete()
 	assert.NotNil(t, c)
