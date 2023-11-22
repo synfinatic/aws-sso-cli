@@ -208,14 +208,15 @@ func (suite *CacheRolesTestSuite) TestProfileName() {
 func (suite *CacheRolesTestSuite) TestGetRoleByProfile() {
 	t := suite.T()
 	roles := suite.cache.SSO[suite.cache.ssoName].Roles
-	flat, err := roles.GetRoleByProfile("audit-admin", suite.settings)
+	roles.Settings = suite.settings
+	flat, err := roles.GetRoleByProfile("audit-admin")
 	assert.NoError(t, err)
 	assert.Equal(t, "arn:aws:iam::502470824893:role/AWSAdministratorAccess", flat.Arn)
 
-	_, err = roles.GetRoleByProfile("foobar", suite.settings)
+	_, err = roles.GetRoleByProfile("foobar")
 	assert.Error(t, err)
 
-	flat, err = roles.GetRoleByProfile("Dev Account/AWSReadOnlyAccess", suite.settings)
+	flat, err = roles.GetRoleByProfile("Dev Account/AWSReadOnlyAccess")
 	assert.NoError(t, err)
 	assert.Equal(t, "arn:aws:iam::707513610766:role/AWSReadOnlyAccess", flat.Arn)
 }
@@ -223,7 +224,8 @@ func (suite *CacheRolesTestSuite) TestGetRoleByProfile() {
 func (suite *CacheRolesTestSuite) TestGetEnvVarTags() {
 	t := suite.T()
 	roles := suite.cache.SSO[suite.cache.ssoName].Roles
-	flat, err := roles.GetRoleByProfile("audit-admin", suite.settings)
+	roles.Settings = suite.settings
+	flat, err := roles.GetRoleByProfile("audit-admin")
 	assert.NoError(t, err)
 
 	settings := Settings{
@@ -456,8 +458,11 @@ func (suite *CacheRolesTestSuite) TestCheckProfiles() {
 	err = goyaml.Unmarshal(data, &tests)
 	assert.NoError(t, err)
 
-	for testName, testData := range tests {
-		err := testData.checkProfiles(suite.cache.settings)
+	for testName, roles := range tests {
+		roles.Settings = &Settings{
+			ProfileFormat: "{{.AccountId}}:{{.RoleName}}",
+		} // hack
+		err := roles.checkProfiles()
 		if strings.HasPrefix(testName, "Invalid") {
 			assert.Error(t, err, testName)
 		} else {
@@ -465,24 +470,27 @@ func (suite *CacheRolesTestSuite) TestCheckProfiles() {
 		}
 	}
 
-	badSettings := *suite.cache.settings
-	badSettings.ProfileFormat = "{{ .AccountName }}"
 	r := tests["Valid1"]
-	err = r.checkProfiles(&badSettings)
+	r.Settings = suite.cache.settings
+	r.Settings.ProfileFormat = "{{ .AccountName }}"
+	err = r.checkProfiles()
 	assert.NoError(t, err)
 
 	r = tests["Valid2"]
-	err = r.checkProfiles(&badSettings)
+	r.Settings = suite.cache.settings
+	err = r.checkProfiles()
 	assert.Error(t, err)
 
-	badSettings.ProfileFormat = "{{ .RoleName }}"
 	r = tests["Valid3"]
-	err = r.checkProfiles(&badSettings)
+	r.Settings = suite.cache.settings
+	r.Settings.ProfileFormat = "{{ .RoleName }}"
+	err = r.checkProfiles()
 	assert.Error(t, err)
 
-	badSettings.ProfileFormat = "{{ .InvalidFormat }}"
 	r = tests["Valid3"]
-	err = r.checkProfiles(&badSettings)
+	r.Settings = suite.cache.settings
+	r.Settings.ProfileFormat = "{{ .InvalidFormat }}"
+	err = r.checkProfiles()
 	assert.Error(t, err)
 }
 

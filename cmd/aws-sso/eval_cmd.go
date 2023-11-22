@@ -61,7 +61,7 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 		}
 	} else if ctx.Cli.Eval.Profile != "" {
 		cache := ctx.Settings.Cache.GetSSO()
-		rFlat, err := cache.Roles.GetRoleByProfile(ctx.Cli.Eval.Profile, ctx.Settings)
+		rFlat, err := cache.Roles.GetRoleByProfile(ctx.Cli.Eval.Profile)
 		if err != nil {
 			return err
 		}

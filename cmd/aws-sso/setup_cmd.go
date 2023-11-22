@@ -56,7 +56,7 @@ func (cc *SetupAllCmd) Run(ctx *RunContext) error {
 	log.SetLevel(logrus.InfoLevel)
 
 	// load the secure store
-	loadSecureStore(ctx)
+	// loadSecureStore(ctx)
 
 	// Force an auth to AWS
 	log.Info("Will now authenticate to AWS...")

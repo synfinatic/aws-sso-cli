@@ -25,15 +25,6 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/url"
 )
 
-const (
-	CONFIG_TEMPLATE = `{{range $sso, $struct := . }}{{ range $arn, $profile := $struct }}
-[profile {{ $profile.Profile }}]
-credential_process = {{ $profile.BinaryPath }} -u {{ $profile.Open }} -S "{{ $profile.Sso }}" process --arn {{ $profile.Arn }}
-{{ if len $profile.DefaultRegion }}region = {{ printf "%s\n" $profile.DefaultRegion }}{{ end -}}
-{{ range $key, $value := $profile.ConfigVariables }}{{ $key }} = {{ $value }}
-{{end}}{{end}}{{end}}`
-)
-
 type AwsConfigCmd struct {
 	Diff      bool   `kong:"help='Print a diff of changes to the config file instead of modifying it',xor='action'"`
 	Force     bool   `kong:"help='Write a new config file without prompting'"`

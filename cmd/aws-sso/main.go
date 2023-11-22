@@ -187,15 +187,16 @@ func main() {
 		log.WithError(err).Fatalf("Unable to open config file: %s", cli.ConfigFile)
 	}
 
+	// Load Settings & Cache
 	cacheFile := utils.GetHomePath(INSECURE_CACHE_FILE)
-
 	if runCtx.Settings, err = sso.LoadSettings(cli.ConfigFile, cacheFile, DEFAULT_CONFIG, override); err != nil {
 		log.Fatalf("unable to load settings: %s", err.Error())
 	}
 
 	switch ctx.Command() {
 	case "ecs run", "setup wizard", "setup all":
-		break // do nothing
+		// don't init AWSSSO or our SecureStore
+		break
 
 	case "list", "login", "ecs list", "ecs unload", "ecs profile":
 		// Initialize our AwsSSO variable & SecureStore, but don't do any auth

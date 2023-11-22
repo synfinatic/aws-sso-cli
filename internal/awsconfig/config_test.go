@@ -69,6 +69,8 @@ func TestGetProfileMap(t *testing.T) {
 		},
 	}
 
+	s.Cache.SSO["Default"].Roles.Settings = s
+
 	profiles, err := getProfileMap(s, url.Open)
 	p := *profiles
 	assert.NoError(t, err)
@@ -91,6 +93,7 @@ func TestGetProfileMap(t *testing.T) {
 			},
 		},
 	}
+	s.Cache.SSO["Other"].Roles.Settings = s
 	_, err = getProfileMap(s, url.Open)
 	assert.Error(t, err)
 }
@@ -121,6 +124,7 @@ func TestPrintAwsConfig(t *testing.T) {
 			},
 		},
 	}
+	s.Cache.SSO["Default"].Roles.Settings = s
 
 	var err error
 	stdout, err = os.CreateTemp("", "")
@@ -160,6 +164,7 @@ func TestPrintAwsConfig(t *testing.T) {
 			},
 		},
 	}
+	s.Cache.SSO["Other"].Roles.Settings = s
 
 	err = PrintAwsConfig(s, url.Open)
 	assert.Error(t, err)
@@ -191,6 +196,7 @@ func TestUpdateAwsConfig(t *testing.T) {
 			},
 		},
 	}
+	s.Cache.SSO["Default"].Roles.Settings = s
 
 	cfile, err := os.CreateTemp("", "")
 	assert.NoError(t, err)
@@ -229,6 +235,7 @@ func TestUpdateAwsConfig(t *testing.T) {
 			},
 		},
 	}
+	s.Cache.SSO["Other"].Roles.Settings = s
 
 	err = UpdateAwsConfig(s, url.Open, fname, false, true)
 	assert.Error(t, err)

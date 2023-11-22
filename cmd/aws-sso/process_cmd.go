@@ -48,7 +48,7 @@ func (cc *ProcessCmd) Run(ctx *RunContext) error {
 
 	if ctx.Cli.Process.Profile != "" {
 		cache := ctx.Settings.Cache.GetSSO()
-		rFlat, err := cache.Roles.GetRoleByProfile(ctx.Cli.Process.Profile, ctx.Settings)
+		rFlat, err := cache.Roles.GetRoleByProfile(ctx.Cli.Process.Profile)
 		if err != nil {
 			return err
 		}

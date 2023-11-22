@@ -37,7 +37,7 @@ import (
 const (
 	START_URL_FORMAT       = "https://%s/start"
 	START_FQDN_SUFFIX      = ".awsapps.com"
-	DEFAULT_PROFILE_FORMAT = "{{ FirstItem .AccountName (.AccountAlias | nospace) }}:{{ .RoleName }}"
+	DEFAULT_PROFILE_FORMAT = "{{if ne .SSO \"Primary\"}}{{ .SSO}}:{{end}}{{ FirstItem .AccountName (.AccountAlias | nospace) }}:{{ .RoleName }}"
 	OLD_PROFILE_FORMAT     = "{{ .AccountIdPad }}:{{ .RoleName }}"
 )
 

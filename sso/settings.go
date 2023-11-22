@@ -189,8 +189,10 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 		}
 	}
 
-	s.SSO[s.DefaultSSO].Refresh(s)
-
+	// Refresh all the SSO config blocks
+	for _, sso := range s.SSO {
+		sso.Refresh(s)
+	}
 	s.applyDeprecations()
 	if err = s.Validate(); err != nil {
 		return s, err
@@ -199,6 +201,9 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 	// load the cache
 	if s.Cache, err = OpenCache(s.cacheFile, s); err != nil {
 		log.Infof("%s", err.Error())
+	}
+	for _, ssoCache := range s.Cache.SSO {
+		ssoCache.Roles.Settings = s
 	}
 
 	return s, nil
@@ -398,8 +403,9 @@ func (s *Settings) GetAllProfiles(open url.Action) (*ProfileMap, error) {
 
 	// Find all the roles across all of the SSO instances
 	for ssoName, sso := range s.Cache.SSO {
-		for _, role := range sso.Roles.GetAllRoles() {
-			profile, err := role.ProfileName(s)
+		for _, roleFlat := range sso.Roles.GetAllRoles() {
+			roleFlat.SSO = ssoName // doesn't seem to be detected?
+			profile, err := roleFlat.ProfileName(s)
 			if err != nil {
 				return &profiles, err
 			}
@@ -408,11 +414,11 @@ func (s *Settings) GetAllProfiles(open url.Action) (*ProfileMap, error) {
 				profiles[ssoName] = map[string]ProfileConfig{}
 			}
 
-			profiles[ssoName][role.Arn] = ProfileConfig{
-				Arn:             role.Arn,
+			profiles[ssoName][roleFlat.Arn] = ProfileConfig{
+				Arn:             roleFlat.Arn,
 				BinaryPath:      binaryPath,
 				ConfigVariables: s.ConfigVariables,
-				DefaultRegion:   role.DefaultRegion,
+				DefaultRegion:   roleFlat.DefaultRegion,
 				Open:            string(open),
 				Profile:         profile,
 				Sso:             ssoName,

@@ -88,7 +88,7 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 
 	if ctx.Cli.Console.AwsProfile != "" { // ENV variable check
 		ssoCache := ctx.Settings.Cache.GetSSO()
-		_, err := ssoCache.Roles.GetRoleByProfile(ctx.Cli.Console.AwsProfile, ctx.Settings)
+		_, err := ssoCache.Roles.GetRoleByProfile(ctx.Cli.Console.AwsProfile)
 		if err == nil {
 			return consoleViaSDK(ctx)
 		}
@@ -157,7 +157,7 @@ func consoleViaEnvVars(ctx *RunContext) error {
 }
 
 func consoleViaSDK(ctx *RunContext) error {
-	rFlat, err := ctx.Settings.Cache.GetSSO().Roles.GetRoleByProfile(ctx.Cli.Console.AwsProfile, ctx.Settings)
+	rFlat, err := ctx.Settings.Cache.GetSSO().Roles.GetRoleByProfile(ctx.Cli.Console.AwsProfile)
 	if err == nil {
 		return openConsole(ctx, rFlat.AccountId, rFlat.RoleName)
 	}

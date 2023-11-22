@@ -42,6 +42,7 @@ type Roles struct {
 	StartUrl      string                `json:"StartUrl"`
 	DefaultRegion string                `json:"DefaultRegion"`
 	ssoName       string
+	Settings      *Settings `json:"-"` // must be public for external unit tests
 }
 
 // AWSAccount and AWSRole is how we store the data
@@ -202,11 +203,11 @@ func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) 
 }
 
 // GetRoleByProfile is just like GetRole(), but selects the role based on the Profile
-func (r *Roles) GetRoleByProfile(profileName string, s *Settings) (*AWSRoleFlat, error) {
+func (r *Roles) GetRoleByProfile(profileName string) (*AWSRoleFlat, error) {
 	for aId, account := range r.Accounts {
 		for roleName := range account.Roles {
 			flat, _ := r.GetRole(aId, roleName)
-			pName, err := flat.ProfileName(s)
+			pName, err := flat.ProfileName(r.Settings)
 			if err != nil {
 				log.WithError(err).Warnf(
 					"unable to generate Profile for %s", utils.MakeRoleARN(aId, roleName))
@@ -282,7 +283,7 @@ func (r *Roles) MatchingRolesWithTagKey(key string) []*AWSRoleFlat {
 }
 
 // checkProfiles verfies that all the Profile names are unique for all the defined roles
-func (r *Roles) checkProfiles(s *Settings) error {
+func (r *Roles) checkProfiles() error {
 	profileUniqueCheck := map[string]string{} // ProfileName() => Arn
 	for accountId, account := range r.Accounts {
 		for roleName, role := range account.Roles {
@@ -291,7 +292,7 @@ func (r *Roles) checkProfiles(s *Settings) error {
 				return err
 			}
 
-			pname, err := flat.ProfileName(s)
+			pname, err := flat.ProfileName(r.Settings)
 			if err != nil {
 				return err
 			}

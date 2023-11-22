@@ -52,7 +52,7 @@ func (cc *CacheCmd) Run(ctx *RunContext) error {
 		return fmt.Errorf("Unable to save role cache: %s", err.Error())
 	}
 
-	// should we update our config??
+	// FIXME: should we update our config??
 	if !ctx.Cli.Cache.NoConfigCheck && ctx.Settings.ConfigProfilesUrlAction != url.ConfigProfilesUndef {
 		action, _ := url.NewAction(string(ctx.Settings.ConfigProfilesUrlAction))
 		err := awsconfig.UpdateAwsConfig(ctx.Settings, action, "", true, false)

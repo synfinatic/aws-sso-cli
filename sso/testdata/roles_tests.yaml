@@ -1,6 +1,6 @@
 Invalid1:
   Accounts:
-    0000001:
+    123456789012:
       Roles:
         Foobar:
           Profile: FunnyMan
@@ -11,7 +11,7 @@ Invalid1:
 
 Invalid2:
   Accounts:
-    0000001:
+    123456789012:
       Roles:
         Foobar:
           Profile: FunnyMan
@@ -20,7 +20,7 @@ Invalid2:
 
 Valid1:
   Accounts:
-    0000001:
+    123456789012:
       Roles:
         Foobar:
           Profile: FunnyMan
@@ -30,7 +30,7 @@ Valid1:
 
 Valid2:
   Accounts:
-    0000001:
+    123456789012:
       Roles:
         Foobar:
           Tags:
@@ -41,12 +41,12 @@ Valid2:
 
 Valid3:
   Accounts:
-    0000001:
+    123456789012:
       Roles:
         Foobar:
           Tags:
             Foo: Bar
-    0000002:
+    223456789012:
       Roles:
         Foobar:
           Tags:

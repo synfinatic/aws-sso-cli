@@ -46,6 +46,14 @@ type SSOConfig struct {
 	MaxRetry   int `koanf:"-" yaml:"-"`
 }
 
+func (s *SSOConfig) GetSSONames() []string {
+	ssoNames := []string{}
+	for name, _ := range s.settings.SSO {
+		ssoNames = append(ssoNames, name)
+	}
+	return ssoNames
+}
+
 type SSOAccount struct {
 	config        *SSOConfig          // pointer back up
 	Name          string              `koanf:"Name" yaml:"Name,omitempty"` // Admin configured Account Name

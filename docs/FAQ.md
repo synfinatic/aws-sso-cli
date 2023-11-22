@@ -75,7 +75,7 @@ This is an example of how to configure two different AWS SSO instances:
 
 ```yaml
 SSOConfig:
-  Primary:
+  Default:
     SSORegion: us-east-2
     StartUrl: https://d-123455555.awsapps.com/start
   Testing:
@@ -84,7 +84,7 @@ SSOConfig:
 DefaultSSO: Primary
 ```
 
-With the above config, `Primary` is the default AWS SSO instance, but you can
+With the above config, `Default` is the default AWS SSO instance, but you can
 select `Testing` via the `--sso` argument or `$AWS_SSO` environment variable.
 
 ### Using non-default AWS SSO instances with auto-complete

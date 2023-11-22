@@ -1,4 +1,4 @@
-PROJECT_VERSION := 2.0.0-beta1
+PROJECT_VERSION := 2.0.0-beta2
 DOCKER_REPO     := synfinatic
 PROJECT_NAME    := aws-sso
 
@@ -112,10 +112,6 @@ release: .validate-release .shasum clean .build-release package ## Build all our
 run:  ## build and run using $PROGRAM_ARGS
 	go run ./cmd/aws-sso $(PROGRAM_ARGS)
 
-.PHONY: delve
-delve: ## debug binary using $PROGRAM_ARGS
-	dlv debug ./cmd/aws-sso -- $(PROGRAM_ARGS)
-
 clean-all: clean ## clean _everything_
 
 clean: ## Remove all binaries in dist
@@ -133,8 +129,8 @@ go-get:  ## Get our go modules
 build-race: .prepare ## Build race detection binary
 	go build -race -ldflags='$(LDFLAGS)' -o $(OUTPUT_NAME) ./cmd/aws-sso/...
 
-debug: .prepare ## Run debug in dlv
-	dlv debug ./cmd/aws-sso
+debug: .prepare  ## Debug via dlv using $PROGRAM_ARGS
+	dlv debug --check-go-version=false ./cmd/aws-sso -- $(PROGRAM_ARGS)
 
 .PHONY: unittest
 unittest: ## Run go unit tests

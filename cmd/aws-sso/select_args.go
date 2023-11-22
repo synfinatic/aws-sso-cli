@@ -61,7 +61,7 @@ func NewSelectCliArgs(arn string, accountId int64, role, profile string) *Select
 func (a *SelectCliArgs) Update(ctx *RunContext) error {
 	if a.Profile != "" {
 		cache := ctx.Settings.Cache.GetSSO()
-		rFlat, err := cache.Roles.GetRoleByProfile(a.Profile, ctx.Settings)
+		rFlat, err := cache.Roles.GetRoleByProfile(a.Profile)
 		if err != nil {
 			return &InvalidArgsError{msg: "Invalid --profile %s", arg: a.Profile}
 		}

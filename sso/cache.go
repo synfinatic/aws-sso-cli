@@ -75,6 +75,9 @@ func OpenCache(f string, s *Settings) (*Cache, error) {
 
 	c := &cache
 	c.deleteOldHistory()
+	for ssoName, _ := range s.SSO {
+		c.addConfigRoles(c.SSO[ssoName].Roles, s.SSO[ssoName])
+	}
 
 	return c, err
 }
@@ -251,15 +254,16 @@ func (c *Cache) deleteOldHistory() {
 	c.GetSSO().History = newHistoryItems
 }
 
-// Refresh updates our cached Roles based on AWS SSO & our Config
+// Refresh queries AWS and updates our cached Roles based on AWS SSO & our Config
 // but does not save this data!
 func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads int) error {
+	var err error
+
 	// Only refresh once per execution
 	if c.refreshed {
 		return nil
 	}
 	c.refreshed = true
-	log.Debugf("refreshing %s SSO cache", ssoName)
 
 	// save role creds expires time
 	expires := map[string]int64{}
@@ -277,6 +281,7 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads 
 	for _, arn := range c.SSO[ssoName].History {
 		roleFlat, err := c.GetRole(arn)
 		if err != nil {
+			log.Errorf("Unable to fetch %s", arn)
 			continue
 		}
 		if value, ok := roleFlat.Tags["History"]; ok {
@@ -306,6 +311,7 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads 
 			}
 		}
 	}
+
 	c.ConfigCreatedAt = config.CreatedAt()
 	return nil
 }
@@ -399,15 +405,16 @@ func (c *Cache) GetRole(arn string) (*AWSRoleFlat, error) {
 	return cache.Roles.GetRole(accountId, roleName)
 }
 
-// Merges the AWS SSO and our Config file to create our Roles struct
-// which is defined in cache_roles.go
+// Queries AWS SSO and then merges our Config file to create our Roles struct
+// which is defined in roles.go
 func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig, threads int) (*Roles, error) {
 	r := Roles{
 		SSORegion:     config.SSORegion,
 		StartUrl:      config.StartUrl,
 		DefaultRegion: config.DefaultRegion,
 		Accounts:      map[int64]*AWSAccount{},
-		ssoName:       config.settings.DefaultSSO,
+		ssoName:       c.ssoName,
+		Settings:      c.settings,
 	}
 
 	if err := c.addSSORoles(&r, as, threads); err != nil {
@@ -418,7 +425,7 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig, threads int) (*Roles, er
 		return &Roles{}, err
 	}
 
-	if err := r.checkProfiles(c.settings); err != nil {
+	if err := r.checkProfiles(); err != nil {
 		return &Roles{}, err
 	}
 
@@ -442,8 +449,8 @@ func fetchSSORole(id int, as *AWSSSO, aInfo <-chan AccountInfo, rInfo chan<- []R
 	}
 }
 
-// processSSORoles updates the *Roles with ith the list of RoleInfo
-// and using our SSOCache
+// processSSORoles updates the *Roles with with the list of RoleInfo
+// and using our SSOCache.  Used by addSSORoles() below.
 func processSSORoles(roles []RoleInfo, cache *SSOCache, r *Roles) {
 	for _, role := range roles {
 		log.Debugf("Processing %s:%s", role.AccountId, role.RoleName)
@@ -532,7 +539,8 @@ func (c *Cache) addSSORoles(r *Roles, as *AWSSSO, threads int) error {
 			case roles := <-results:
 				processSSORoles(roles, cache, r)
 				count++ // increment count only when processing results
-				log.Debugf("proccessed %d accounts, added %d roles, total %d", count, len(roles), len(r.GetAllRoles()))
+				log.Debugf("proccessed %d accounts, added %d roles, total %d",
+					count, len(roles), len(r.GetAllRoles()))
 			case <-ticker.C:
 				log.Warnf("Fetching roles for %d accounts, this might take a while...\n", len(accounts)+1)
 				ticker.Stop()
@@ -544,6 +552,7 @@ func (c *Cache) addSSORoles(r *Roles, as *AWSSSO, threads int) error {
 }
 
 // addConfigRoles decorates the provided Roles with the contents of our config
+// FIXME: This needs to be called for all ssoNames!!!!
 func (c *Cache) addConfigRoles(r *Roles, config *SSOConfig) error {
 	// The load all the Config file stuff.  Normally this is just adding markup, but
 	// for accounts &roles that are not in SSO, we may be creating them as well!
@@ -563,6 +572,10 @@ func (c *Cache) addConfigRoles(r *Roles, config *SSOConfig) error {
 
 		// set our account tags
 		for k, v := range config.Accounts[accountId].Tags {
+			if r.Accounts[id].Tags == nil {
+				// yes, this is necessary
+				r.Accounts[id].Tags = map[string]string{}
+			}
 			r.Accounts[id].Tags[k] = v
 		}
 
