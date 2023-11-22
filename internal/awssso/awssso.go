@@ -1,4 +1,4 @@
-package sso
+package awssso
 
 /*
  * AWS SSO CLI
@@ -45,41 +45,28 @@ import (
 var MAX_RETRY_ATTEMPTS int = 10
 var MAX_BACKOFF_SECONDS int = 5
 
-// Necessary for mocking
-type SsoOidcAPI interface {
-	RegisterClient(context.Context, *ssooidc.RegisterClientInput, ...func(*ssooidc.Options)) (*ssooidc.RegisterClientOutput, error)
-	StartDeviceAuthorization(context.Context, *ssooidc.StartDeviceAuthorizationInput, ...func(*ssooidc.Options)) (*ssooidc.StartDeviceAuthorizationOutput, error)
-	CreateToken(context.Context, *ssooidc.CreateTokenInput, ...func(*ssooidc.Options)) (*ssooidc.CreateTokenOutput, error)
-}
-
-type SsoAPI interface {
-	ListAccountRoles(context.Context, *sso.ListAccountRolesInput, ...func(*sso.Options)) (*sso.ListAccountRolesOutput, error)
-	ListAccounts(context.Context, *sso.ListAccountsInput, ...func(*sso.Options)) (*sso.ListAccountsOutput, error)
-	GetRoleCredentials(context.Context, *sso.GetRoleCredentialsInput, ...func(*sso.Options)) (*sso.GetRoleCredentialsOutput, error)
-	Logout(context.Context, *sso.LogoutInput, ...func(*sso.Options)) (*sso.LogoutOutput, error)
-}
-
 type AWSSSO struct {
-	key              string // key in the settings file that names us
+	authenticateLock sync.RWMutex // lock for reauthenticate()
+	browser          string       // cache for future calls
+	key              string       // key in the settings file that names us
 	sso              SsoAPI
 	ssooidc          SsoOidcAPI
 	store            storage.SecureStorage
-	ClientName       string                      `json:"ClientName"`
-	ClientType       string                      `json:"ClientType"`
-	SsoRegion        string                      `json:"ssoRegion"`
-	StartUrl         string                      `json:"startUrl"`
-	ClientData       storage.RegisterClientData  `json:"RegisterClient"`
-	DeviceAuth       storage.StartDeviceAuthData `json:"StartDeviceAuth"`
-	Token            storage.CreateTokenResponse `json:"TokenResponse"`
-	tokenLock        sync.RWMutex                // lock for our Token
-	Accounts         []AccountInfo               `json:"Accounts"`
-	Roles            map[string][]RoleInfo       `json:"Roles"` // key is AccountId
-	rolesLock        sync.RWMutex                // lock for our Roles
-	SSOConfig        *SSOConfig                  `json:"SSOConfig"`
-	urlAction        url.Action                  // cache for future calls
-	browser          string                      // cache for future calls
-	urlExecCommand   []string                    // cache for future calls
-	authenticateLock sync.RWMutex                // lock for reauthenticate()
+	urlAction        url.Action // cache for future calls
+	urlExecCommand   []string   // cache for future calls
+
+	Accounts   []AccountInfo               `json:"Accounts"`
+	ClientName string                      `json:"ClientName"`
+	ClientType string                      `json:"ClientType"`
+	ClientData storage.RegisterClientData  `json:"RegisterClient"`
+	DeviceAuth storage.StartDeviceAuthData `json:"StartDeviceAuth"`
+	Roles      map[string][]RoleInfo       `json:"Roles"` // key is AccountId
+	rolesLock  sync.RWMutex                // lock for our Roles
+	SSOConfig  *SSOConfig                  `json:"SSOConfig"`
+	SsoRegion  string                      `json:"ssoRegion"`
+	StartUrl   string                      `json:"startUrl"`
+	Token      storage.CreateTokenResponse `json:"TokenResponse"`
+	tokenLock  sync.RWMutex                // lock for our Token
 }
 
 func NewAWSSSO(s *SSOConfig, store *storage.SecureStorage) *AWSSSO {
@@ -124,42 +111,6 @@ func NewAWSSSO(s *SSOConfig, store *storage.SecureStorage) *AWSSSO {
 		urlExecCommand: s.settings.UrlExecCommand,
 	}
 	return &as
-}
-
-type RoleInfo struct {
-	Id           int    `yaml:"Id" json:"Id" header:"Id"`
-	Arn          string `yaml:"-" json:"-" header:"Arn"`
-	RoleName     string `yaml:"RoleName" json:"RoleName" header:"RoleName"`
-	AccountId    string `yaml:"AccountId" json:"AccountId" header:"AccountId"`
-	AccountName  string `yaml:"AccountName" json:"AccountName" header:"AccountName"`
-	EmailAddress string `yaml:"EmailAddress" json:"EmailAddress" header:"EmailAddress"`
-	Expires      int64  `yaml:"Expires" json:"Expires" header:"Expires"`
-	Profile      string `yaml:"Profile" json:"Profile" header:"Profile"`
-	Region       string `yaml:"Region" json:"Region" header:"Region"`
-	SSORegion    string `header:"SSORegion"`
-	StartUrl     string `header:"StartUrl"`
-	Via          string `header:"Via"`
-}
-
-func (ri RoleInfo) GetHeader(fieldName string) (string, error) {
-	v := reflect.ValueOf(ri)
-	return gotable.GetHeaderTag(v, fieldName)
-}
-
-func (ri RoleInfo) RoleArn() string {
-	a, _ := strconv.ParseInt(ri.AccountId, 10, 64)
-	return utils.MakeRoleARN(a, ri.RoleName)
-}
-
-func (ri RoleInfo) GetAccountId64() int64 {
-	i64, err := strconv.ParseInt(ri.AccountId, 10, 64)
-	if err != nil {
-		log.WithError(err).Panicf("Invalid AWS AccountID from AWS SSO: %s", ri.AccountId)
-	}
-	if i64 < 0 {
-		log.WithError(err).Panicf("AWS AccountID must be >= 0: %s", ri.AccountId)
-	}
-	return i64
 }
 
 // GetRoles fetches all the AWS SSO IAM Roles for the given AWS Account
@@ -294,54 +245,6 @@ func (as *AWSSSO) ListAccountRoles(input *sso.ListAccountRolesInput) (*sso.ListA
 		}
 	}
 	return output, err
-}
-
-// makeRoleInfo takes the sso.types.RoleInfo and adds it onto our as.Roles[accountId] list
-func (as *AWSSSO) makeRoleInfo(account AccountInfo, i int, r ssotypes.RoleInfo) {
-	var via string
-
-	aId, _ := strconv.ParseInt(account.AccountId, 10, 64)
-	ssoRole, err := as.SSOConfig.GetRole(aId, aws.ToString(r.RoleName))
-	if err != nil && len(ssoRole.Via) > 0 {
-		via = ssoRole.Via
-	}
-
-	as.rolesLock.Lock()
-	defer as.rolesLock.Unlock()
-	as.Roles[account.AccountId] = append(as.Roles[account.AccountId], RoleInfo{
-		Id:           i,
-		AccountId:    aws.ToString(r.AccountId),
-		Arn:          utils.MakeRoleARN(aId, aws.ToString(r.RoleName)),
-		RoleName:     aws.ToString(r.RoleName),
-		AccountName:  account.AccountName,
-		EmailAddress: account.EmailAddress,
-		SSORegion:    as.SsoRegion,
-		StartUrl:     as.StartUrl,
-		Via:          via,
-	})
-}
-
-type AccountInfo struct {
-	Id           int    `yaml:"Id" json:"Id" header:"Id"`
-	AccountId    string `yaml:"AccountId" json:"AccountId" header:"AccountId"`
-	AccountName  string `yaml:"AccountName" json:"AccountName" header:"AccountName"`
-	EmailAddress string `yaml:"EmailAddress" json:"EmailAddress" header:"EmailAddress"`
-}
-
-func (ai AccountInfo) GetHeader(fieldName string) (string, error) {
-	v := reflect.ValueOf(ai)
-	return gotable.GetHeaderTag(v, fieldName)
-}
-
-func (ai AccountInfo) GetAccountId64() int64 {
-	i64, err := strconv.ParseInt(ai.AccountId, 10, 64)
-	if err != nil {
-		log.WithError(err).Panicf("Invalid AWS AccountID from AWS SSO: %s", ai.AccountId)
-	}
-	if i64 < 0 {
-		log.WithError(err).Panicf("AWS AccountID must be >= 0: %s", ai.AccountId)
-	}
-	return i64
 }
 
 // GetAccounts queries AWS and returns a list of AWS accounts

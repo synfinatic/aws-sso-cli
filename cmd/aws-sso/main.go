@@ -28,16 +28,17 @@ import (
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/internal/awscreds"
+	"github.com/synfinatic/aws-sso-cli/internal/config"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs/client"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs/server"
 	"github.com/synfinatic/aws-sso-cli/internal/helper"
 	"github.com/synfinatic/aws-sso-cli/internal/predictor"
+	"github.com/synfinatic/aws-sso-cli/internal/sso"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/tags"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
-	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/willabides/kongplete"
 )
 
@@ -135,7 +136,9 @@ func main() {
 
 	log = logrus.New()
 	ctx, override := parseArgs(&cli)
+
 	awscreds.SetLogger(log)
+	config.SetLogger(log)
 	helper.SetLogger(log)
 	predictor.SetLogger(log)
 	sso.SetLogger(log)
