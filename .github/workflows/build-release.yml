@@ -34,7 +34,7 @@ jobs:
 
       # Artifacts docs: https://docs.github.com/en/actions/using-workflows/storing-workflow-data-as-artifacts
       - name: Upload files as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ubuntu-build-files
           path: dist/aws-sso*
@@ -58,7 +58,7 @@ jobs:
           make darwin
 
       - name: Upload files as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: macos-build-files
           path: dist/aws-sso*
