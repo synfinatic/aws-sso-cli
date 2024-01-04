@@ -15,7 +15,7 @@ jobs:
         with:
           any-of-issue-labels: waiting-for-customer
           stale-label: stale
-          exempt-pr-labels: exempt
+          exempt-pr-labels: exempt,dependencies
           exempt-issue-labels: exempt
           days-before-issue-stale: 14
           days-before-issue-close: 14
