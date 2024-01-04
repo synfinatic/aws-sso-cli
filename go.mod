@@ -74,7 +74,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.15.2
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.17.3
 	github.com/aws/aws-sdk-go-v2/service/sts v1.23.2
-	golang.org/x/net v0.17.0
+	golang.org/x/net v0.19.0
 )
 
 require (
