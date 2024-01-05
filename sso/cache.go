@@ -504,7 +504,11 @@ func (c *Cache) addSSORoles(r *Roles, as *AWSSSO) error {
 
 	accounts, err := as.GetAccounts()
 	if err != nil {
-		return fmt.Errorf("Unable to get AWS SSO accounts: %s", err.Error())
+		return fmt.Errorf("Unable to get list of AWS accounts via AWS SSO: %s", err.Error())
+	}
+
+	if len(accounts) == 0 {
+		return fmt.Errorf("No AWS accounts found in AWS SSO")
 	}
 
 	// Our first query must NOT be part of the worker pool so our AccessToken

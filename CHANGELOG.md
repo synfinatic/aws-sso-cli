@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+ * Fix crash when user has 0 AWS accounts #750
+
 ## [v1.14.2] - 2023-10-19
 
 ### Bugs
