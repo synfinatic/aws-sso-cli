@@ -2,7 +2,13 @@
 
 ## [Unreleased]
 
+### Bugs
+
  * Fix crash when user has 0 AWS accounts #750
+
+### Changes
+
+ * Statically link Linux binaries (CGO\_ENABLED=0) #749
 
 ## [v1.14.2] - 2023-10-19
 

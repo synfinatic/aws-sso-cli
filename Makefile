@@ -201,13 +201,13 @@ $(WINDOWS32_BIN): $(wildcard */*.go) .prepare
 linux: $(LINUX_BIN)  ## Build Linux/x86_64 binary
 
 $(LINUX_BIN): $(wildcard */*.go) .prepare
-	GOARCH=amd64 GOOS=linux go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(LINUX_BIN) ./cmd/aws-sso/...
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(LINUX_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(LINUX_BIN)"
 
 linux-arm64: $(LINUXARM64_BIN)  ## Build Linux/arm64 binary
 
 $(LINUXARM64_BIN): $(wildcard */*.go) .prepare
-	GOARCH=arm64 GOOS=linux go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(LINUXARM64_BIN) ./cmd/aws-sso/...
+	CGO_ENABLED=0 GOARCH=arm64 GOOS=linux go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(LINUXARM64_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(LINUXARM64_BIN)"
 
 # macOS needs different build flags if you are cross-compiling because of the key chain
@@ -217,9 +217,9 @@ darwin: $(DARWIN_BIN)  ## Build MacOS/x86_64 binary
 
 $(DARWIN_BIN): $(wildcard */*.go) .prepare
 ifeq ($(ARCH), x86_64)
-	GOARCH=amd64 GOOS=darwin go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) ./cmd/aws-sso/...
+	CGO_ENABLED=1 GOARCH=amd64 GOOS=darwin go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) ./cmd/aws-sso/...
 else
-	GOARCH=amd64 GOOS=darwin CGO_ENABLED=1 SDKROOT=$(shell xcrun --sdk macosx --show-sdk-path) \
+	CGO_ENABLED=1 GOARCH=amd64 GOOS=darwin SDKROOT=$(shell xcrun --sdk macosx --show-sdk-path) \
 		go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) ./cmd/aws-sso/...
 endif
 	@echo "Created: $(DARWIN_BIN)"
@@ -228,9 +228,9 @@ darwin-arm64: $(DARWINARM64_BIN)  ## Build MacOS/ARM64 binary
 
 $(DARWINARM64_BIN): $(wildcard */*.go) .prepare
 ifeq ($(ARCH), arm64)
-	GOARCH=arm64 GOOS=darwin go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(DARWINARM64_BIN) ./cmd/aws-sso/...
+	CGO_ENABLED=1 GOARCH=arm64 GOOS=darwin go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(DARWINARM64_BIN) ./cmd/aws-sso/...
 else
-	GOARCH=arm64 GOOS=darwin CGO_ENABLED=1 SDKROOT=$(shell xcrun --sdk macosx --show-sdk-path) \
+	CGO_ENABLED=1 GOARCH=arm64 GOOS=darwin SDKROOT=$(shell xcrun --sdk macosx --show-sdk-path) \
 		go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(DARWINARM64_BIN) ./cmd/aws-sso/...
 endif
 	@echo "Created: $(DARWINARM64_BIN)"
