@@ -1,4 +1,4 @@
-PROJECT_VERSION := 1.14.2
+PROJECT_VERSION := 1.14.3
 DOCKER_REPO     := synfinatic
 PROJECT_NAME    := aws-sso
 
@@ -64,12 +64,12 @@ uninstall:  ## Uninstall binary from $INSTALL_PREFIX
 	rm $(INSTALL_PREFIX)/bin/$(PROJECT_NAME)
 
 release-brew: ## Create a PR against homebrew to bump the version
-	VERSION=v$(PROJECT_VERSION) ./scripts/release-check.sh
+	VERSION=$(PROJECT_VERSION) ./scripts/release-check.sh
 	brew update && brew bump-formula-pr --version $(PROJECT_VERSION) aws-sso-cli
 
 release-tag: ## Tag our current HEAD as v$(PROJECT_VERSION)
 	git tag -sa v$(PROJECT_VERSION) -m 'release $(PROJECT_VERSION)'
-	VERSION=v$(PROJECT_VERSION) ./scripts/release-check.sh
+	VERSION=$(PROJECT_VERSION) ./scripts/release-check.sh
 	git push --tags
 
 #DOWNLOAD_URL := https://synfin.net/misc/aws-sso-cli.$(PROJECT_VERSION).tar.gz

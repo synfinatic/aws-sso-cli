@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v1.14.3] - 2024-01-15
+
 ### Bugs
 
  * Fix crash when user has 0 AWS accounts #750
@@ -640,7 +642,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.14.2...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.14.3...main
+[v1.14.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.14.3
 [v1.14.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.14.2
 [v1.14.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.14.1
 [v1.14.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.14.0
