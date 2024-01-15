@@ -9,6 +9,7 @@
 ### Changes
 
  * Statically link Linux binaries (CGO\_ENABLED=0) #749
+ * Document support for Firefox Multi-Account Containers plugin #760
 
 ## [v1.14.2] - 2023-10-19
 

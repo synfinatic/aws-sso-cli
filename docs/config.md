@@ -262,8 +262,11 @@ in a browser:
  * `open` -- Opens the URL in your default browser or the browser you specified
     via `--browser` or `Browser`
  * `open-url-in-container` -- Generates a URL for the Firefox [Open Url in Container](
-	https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/) plugin
-	and runs your `UrlExecCommand`
+    https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/) and
+    [Firefox Multi-Account Containers](
+    https://addons.mozilla.org/en-US/firefox/addon/multi-account-containers/)
+    plugins and runs your `UrlExecCommand`.  Please be sure to install only
+    one of these plugins. ;)
  * `print` -- Prints the URL with a message in your terminal to stderr
  * `printurl` -- Prints only the URL in your terminal to stderr
 
