@@ -250,3 +250,11 @@ func TestStrListContains(t *testing.T) {
 	assert.True(t, StrListContains("yes", x))
 	assert.False(t, StrListContains("nope", x))
 }
+
+func TestIsRemoteHost(t *testing.T) {
+	os.Setenv("SSH_TTY", "FOOBAR")
+	assert.True(t, IsRemoteHost())
+
+	os.Unsetenv("SSH_TTY")
+	assert.False(t, IsRemoteHost())
+}
