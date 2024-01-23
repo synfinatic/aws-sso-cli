@@ -79,6 +79,19 @@ func OpenCache(f string, s *Settings) (*Cache, error) {
 	return c, err
 }
 
+// NewSSOCache creates a new SSOCache object
+func NewSSOCache(name string) *SSOCache {
+	return &SSOCache{
+		name:       name,
+		LastUpdate: 0,
+		History:    []string{},
+		Roles: &Roles{
+			Accounts: map[int64]*AWSAccount{},
+			ssoName:  name,
+		},
+	}
+}
+
 // GetSSO returns the current SSOCache object for the current SSO instance
 func (c *Cache) GetSSO() *SSOCache {
 	if v, ok := c.SSO[c.ssoName]; ok {
@@ -88,18 +101,11 @@ func (c *Cache) GetSSO() *SSOCache {
 	}
 
 	// else, init a new one
-	c.SSO[c.ssoName] = &SSOCache{
-		name:       c.ssoName,
-		LastUpdate: 0,
-		History:    []string{},
-		Roles: &Roles{
-			Accounts: map[int64]*AWSAccount{},
-			ssoName:  c.ssoName,
-		},
-	}
+	c.SSO[c.ssoName] = NewSSOCache(c.ssoName)
 	return c.SSO[c.ssoName]
 }
 
+// CacheFile returns the path to the cache on disk
 func (c *Cache) CacheFile() string {
 	return c.settings.cacheFile
 }
@@ -172,6 +178,7 @@ func (c *Cache) AddHistory(item string) {
 	}
 }
 
+// deleteHistoryItem deletes the given ARN from our history
 func (c *Cache) deleteHistoryItem(arn string) {
 	for i, value := range c.GetSSO().History {
 		if arn == value {

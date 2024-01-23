@@ -88,7 +88,14 @@ func (suite *CacheTestSuite) TearDownAllSuite() {
 func (suite *CacheTestSuite) TestNeedsRefresh() {
 	t := suite.T()
 
-	assert.True(t, suite.cache.SSO["Default"].NeedsRefresh(suite.settings.SSO["Default"], suite.settings))
+	assert.True(t,
+		suite.cache.SSO["Default"].NeedsRefresh(suite.settings.SSO["Default"],
+			suite.settings))
+
+	cache := NewSSOCache("Default")
+	assert.True(t,
+		cache.NeedsRefresh(suite.settings.SSO["Default"],
+			suite.settings))
 }
 
 func (suite *CacheTestSuite) TestAddHistory() {
@@ -567,4 +574,13 @@ func TestOpenCacheFailure(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, int64(0), c.ConfigCreatedAt)
 	assert.Equal(t, int64(1), c.Version)
+}
+
+func TestNewSSOCache(t *testing.T) {
+	c := NewSSOCache("foo")
+	assert.Equal(t, "foo", c.name)
+	assert.Equal(t, "foo", c.Roles.ssoName)
+	assert.Equal(t, int64(0), c.LastUpdate)
+	assert.Empty(t, c.History)
+	assert.Empty(t, c.Roles.Accounts)
 }

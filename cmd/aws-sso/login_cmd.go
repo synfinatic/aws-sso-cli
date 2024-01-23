@@ -42,6 +42,10 @@ func (cc *LoginCmd) Run(ctx *RunContext) error {
 		log.Fatalf("%s", err.Error())
 	}
 
+	if ctx.Settings.Cache.SSO[ssoName] == nil {
+		ctx.Settings.Cache.SSO[ssoName] = sso.NewSSOCache(ssoName)
+	}
+
 	needsRefresh := ctx.Settings.Cache.SSO[ssoName].NeedsRefresh(ctx.Settings.SSO[ssoName], ctx.Settings)
 
 	if needsRefresh {
