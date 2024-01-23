@@ -249,10 +249,11 @@ docs/default-region.png:
 loc:  ## Print LOC stats
 	wc -l $$(find . -name "*.go")
 
+update-copyright: export YEAR=$(shell date +%Y)
+update-copyright: export LAST_YEAR=$$(($${YEAR}-1))
 update-copyright:  ## Update the copyright year on *.go
-	$(shell YEAR=$$(date +%Y) LAST_YEAR=$$(($$(date +%Y)-1)) \
-		sed -i '' -Ee "s|2021-${LAST_YEAR}|2021-${YEAR}|" $$(find . -name "*.go"))
-	@echo "Updated copyright to 2021-$$(date +%Y)"
+	@sed -i '' -Ee "s|2021-${LAST_YEAR}|2021-${YEAR}|" $$(find . -name "*.go")
+	@echo "Updated copyright to 2021-$$(date +%Y) in $(shell git status -s | grep -c ".go") files."
 
 serve-docs:  ## Run mkdocs server on localhost:8000
 	docker build -t synfinatic/mkdocs-material:latest -f Dockerfile.mkdocs .
