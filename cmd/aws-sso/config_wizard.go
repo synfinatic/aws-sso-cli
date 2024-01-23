@@ -310,24 +310,8 @@ func promptUrlAction(defaultValue url.Action) url.Action {
 
 	items := []selectOptions{
 		{
-			Name:  "Copy to clipboard",
-			Value: "clip",
-		},
-		{
 			Name:  "Execute custom command",
 			Value: "exec",
-		},
-		{
-			Name:  "Open in (default) browser",
-			Value: "open",
-		},
-		{
-			Name:  "Open in Firefox with Granted Containers plugin",
-			Value: "granted-containers",
-		},
-		{
-			Name:  "Open in Firefox with Open Url in Container plugin",
-			Value: "open-url-in-container",
 		},
 		{
 			Name:  "Print message with URL",
@@ -337,6 +321,28 @@ func promptUrlAction(defaultValue url.Action) url.Action {
 			Name:  "Print only the URL",
 			Value: "printurl",
 		},
+	}
+
+	// only valid on localhost
+	if !utils.IsRemoteHost() {
+		items = append(items,
+			selectOptions{
+				Name:  "Copy to clipboard",
+				Value: "clip",
+			},
+			selectOptions{
+				Name:  "Open in (default) browser",
+				Value: "open",
+			},
+			selectOptions{
+				Name:  "Open in Firefox with Granted Containers plugin",
+				Value: "granted-containers",
+			},
+			selectOptions{
+				Name:  "Open in Firefox with Open Url in Container plugin",
+				Value: "open-url-in-container",
+			},
+		)
 	}
 
 	dValue := string(defaultValue)
