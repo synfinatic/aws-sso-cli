@@ -204,3 +204,11 @@ func StrListContains(str string, list []string) bool {
 	}
 	return false
 }
+
+// IsRemoteHost returns if we are running on a remote host or not
+func IsRemoteHost() bool {
+	// right now we just look for the SSH_TTY env var which should be set
+	// anytime you ssh to a remote host
+	_, inSSHSession := os.LookupEnv("SSH_TTY")
+	return inSSHSession
+}

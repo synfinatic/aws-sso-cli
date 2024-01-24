@@ -106,27 +106,18 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 
 	s.ProfileFormat = promptProfileFormat(s.ProfileFormat)
 
+	// check if we are in a ssh session
+	if utils.IsRemoteHost() {
+		// users need to modify the default open action
+		promptOpen(s)
+	}
+
 	if advanced {
 		// full text search?
 		s.FullTextSearch = promptFullTextSearch(s.FullTextSearch)
 
-		// next how we open URLs
-		s.UrlAction = promptUrlAction(s.UrlAction)
-
-		s.ConfigProfilesUrlAction = promptConfigProfilesUrlAction(s.ConfigProfilesUrlAction, s.UrlAction)
-
-		// do we need urlExecCommand?
-		if s.UrlAction == url.Exec {
-			s.UrlExecCommand = promptUrlExecCommand(s.UrlExecCommand)
-		} else if s.UrlAction.IsContainer() {
-			s.UrlExecCommand = promptUseFirefox(s.UrlExecCommand)
-		} else {
-			s.UrlExecCommand = []string{}
-		}
-
-		// should we prompt user to override default browser?
-		if s.UrlAction == url.Open || s.ConfigProfilesUrlAction == url.ConfigProfilesOpen {
-			s.Browser = promptDefaultBrowser(s.Browser)
+		if !utils.IsRemoteHost() {
+			promptOpen(s)
 		}
 
 		s.ConsoleDuration = promptConsoleDuration(s.ConsoleDuration)
@@ -200,4 +191,26 @@ func backupConfig(cfgFile string) error {
 	}
 
 	return nil
+}
+
+func promptOpen(s *sso.Settings) {
+	s.UrlAction = promptUrlAction(s.UrlAction)
+
+	if !utils.IsRemoteHost() {
+		s.ConfigProfilesUrlAction = promptConfigProfilesUrlAction(s.ConfigProfilesUrlAction, s.UrlAction)
+	}
+
+	// do we need urlExecCommand?
+	if s.UrlAction == url.Exec {
+		s.UrlExecCommand = promptUrlExecCommand(s.UrlExecCommand)
+	} else if s.UrlAction.IsContainer() {
+		s.UrlExecCommand = promptUseFirefox(s.UrlExecCommand)
+	} else {
+		s.UrlExecCommand = []string{}
+	}
+
+	// should we prompt user to override default browser?
+	if s.UrlAction == url.Open || s.ConfigProfilesUrlAction == url.ConfigProfilesOpen {
+		s.Browser = promptDefaultBrowser(s.Browser)
+	}
 }
