@@ -1,6 +1,6 @@
 # AWS SSO CLI Changelog
 
-## v2.beta 
+## [v2.0.0-beta2] - TBD
 
 ### Bugs 
 
