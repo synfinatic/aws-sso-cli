@@ -154,8 +154,11 @@ test: vet unittest lint test-homebrew ## Run important tests
 
 precheck: test test-fmt test-tidy ## Run all tests that happen in a PR
 
+govulncheck:  ## Run govulncheck
+	@govulncheck ./...
+
 # run everything but `lint` because that runs via it's own workflow
-.build-tests: vet unittest test-tidy test-fmt test-homebrew
+.build-tests: vet unittest test-tidy test-fmt test-homebrew govulncheck
 
 $(DIST_DIR):
 	@if test ! -d $(DIST_DIR); then mkdir -p $(DIST_DIR) ; fi
