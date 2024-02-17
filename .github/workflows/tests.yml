@@ -21,7 +21,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: ${{ vars.GO_VERSION }}
+        go-version: '${{ vars.GO_VERSION }}'
       id: go
 
     - name: Check out code into the Go module directory
