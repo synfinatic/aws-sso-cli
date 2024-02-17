@@ -19,8 +19,10 @@ package helper
  */
 
 import (
+	"bytes"
 	"embed"
 	"fmt"
+	"io"
 	"os"
 	"path"
 
@@ -88,6 +90,16 @@ func getScript(shell string) ([]byte, string, error) {
 	return bytes, path, nil
 }
 
+// SourceHelper can be used to generate the completions script for immediate sourcing in the active shell
+func SourceHelper(shell string) error {
+	c, _, err := getScript(shell)
+	if err != nil {
+		return err
+	}
+
+	return printConfig(c)
+}
+
 // InstallHelper installs any helper code into our shell startup script(s)
 func InstallHelper(shell string, path string) error {
 	c, defaultPath, err := getScript(shell)
@@ -116,6 +128,27 @@ func UninstallHelper(shell string, path string) error {
 	} else {
 		err = uninstallConfigFile(path, c)
 	}
+	return err
+}
+
+func printConfig(contents []byte) error {
+	var err error
+	var exec string
+	var source []byte
+
+	if exec, err = os.Executable(); err != nil {
+		return err
+	}
+
+	args := map[string]string{
+		"Executable": exec,
+	}
+
+	if source, err = utils.GenerateSource(string(contents), args); err != nil {
+		return err
+	}
+
+	_, err = io.Copy(os.Stdout, bytes.NewReader(source))
 	return err
 }
 

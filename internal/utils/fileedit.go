@@ -47,6 +47,21 @@ type FileEdit struct {
 
 var prompt = askUser
 
+func GenerateSource(fileTemplate string, vars interface{}) ([]byte, error) {
+	templ, err := template.New("template").Parse(fileTemplate)
+	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	err = templ.Execute(&buf, vars)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
 func NewFileEdit(fileTemplate string, vars interface{}) (*FileEdit, error) {
 	var t string
 
