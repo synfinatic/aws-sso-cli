@@ -48,18 +48,20 @@ complete -f -c aws-sso -a "(__complete_aws-sso)"
 	}
 
 	for _, tc := range testcases {
-		var (
-			tc     = tc
-			output = bytes.NewBuffer(nil)
-			h      = &SourceHelper{
-				getExe: func() (string, error) {
-					return "/bin/aws-sso-cli", nil
-				},
-				output: output,
-			}
-		)
+		tc := tc
 
 		t.Run(tc.shell, func(t *testing.T) {
+			t.Parallel()
+			var (
+				output = bytes.NewBuffer(nil)
+				h      = &SourceHelper{
+					getExe: func() (string, error) {
+						return "/bin/aws-sso-cli", nil
+					},
+					output: output,
+				}
+			)
+
 			err := h.Generate(tc.shell)
 			require.Equal(t, tc.expectedError, err)
 			require.Contains(t, output.String(), string(bytes.TrimLeftFunc(tc.expectedOutput, unicode.IsSpace)))

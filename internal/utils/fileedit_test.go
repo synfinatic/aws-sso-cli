@@ -27,6 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFileEdit(t *testing.T) {
@@ -186,4 +187,44 @@ func TestPrompter(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, []byte(
 		fmt.Sprintf(FILE_TEMPLATE, CONFIG_PREFIX, "foo", CONFIG_SUFFIX)), fBytes)
+}
+
+func TestGenerateSource(t *testing.T) {
+	testcases := []struct {
+		name        string
+		tpl         string
+		expectedErr error
+		expected    string
+	}{
+		{
+			name: "template with no variables",
+			tpl: `
+I'm a text template if you can believe that
+`,
+			expected: `
+I'm a text template if you can believe that
+`,
+		},
+		{
+			name: "template",
+			tpl: `
+{{.Name}}
+`,
+			expected: `
+template
+`,
+		},
+	}
+
+	for _, tc := range testcases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			output, err := GenerateSource(tc.tpl, map[string]interface{}{
+				"Name": tc.name,
+			})
+			require.Equal(t, tc.expectedErr, err)
+			require.Equal(t, tc.expected, string(output))
+		})
+	}
 }
