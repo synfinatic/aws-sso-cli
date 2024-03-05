@@ -39,7 +39,8 @@ func (cc *CompleteCmd) Run(ctx *RunContext) error {
 	var err error
 
 	if ctx.Cli.Completions.Source {
-		err = helper.SourceHelper(ctx.Cli.Completions.Shell)
+		err = helper.NewSourceHelper(os.Executable, os.Stdout).
+			Generate(ctx.Cli.Completions.Shell)
 	} else if ctx.Cli.Completions.Install {
 		// install the current auto-complete helper
 		err = helper.InstallHelper(ctx.Cli.Completions.Shell, ctx.Cli.Completions.ShellScript)
