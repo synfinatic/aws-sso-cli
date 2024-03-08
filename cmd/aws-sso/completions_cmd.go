@@ -27,6 +27,7 @@ import (
 )
 
 type CompleteCmd struct {
+	Source         bool   `kong:"help='Print out completions for sourcing in the active shell',xor='action'"`
 	Install        bool   `kong:"short='I',help='Install shell completions',xor='action'"`
 	Uninstall      bool   `kong:"short='U',help='Uninstall shell completions',xor='action'"`
 	UninstallPre19 bool   `kong:"help='Uninstall pre-v1.9 shell completion integration',xor='action',xor='shell,script'"`
@@ -37,7 +38,10 @@ type CompleteCmd struct {
 func (cc *CompleteCmd) Run(ctx *RunContext) error {
 	var err error
 
-	if ctx.Cli.Completions.Install {
+	if ctx.Cli.Completions.Source {
+		err = helper.NewSourceHelper(os.Executable, os.Stdout).
+			Generate(ctx.Cli.Completions.Shell)
+	} else if ctx.Cli.Completions.Install {
 		// install the current auto-complete helper
 		err = helper.InstallHelper(ctx.Cli.Completions.Shell, ctx.Cli.Completions.ShellScript)
 	} else if ctx.Cli.Completions.Uninstall {
