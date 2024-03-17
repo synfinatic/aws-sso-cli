@@ -5,3 +5,26 @@ function __complete_aws-sso
     {{ .Executable }}
 end
 complete -f -c aws-sso -a "(__complete_aws-sso)"
+
+function aws-sso-profile
+  set --local _args (string split -- ' ' $AWS_SSO_HELPER_ARGS)
+  set -q AWS_SSO_HELPER_ARGS; or set --local _args -L error --no-config-check
+  if [ -n "$AWS_PROFILE" ]
+      echo "Unable to assume a role while AWS_PROFILE is set"
+      return 1
+  end
+  eval $({{ .Executable }} $_args eval -p $argv[1])
+  if [ "$AWS_SSO_PROFILE" != "$1" ]
+      return 1
+  end
+end
+
+function aws-sso-clear
+  set --local _args (string split -- ' ' $AWS_SSO_HELPER_ARGS)
+  set -q AWS_SSO_HELPER_ARGS; or set --local _args -L error
+  if [ -z "$AWS_PROFILE" ]
+      echo "AWS_PROFILE ist not set"
+      return 1
+  end
+  eval "$({{ .Executable }} $_args eval -c | string replace "unset" "set --erase" )"
+end
