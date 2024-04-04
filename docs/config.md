@@ -310,6 +310,14 @@ UrlExecCommand:
     - "%s"
 ```
 
+###### Use custom shell script
+```yaml
+UrlAction: exec
+UrlExecCommand:
+    - ~/bin/open_url.sh
+    - "%s"
+```
+
 **Note:** If your `ProfileFormat` generates a _ProfileName_ with an `&`, then
 `{{ .AccountId }}:{{ .RoleName }}` will be used as the Firefox container name instead.
 

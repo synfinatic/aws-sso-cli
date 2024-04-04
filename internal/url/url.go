@@ -194,7 +194,7 @@ func (h *HandleUrl) Open() error {
 		if err == nil {
 			log.Infof("Please open URL copied to clipboard.\n")
 		} else {
-			err = fmt.Errorf("Unable to copy URL to clipboard: %s", err.Error())
+			err = fmt.Errorf("unable to copy URL to clipboard: %s", err.Error())
 		}
 
 	case Exec:
@@ -223,13 +223,13 @@ func (h *HandleUrl) Open() error {
 			err = urlOpenerWith(h.Url, h.Browser)
 		}
 		if err != nil {
-			err = fmt.Errorf("Unable to open URL with %s: %s", browser, err.Error())
+			err = fmt.Errorf("unable to open URL with %s: %s", browser, err.Error())
 		} else {
 			log.Infof("Opening URL in: %s\n", browser)
 		}
 
 	default:
-		err = fmt.Errorf("Unsupported Open action: %s", string(h.Action))
+		err = fmt.Errorf("unsupported Open action: %s", string(h.Action))
 	}
 
 	return err
@@ -280,11 +280,14 @@ func execWithUrl(command []string, url string) error {
 	log.Debugf("exec command as array: %s", cmdStr)
 	cmd = exec.Command(program, cmdList...)
 
+	// add $HOME to our environment
+	cmd.Env = append(cmd.Environ(), fmt.Sprintf("HOME=%s", os.Getenv("HOME")))
+
 	//	var stderr bytes.Buffer
 	//	cmd.Stderr = &stderr
 	err = cmd.Start() // Don't use Run() because sometimes firefox does bad things?
 	if err != nil {
-		err = fmt.Errorf("Unable to exec `%s`: %s", cmdStr, err)
+		err = fmt.Errorf("unable to exec `%s`: %s", cmdStr, err)
 	}
 	log.Debugf("Opened our URL with %s", command[0])
 	return err
@@ -297,7 +300,7 @@ func commandBuilder(command []string, url string) (string, []string, error) {
 	replaced := false
 
 	if len(command) < 2 {
-		return program, cmdList, fmt.Errorf("Invalid UrlExecCommand has fewer than 2 arguments")
+		return program, cmdList, fmt.Errorf("invalid UrlExecCommand has fewer than 2 arguments")
 	}
 
 	for i, v := range command {
@@ -312,8 +315,11 @@ func commandBuilder(command []string, url string) (string, []string, error) {
 	}
 
 	if !replaced {
-		return program, cmdList, fmt.Errorf("Invalid UrlExecCommand has no `%%s` for URL")
+		return program, cmdList, fmt.Errorf("invalid UrlExecCommand has no `%%s` for URL")
 	}
+
+	// if program is ~/something, expand it
+	program = utils.GetHomePath(program)
 
 	return program, cmdList, nil
 }

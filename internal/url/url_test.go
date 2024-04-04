@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"os"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -173,6 +174,10 @@ func TestCommandBuilder(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "foo", cmd)
 	assert.Equal(t, []string{"bar", "url"}, l)
+
+	cmd, _, err = commandBuilder([]string{"~/foo", "bar", "%s"}, "url")
+	assert.NoError(t, err)
+	assert.Equal(t, fmt.Sprintf("%s/foo", os.Getenv("HOME")), cmd)
 }
 
 func TestSelectElement(t *testing.T) {

@@ -90,7 +90,7 @@ func (as *AWSSSO) reauthenticate() error {
 	err := as.registerClient(false)
 	log.Tracef("<- reauthenticate()")
 	if err != nil {
-		return fmt.Errorf("Unable to register client with AWS SSO: %s", err.Error())
+		return fmt.Errorf("unable to register client with AWS SSO: %s", err.Error())
 	}
 
 	err = as.startDeviceAuthorization()
@@ -99,17 +99,17 @@ func (as *AWSSSO) reauthenticate() error {
 		log.Debugf("startDeviceAuthorization failed.  Forcing refresh of registerClient")
 		// startDeviceAuthorization can fail if our cached registerClient token is invalid
 		if err = as.registerClient(true); err != nil {
-			return fmt.Errorf("Unable to register client with AWS SSO: %s", err.Error())
+			return fmt.Errorf("unable to register client with AWS SSO: %s", err.Error())
 		}
 		if err = as.startDeviceAuthorization(); err != nil {
-			return fmt.Errorf("Unable to start device authorization with AWS SSO: %s", err.Error())
+			return fmt.Errorf("unable to start device authorization with AWS SSO: %s", err.Error())
 		}
 	}
 
 	auth, err := as.getDeviceAuthInfo()
 	log.Tracef("<- reauthenticate()")
 	if err != nil {
-		return fmt.Errorf("Unable to get device auth info from AWS SSO: %s", err.Error())
+		return fmt.Errorf("unable to get device auth info from AWS SSO: %s", err.Error())
 	}
 
 	action := as.urlAction
@@ -129,7 +129,7 @@ func (as *AWSSSO) reauthenticate() error {
 
 	err = as.createToken()
 	if err != nil {
-		return fmt.Errorf("Unable to create new AWS SSO token: %s", err.Error())
+		return fmt.Errorf("unable to create new AWS SSO token: %s", err.Error())
 	}
 
 	return nil
@@ -177,7 +177,7 @@ func (as *AWSSSO) registerClient(force bool) error {
 	}
 	err = as.store.SaveRegisterClientData(as.StoreKey(), as.ClientData)
 	if err != nil {
-		log.WithError(err).Errorf("Unable to save RegisterClientData for %s", as.StoreKey())
+		log.WithError(err).Errorf("unable to save RegisterClientData for %s", as.StoreKey())
 	}
 	return nil
 }
@@ -222,7 +222,7 @@ type DeviceAuthInfo struct {
 func (as *AWSSSO) getDeviceAuthInfo() (DeviceAuthInfo, error) {
 	log.Tracef("getDeviceAuthInfo()")
 	if as.DeviceAuth.VerificationUri == "" {
-		return DeviceAuthInfo{}, fmt.Errorf("No valid verification url is available for %s", as.StoreKey())
+		return DeviceAuthInfo{}, fmt.Errorf("no valid verification url is available for %s", as.StoreKey())
 	}
 
 	info := DeviceAuthInfo{
@@ -290,7 +290,7 @@ func (as *AWSSSO) createToken() error {
 	err = as.store.SaveCreateTokenResponse(as.StoreKey(), as.Token)
 	as.tokenLock.RUnlock()
 	if err != nil {
-		log.WithError(err).Errorf("Unable to save CreateTokenResponse")
+		log.WithError(err).Errorf("unable to save CreateTokenResponse")
 	}
 
 	return nil
@@ -310,7 +310,7 @@ func (as *AWSSSO) Logout() error {
 
 		// delete the value from the store so we don't think we have a valid token
 		if err := as.store.DeleteCreateTokenResponse(as.key); err != nil {
-			log.WithError(err).Errorf("Unable to delete AccessToken from secure store")
+			log.WithError(err).Errorf("unable to delete AccessToken from secure store")
 		}
 	}
 
