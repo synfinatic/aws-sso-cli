@@ -67,7 +67,7 @@ type AWSRole struct {
 }
 
 // AccountIds returns all the configured AWS SSO AccountIds
-func (r *Roles) AccountIds() []int64 {
+func (r *Roles) AccountIds() []int64 { // nolint: revive
 	ret := []int64{}
 	for id := range r.Accounts {
 		ret = append(ret, id)

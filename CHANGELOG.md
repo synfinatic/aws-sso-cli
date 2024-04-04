@@ -4,6 +4,7 @@
 
 * Add `aws-sso-cli completion --source` flag to generate completion script and
   print to stdout. #779
+* UrlExecCommand now supports commands in `~` and the `$HOME` environment variable. #816
 
 ## [v1.14.3] - 2024-01-15
 
