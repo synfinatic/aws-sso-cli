@@ -650,7 +650,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.14.3...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.15.0...main
+[v1.15.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.15.0
 [v1.14.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.14.3
 [v1.14.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.14.2
 [v1.14.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.14.1
