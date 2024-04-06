@@ -9,6 +9,7 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    target-branch: "v2"
 
   - package-ecosystem: "docker"
     directory: "/"
