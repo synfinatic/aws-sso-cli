@@ -417,23 +417,23 @@ func TestAuthenticateFailure(t *testing.T) {
 	}
 
 	err = as.Authenticate("print", "fake-browser")
-	assert.Contains(t, err.Error(), "Unable to register client with AWS SSO")
+	assert.Contains(t, err.Error(), "unable to register client with AWS SSO")
 
 	err = as.Authenticate("print", "fake-browser")
-	assert.Contains(t, err.Error(), "Unable to start device authorization")
+	assert.Contains(t, err.Error(), "unable to start device authorization")
 
 	err = as.Authenticate("print", "fake-browser")
 	assert.Contains(t, err.Error(), "createToken:")
 
 	err = as.Authenticate("print", "fake-browser")
-	assert.Contains(t, err.Error(), "No valid verification url")
+	assert.Contains(t, err.Error(), "no valid verification url")
 
 	err = as.Authenticate("invalid", "fake-browser")
-	assert.Contains(t, err.Error(), "Unsupported Open action")
+	assert.Contains(t, err.Error(), "unsupported Open action")
 
 	as.SSOConfig.AuthUrlAction = "invalid"
 	err = as.Authenticate("print", "fake-browser")
-	assert.Contains(t, err.Error(), "Unsupported Open action")
+	assert.Contains(t, err.Error(), "unsupported Open action")
 }
 
 func TestReauthenticate(t *testing.T) {
@@ -528,7 +528,7 @@ func TestReauthenticate(t *testing.T) {
 	}
 
 	err = as.reauthenticate()
-	assert.Contains(t, err.Error(), "Unable to exec")
+	assert.Contains(t, err.Error(), "unable to exec")
 }
 
 func TestLogout(t *testing.T) {
