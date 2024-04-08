@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### New Features 
+
+ * Add helper aliases for fish shell #361
+
 ## [v1.15.0] - 2024-04-05
 
 ### New Features
