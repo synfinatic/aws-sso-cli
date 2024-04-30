@@ -30,6 +30,6 @@ jobs:
 
     - name: Tests
       run: make .build-tests
-    
+
     - name: Upload to codecov
       uses: codecov/codecov-action@v4
