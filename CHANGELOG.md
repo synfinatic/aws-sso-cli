@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v1.15.1] - 2024-04-30
+
 ### New Features 
 
  * Add helper aliases for fish shell #361
@@ -658,7 +660,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.15.0...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.15.1...main
+[v1.15.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.15.1
 [v1.15.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.15.0
 [v1.14.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.14.3
 [v1.14.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.14.2
