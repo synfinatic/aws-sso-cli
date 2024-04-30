@@ -440,7 +440,7 @@ Currently the following shells are supported:
  <!-- markdown-link-check-disable -->
  * [bash](https://github.com/synfinatic/aws-sso-cli/blob/main/internal/helper/bash_profile.sh)
  * [zsh](https://github.com/synfinatic/aws-sso-cli/blob/main/internal/helper/zshrc.sh)
- * [fish - TBD](https://github.com/synfinatic/aws-sso-cli/issues/361)
+ * [fish](https://github.com/synfinatic/aws-sso-cli/blob/main/internal/helper/aws-sso.fish)
  <!-- markdown-link-check-enable-->
 
 **Note:** `zsh` completion requires you to have the following lines set
