@@ -6,6 +6,10 @@
 
  * Add helper aliases for fish shell #361
 
+### Changes
+
+ * Builds now run govulncheck
+
 ## [v1.15.0] - 2024-04-05
 
 ### New Features
