@@ -22,6 +22,7 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: ${{ vars.GO_VERSION }}
+        cache: false
       id: go
 
     - name: Check out code into the Go module directory
@@ -29,6 +30,6 @@ jobs:
 
     - name: Tests
       run: make .build-tests
-    
+
     - name: Upload to codecov
       uses: codecov/codecov-action@v4
