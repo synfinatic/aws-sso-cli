@@ -18,9 +18,10 @@ The server runs in the foreground to make it easy to start via systemd and Docke
 
 `aws-sso ecs run`
 
-Will start the service on `localhost:4144`.   For security purposes, the `aws-sso`
-ECS Server will _only_ run on localhost/127.0.0.1.  You may select an alternative
-port via the `--port` flag or setting the `AWS_SSO_ECS_PORT` environment variable.
+Will start the service on `127.0.0.1:4144`.   For security purposes, the `aws-sso`
+ECS Server will _default_ to loopback interface.  You may select an alternative
+interface by specifying the `--ip` flag (`AWS_SSO_ECS_IP`) and alternative 
+port via the `--port` flag (`AWS_SSO_ECS_PORT`).
 
 ## Environment variables
 
@@ -28,7 +29,7 @@ port via the `--port` flag or setting the `AWS_SSO_ECS_PORT` environment variabl
 
 AWS clients and `aws-sso` should use:
 
-`AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:4144/`
+`AWS_CONTAINER_CREDENTIALS_FULL_URI=http://127.0.0.1:4144/`
 
 ### AWS\_CONTAINER\_CREDENTIALS\_RELATIVE\_URI
 
@@ -53,7 +54,7 @@ for all AWS Client SDKs using it.
 
 Ensure you have exported the following shell ENV variable:
 
-`export AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:4144/creds`
+`export AWS_CONTAINER_CREDENTIALS_FULL_URI=http://127.0.0.1:4144/creds`
 
 Then just:
 
@@ -98,7 +99,7 @@ To see a list of profiles loaded in named slots use `aws-sso ecs list`.
 
 Accessing the individual credentials is done via the `profile` query parameter:
 
-`export AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:4144/slot/ExampleProfileName`
+`export AWS_CONTAINER_CREDENTIALS_FULL_URI=http://127.0.0.1:4144/slot/ExampleProfileName`
 
 Would utilize the `ExampleProfileName` role.  Note that the `profile` parameter
 value must be URL Escaped.

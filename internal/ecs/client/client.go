@@ -32,28 +32,30 @@ import (
 )
 
 type ECSClient struct {
+	ip   string
 	port int
 }
 
-func NewECSClient(port int) *ECSClient {
+func NewECSClient(ip string, port int) *ECSClient {
 	return &ECSClient{
+		ip:   ip,
 		port: port,
 	}
 }
 
 func (c *ECSClient) LoadUrl(profile string) string {
 	if profile == "" {
-		return fmt.Sprintf("http://localhost:%d/", c.port)
+		return fmt.Sprintf("http://%s:%d/", c.ip, c.port)
 	}
-	return fmt.Sprintf("http://localhost:%d%s/%s", c.port, ecs.SLOT_ROUTE, url.QueryEscape(profile))
+	return fmt.Sprintf("http://%s:%d%s/%s", c.ip, c.port, ecs.SLOT_ROUTE, url.QueryEscape(profile))
 }
 
 func (c *ECSClient) ProfileUrl() string {
-	return fmt.Sprintf("http://localhost:%d%s", c.port, ecs.PROFILE_ROUTE)
+	return fmt.Sprintf("http://%s:%d%s", c.ip, c.port, ecs.PROFILE_ROUTE)
 }
 
 func (c *ECSClient) ListUrl() string {
-	return fmt.Sprintf("http://localhost:%d%s", c.port, ecs.SLOT_ROUTE)
+	return fmt.Sprintf("http://%s:%d%s", c.ip, c.port, ecs.SLOT_ROUTE)
 }
 
 func (c *ECSClient) SubmitCreds(creds *storage.RoleCredentials, profile string, slotted bool) error {

@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [v1.16.0] - XXXX-XX-XXX
+
+### New Features 
+
+ * Support ECS server binding to alternative interfaces 
+
 ## [v1.15.1] - 2024-04-30
 
 ### New Features 

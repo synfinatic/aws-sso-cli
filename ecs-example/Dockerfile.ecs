@@ -1,0 +1,27 @@
+FROM ubuntu:22.04 AS builder 
+ARG ARCH
+ARG GO_VERSION
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y git net-tools telnet make && \
+    mkdir -p /usr/local 
+ADD https://go.dev/dl/go${GO_VERSION}.linux-${ARCH}.tar.gz /usr/local/go.tar.gz 
+RUN cd /usr/local && tar zxf go.tar.gz 
+
+
+FROM builder as compile
+RUN mkdir -p /root/go/src/github.com/synfinatic/aws-sso-cli
+WORKDIR /root/go/src/github.com/synfinatic/aws-sso-cli
+ADD --keep-git-dir . .
+ENV GOROOT=/usr/local/go
+RUN PATH=${GOROOT}/bin:${PATH} make 
+
+FROM alpine:latest
+COPY --from=compile /root/go/src/github.com/synfinatic/aws-sso-cli/dist/aws-sso /usr/bin/aws-sso
+RUN mkdir -p /root/.aws-sso && apk add aws-cli
+COPY --chmod=644 ecs-example/config.yaml /root/.aws-sso/config.yaml
+COPY --chmod=755 ecs-example/entrypoint.sh /entrypoint.sh
+
+EXPOSE 4144/tcp 
+
+ENTRYPOINT ["/entrypoint.sh"]
+

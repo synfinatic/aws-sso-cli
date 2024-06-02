@@ -1,0 +1,13 @@
+services:
+  aws-sso:
+    container_name: aws-sso
+    build: 
+      context: ..
+      dockerfile: ./ecs-example/Dockerfile.ecs 
+      args:
+        GO_VERSION: 1.21.10
+        ARCH: arm64
+    ports:
+      - "127.0.0.1:4144:4144"
+    environment:
+      - AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:4144/

@@ -27,10 +27,6 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/ecs/server"
 )
 
-const (
-	ECS_PORT = 4144
-)
-
 type EcsCmd struct {
 	Run     EcsRunCmd     `kong:"cmd,help='Run the ECS Server'"`
 	List    EcsListCmd    `kong:"cmd,help='List profiles loaded in the ECS Server'"`
@@ -40,11 +36,16 @@ type EcsCmd struct {
 }
 
 type EcsRunCmd struct {
-	Port int `kong:"help='TCP port to listen on',env='AWS_SSO_ECS_PORT',default=4144"`
+	Ip   string `kong:"help='IP address to listen on',env='AWS_SSO_ECS_IP',default='127.0.0.1'"`
+	Port int    `kong:"help='TCP port to listen on',env='AWS_SSO_ECS_PORT',default=4144"`
 }
 
 func (cc *EcsRunCmd) Run(ctx *RunContext) error {
-	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", ctx.Cli.Ecs.Run.Port))
+	if ctx.Cli.Ecs.Run.Ip == "0.0.0.0" {
+		log.Warn("Listening on all interfaces, this is a security risk!")
+	}
+
+	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", ctx.Cli.Ecs.Run.Ip, ctx.Cli.Ecs.Run.Port))
 	if err != nil {
 		return err
 	}
