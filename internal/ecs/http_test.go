@@ -48,7 +48,7 @@ func TestWriteCreds(t *testing.T) {
 	err := json.NewDecoder(r.Body).Decode(&outCreds)
 	assert.NoError(t, err)
 	assert.Equal(t, "AccessKeyId", outCreds["AccessKeyId"])
-	assert.Equal(t, creds.ExpireISO8601(), outCreds["Expiration"])
+	assert.Equal(t, creds.ExpireString(), outCreds["Expiration"])
 	assert.Equal(t, "arn:aws:iam::000001111111:role/Rolename", outCreds["RoleArn"])
 	assert.Equal(t, "SecretAccessKey", outCreds["SecretAccessKey"])
 	assert.Equal(t, "Token", outCreds["Token"])

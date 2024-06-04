@@ -24,7 +24,7 @@ func WriteCreds(w http.ResponseWriter, creds *storage.RoleCredentials) {
 
 	resp := map[string]string{
 		"AccessKeyId":     creds.AccessKeyId,
-		"Expiration":      creds.ExpireISO8601(),
+		"Expiration":      creds.ExpireString(),
 		"RoleArn":         creds.RoleArn(),
 		"SecretAccessKey": creds.SecretAccessKey,
 		"Token":           creds.SessionToken,
