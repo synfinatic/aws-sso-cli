@@ -55,7 +55,7 @@ func PrintAwsConfig(s *sso.Settings, action url.Action) error {
 		return err
 	}
 
-	f, err := utils.NewFileEdit(CONFIG_TEMPLATE, profiles)
+	f, err := utils.NewFileEdit(CONFIG_TEMPLATE, s.DefaultSSO, profiles)
 	if err != nil {
 		return err
 	}
@@ -71,13 +71,14 @@ func UpdateAwsConfig(s *sso.Settings, action url.Action, cfile string, diff, for
 		return err
 	}
 
-	f, err := utils.NewFileEdit(CONFIG_TEMPLATE, profiles)
+	f, err := utils.NewFileEdit(CONFIG_TEMPLATE, s.DefaultSSO, profiles)
 	if err != nil {
 		return err
 	}
 
 	oldConfig := AwsConfigFile(cfile)
-	return f.UpdateConfig(diff, force, oldConfig)
+	_, err = f.UpdateConfig(diff, force, oldConfig)
+	return err
 }
 
 // getProfileMap returns our validated sso.ProfileMap

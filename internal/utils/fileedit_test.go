@@ -24,11 +24,15 @@ import (
 	"os"
 	"testing"
 
-	"github.com/sirupsen/logrus"
-	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestFileEditInvalid(t *testing.T) {
+	// invalid template
+	_, err := NewFileEdit("{{ .Test", "", map[string]string{})
+	assert.Error(t, err)
+}
 
 func TestFileEdit(t *testing.T) {
 	var err error
@@ -37,34 +41,34 @@ func TestFileEdit(t *testing.T) {
 	diffWriter = &output
 	defer func() { diffWriter = os.Stdout }()
 
-	var template = "{{ .Test }}"
 	var vars = map[string]string{
 		"Test": "foo",
 	}
 
-	_, err = NewFileEdit("{{ .Test", vars)
-	assert.Error(t, err)
-
-	fe, err = NewFileEdit(template, vars)
+	var template = "{{ .Test }}"
+	fe, err = NewFileEdit(template, "test", vars)
 	assert.NoError(t, err)
 
 	tfile, err := os.CreateTemp("", "")
 	assert.NoError(t, err)
 	defer os.Remove(tfile.Name())
-	err = fe.UpdateConfig(true, true, tfile.Name())
+	changed, err := fe.UpdateConfig(true, true, tfile.Name())
 	assert.NoError(t, err)
+	assert.True(t, changed)
 	assert.NotEmpty(t, output)
 	tfile.Close()
 
+	prefix := fmt.Sprintf("%s_%s", CONFIG_PREFIX, "test")
+	suffix := fmt.Sprintf("%s_%s", CONFIG_SUFFIX, "test")
 	fBytes, err := os.ReadFile(tfile.Name())
 	assert.NoError(t, err)
-	assert.Equal(t, []byte(
-		fmt.Sprintf(FILE_TEMPLATE, CONFIG_PREFIX, "foo", CONFIG_SUFFIX)), fBytes)
+	assert.Equal(t, []byte(fmt.Sprintf(FILE_TEMPLATE, prefix, "foo", suffix)), fBytes)
 
 	// create the base path
 	badfile := "./this/doesnt/exist"
-	err = fe.UpdateConfig(false, true, badfile)
+	changed, err = fe.UpdateConfig(false, true, badfile)
 	assert.NoError(t, err)
+	assert.True(t, changed)
 	defer os.Remove(badfile)
 
 	// can't treat a file like a directory though :)
@@ -75,31 +79,24 @@ func TestFileEdit(t *testing.T) {
 		_ = os.Chmod(baddir, 0777)
 		os.Remove(baddir)
 	}()
-	err = fe.UpdateConfig(false, true, fmt.Sprintf("%s/foo", baddir))
+	_, err = fe.UpdateConfig(false, true, fmt.Sprintf("%s/foo", baddir))
 	assert.Error(t, err)
 
 	// can't create this path
-	err = fe.UpdateConfig(false, true, "/cant/write/to/root/filesystem")
+	_, err = fe.UpdateConfig(false, true, "/cant/write/to/root/filesystem")
 	assert.Error(t, err)
-
-	// setup logger for testing
-	logger, hook := test.NewNullLogger()
-	logger.SetLevel(logrus.DebugLevel)
-	oldLogger := GetLogger()
-	SetLogger(logger)
-	defer SetLogger(oldLogger)
 
 	// check the empty diff code path
 	tfile2, err := os.Open(tfile.Name())
 	assert.NoError(t, err)
-	err = fe.UpdateConfig(false, true, tfile2.Name())
+	changed, err = fe.UpdateConfig(false, true, tfile2.Name())
 	assert.NoError(t, err)
-	assert.Contains(t, hook.LastEntry().Message, "no changes made to")
+	assert.True(t, changed)
 
 	// can't eval template
-	fe, err = NewFileEdit("{{ .Test }}", []string{})
+	fe, err = NewFileEdit("{{ .Test }}", "test", []string{})
 	assert.NoError(t, err)
-	err = fe.UpdateConfig(false, true, tfile.Name())
+	_, err = fe.UpdateConfig(false, true, tfile.Name())
 	assert.Error(t, err)
 }
 
@@ -128,7 +125,7 @@ func TestGenerateNewFile(t *testing.T) {
 	var vars = map[string]string{
 		"Test": "foo",
 	}
-	fe, _ := NewFileEdit(template, vars)
+	fe, _ := NewFileEdit(template, "", vars)
 	_, err := fe.GenerateNewFile("/this/directory/really/should/not/exist")
 	assert.Error(t, err)
 }
@@ -145,6 +142,32 @@ func promptError(a, b string) (bool, error) {
 	return false, fmt.Errorf("an error")
 }
 
+func TestDefaultFileEdit(t *testing.T) {
+	var output bytes.Buffer
+	diffWriter = &output
+	defer func() { diffWriter = os.Stdout }()
+
+	var vars = map[string]string{
+		"Test": "foo",
+	}
+	var template = "{{ .Test }}"
+	fe, err := NewFileEdit(template, "Default", vars)
+	assert.NoError(t, err)
+
+	tfile, err := os.CreateTemp("", "")
+	assert.NoError(t, err)
+	defer os.Remove(tfile.Name())
+	changed, err := fe.UpdateConfig(true, true, tfile.Name())
+	assert.NoError(t, err)
+	assert.True(t, changed)
+	assert.NotEmpty(t, output)
+	tfile.Close()
+
+	fBytes, err := os.ReadFile(tfile.Name())
+	assert.NoError(t, err)
+	assert.Equal(t, []byte(fmt.Sprintf(FILE_TEMPLATE, CONFIG_PREFIX, "foo", CONFIG_SUFFIX)), fBytes)
+}
+
 func TestPrompter(t *testing.T) {
 	var err error
 	var fe *FileEdit
@@ -154,10 +177,10 @@ func TestPrompter(t *testing.T) {
 		"Test": "foo",
 	}
 
-	_, err = NewFileEdit("{{ .Test", vars)
+	_, err = NewFileEdit("{{ .Test", "", vars)
 	assert.Error(t, err)
 
-	fe, err = NewFileEdit(template, vars)
+	fe, err = NewFileEdit(template, "", vars)
 	assert.NoError(t, err)
 
 	oldP := prompt
@@ -168,19 +191,20 @@ func TestPrompter(t *testing.T) {
 	defer os.Remove(tfile.Name())
 	tfile.Close()
 	prompt = promptNo
-	err = fe.UpdateConfig(false, false, tfile.Name())
+	changed, err := fe.UpdateConfig(false, false, tfile.Name())
 	assert.NoError(t, err)
+	assert.False(t, changed)
 
 	fBytes, err := os.ReadFile(tfile.Name())
 	assert.NoError(t, err)
 	assert.Empty(t, fBytes)
 
 	prompt = promptError
-	err = fe.UpdateConfig(false, false, tfile.Name())
+	_, err = fe.UpdateConfig(false, false, tfile.Name())
 	assert.Error(t, err)
 
 	prompt = promptYes
-	err = fe.UpdateConfig(false, false, tfile.Name())
+	_, err = fe.UpdateConfig(false, false, tfile.Name())
 	assert.NoError(t, err)
 
 	fBytes, err = os.ReadFile(tfile.Name())

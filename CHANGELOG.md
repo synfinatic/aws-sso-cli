@@ -4,6 +4,10 @@
 
 ## [v1.16.0] - XXXX-XX-XX
 
+### Changes 
+
+ * `config-profiles` command now uses the name of the SSO for the block #696
+
 ### New Features
 
  * Add credentials command #867

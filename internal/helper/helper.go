@@ -178,11 +178,12 @@ func installConfigFile(path string, contents []byte) error {
 		"Executable": exec,
 	}
 
-	if fe, err = utils.NewFileEdit(string(contents), args); err != nil {
+	if fe, err = utils.NewFileEdit(string(contents), "", args); err != nil {
 		return err
 	}
 
-	if err = fe.UpdateConfig(false, false, path); err != nil {
+	_, err = fe.UpdateConfig(false, false, path)
+	if err != nil {
 		return err
 	}
 
@@ -194,11 +195,12 @@ func uninstallConfigFile(path string, contents []byte) error {
 	var err error
 	var fe *utils.FileEdit
 
-	if fe, err = utils.NewFileEdit("", ""); err != nil {
+	if fe, err = utils.NewFileEdit("", "", ""); err != nil {
 		return nil
 	}
 
-	if err = fe.UpdateConfig(false, false, path); err != nil {
+	_, err = fe.UpdateConfig(false, false, path)
+	if err != nil {
 		log.Warnf("unable to remove config: %s", err.Error())
 	}
 
