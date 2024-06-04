@@ -11,6 +11,7 @@
 ### Bugs
 
  * Disable linker warnings on macOS with -race flag
+ * `aws-sso-profile` returns usage when run without args #836
 
 ## [v1.15.1] - 2024-04-30
 
