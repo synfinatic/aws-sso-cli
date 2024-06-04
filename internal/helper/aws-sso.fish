@@ -13,6 +13,12 @@ function aws-sso-profile
       echo "Unable to assume a role while AWS_PROFILE is set"
       return 1
   end
+
+  if [ -z "$argv[1]" ]
+      echo "Usage: aws-sso-profile <profile>"
+      return 1
+  end
+
   eval $({{ .Executable }} $_args eval -p $argv[1])
   if [ "$AWS_SSO_PROFILE" != "$1" ]
       return 1
