@@ -8,6 +8,10 @@
 
  * Add credentials command #867
 
+### Bugs
+
+ * Disable linker warnings on macOS with -race flag
+
 ## [v1.15.1] - 2024-04-30
 
 ### New Features
