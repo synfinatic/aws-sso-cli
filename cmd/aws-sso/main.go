@@ -25,6 +25,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/posener/complete"
+
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/internal/awscreds"
@@ -118,6 +119,7 @@ type CLI struct {
 	// Commands
 	Cache          CacheCmd          `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
 	Console        ConsoleCmd        `kong:"cmd,help='Open AWS Console using specificed AWS role/profile'"`
+	Credentials    CredentialsCmd    `kong:"cmd,help='Generate static AWS credentials for use with AWS CLI'"`
 	Default        DefaultCmd        `kong:"cmd,hidden,default='1'"` // list command without args
 	Eval           EvalCmd           `kong:"cmd,help='Print AWS environment vars for use with eval $(aws-sso eval ...)'"`
 	Exec           ExecCmd           `kong:"cmd,help='Execute command using specified IAM role in a new shell'"`
@@ -250,6 +252,7 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 				"region":    p.RegionComplete(),
 				"role":      p.RoleComplete(),
 				"sso":       p.SsoComplete(),
+				"allFiles":  complete.PredictFiles("*"),
 			},
 		),
 	)

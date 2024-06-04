@@ -2,9 +2,15 @@
 
 ## [Unreleased]
 
+## [v1.16.0] - XXXX-XX-XX
+
+### New Features
+
+ * Add credentials command #867
+
 ## [v1.15.1] - 2024-04-30
 
-### New Features 
+### New Features
 
  * Add helper aliases for fish shell #361
 
