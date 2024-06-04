@@ -7,7 +7,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/alecthomas/kong v0.8.1
 	github.com/atotto/clipboard v0.1.4
-	github.com/c-bata/go-prompt v0.2.5 // 0.2.6 is broken
+	github.com/c-bata/go-prompt v0.2.6 // 0.2.6 is broken
 	github.com/davecgh/go-spew v1.1.1
 	github.com/goccy/go-yaml v1.11.2
 	github.com/hexops/gotextdiff v1.0.3
@@ -52,7 +52,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
-	github.com/pkg/term v1.1.0 // indirect
+	github.com/pkg/term v1.2.0-beta.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
