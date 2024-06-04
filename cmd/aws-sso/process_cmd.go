@@ -86,7 +86,7 @@ func NewCredentialsProcessOutput(creds *storage.RoleCredentials) *CredentialProc
 		AccessKeyId:     x.AccessKeyId,
 		SecretAccessKey: x.SecretAccessKey,
 		SessionToken:    x.SessionToken,
-		Expiration:      x.ExpireISO8601(),
+		Expiration:      x.ExpireString(),
 	}
 	return &c
 }

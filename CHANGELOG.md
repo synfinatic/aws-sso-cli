@@ -7,6 +7,7 @@
 ### New Features
 
  * Add credentials command #867
+ * Use RFC3339 for AWS_SSO_SESSION_EXPIRATION #837
 
 ### Bugs
 

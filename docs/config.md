@@ -569,7 +569,7 @@ advanced debugging.
 
  * `file` - Encrypted local files (OS agnostic and default on Linux)
  * `keychain` - macOS [Keychain](https://support.apple.com/guide/mac-help/use-keychains-to-store-passwords-mchlf375f392/mac) (default on macOS)
- * `kwallet` - [KDE Wallet](https://utils.kde.org/projects/kwalletmanager/)
+ * `kwallet` - [KDE Wallet](https://github.com/KDE/kwalletmanager)
  * `pass` - [pass](https://www.passwordstore.org) (uses GPG on backend)
  * `secret-service` - Freedesktop.org [Secret Service](https://specifications.freedesktop.org/secret-service/latest/re01.html)
  * `wincred` - Windows [Credential Manager](https://support.microsoft.com/en-us/windows/accessing-credential-manager-1b5c916a-6a16-889f-8581-fc16e8165ac0) (default on Windows)

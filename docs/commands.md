@@ -409,7 +409,7 @@ The following environment variables are specific to `aws-sso`:
  * `AWS_SSO_ROLE_NAME` -- The name of the IAM role
  * `AWS_SSO_ROLE_ARN` -- The full ARN of the IAM role
  * `AWS_SSO_SESSION_EXPIRATION`  -- The date and time when the IAM role
-    credentials will expire
+    credentials will expire in RFC3339 format
  * `AWS_SSO_DEFAULT_REGION` -- Tracking variable for `AWS_DEFAULT_REGION`
  * `AWS_SSO_PROFILE` -- User customizable varible using the
     [ProfileFormat](config.md#profileformat) template
