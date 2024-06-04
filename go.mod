@@ -68,6 +68,7 @@ require (
 )
 
 require (
+	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/aws/aws-sdk-go-v2/config v1.19.1
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.43
 	github.com/aws/aws-sdk-go-v2/service/iam v1.24.0
