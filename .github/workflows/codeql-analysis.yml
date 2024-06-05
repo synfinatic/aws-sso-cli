@@ -89,9 +89,9 @@ jobs:
     - name: Perform CodeQL Analysis
       uses: codecov/codecov-action@v3
       with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        verbose: false
+        env_vars: OS
         files: ./coverage.out
         fail_ci_if_error: true
-        env_vars: OS
         flags: unittests
+        token: ${{ secrets.CODECOV_TOKEN }}
+        verbose: false
