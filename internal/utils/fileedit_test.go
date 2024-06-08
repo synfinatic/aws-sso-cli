@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"text/template"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,6 +31,7 @@ import (
 
 func TestFileEditInvalid(t *testing.T) {
 	// invalid template
+	t.Parallel()
 	_, err := NewFileEdit("{{ .Test", "", map[string]string{})
 	assert.Error(t, err)
 }
@@ -38,6 +40,7 @@ func TestFileEdit(t *testing.T) {
 	var err error
 	var fe *FileEdit
 	var output bytes.Buffer
+
 	diffWriter = &output
 	defer func() { diffWriter = os.Stdout }()
 
@@ -52,7 +55,7 @@ func TestFileEdit(t *testing.T) {
 	tfile, err := os.CreateTemp("", "")
 	assert.NoError(t, err)
 	defer os.Remove(tfile.Name())
-	changed, err := fe.UpdateConfig(true, true, tfile.Name())
+	changed, _, err := fe.UpdateConfig(true, true, tfile.Name())
 	assert.NoError(t, err)
 	assert.True(t, changed)
 	assert.NotEmpty(t, output)
@@ -66,7 +69,7 @@ func TestFileEdit(t *testing.T) {
 
 	// create the base path
 	badfile := "./this/doesnt/exist"
-	changed, err = fe.UpdateConfig(false, true, badfile)
+	changed, _, err = fe.UpdateConfig(false, true, badfile)
 	assert.NoError(t, err)
 	assert.True(t, changed)
 	defer os.Remove(badfile)
@@ -79,28 +82,57 @@ func TestFileEdit(t *testing.T) {
 		_ = os.Chmod(baddir, 0777)
 		os.Remove(baddir)
 	}()
-	_, err = fe.UpdateConfig(false, true, fmt.Sprintf("%s/foo", baddir))
+	_, _, err = fe.UpdateConfig(false, true, fmt.Sprintf("%s/foo", baddir))
 	assert.Error(t, err)
 
 	// can't create this path
-	_, err = fe.UpdateConfig(false, true, "/cant/write/to/root/filesystem")
+	_, _, err = fe.UpdateConfig(false, true, "/cant/write/to/root/filesystem")
 	assert.Error(t, err)
 
 	// check the empty diff code path
 	tfile2, err := os.Open(tfile.Name())
 	assert.NoError(t, err)
-	changed, err = fe.UpdateConfig(false, true, tfile2.Name())
+	changed, _, err = fe.UpdateConfig(false, true, tfile2.Name())
 	assert.NoError(t, err)
-	assert.True(t, changed)
+	assert.False(t, changed)
 
 	// can't eval template
 	fe, err = NewFileEdit("{{ .Test }}", "test", []string{})
 	assert.NoError(t, err)
-	_, err = fe.UpdateConfig(false, true, tfile.Name())
+	_, _, err = fe.UpdateConfig(false, true, tfile.Name())
 	assert.Error(t, err)
 }
 
+func TestFileEditNoChange(t *testing.T) {
+	var err error
+	var fe *FileEdit
+
+	var vars = map[string]string{
+		"Test": "foo",
+	}
+
+	var template = "{{ .Test }}"
+	fe, err = NewFileEdit(template, "test", vars)
+	assert.NoError(t, err)
+
+	tfile, err := os.CreateTemp("", "")
+	assert.NoError(t, err)
+	defer os.Remove(tfile.Name())
+	tfile.Close()
+
+	changed, _, err := fe.UpdateConfig(false, true, tfile.Name())
+	assert.NoError(t, err)
+	assert.True(t, changed)
+
+	// no changes this time
+	changed, diff, err := fe.UpdateConfig(false, true, tfile.Name())
+	assert.NoError(t, err)
+	assert.Empty(t, diff)
+	assert.False(t, changed)
+}
+
 func TestDiffBytes(t *testing.T) {
+	t.Parallel()
 	a := []byte("foobar")
 	b := []byte("foobar")
 
@@ -121,6 +153,7 @@ func TestDiffBytes(t *testing.T) {
 }
 
 func TestGenerateNewFile(t *testing.T) {
+	t.Parallel()
 	var template = "{{ .Test }}"
 	var vars = map[string]string{
 		"Test": "foo",
@@ -143,6 +176,7 @@ func promptError(a, b string) (bool, error) {
 }
 
 func TestDefaultFileEdit(t *testing.T) {
+	t.Parallel()
 	var output bytes.Buffer
 	diffWriter = &output
 	defer func() { diffWriter = os.Stdout }()
@@ -157,7 +191,7 @@ func TestDefaultFileEdit(t *testing.T) {
 	tfile, err := os.CreateTemp("", "")
 	assert.NoError(t, err)
 	defer os.Remove(tfile.Name())
-	changed, err := fe.UpdateConfig(true, true, tfile.Name())
+	changed, _, err := fe.UpdateConfig(true, true, tfile.Name())
 	assert.NoError(t, err)
 	assert.True(t, changed)
 	assert.NotEmpty(t, output)
@@ -169,6 +203,7 @@ func TestDefaultFileEdit(t *testing.T) {
 }
 
 func TestPrompter(t *testing.T) {
+	t.Parallel()
 	var err error
 	var fe *FileEdit
 
@@ -191,7 +226,7 @@ func TestPrompter(t *testing.T) {
 	defer os.Remove(tfile.Name())
 	tfile.Close()
 	prompt = promptNo
-	changed, err := fe.UpdateConfig(false, false, tfile.Name())
+	changed, _, err := fe.UpdateConfig(false, false, tfile.Name())
 	assert.NoError(t, err)
 	assert.False(t, changed)
 
@@ -200,11 +235,11 @@ func TestPrompter(t *testing.T) {
 	assert.Empty(t, fBytes)
 
 	prompt = promptError
-	_, err = fe.UpdateConfig(false, false, tfile.Name())
+	_, _, err = fe.UpdateConfig(false, false, tfile.Name())
 	assert.Error(t, err)
 
 	prompt = promptYes
-	_, err = fe.UpdateConfig(false, false, tfile.Name())
+	_, _, err = fe.UpdateConfig(false, false, tfile.Name())
 	assert.NoError(t, err)
 
 	fBytes, err = os.ReadFile(tfile.Name())
@@ -214,6 +249,7 @@ func TestPrompter(t *testing.T) {
 }
 
 func TestGenerateSource(t *testing.T) {
+	t.Parallel()
 	testcases := []struct {
 		name        string
 		tpl         string
@@ -238,6 +274,11 @@ I'm a text template if you can believe that
 template
 `,
 		},
+		{
+			name:        "invalid template",
+			tpl:         `{{ .Name`,
+			expectedErr: fmt.Errorf("template: template:1: unclosed action"),
+		},
 	}
 
 	for _, tc := range testcases {
@@ -251,4 +292,22 @@ template
 			require.Equal(t, tc.expected, string(output))
 		})
 	}
+}
+
+func TestUpdateConfigFailure(t *testing.T) {
+	t.Parallel()
+	var fe *FileEdit
+
+	fe = &FileEdit{
+		Template: template.New("test"),
+	}
+	_, _, err := fe.UpdateConfig(false, false, "/this/doesnt/exist")
+	assert.Error(t, err)
+
+	tmpl, _ := template.New("test").Parse("")
+	fe = &FileEdit{
+		Template: tmpl,
+	}
+	_, _, err = fe.UpdateConfig(false, false, "/this/doesnt/exist")
+	assert.Error(t, err)
 }

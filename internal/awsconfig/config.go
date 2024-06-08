@@ -77,7 +77,7 @@ func UpdateAwsConfig(s *sso.Settings, action url.Action, cfile string, diff, for
 	}
 
 	oldConfig := AwsConfigFile(cfile)
-	_, err = f.UpdateConfig(diff, force, oldConfig)
+	_, _, err = f.UpdateConfig(diff, force, oldConfig)
 	return err
 }
 

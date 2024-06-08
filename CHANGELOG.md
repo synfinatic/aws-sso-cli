@@ -4,9 +4,14 @@
 
 ## [v1.16.0] - XXXX-XX-XX
 
-### Changes 
+### Bug Fixes
 
- * `config-profiles` command now uses the name of the SSO for the block #696
+ * Fix tab completion for --profile flag with fish
+ * `config-profiles` now works for multiple AWS SSO instances #696, #740
+
+### Changes
+
+ * update to AWS ssooidc v1.24.5
 
 ### New Features
 
