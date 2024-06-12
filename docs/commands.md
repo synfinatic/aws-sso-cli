@@ -14,46 +14,17 @@
 
 ## Commands
 
-### console
+### config
 
-Console generates a URL which will grant you access to the AWS Console in your
-web browser.  The URL can be sent directly to the browser (default), printed
-in the terminal or copied into the Copy & Paste buffer of your computer.
-
-**Note:** Normally, you can only have a single active AWS Console session at
-a time, but multiple session are supported via the [FirefoxOpenUrlInContainer](
-config.md#browser--urlaction--urlexeccommand) configuration option.
+Allows you to run through the configuration wizard and update your AWS SSO CLI
+config file (`~/.aws-sso/config.yaml`).   By default, it only does a very basic
+configuration to get started with.  The `--advanced` flag prompts for more
+settings and is useful for taking advantage of some of the new settings if
+you've upgraded from a previous version!
 
 Flags:
 
- * `--region <region>`, `-r` -- Specify the `$AWS_DEFAULT_REGION` to use
- * `--arn <arn>`, `-a` -- ARN of role to assume (`$AWS_SSO_ROLE_ARN`)
- * `--account <account>`, `-A` -- AWS AccountID of role to assume (`$AWS_SSO_ACCOUNT_ID`)
- * `--duration <minutes>`, `-d` -- AWS Session duration in minutes (default 60)
- * `--prompt`, `-P` -- Force interactive prompt to select role
- * `--role <role>`, `-R` -- Name of AWS Role to assume (requires `--account`) (`$AWS_SSO_ROLE_NAME`)
- * `--profile <profile>`, `-p` -- Name of AWS Profile to assume
-
-The generated URL is good for 15 minutes after it is created.
-
-The common flag `--url-action` is used both for AWS SSO authentication as well as
-what to do with the resulting URL from the `console` command.
-
-Priority is given to:
-
- * `--prompt`
- * `--profile`
- * `--arn` (`$AWS_SSO_ROLE_ARN`)
- * `--account` (`$AWS_SSO_ACCOUNT_ID`) and `--role` (`$AWS_SSO_ROLE_NAME`)
- * `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN` environment variables
- * `AWS_PROFILE` environment variable (works with both SSO and static profiles)
- * Prompt user interactively
-
----
-
-### ecs 
-
-For information about the ECS Server functionality, see the [ecs-server](ecs-server.md) page.
+ * `--advanced` -- Prompts for many more config options
 
 ---
 
@@ -107,6 +78,67 @@ which profiles are managed by AWS SSO CLI.
 
 **Note:** This command does not honor the `--sso` option as it operates on all
 of the configured AWS SSO instances in the `~/.aws-sso/config.yaml` file.
+
+---
+
+### console
+
+Console generates a URL which will grant you access to the AWS Console in your
+web browser.  The URL can be sent directly to the browser (default), printed
+in the terminal or copied into the Copy & Paste buffer of your computer.
+
+**Note:** Normally, you can only have a single active AWS Console session at
+a time, but multiple session are supported via the [open-url-in-container](
+config.md#open-url-in-firefox-container) configuration option.
+
+Flags:
+
+ * `--region <region>`, `-r` -- Specify the `$AWS_DEFAULT_REGION` to use
+ * `--arn <arn>`, `-a` -- ARN of role to assume (`$AWS_SSO_ROLE_ARN`)
+ * `--account <account>`, `-A` -- AWS AccountID of role to assume (`$AWS_SSO_ACCOUNT_ID`)
+ * `--duration <minutes>`, `-d` -- AWS Session duration in minutes (default 60)
+ * `--prompt`, `-P` -- Force interactive prompt to select role
+ * `--role <role>`, `-R` -- Name of AWS Role to assume (requires `--account`) (`$AWS_SSO_ROLE_NAME`)
+ * `--profile <profile>`, `-p` -- Name of AWS Profile to assume
+
+The generated URL is good for 15 minutes after it is created.
+
+The common flag `--url-action` is used both for AWS SSO authentication as well as
+what to do with the resulting URL from the `console` command.
+
+Priority is given to:
+
+ * `--prompt`
+ * `--profile`
+ * `--arn` (`$AWS_SSO_ROLE_ARN`)
+ * `--account` (`$AWS_SSO_ACCOUNT_ID`) and `--role` (`$AWS_SSO_ROLE_NAME`)
+ * `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN` environment variables
+ * `AWS_PROFILE` environment variable (works with both SSO and static profiles)
+ * Prompt user interactively
+
+---
+
+### credentials
+
+Generate static credentials in the format for [~/.aws/credentials](https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-files.html#cli-configure-files-format).
+
+This command will expose your temporary AWS IAM credentials in clear text which can be a security issue,
+and is not recommended except for cases where going through the AWS Identity Center web-based authentication
+workflow is not possible.  The most common example of this would be integrating with Docker and needing
+multiple IAM Roles.  Most use cases are better served by using the [config-profiles](#config-profiles) command or
+passing in IAM credentials via [environment variables](https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-envvars.html).
+
+Flags:
+
+ * `--file <path>`, `-f` -- Specify the file to generate.  Default is to print to STDOUT.
+ * `--append`, `-a` -- Append to the file instead of overwriting it.
+ * `--profile <profile>,...`, `-p` -- One or more profiles to include in the output.
+
+---
+
+### ecs
+
+For information about the ECS Server functionality, see the [ecs-server](ecs-server.md) page.
 
 ---
 
@@ -271,7 +303,7 @@ case-sensitive manner.
 
 ### logout
 
-Invalidates all AWS credentials with AWS for the selected SSO instance, 
+Invalidates all AWS credentials with AWS for the selected SSO instance,
 including those in your browser session.
 
 If you only wish to remove the credentials from the `aws-sso` secure store, use
@@ -353,17 +385,6 @@ the new version.  Once the new version is installed, `--uninstall-pre-19` will
 refuse to run so you will have to either manually edit the file or run
 `--uninstall`, then `--uninstall-pre-19` and finally `--install` again.
 
-### config
-
-Allows you to run through the configuration wizard and update your AWS SSO CLI
-config file (`~/.aws-sso/config.yaml`).   By default, it only does a very basic
-configuration to get started with.  The `--advanced` flag prompts for more 
-settings and is useful for taking advantage of some of the new settings if 
-you've upgraded from a previous version!
-
-Flags:
-
- * `--advanced` -- Prompts for many more config options
 
 ## Environment Variables
 

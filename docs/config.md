@@ -303,6 +303,13 @@ UrlExecCommand:
 
 ##### Open URL in Firefox Container
 
+Opens each IAM Role in a unique Firefox Container using either
+[Open Url in Container](
+https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/) or the
+[Firefox Multi-Account Containers](
+https://addons.mozilla.org/en-US/firefox/addon/multi-account-containers/)
+Firefox plugins.
+
 ```yaml
 UrlAction: open-url-in-container
 UrlExecCommand:
