@@ -88,10 +88,10 @@ func (as *AWSSSO) reauthenticate() error {
 
 	log.Tracef("reauthenticate() for %s", as.StoreKey())
 	err := as.registerClient(false)
-	log.Tracef("<- reauthenticate()")
 	if err != nil {
 		return fmt.Errorf("unable to register client with AWS SSO: %s", err.Error())
 	}
+	log.Tracef("<- reauthenticate()")
 
 	err = as.startDeviceAuthorization()
 	log.Tracef("<- reauthenticate()")
@@ -150,6 +150,7 @@ const (
 func (as *AWSSSO) registerClient(force bool) error {
 	log.Tracef("registerClient()")
 	if !force {
+		log.Trace("Checking cache for RegisterClientData")
 		err := as.store.GetRegisterClientData(as.StoreKey(), &as.ClientData)
 		if err == nil && !as.ClientData.Expired() {
 			log.Debugf("Using RegisterClient cache for %s", as.StoreKey())
@@ -157,14 +158,17 @@ func (as *AWSSSO) registerClient(force bool) error {
 		}
 	}
 
+	log.Trace("Registering new client with AWS SSO")
 	input := ssooidc.RegisterClientInput{
 		ClientName: aws.String(as.ClientName),
 		ClientType: aws.String(as.ClientType),
+		// docs say this is optional, but it's required?
+		GrantTypes: []string{"refresh_token"},
 		Scopes:     nil,
 	}
 	resp, err := as.ssooidc.RegisterClient(context.TODO(), &input)
 	if err != nil {
-		return err
+		return fmt.Errorf("registerClient: %s", err.Error())
 	}
 
 	as.ClientData = storage.RegisterClientData{

@@ -95,6 +95,8 @@ type SourceHelper struct {
 	output io.Writer
 }
 
+// NewSourceHelper returns a new SourceHelper and takes a function
+// to get the current executable path and an io.Writer to write the output to
 func NewSourceHelper(getExe func() (string, error), output io.Writer) *SourceHelper {
 	return &SourceHelper{
 		getExe: os.Executable,
@@ -117,6 +119,8 @@ func (h SourceHelper) Generate(shell string) error {
 	return printConfig(c, execPath, h.output)
 }
 
+var forceIt bool = false // used just for testing
+
 // InstallHelper installs any helper code into our shell startup script(s)
 func InstallHelper(shell string, path string) error {
 	c, defaultPath, err := getScript(shell)
@@ -125,9 +129,9 @@ func InstallHelper(shell string, path string) error {
 	}
 
 	if path == "" {
-		err = installConfigFile(defaultPath, c)
+		err = installConfigFile(defaultPath, c, forceIt)
 	} else {
-		err = installConfigFile(path, c)
+		err = installConfigFile(path, c, forceIt)
 	}
 
 	return err
@@ -135,37 +139,46 @@ func InstallHelper(shell string, path string) error {
 
 // UninstallHelper removes any helper code from our shell startup script(s)
 func UninstallHelper(shell string, path string) error {
-	c, defaultPath, err := getScript(shell)
+	_, defaultPath, err := getScript(shell)
 	if err != nil {
 		return err
 	}
 
 	if path == "" {
-		err = uninstallConfigFile(defaultPath, c)
+		err = uninstallConfigFile(defaultPath)
 	} else {
-		err = uninstallConfigFile(path, c)
+		err = uninstallConfigFile(path)
 	}
 	return err
 }
 
-func printConfig(contents []byte, execPath string, output io.Writer) error {
+// printConfig writes the given template to the output
+// It will replace any variables in the file with the given args
+func printConfig(template []byte, execPath string, output io.Writer) error {
 	var err error
-	var source []byte
+	var fileContents []byte
 
 	args := map[string]string{
 		"Executable": execPath,
 	}
 
-	if source, err = utils.GenerateSource(string(contents), args); err != nil {
+	// generate the source with the given args using the template
+	if fileContents, err = utils.GenerateSource(string(template), args); err != nil {
 		return err
 	}
+	if len(fileContents) == 0 {
+		return fmt.Errorf("no data generated")
+	}
 
-	_, err = io.Copy(output, bytes.NewReader(source))
+	len, err := io.Copy(output, bytes.NewReader(fileContents))
+	if len == 0 {
+		return fmt.Errorf("no data written to output")
+	}
 	return err
 }
 
 // installConfigFile adds our blob to the given file
-func installConfigFile(path string, contents []byte) error {
+func installConfigFile(path string, contents []byte, force bool) error {
 	var err error
 	var exec string
 	var fe *utils.FileEdit
@@ -178,11 +191,12 @@ func installConfigFile(path string, contents []byte) error {
 		"Executable": exec,
 	}
 
-	if fe, err = utils.NewFileEdit(string(contents), args); err != nil {
+	if fe, err = utils.NewFileEdit(string(contents), "", args); err != nil {
 		return err
 	}
 
-	if err = fe.UpdateConfig(false, false, path); err != nil {
+	_, _, err = fe.UpdateConfig(false, force, path)
+	if err != nil {
 		return err
 	}
 
@@ -190,15 +204,16 @@ func installConfigFile(path string, contents []byte) error {
 }
 
 // uninstallConfigFile removes our blob from the given file
-func uninstallConfigFile(path string, contents []byte) error {
+func uninstallConfigFile(path string) error {
 	var err error
 	var fe *utils.FileEdit
 
-	if fe, err = utils.NewFileEdit("", ""); err != nil {
+	if fe, err = utils.NewFileEdit("", "", ""); err != nil {
 		return nil
 	}
 
-	if err = fe.UpdateConfig(false, false, path); err != nil {
+	_, _, err = fe.UpdateConfig(false, false, path)
+	if err != nil {
 		log.Warnf("unable to remove config: %s", err.Error())
 	}
 

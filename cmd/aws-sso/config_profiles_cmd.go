@@ -55,7 +55,7 @@ func (cc *ConfigProfilesCmd) Run(ctx *RunContext) error {
 	}
 
 	if action == url.ConfigProfilesUndef {
-		return fmt.Errorf("Please specify --open [clip|exec|open|granted-containers|open-url-in-container]")
+		return fmt.Errorf("%s", "please specify --open [clip|exec|open|granted-containers|open-url-in-container]")
 	}
 
 	urlAction, _ := url.NewAction(string(action))

@@ -36,6 +36,17 @@ func TestNewPredictor(t *testing.T) {
 	assert.NotEmpty(t, p.arns)
 	assert.NotEmpty(t, p.profiles)
 	assert.NotEmpty(t, p.roles)
+
+	p = NewPredictor("/dev/null", "./testdata/settings.yaml")
+	assert.NotNil(t, p)
+	assert.Equal(t, p.configFile, "./testdata/settings.yaml")
+	assert.Empty(t, p.accountids)
+	assert.Empty(t, p.arns)
+	assert.Empty(t, p.profiles)
+	assert.Empty(t, p.roles)
+
+	p = NewPredictor("/dev/null", "/dev/null")
+	assert.NotNil(t, p)
 }
 
 func TestCompletions(t *testing.T) {

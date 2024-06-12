@@ -4,6 +4,15 @@
 
 ## [v1.16.0] - XXXX-XX-XX
 
+### Bug Fixes
+
+ * Fix tab completion for --profile flag with fish
+ * `config-profiles` now works for multiple AWS SSO instances #696, #740
+
+### Changes
+
+ * update to AWS ssooidc v1.24.5
+
 ### New Features
 
  * Add credentials command #867

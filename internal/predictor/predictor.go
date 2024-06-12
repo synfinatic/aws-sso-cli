@@ -171,7 +171,12 @@ func (p *Predictor) ProfileComplete() complete.Predictor {
 	// The `:` character is considered a word delimiter by bash complete
 	// so we need to escape them
 	for _, x := range p.profiles {
-		profiles = append(profiles, strings.ReplaceAll(x, ":", "\\:"))
+		if os.Getenv("__NO_ESCAPE_COLONS") == "" {
+			profiles = append(profiles, strings.ReplaceAll(x, ":", "\\:"))
+		} else {
+			// fish doesn't treat colons as word delimiters
+			profiles = append(profiles, x)
+		}
 	}
 
 	return complete.PredictSet(profiles...)

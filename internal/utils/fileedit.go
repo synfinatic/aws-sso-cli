@@ -33,9 +33,10 @@ import (
 )
 
 const (
-	CONFIG_PREFIX = "# BEGIN_AWS_SSO_CLI"
-	CONFIG_SUFFIX = "# END_AWS_SSO_CLI"
-	FILE_TEMPLATE = "%s\n%s\n%s\n"
+	DEFAULT_SSO_NAME = "Default" // DefaultSSO per cmd/aws-sso/main.go
+	CONFIG_PREFIX    = "# BEGIN_AWS_SSO_CLI"
+	CONFIG_SUFFIX    = "# END_AWS_SSO_CLI"
+	FILE_TEMPLATE    = "%s\n%s\n%s\n"
 )
 
 type FileEdit struct {
@@ -47,6 +48,7 @@ type FileEdit struct {
 
 var prompt = askUser
 
+// GenerateSource returns the byte array of a template
 func GenerateSource(fileTemplate string, vars interface{}) ([]byte, error) {
 	templ, err := template.New("template").Parse(fileTemplate)
 	if err != nil {
@@ -62,11 +64,18 @@ func GenerateSource(fileTemplate string, vars interface{}) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func NewFileEdit(fileTemplate string, vars interface{}) (*FileEdit, error) {
+// NewFileEdit creates a new FileEdit object
+func NewFileEdit(fileTemplate, ssoName string, vars interface{}) (*FileEdit, error) {
 	var t string
+	prefix := CONFIG_PREFIX
+	suffix := CONFIG_SUFFIX
 
 	if fileTemplate != "" {
-		t = fmt.Sprintf(FILE_TEMPLATE, CONFIG_PREFIX, fileTemplate, CONFIG_SUFFIX)
+		if ssoName != "" && ssoName != DEFAULT_SSO_NAME {
+			prefix = fmt.Sprintf("%s_%s", CONFIG_PREFIX, ssoName)
+			suffix = fmt.Sprintf("%s_%s", CONFIG_SUFFIX, ssoName)
+		}
+		t = fmt.Sprintf(FILE_TEMPLATE, prefix, fileTemplate, suffix)
 	}
 	templ, err := template.New("template").Parse(t)
 	if err != nil {
@@ -74,8 +83,8 @@ func NewFileEdit(fileTemplate string, vars interface{}) (*FileEdit, error) {
 	}
 
 	return &FileEdit{
-		Prefix:    CONFIG_PREFIX,
-		Suffix:    CONFIG_SUFFIX,
+		Prefix:    prefix,
+		Suffix:    suffix,
 		Template:  templ,
 		InputVars: vars,
 	}, nil
@@ -84,8 +93,9 @@ func NewFileEdit(fileTemplate string, vars interface{}) (*FileEdit, error) {
 var diffWriter io.Writer = os.Stdout
 
 // UpdateConfig does all the heavy lifting of updating (or creating) the file
-// and optionally providing a diff for user to approve/view
-func (f *FileEdit) UpdateConfig(printDiff, force bool, configFile string) error {
+// and optionally providing a diff for user to approve/view.  Returns true if
+// changes were made (and the diff), false if no changes were made, or an error if something happened
+func (f *FileEdit) UpdateConfig(printDiff, force bool, configFile string) (bool, string, error) {
 	inputBytes, err := os.ReadFile(configFile)
 	if err != nil {
 		inputBytes = []byte{}
@@ -93,7 +103,10 @@ func (f *FileEdit) UpdateConfig(printDiff, force bool, configFile string) error 
 
 	outputBytes, err := f.GenerateNewFile(configFile)
 	if err != nil {
-		return err
+		return false, "", err
+	}
+	if len(outputBytes) == 0 {
+		return false, "", fmt.Errorf("no data generated")
 	}
 
 	newFile := fmt.Sprintf("%s.new", configFile)
@@ -103,29 +116,28 @@ func (f *FileEdit) UpdateConfig(printDiff, force bool, configFile string) error 
 	if len(diff) == 0 {
 		// do nothing if there is no diff
 		log.Infof("no changes made to %s", configFile)
-		return nil
+		return false, "", nil
 	}
 
 	if !force {
 		approved, err := prompt(configFile, diff)
 		if err != nil {
-			return err
+			return false, diff, err
 		}
 		if !approved {
-			return nil
+			return false, diff, nil
 		}
 	} else if printDiff {
 		fmt.Fprintf(diffWriter, "%s", diff)
 	}
 
-	return os.WriteFile(configFile, outputBytes, 0600)
+	return true, diff, os.WriteFile(configFile, outputBytes, 0600)
 }
 
 // GenerateNewFile generates the contents of a new config file
 func (f *FileEdit) GenerateNewFile(configFile string) ([]byte, error) {
 	var output bytes.Buffer
-	var r *bufio.Reader
-	w := bufio.NewWriter(&output)
+	_ = io.Writer(&output)
 
 	// read & write up to the prefix
 	input, err := os.Open(configFile)
@@ -140,11 +152,11 @@ func (f *FileEdit) GenerateNewFile(configFile string) ([]byte, error) {
 		}
 	}
 	defer input.Close()
-	r = bufio.NewReader(input)
+	r := bufio.NewReader(input)
 
 	line, err := r.ReadString('\n')
-	for err == nil && line != fmt.Sprintf("%s\n", CONFIG_PREFIX) {
-		if _, err = w.WriteString(line); err != nil {
+	for err == nil && line != fmt.Sprintf("%s\n", f.Prefix) {
+		if _, err = output.WriteString(line); err != nil {
 			return []byte{}, err
 		}
 		line, err = r.ReadString('\n')
@@ -159,14 +171,14 @@ func (f *FileEdit) GenerateNewFile(configFile string) ([]byte, error) {
 	}
 
 	// write our template out
-	if err = f.Template.Execute(w, f.InputVars); err != nil {
+	if err = f.Template.Execute(&output, f.InputVars); err != nil {
 		return []byte{}, err
 	}
 
 	if !endOfFile {
 		line, err = r.ReadString('\n')
 		// consume our entries and the suffix
-		for err == nil && line != fmt.Sprintf("%s\n", CONFIG_SUFFIX) {
+		for err == nil && line != fmt.Sprintf("%s\n", f.Suffix) {
 			line, err = r.ReadString('\n')
 		}
 
@@ -175,7 +187,7 @@ func (f *FileEdit) GenerateNewFile(configFile string) ([]byte, error) {
 			// read until error
 			line, err = r.ReadString('\n')
 			for err == nil {
-				if _, err = w.WriteString(line); err != nil {
+				if _, err = output.WriteString(line); err != nil {
 					return []byte{}, err
 				}
 				line, err = r.ReadString('\n')
@@ -185,7 +197,7 @@ func (f *FileEdit) GenerateNewFile(configFile string) ([]byte, error) {
 			}
 		}
 	}
-	w.Flush()
+	// output.Flush()
 
 	return output.Bytes(), nil
 }
