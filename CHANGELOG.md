@@ -8,15 +8,16 @@
 
  * Fix tab completion for --profile flag with fish
  * `config-profiles` now works for multiple AWS SSO instances #696, #740
+ * Fix `aws-sso-profile` for fish
 
 ### Changes
 
  * update to AWS ssooidc v1.24.5
+ * Use RFC3339 for AWS_SSO_SESSION_EXPIRATION #837
 
 ### New Features
 
- * Add credentials command #867
- * Use RFC3339 for AWS_SSO_SESSION_EXPIRATION #837
+ * Add `credentials` command #867
 
 ### Bugs
 

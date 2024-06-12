@@ -1,22 +1,39 @@
-name: Markdown Links
+#name: Markdown Links
+#
+#on: 
+#  push:
+#    branches:
+#      - main
+#  pull_request:
+#    types: [opened, synchronize, reopened]
+#    paths:
+#      - '.github/**'
+#      - 'docs/**'
+#      - '*.md'
+#
+#jobs:
+#  markdown-link-check:
+#    runs-on: ubuntu-latest
+#    steps:
+#    - uses: actions/checkout@master
+#    - uses: gaurav-nelson/github-action-markdown-link-check@v1
+#      with:
+#        folder-path: ./docs
+#        file-path: ./README.md ./LICENSE.md ./CHANGELOG.md
 
-on: 
-  push:
-    branches:
-      - main
-  pull_request:
-    types: [opened, synchronize, reopened]
-    paths:
-      - '.github/**'
-      - 'docs/**'
-      - '*.md'
 
+# https://github.com/UmbrellaDocs/action-linkspector?tab=readme-ov-file
+name: Linkspector
+on: [pull_request]
 jobs:
-  markdown-link-check:
+  check-links:
+    name: runner / linkspector
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
-    - uses: gaurav-nelson/github-action-markdown-link-check@v1
-      with:
-        folder-path: ./docs
-        file-path: ./README.md ./LICENSE.md ./CHANGELOG.md
+      - uses: actions/checkout@v4
+      - name: Run linkspector
+        uses: umbrelladocs/action-linkspector@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          fail_on_error: true
