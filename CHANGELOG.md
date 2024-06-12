@@ -2,25 +2,22 @@
 
 ## [Unreleased]
 
-## [v1.16.0] - XXXX-XX-XX
-
-### Bug Fixes
-
- * Fix tab completion for --profile flag with fish
- * `config-profiles` now works for multiple AWS SSO instances #696, #740
- * Fix `aws-sso-profile` for fish
-
-### Changes
-
- * update to AWS ssooidc v1.24.5
- * Use RFC3339 for AWS_SSO_SESSION_EXPIRATION #837
+## [v1.16.0] - 2024-05-12
 
 ### New Features
 
  * Add `credentials` command #867
+ * Add auto-complete for `aws-sso-profile` for fish
+
+### Changes
+
+ * Use RFC3339 for AWS_SSO_SESSION_EXPIRATION #837
+ * Update AWS SDK libraries and other dependencies
 
 ### Bugs
 
+ * Fix tab completion for `--profile` flag with fish
+ * `config-profiles` now works for multiple AWS SSO instances #696, #740
  * Disable linker warnings on macOS with -race flag
  * `aws-sso-profile` returns usage when run without args #836
 
