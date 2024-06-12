@@ -37,11 +37,12 @@ func TestFileEditInvalid(t *testing.T) {
 }
 
 func TestFileEdit(t *testing.T) {
+	// don't run parallel, modifies global state
 	var err error
 	var fe *FileEdit
 	var output bytes.Buffer
 
-	diffWriter = &output
+	diffWriter = &output // modify global
 	defer func() { diffWriter = os.Stdout }()
 
 	var vars = map[string]string{
@@ -104,6 +105,7 @@ func TestFileEdit(t *testing.T) {
 }
 
 func TestFileEditNoChange(t *testing.T) {
+	t.Parallel()
 	var err error
 	var fe *FileEdit
 
@@ -129,6 +131,48 @@ func TestFileEditNoChange(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, diff)
 	assert.False(t, changed)
+
+	// another config block should be added and the old one remain
+	vars["Test"] = "bar"
+	fe, err = NewFileEdit(template, "test2", vars)
+	assert.NoError(t, err)
+	changed, _, err = fe.UpdateConfig(false, true, tfile.Name())
+	assert.NoError(t, err)
+	assert.True(t, changed)
+	fileBytes, err := os.ReadFile(tfile.Name())
+	assert.NoError(t, err)
+	assert.Contains(t, string(fileBytes), "# BEGIN_AWS_SSO_CLI_test\n")
+	assert.Contains(t, string(fileBytes), "foo\n")
+	assert.Contains(t, string(fileBytes), "# BEGIN_AWS_SSO_CLI_test2\n")
+	assert.Contains(t, string(fileBytes), "bar\n")
+
+	// change the contents of the 1st config block, the 2nd should remain
+	vars["Test"] = "cow"
+	fe, err = NewFileEdit(template, "test", vars)
+	assert.NoError(t, err)
+	changed, _, err = fe.UpdateConfig(false, true, tfile.Name())
+	assert.NoError(t, err)
+	assert.True(t, changed)
+	fileBytes, err = os.ReadFile(tfile.Name())
+	assert.NoError(t, err)
+	assert.Contains(t, string(fileBytes), "# BEGIN_AWS_SSO_CLI_test\n")
+	assert.Contains(t, string(fileBytes), "cow\n")
+	assert.Contains(t, string(fileBytes), "# BEGIN_AWS_SSO_CLI_test2\n")
+	assert.Contains(t, string(fileBytes), "bar\n")
+
+	// remove the 1st config block, the 2nd should remain
+	fe, err = NewFileEdit("", "test", map[string]string{})
+	assert.NoError(t, err)
+	changed, diff, err = fe.UpdateConfig(false, true, tfile.Name())
+	assert.NoError(t, err)
+	assert.NotEmpty(t, diff)
+	assert.True(t, changed)
+	fileBytes, err = os.ReadFile(tfile.Name())
+	assert.NoError(t, err)
+	assert.NotContains(t, string(fileBytes), "# BEGIN_AWS_SSO_CLI_test\n")
+	assert.NotContains(t, string(fileBytes), "cow\n")
+	assert.Contains(t, string(fileBytes), "# BEGIN_AWS_SSO_CLI_test2\n")
+	assert.Contains(t, string(fileBytes), "bar\n")
 }
 
 func TestDiffBytes(t *testing.T) {

@@ -70,11 +70,12 @@ func NewFileEdit(fileTemplate, ssoName string, vars interface{}) (*FileEdit, err
 	prefix := CONFIG_PREFIX
 	suffix := CONFIG_SUFFIX
 
+	if ssoName != "" && ssoName != DEFAULT_SSO_NAME {
+		prefix = fmt.Sprintf("%s_%s", CONFIG_PREFIX, ssoName)
+		suffix = fmt.Sprintf("%s_%s", CONFIG_SUFFIX, ssoName)
+	}
+
 	if fileTemplate != "" {
-		if ssoName != "" && ssoName != DEFAULT_SSO_NAME {
-			prefix = fmt.Sprintf("%s_%s", CONFIG_PREFIX, ssoName)
-			suffix = fmt.Sprintf("%s_%s", CONFIG_SUFFIX, ssoName)
-		}
 		t = fmt.Sprintf(FILE_TEMPLATE, prefix, fileTemplate, suffix)
 	}
 	templ, err := template.New("template").Parse(t)
