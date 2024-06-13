@@ -71,7 +71,7 @@ require (
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/aws/aws-sdk-go-v2/config v1.27.18
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.18
-	github.com/aws/aws-sdk-go-v2/service/iam v1.24.0
+	github.com/aws/aws-sdk-go-v2/service/iam v1.32.6
 	github.com/aws/aws-sdk-go-v2/service/sso v1.20.11
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.24.5
 	github.com/aws/aws-sdk-go-v2/service/sts v1.28.12
