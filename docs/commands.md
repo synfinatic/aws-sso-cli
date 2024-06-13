@@ -430,7 +430,7 @@ The following environment variables are specific to `aws-sso`:
  * `AWS_SSO_ROLE_NAME` -- The name of the IAM role
  * `AWS_SSO_ROLE_ARN` -- The full ARN of the IAM role
  * `AWS_SSO_SESSION_EXPIRATION`  -- The date and time when the IAM role
-    credentials will expire in RFC3339 format
+    credentials will expire in [RFC3339 format](https://datatracker.ietf.org/doc/html/rfc3339)
  * `AWS_SSO_DEFAULT_REGION` -- Tracking variable for `AWS_DEFAULT_REGION`
  * `AWS_SSO_PROFILE` -- User customizable varible using the
     [ProfileFormat](config.md#profileformat) template
@@ -458,11 +458,9 @@ If you want to pass specific args to `aws-sso-profile` you can use the
 
 Currently the following shells are supported:
 
- <!-- markdown-link-check-disable -->
  * [bash](https://github.com/synfinatic/aws-sso-cli/blob/main/internal/helper/bash_profile.sh)
  * [zsh](https://github.com/synfinatic/aws-sso-cli/blob/main/internal/helper/zshrc.sh)
  * [fish](https://github.com/synfinatic/aws-sso-cli/blob/main/internal/helper/aws-sso.fish)
- <!-- markdown-link-check-enable-->
 
 **Note:** `zsh` completion requires you to have the following lines set
 before the AWS SSO completions:
