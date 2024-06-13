@@ -1,4 +1,4 @@
-PROJECT_VERSION := 1.16.0
+PROJECT_VERSION := 1.16.1
 DOCKER_REPO     := synfinatic
 PROJECT_NAME    := aws-sso
 
@@ -35,10 +35,11 @@ BUILDINFOS                ?= $(shell date +%FT%T%z)$(BUILDINFOSDET)
 LDFLAGS                   := -X "main.Version=$(PROJECT_VERSION)" -X "main.Delta=$(PROJECT_DELTA)" -X "main.Buildinfos=$(BUILDINFOS)" -X "main.Tag=$(PROJECT_TAG)" -X "main.CommitID=$(PROJECT_COMMIT)"
 OUTPUT_NAME               := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)  # default for current platform
 
-ifeq ($(GOOS),darwin)
+#ifeq ($(GOOS),darwin)
 # https://github.com/golang/go/issues/61229#issuecomment-1988965927
-LDFLAGS := $(LDFLAGS) -extldflags=-Wl,-ld_classic
-endif
+# this doesn't work for homebrew with clang it seems: https://github.com/Homebrew/homebrew-core/pull/174439
+#LDFLAGS := $(LDFLAGS) -extldflags=-Wl,-ld_classic
+#endif
 
 # go build flags
 GOBFLAGS                  := -trimpath

@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [v1.16.1] - 2024-06-13
+
+### Bugs
+
+ * Fix homebrew build on macOS
+ * `credentials --profiles` is now `credentials --profile` to conform to standard
+
 ## [v1.16.0] - 2024-06-12
 
 ### New Features
@@ -679,8 +686,9 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.16.0...main
-[v1.16.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.15.1
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.16.1...main
+[v1.16.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.16.1
+[v1.16.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.16.0
 [v1.15.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.15.1
 [v1.15.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.15.0
 [v1.14.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.14.3

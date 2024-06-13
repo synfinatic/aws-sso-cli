@@ -7,9 +7,9 @@ import (
 )
 
 type CredentialsCmd struct {
-	File     string   `kong:"short='f',help='File to write credentials to (default: stdout)',predictor='allFiles'"`
-	Append   bool     `kong:"short='a',help='Append to the file instead of overwriting'"`
-	Profiles []string `kong:"required,short='p',name='profiles',help='Profiles to write credentials for',predictor='profile'"`
+	File    string   `kong:"short='f',help='File to write credentials to (default: stdout)',predictor='allFiles'"`
+	Append  bool     `kong:"short='a',help='Append to the file instead of overwriting'"`
+	Profile []string `kong:"required,short='p',name='profile',help='List of profiles to write credentials for',predictor='profile'"`
 }
 
 func (cc *CredentialsCmd) Run(ctx *RunContext) error {
@@ -18,7 +18,7 @@ func (cc *CredentialsCmd) Run(ctx *RunContext) error {
 
 	creds := []awsconfig.ProfileCredentials{}
 
-	for _, profile := range ctx.Cli.Credentials.Profiles {
+	for _, profile := range ctx.Cli.Credentials.Profile {
 		roleFlat, err := cache.Roles.GetRoleByProfile(profile, ctx.Settings)
 		if err != nil {
 			return err
