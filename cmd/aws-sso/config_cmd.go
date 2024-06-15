@@ -58,7 +58,7 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 	fmt.Printf(`
 **********************************************************************
 * Do you have questions?  Do you like reading docs?  We've got docs! *
-* https://github.com/synfinatic/aws-sso-cli/blob/main/docs/config.md *
+*            https://synfinatic.github.io/aws-sso-cli/               *
 **********************************************************************
 
 `)
