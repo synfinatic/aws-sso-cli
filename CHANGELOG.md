@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### New Features
+
+ * Add support for the `AWS_CONTAINER_AUTHORIZATION_TOKEN` env variable #516
+
 ## [v1.16.1] - 2024-06-13
 
 ### Bugs

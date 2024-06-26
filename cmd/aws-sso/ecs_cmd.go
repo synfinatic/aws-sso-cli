@@ -32,11 +32,12 @@ const (
 )
 
 type EcsCmd struct {
-	Run     EcsRunCmd     `kong:"cmd,help='Run the ECS Server'"`
-	List    EcsListCmd    `kong:"cmd,help='List profiles loaded in the ECS Server'"`
-	Load    EcsLoadCmd    `kong:"cmd,help='Load new IAM Role credentials into the ECS Server'"`
-	Unload  EcsUnloadCmd  `kong:"cmd,help='Unload the current IAM Role credentials from the ECS Server'"`
-	Profile EcsProfileCmd `kong:"cmd,help='Get the current role profile name in the default slot'"`
+	Run           EcsRunCmd     `kong:"cmd,help='Run the ECS Server'"`
+	List          EcsListCmd    `kong:"cmd,help='List profiles loaded in the ECS Server'"`
+	Load          EcsLoadCmd    `kong:"cmd,help='Load new IAM Role credentials into the ECS Server'"`
+	Unload        EcsUnloadCmd  `kong:"cmd,help='Unload the current IAM Role credentials from the ECS Server'"`
+	Profile       EcsProfileCmd `kong:"cmd,help='Get the current role profile name in the default slot'"`
+	SecurityToken string        `kong:"help='Security Token to use for authentication',env='AWS_CONTAINER_AUTHORIZATION_TOKEN'"`
 }
 
 type EcsRunCmd struct {
@@ -48,7 +49,7 @@ func (cc *EcsRunCmd) Run(ctx *RunContext) error {
 	if err != nil {
 		return err
 	}
-	s, err := server.NewEcsServer(context.TODO(), "", l)
+	s, err := server.NewEcsServer(context.TODO(), ctx.Cli.Ecs.SecurityToken, l)
 	if err != nil {
 		return err
 	}
