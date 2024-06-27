@@ -54,6 +54,7 @@ type StorageData struct {
 	CreateTokenResponse map[string]CreateTokenResponse
 	RoleCredentials     map[string]RoleCredentials
 	StaticCredentials   map[string]StaticCredentials
+	EcsBearerToken      string
 }
 
 func NewStorageData() StorageData {
@@ -62,6 +63,7 @@ func NewStorageData() StorageData {
 		CreateTokenResponse: map[string]CreateTokenResponse{},
 		RoleCredentials:     map[string]RoleCredentials{},
 		StaticCredentials:   map[string]StaticCredentials{},
+		EcsBearerToken:      "",
 	}
 }
 
@@ -115,14 +117,14 @@ func NewKeyringConfig(name, configDir string) (*keyring.Config, error) {
 				if password := os.Getenv(ENV_SSO_FILE_PASSWORD); password == "" {
 					pass1, err := getPasswordFunc("Select password")
 					if err != nil {
-						return &c, fmt.Errorf("Password error: %s", err.Error())
+						return &c, fmt.Errorf("password error: %s", err.Error())
 					}
 					pass2, err := getPasswordFunc("Verify password")
 					if err != nil {
-						return &c, fmt.Errorf("Password error: %s", err.Error())
+						return &c, fmt.Errorf("password error: %s", err.Error())
 					}
 					if pass1 != pass2 {
-						return &c, fmt.Errorf("Password missmatch")
+						return &c, fmt.Errorf("password missmatch")
 					}
 					NewPassword = pass1
 				}
@@ -224,7 +226,7 @@ func (kr *KeyringStore) joinAndGetKeyringData(key string) ([]byte, error) {
 	}
 
 	if len(chunk) < 8 {
-		return nil, fmt.Errorf("Invalid stored data in Keyring. Only %d bytes", len(chunk))
+		return nil, fmt.Errorf("invalid stored data in Keyring. Only %d bytes", len(chunk))
 	}
 
 	totalBytes, data := binary.BigEndian.Uint64(chunk[:8]), chunk[8:]
@@ -233,14 +235,14 @@ func (kr *KeyringStore) joinAndGetKeyringData(key string) ([]byte, error) {
 	for i := 1; readBytes < totalBytes; i++ {
 		k := fmt.Sprintf("%s_%d", key, i)
 		if chunk, err = kr.getKeyringData(k); err != nil {
-			return nil, fmt.Errorf("Unable to fetch %s: %s", k, err.Error())
+			return nil, fmt.Errorf("unable to fetch %s: %s", k, err.Error())
 		}
 		data = append(data, chunk...)
 		readBytes += uint64(len(chunk))
 	}
 
 	if readBytes != totalBytes {
-		return nil, fmt.Errorf("Invalid stored data in Keyring.  Expected %d bytes, but read %d bytes of data",
+		return nil, fmt.Errorf("invalid stored data in Keyring.  Expected %d bytes, but read %d bytes of data",
 			totalBytes, readBytes)
 	}
 	return data, nil
@@ -316,7 +318,7 @@ func (kr *KeyringStore) GetRegisterClientData(region string, client *RegisterCli
 	var ok bool
 	key := kr.RegisterClientKey(region)
 	if *client, ok = kr.cache.RegisterClientData[key]; !ok {
-		return fmt.Errorf("No RegisterClientData for %s", region)
+		return fmt.Errorf("no RegisterClientData for %s", region)
 	}
 	return nil
 }
@@ -326,7 +328,7 @@ func (kr *KeyringStore) DeleteRegisterClientData(region string) error {
 	key := kr.RegisterClientKey(region)
 	if _, ok := kr.cache.RegisterClientData[key]; !ok {
 		// return error if key doesn't exist
-		return fmt.Errorf("No RegisterClientData for key: %s", key)
+		return fmt.Errorf("no RegisterClientData for key: %s", key)
 	}
 
 	delete(kr.cache.RegisterClientData, key)
@@ -350,7 +352,7 @@ func (kr *KeyringStore) GetCreateTokenResponse(key string, token *CreateTokenRes
 	var ok bool
 	k := kr.CreateTokenResponseKey(key)
 	if *token, ok = kr.cache.CreateTokenResponse[k]; !ok {
-		return fmt.Errorf("No CreateTokenResponse for %s", k)
+		return fmt.Errorf("no CreateTokenResponse for %s", k)
 	}
 	return nil
 }
@@ -360,7 +362,7 @@ func (kr *KeyringStore) DeleteCreateTokenResponse(key string) error {
 	k := kr.CreateTokenResponseKey(key)
 	if _, ok := kr.cache.CreateTokenResponse[k]; !ok {
 		// return error if key doesn't exist
-		return fmt.Errorf("No CreateTokenResponse for key: %s", k)
+		return fmt.Errorf("no CreateTokenResponse for key: %s", k)
 	}
 
 	delete(kr.cache.CreateTokenResponse, k)
@@ -377,7 +379,7 @@ func (kr *KeyringStore) SaveRoleCredentials(arn string, token RoleCredentials) e
 func (kr *KeyringStore) GetRoleCredentials(arn string, token *RoleCredentials) error {
 	var ok bool
 	if *token, ok = kr.cache.RoleCredentials[arn]; !ok {
-		return fmt.Errorf("No RoleCredentials for ARN: %s", arn)
+		return fmt.Errorf("no RoleCredentials for ARN: %s", arn)
 	}
 	return nil
 }
@@ -386,7 +388,7 @@ func (kr *KeyringStore) GetRoleCredentials(arn string, token *RoleCredentials) e
 func (kr *KeyringStore) DeleteRoleCredentials(arn string) error {
 	if _, ok := kr.cache.RoleCredentials[arn]; !ok {
 		// return error if key doesn't exist
-		return fmt.Errorf("No RoleCredentials for ARN: %s", arn)
+		return fmt.Errorf("no RoleCredentials for ARN: %s", arn)
 	}
 
 	delete(kr.cache.RoleCredentials, arn)
@@ -403,7 +405,7 @@ func (kr *KeyringStore) SaveStaticCredentials(arn string, creds StaticCredential
 func (kr *KeyringStore) GetStaticCredentials(arn string, creds *StaticCredentials) error {
 	var ok bool
 	if *creds, ok = kr.cache.StaticCredentials[arn]; !ok {
-		return fmt.Errorf("No StaticCredentials for ARN: %s", arn)
+		return fmt.Errorf("no StaticCredentials for ARN: %s", arn)
 	}
 	return nil
 }
@@ -412,13 +414,14 @@ func (kr *KeyringStore) GetStaticCredentials(arn string, creds *StaticCredential
 func (kr *KeyringStore) DeleteStaticCredentials(arn string) error {
 	if _, ok := kr.cache.StaticCredentials[arn]; !ok {
 		// return error if key doesn't exist
-		return fmt.Errorf("No StaticCredentials for ARN: %s", arn)
+		return fmt.Errorf("no StaticCredentials for ARN: %s", arn)
 	}
 
 	delete(kr.cache.StaticCredentials, arn)
 	return kr.saveStorageData()
 }
 
+// ListStaticCredentials returns a list of all the ARNs in the keyring
 func (kr *KeyringStore) ListStaticCredentials() []string {
 	ret := make([]string, len(kr.cache.StaticCredentials))
 	i := 0
@@ -427,4 +430,21 @@ func (kr *KeyringStore) ListStaticCredentials() []string {
 		i++
 	}
 	return ret
+}
+
+// SaveEcsBearerToken stores the token in the keyring
+func (kr *KeyringStore) SaveEcsBearerToken(token string) error {
+	kr.cache.EcsBearerToken = token
+	return kr.saveStorageData()
+}
+
+// GetEcsBearerToken retrieves the token from the keyring
+func (kr *KeyringStore) GetEcsBearerToken() (string, error) {
+	return kr.cache.EcsBearerToken, nil
+}
+
+// DeleteEcsBearerToken deletes the token from the keyring
+func (kr *KeyringStore) DeleteEcsBearerToken() error {
+	kr.cache.EcsBearerToken = ""
+	return kr.saveStorageData()
 }

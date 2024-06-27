@@ -37,6 +37,7 @@ type JsonStore struct {
 	CreateTokenResponse map[string]CreateTokenResponse `json:"CreateTokenResponse,omitempty"`
 	RoleCredentials     map[string]RoleCredentials     `json:"RoleCredentials,omitempty"`   // ARN = key
 	StaticCredentials   map[string]StaticCredentials   `json:"StaticCredentials,omitempty"` // ARN = key
+	EcsBearerToken      string                         `json:"EcsBearerToken,omitempty"`
 }
 
 // OpenJsonStore opens our insecure JSON storage backend
@@ -48,13 +49,14 @@ func OpenJsonStore(filename string) (*JsonStore, error) {
 		CreateTokenResponse: map[string]CreateTokenResponse{},
 		RoleCredentials:     map[string]RoleCredentials{},
 		StaticCredentials:   map[string]StaticCredentials{},
+		EcsBearerToken:      "",
 	}
 
 	cacheBytes, err := os.ReadFile(filename)
 	if errors.Is(err, fs.ErrNotExist) {
 		return &cache, nil
 	} else if err != nil {
-		return &cache, fmt.Errorf("Unable to open %s: %s", filename, err.Error())
+		return &cache, fmt.Errorf("unable to open %s: %s", filename, err.Error())
 	}
 
 	if len(cacheBytes) > 0 {
@@ -183,4 +185,21 @@ func (jc *JsonStore) ListStaticCredentials() []string {
 		i++
 	}
 	return ret
+}
+
+// SaveEcsBearerToken stores the token in the json file
+func (jc *JsonStore) SaveEcsBearerToken(token string) error {
+	jc.EcsBearerToken = token
+	return jc.save()
+}
+
+// GetEcsBearerToken retrieves the token from the json file
+func (jc *JsonStore) GetEcsBearerToken() (string, error) {
+	return jc.EcsBearerToken, nil
+}
+
+// DeleteEcsBearerToken deletes the token from the json file
+func (jc *JsonStore) DeleteEcsBearerToken() error {
+	jc.EcsBearerToken = ""
+	return jc.save()
 }

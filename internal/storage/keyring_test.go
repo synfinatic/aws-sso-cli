@@ -150,6 +150,28 @@ func (suite *KeyringSuite) TestRoleCredentials() {
 	assert.Error(t, err)
 }
 
+func (suite *KeyringSuite) TestEcsBearerToken() {
+	t := suite.T()
+
+	token, err := suite.store.GetEcsBearerToken()
+	assert.NoError(t, err)
+	assert.Empty(t, token)
+
+	err = suite.store.SaveEcsBearerToken("not a real token")
+	assert.NoError(t, err)
+
+	token, err = suite.store.GetEcsBearerToken()
+	assert.NoError(t, err)
+	assert.Equal(t, "not a real token", token)
+
+	err = suite.store.DeleteEcsBearerToken()
+	assert.NoError(t, err)
+
+	token, err = suite.store.GetEcsBearerToken()
+	assert.NoError(t, err)
+	assert.Empty(t, token)
+}
+
 func (suite *KeyringSuite) TestErrorReadKeyring() {
 	t := suite.T()
 	// Read non existent key
@@ -509,5 +531,5 @@ func TestSplitCredentials(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, hook.LastEntry())
 	assert.Equal(t, logrus.WarnLevel, hook.LastEntry().Level)
-	assert.Contains(t, hook.LastEntry().Message, "Unable to fetch")
+	assert.Contains(t, hook.LastEntry().Message, "unable to fetch")
 }
