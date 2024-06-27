@@ -2,7 +2,8 @@
 
 This is intended to show how to use your `aws-sso` credentials on a remote/bastion
 host, without requring you to install or configure `aws-sso` on that host, while maintaining
-security.
+security.  Additionally, when you have to authenticate via your SSO provider, that can easily
+invoke your local web browser without resorting to printing and clicking on URLs.
 
 ## Overview
 
@@ -23,21 +24,24 @@ and/or any IAM Credentials stored in the ECS Server.  As of this time, `aws-sso`
 ## On your local system
 
 1. Configure a [bearer token](https://datatracker.ietf.org/doc/html/rfc6750#section-2.1)
-for security to prevent unauthorized use of your IAM credentials:
-`aws-sso ecs bearer-token -t 'Bearer <secret>`
-1. Start the ECS Server (preferably in a screen or tmux session):
+for security to prevent unauthorized use of your IAM credentials:<br>
+`aws-sso ecs bearer-token -t 'Bearer <secret>'`
+1. Start the ECS Server (preferably in a [screen](https://www.hostinger.com/tutorials/how-to-install-and-use-linux-screen)
+or [tmux](https://hamvocke.com/blog/a-quick-and-easy-guide-to-tmux/) session):
 `aws-sso ecs run`
-1. Load your selected IAM credentials into the ECS Server:
+1. Load your selected IAM credentials into the ECS Server:<br>
 `aws-sso ecs load --profile=<aws profile name>`
-1. SSH to the remote system using the [-R flag to forward tcp/4144](https://man.openbsd.org/ssh#R):
+1. SSH to the remote system using the [-R flag to forward tcp/4144](https://man.openbsd.org/ssh#R):<br>
 `ssh -R 4144:localhost:4144 <remotehost>`
 
 ## On your remote system (once you have logged in as described above)
 
-1. Tell the AWS SDK how to talk to the ECS Server over SSH:
+**Note:** The following commands assume you are using `bash`.  You may have to tweak for other shells.
+
+1. Tell the AWS SDK how to talk to the ECS Server over SSH:<br>
 `export AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:4144/`
-1. Tell the AWS SDK the bearer token secret from the first step on your local system:
-`export AWS_CONTAINER_AUTHORIZATION_TOKEN='Bearer <secret>`
+1. Tell the AWS SDK the bearer token secret from the first step on your local system:<br>
+`export AWS_CONTAINER_AUTHORIZATION_TOKEN='Bearer <secret>'`
 1. Verify everything works:
 `aws sts get-caller-identity`
 

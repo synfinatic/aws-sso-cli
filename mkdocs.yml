@@ -27,6 +27,7 @@ nav:
     - 'Commands & Usage': commands.md 
     - 'Frequently Asked Questions': FAQ.md
     - 'ECS Server Mode': ecs-server.md
+    - 'Running On Remote Hosts': remote-ssh.md
   - 'About':
     - 'License': license.md
     - 'Compared to aws-vault': aws-vault.md
