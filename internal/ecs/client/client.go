@@ -32,28 +32,50 @@ import (
 )
 
 type ECSClient struct {
-	port int
+	port        int
+	authToken   string
+	loadUrl     string
+	loadSlotUrl string
+	profileUrl  string
+	listUrl     string
 }
 
-func NewECSClient(port int) *ECSClient {
+func NewECSClient(port int, authToken string) *ECSClient {
 	return &ECSClient{
-		port: port,
+		port:        port,
+		authToken:   authToken,
+		loadUrl:     fmt.Sprintf("http://localhost:%d/", port),
+		loadSlotUrl: fmt.Sprintf("http://localhost:%d%s", port, ecs.SLOT_ROUTE),
+		profileUrl:  fmt.Sprintf("http://localhost:%d%s", port, ecs.PROFILE_ROUTE),
+		listUrl:     fmt.Sprintf("http://localhost:%d%s", port, ecs.SLOT_ROUTE),
 	}
 }
 
 func (c *ECSClient) LoadUrl(profile string) string {
 	if profile == "" {
-		return fmt.Sprintf("http://localhost:%d/", c.port)
+		return c.loadUrl
 	}
-	return fmt.Sprintf("http://localhost:%d%s/%s", c.port, ecs.SLOT_ROUTE, url.QueryEscape(profile))
+	return c.loadSlotUrl + "/" + url.PathEscape(profile)
 }
 
 func (c *ECSClient) ProfileUrl() string {
-	return fmt.Sprintf("http://localhost:%d%s", c.port, ecs.PROFILE_ROUTE)
+	return c.profileUrl
 }
 
 func (c *ECSClient) ListUrl() string {
-	return fmt.Sprintf("http://localhost:%d%s", c.port, ecs.SLOT_ROUTE)
+	return c.listUrl
+}
+
+func (c *ECSClient) newRequest(method, url string, body io.Reader) (*http.Request, error) {
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", ecs.CHARSET_JSON)
+	if c.authToken != "" {
+		req.Header.Set("Authorization", c.authToken)
+	}
+	return req, nil
 }
 
 func (c *ECSClient) SubmitCreds(creds *storage.RoleCredentials, profile string, slotted bool) error {
@@ -62,34 +84,31 @@ func (c *ECSClient) SubmitCreds(creds *storage.RoleCredentials, profile string, 
 		Creds:       creds,
 		ProfileName: profile,
 	}
-	j, err := json.Marshal(cr)
-	if err != nil {
-		return err
-	}
+	j, _ := json.Marshal(cr)
+
 	var path string
 	if slotted {
 		path = profile
 	}
-	req, err := http.NewRequest(http.MethodPut, c.LoadUrl(path), bytes.NewBuffer(j))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", ecs.CHARSET_JSON)
+
+	req, _ := c.newRequest(http.MethodPut, c.LoadUrl(path), bytes.NewBuffer(j))
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
-	return CheckDoResponse(resp)
+	return checkDoResponse(resp)
 }
 
 func (c *ECSClient) GetProfile() (ecs.ListProfilesResponse, error) {
 	lpr := ecs.ListProfilesResponse{}
+	req, _ := c.newRequest(http.MethodGet, c.ProfileUrl(), nil)
 	client := &http.Client{}
-	resp, err := client.Get(c.ProfileUrl())
+	resp, err := client.Do(req)
 	if err != nil {
 		return lpr, err
 	}
+
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
@@ -108,8 +127,9 @@ func (c *ECSClient) GetProfile() (ecs.ListProfilesResponse, error) {
 // ListProfiles returns a list of profiles that are loaded into slots
 func (c *ECSClient) ListProfiles() ([]ecs.ListProfilesResponse, error) {
 	lpr := []ecs.ListProfilesResponse{}
+	req, _ := c.newRequest(http.MethodGet, c.ListUrl(), nil)
 	client := &http.Client{}
-	resp, err := client.Get(c.ListUrl())
+	resp, err := client.Do(req)
 	if err != nil {
 		return lpr, err
 	}
@@ -129,26 +149,19 @@ func (c *ECSClient) ListProfiles() ([]ecs.ListProfilesResponse, error) {
 }
 
 func (c *ECSClient) Delete(profile string) error {
-	req, err := http.NewRequest(http.MethodDelete, c.LoadUrl(profile), bytes.NewBuffer([]byte("")))
-	if err != nil {
-		return err
-	}
+	req, _ := c.newRequest(http.MethodDelete, c.LoadUrl(profile), bytes.NewBuffer([]byte("")))
 
 	client := &http.Client{}
-	req.Header.Set("Content-Type", ecs.CHARSET_JSON)
-	if err != nil {
-		return err
-	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
-	return CheckDoResponse(resp)
+	return checkDoResponse(resp)
 }
 
-func CheckDoResponse(resp *http.Response) error {
+func checkDoResponse(resp *http.Response) error {
 	if resp.StatusCode < 200 || resp.StatusCode > 200 {
-		return fmt.Errorf("HTTP Error %d", resp.StatusCode)
+		return fmt.Errorf("ECS Server HTTP error: %s", resp.Status)
 	}
 	return nil
 }

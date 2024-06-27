@@ -69,7 +69,7 @@ func (cc *EcsLoadCmd) Run(ctx *RunContext) error {
 }
 
 func (cc *EcsProfileCmd) Run(ctx *RunContext) error {
-	c := client.NewECSClient(ctx.Cli.Ecs.Profile.Port)
+	c := client.NewECSClient(ctx.Cli.Ecs.Profile.Port, ctx.Cli.Ecs.SecurityToken)
 
 	profile, err := c.GetProfile()
 	if err != nil {
@@ -87,7 +87,7 @@ func (cc *EcsProfileCmd) Run(ctx *RunContext) error {
 }
 
 func (cc *EcsUnloadCmd) Run(ctx *RunContext) error {
-	c := client.NewECSClient(ctx.Cli.Ecs.Unload.Port)
+	c := client.NewECSClient(ctx.Cli.Ecs.Unload.Port, ctx.Cli.Ecs.SecurityToken)
 
 	return c.Delete(ctx.Cli.Ecs.Unload.Profile)
 }
@@ -115,14 +115,14 @@ func ecsLoadCmd(ctx *RunContext, awssso *sso.AWSSSO, accountId int64, role strin
 	}
 
 	// do something
-	c := client.NewECSClient(ctx.Cli.Ecs.Load.Port)
+	c := client.NewECSClient(ctx.Cli.Ecs.Load.Port, ctx.Cli.Ecs.SecurityToken)
 
 	log.Debugf("%s", spew.Sdump(rFlat))
 	return c.SubmitCreds(creds, rFlat.Profile, ctx.Cli.Ecs.Load.Slotted)
 }
 
 func (cc *EcsListCmd) Run(ctx *RunContext) error {
-	c := client.NewECSClient(ctx.Cli.Ecs.Profile.Port)
+	c := client.NewECSClient(ctx.Cli.Ecs.Profile.Port, ctx.Cli.Ecs.SecurityToken)
 
 	profiles, err := c.ListProfiles()
 	if err != nil {

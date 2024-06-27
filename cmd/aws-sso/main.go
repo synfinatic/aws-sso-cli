@@ -167,7 +167,7 @@ func main() {
 	switch ctx.Command() {
 	case "version":
 		if err = ctx.Run(&runCtx); err != nil {
-			log.Fatalf("Error running command: %s", err.Error())
+			log.Fatalf("%s", err.Error())
 		}
 		return
 	}
@@ -219,7 +219,7 @@ func main() {
 
 	err = ctx.Run(&runCtx)
 	if err != nil {
-		log.Fatalf("Error running command: %s", err.Error())
+		log.Fatalf("%s", err.Error())
 	}
 }
 

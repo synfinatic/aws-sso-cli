@@ -142,7 +142,7 @@ debug: .prepare ## Run debug in dlv
 
 .PHONY: unittest
 unittest: ## Run go unit tests
-	go test -race -ldflags='$(LDFLAGS)' -covermode=atomic -coverprofile=coverage.out  ./...
+	go test -ldflags='$(LDFLAGS)' -covermode=atomic -coverprofile=coverage.out  ./...
 
 .PHONY: test-race
 test-race: ## Run `go test -race` on the code

@@ -36,6 +36,12 @@ It is important to _not_ set `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`
 as that takes precidence for `AWS_CONTAINER_CREDENTIALS_FULL_URI` and it is not
 compatible with `aws-sso`.
 
+### AWS\_CONTAINER\_AUTHORIZATION\_TOKEN
+
+Specify the HTTP Authentication token used to authenticate communication between the
+ECS Server and clients (aws-sso and AWS SDK/CLI).  Typically the value should be specified
+in the format of `Bearer <auth token value>`.
+
 ## Selecting a role via ECS Server
 
 Before you can assume a role, you must select an IAM role for the aws-sso ecs
@@ -100,8 +106,8 @@ Accessing the individual credentials is done via the `profile` query parameter:
 
 `export AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:4144/slot/ExampleProfileName`
 
-Would utilize the `ExampleProfileName` role.  Note that the `profile` parameter
-value must be URL Escaped.
+Would utilize the `ExampleProfileName` role.  Note that the `profile` value
+value in the URL must be [URL Escaped](https://www.w3schools.com/tags/ref_urlencode.ASP).
 
 ### Unloading
 
@@ -124,8 +130,8 @@ The ECS Server API endpoint generates errors with the following JSON format:
 ## Authentication
 
 Support for the [AWS\_CONTAINER\_AUTHORIZATION\_TOKEN](
-https://github.com/synfinatic/aws-sso-cli/issues/516) is TBD.  Please vote for
-this feature if you want it!
+https://docs.aws.amazon.com/sdkref/latest/guide/feature-container-credentials.html) environment
+variable is supported.
 
 ## HTTPS Transport
 
@@ -137,6 +143,7 @@ is TBD.  Please vote for this feature if you want it!
 ### Default credentials
 
 #### GET /
+
 Fetch default credentials.
 
 ```json
@@ -150,6 +157,7 @@ Fetch default credentials.
 ```
 
 #### GET /profile
+
 Fetch profile name of the default credentials.
 
 ```json
@@ -163,6 +171,7 @@ Fetch profile name of the default credentials.
 ```
 
 #### PUT /
+
 Upload default credentials.
 
 ```json
@@ -173,6 +182,7 @@ Upload default credentials.
 ```
 
 #### DELETE /
+
 Delete default credentials.
 
 ```json
@@ -185,6 +195,7 @@ Delete default credentials.
 ### Slotted credentials
 
 #### GET /slot
+
 Fetch list of default credentials.
 
 ```json
@@ -201,6 +212,7 @@ Fetch list of default credentials.
 ```
 
 #### GET /slot/&lt;profile&gt;
+
 Fetch credentials of the named profile.
 
 ```json
@@ -214,6 +226,7 @@ Fetch credentials of the named profile.
 ```
 
 #### PUT /slot/&lt;profile&gt;
+
 Upload credentials of the named profile.
 
 ```json
@@ -224,6 +237,7 @@ Upload credentials of the named profile.
 ```
 
 #### DELETE /slot/&lt;profile&gt;
+
 Delete credentials of the named profile.
 
 ```json
@@ -234,6 +248,7 @@ Delete credentials of the named profile.
 ```
 
 #### DELETE /slot
+
 Delete all named credentials.
 
 ```json
