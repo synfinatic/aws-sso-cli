@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -46,7 +47,7 @@ func TestCheckDoResponse(t *testing.T) {
 func TestNewECSClient(t *testing.T) {
 	t.Parallel()
 
-	c := NewECSClient(4144, "token")
+	c := NewECSClient(4144, "token", "")
 	assert.NotNil(t, c)
 	assert.Equal(t, 4144, c.port)
 	assert.Equal(t, "token", c.authToken)
@@ -54,12 +55,19 @@ func TestNewECSClient(t *testing.T) {
 	assert.NotEmpty(t, c.loadSlotUrl)
 	assert.NotEmpty(t, c.profileUrl)
 	assert.NotEmpty(t, c.listUrl)
+
+	certChain, err := os.ReadFile("../server/testdata/localhost.crt")
+	assert.NoError(t, err)
+	c = NewECSClient(4144, "token", string(certChain))
+	assert.NotNil(t, c)
+
+	assert.Panics(t, func() { NewECSClient(4144, "token", "foobar") })
 }
 
 func TestECSClientLoadUrl(t *testing.T) {
 	t.Parallel()
 
-	c := NewECSClient(4144, "token")
+	c := NewECSClient(4144, "token", "")
 	assert.NotNil(t, c)
 	assert.Equal(t, "http://localhost:4144/", c.LoadUrl(""))
 
@@ -70,7 +78,7 @@ func TestECSClientLoadUrl(t *testing.T) {
 func TestECSClientProfileUrl(t *testing.T) {
 	t.Parallel()
 
-	c := NewECSClient(4144, "token")
+	c := NewECSClient(4144, "token", "")
 	assert.NotNil(t, c)
 	assert.Equal(t, "http://localhost:4144/profile", c.ProfileUrl())
 }
@@ -78,7 +86,7 @@ func TestECSClientProfileUrl(t *testing.T) {
 func TestECSClientListUrl(t *testing.T) {
 	t.Parallel()
 
-	c := NewECSClient(4144, "token")
+	c := NewECSClient(4144, "token", "")
 	assert.NotNil(t, c)
 	assert.Equal(t, "http://localhost:4144/slot", c.ListUrl())
 }
@@ -86,7 +94,7 @@ func TestECSClientListUrl(t *testing.T) {
 func TestECSClientNewRequest(t *testing.T) {
 	t.Parallel()
 
-	c := NewECSClient(4144, "Bearer token")
+	c := NewECSClient(4144, "Bearer token", "")
 	assert.NotNil(t, c)
 
 	req, err := c.newRequest(http.MethodGet, "http://localhost:4144", nil)
@@ -96,7 +104,7 @@ func TestECSClientNewRequest(t *testing.T) {
 	assert.Equal(t, "Bearer token", req.Header.Get("Authorization"))
 	assert.Equal(t, "application/json; charset=utf-8", req.Header.Get("Content-Type"))
 
-	c = NewECSClient(4144, "")
+	c = NewECSClient(4144, "", "")
 	req, err = c.newRequest(http.MethodGet, "http://localhost:4144", nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, req)
@@ -122,7 +130,7 @@ func TestECSClientSubmitCredsPass(t *testing.T) {
 	)
 	defer ts.Close()
 
-	c := NewECSClient(4144, "")
+	c := NewECSClient(4144, "", "")
 	c.loadUrl = ts.URL
 	c.loadSlotUrl = ts.URL
 	assert.NotNil(t, c)
@@ -167,7 +175,7 @@ func TestECSClientSubmitCredsFail(t *testing.T) {
 	)
 	defer ts.Close()
 
-	c := NewECSClient(4144, "token")
+	c := NewECSClient(4144, "token", "")
 	c.loadUrl = ts.URL
 	assert.NotNil(t, c)
 
@@ -205,9 +213,9 @@ func TestECSGetProfile(t *testing.T) {
 	)
 	defer ts.Close()
 
-	c := NewECSClient(4144, "token")
-	c.profileUrl = ts.URL
+	c := NewECSClient(4144, "token", "")
 	assert.NotNil(t, c)
+	c.profileUrl = ts.URL
 
 	lprResp, err := c.GetProfile()
 	assert.NoError(t, err)
@@ -228,6 +236,30 @@ func TestECSGetProfile(t *testing.T) {
 
 	c.profileUrl = ts2.URL
 	_, err = c.GetProfile()
+	assert.Error(t, err)
+}
+
+func TestECSAuthFailures(t *testing.T) {
+	t.Parallel()
+
+	// create mocked http server
+	ts := httptest.NewServer(
+		http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				ecs.WriteMessage(w, "Invalid authorization token", http.StatusForbidden)
+			},
+		),
+	)
+	defer ts.Close()
+
+	c := NewECSClient(4144, "token", "")
+	assert.NotNil(t, c)
+	c.profileUrl = ts.URL
+
+	_, err := c.GetProfile()
+	assert.Error(t, err)
+
+	_, err = c.ListProfiles()
 	assert.Error(t, err)
 }
 
@@ -261,7 +293,7 @@ func TestECSListProfiles(t *testing.T) {
 	)
 	defer ts.Close()
 
-	c := NewECSClient(4144, "token")
+	c := NewECSClient(4144, "token", "")
 	c.listUrl = ts.URL
 	assert.NotNil(t, c)
 
@@ -270,6 +302,19 @@ func TestECSListProfiles(t *testing.T) {
 	assert.Equal(t, lpr, lprResp)
 
 	c.listUrl = "http://localhost:4144"
+	_, err = c.ListProfiles()
+	assert.Error(t, err)
+
+	// auth error
+	ts2 := httptest.NewServer(
+		http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				ecs.WriteMessage(w, "Invalid authorization token", http.StatusForbidden)
+			},
+		),
+	)
+	defer ts2.Close()
+	c.listUrl = ts2.URL
 	_, err = c.ListProfiles()
 	assert.Error(t, err)
 }
@@ -287,7 +332,7 @@ func TestECSDelete(t *testing.T) {
 	)
 	defer ts.Close()
 
-	c := NewECSClient(4144, "token")
+	c := NewECSClient(4144, "token", "")
 	c.loadUrl = ts.URL
 	c.loadSlotUrl = ts.URL
 	assert.NotNil(t, c)
@@ -298,5 +343,19 @@ func TestECSDelete(t *testing.T) {
 	c.loadUrl = "http://localhost:4144"
 	c.loadSlotUrl = "http://localhost:4144"
 	err = c.Delete("foo")
+	assert.Error(t, err)
+}
+
+func TestNewHTTPClient(t *testing.T) {
+	t.Parallel()
+
+	cert, err := os.ReadFile("../server/testdata/localhost.crt")
+	assert.NoError(t, err)
+
+	c, err := NewHTTPClient(string(cert))
+	assert.NoError(t, err)
+	assert.NotNil(t, c)
+
+	_, err = NewHTTPClient("foobar")
 	assert.Error(t, err)
 }

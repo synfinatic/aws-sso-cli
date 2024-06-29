@@ -19,6 +19,7 @@ package storage
  */
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -168,4 +169,34 @@ func TestRoleCredentialsValidate(t *testing.T) {
 	k = r
 	k.Expiration = 0
 	assert.ErrorContains(t, (&k).Validate(), "expiration")
+}
+
+func TestValidateSSLCertificate(t *testing.T) {
+	t.Parallel()
+	cert, err := os.ReadFile("../ecs/server/testdata/localhost.crt")
+	assert.NoError(t, err)
+
+	err = ValidateSSLCertificate(cert)
+	assert.NoError(t, err)
+
+	cert, err = os.ReadFile("../ecs/server/testdata/localhost.key")
+	assert.NoError(t, err)
+
+	err = ValidateSSLCertificate(cert)
+	assert.Error(t, err)
+}
+
+func TestValidateSSLPrivateKey(t *testing.T) {
+	t.Parallel()
+	key, err := os.ReadFile("../ecs/server/testdata/localhost.key")
+	assert.NoError(t, err)
+
+	err = ValidateSSLPrivateKey(key)
+	assert.NoError(t, err)
+
+	key, err = os.ReadFile("../ecs/server/testdata/localhost.crt")
+	assert.NoError(t, err)
+
+	err = ValidateSSLPrivateKey(key)
+	assert.Error(t, err)
 }

@@ -172,6 +172,54 @@ func (suite *KeyringSuite) TestEcsBearerToken() {
 	assert.Empty(t, token)
 }
 
+func (suite *KeyringSuite) TestEcsSslKeyPair() { // nolint: dupl
+	t := suite.T()
+
+	cert, err := suite.store.GetEcsSslCert()
+	assert.NoError(t, err)
+	assert.Empty(t, cert)
+
+	key, err := suite.store.GetEcsSslKey()
+	assert.NoError(t, err)
+	assert.Empty(t, key)
+
+	certBytes, err := os.ReadFile("../ecs/server/testdata/localhost.crt")
+	assert.NoError(t, err)
+	keyBytes, err := os.ReadFile("../ecs/server/testdata/localhost.key")
+	assert.NoError(t, err)
+
+	err = suite.store.SaveEcsSslKeyPair([]byte{}, certBytes)
+	assert.NoError(t, err)
+
+	err = suite.store.SaveEcsSslKeyPair(keyBytes, certBytes)
+	assert.NoError(t, err)
+
+	err = suite.store.SaveEcsSslKeyPair(keyBytes, keyBytes)
+	assert.Error(t, err)
+
+	err = suite.store.SaveEcsSslKeyPair(certBytes, certBytes)
+	assert.Error(t, err)
+
+	cert, err = suite.store.GetEcsSslCert()
+	assert.NoError(t, err)
+	assert.Equal(t, string(certBytes), cert)
+
+	key, err = suite.store.GetEcsSslKey()
+	assert.NoError(t, err)
+	assert.Equal(t, string(keyBytes), key)
+
+	err = suite.store.DeleteEcsSslKeyPair()
+	assert.NoError(t, err)
+
+	cert, err = suite.store.GetEcsSslCert()
+	assert.NoError(t, err)
+	assert.Empty(t, cert)
+
+	key, err = suite.store.GetEcsSslKey()
+	assert.NoError(t, err)
+	assert.Empty(t, key)
+}
+
 func (suite *KeyringSuite) TestErrorReadKeyring() {
 	t := suite.T()
 	// Read non existent key

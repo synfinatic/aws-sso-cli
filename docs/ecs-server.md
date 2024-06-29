@@ -22,6 +22,56 @@ Will start the service on `localhost:4144`.   For security purposes, the `aws-ss
 ECS Server will _only_ run on localhost/127.0.0.1.  You may select an alternative
 port via the `--port` flag or setting the `AWS_SSO_ECS_PORT` environment variable.
 
+### ECS Server security
+
+The ECS Server supports both SSL/TLS encryption as well as HTTP Authentication.
+Together, they allow using the `aws-sso` ECS Server on multi-user systems in a
+secure manner.
+
+**Important:** Failure to configure HTTP Authentication _and_ SSL/TLS encryption
+risks any user on the system running the `aws-sso` ECS Server access to your
+AWS IAM authentication tokens.
+
+You will need to create an SSL certificate/key pair in PKCS#8/PEM format.  Typically,
+this will be a self-signed certificate which can be generated thusly:
+
+```bash
+cat <<-EOF > config.ssl
+[dn]
+CN=localhost
+[req]
+distinguished_name = dn
+[EXT]
+subjectAltName=DNS:localhost,IP:127.0.0.1
+keyUsage=digitalSignature
+extendedKeyUsage=serverAuth
+EOF
+
+openssl req -x509 -out localhost.crt -keyout localhost.key \
+  -newkey rsa:2048 -nodes -sha256 -subj '/CN=localhost' -extensions EXT -config config.ssl
+
+rm config.ssl
+```
+
+Once you have your certificate and private key, you will need to save them into the
+`aws-sso` secure store:
+
+```bash
+aws-sso ecs cert --private-key localhost.key --cert-chain localhost.crt
+```
+
+**Important:** At this point, you should delete the private key file `localhost.key` for security.
+
+The `localhost.crt` file will be automatically trusted by the `aws-sso` client if it
+uses the same secure store.  Otherwise, you will need to copy the `localhost.crt` file
+to the other host and either add it to the local secure store, or add it to the
+appropriate SSL CA trust store for your Python, Java, GoLang, etc AWS SDK.
+
+```bash
+# add the certificate to another aws-sso secure store
+aws-sso ecs cert --cert-chain localhost.crt
+```
+
 ## Environment variables
 
 ### AWS\_CONTAINER\_CREDENTIALS\_FULL\_URI
@@ -29,6 +79,8 @@ port via the `--port` flag or setting the `AWS_SSO_ECS_PORT` environment variabl
 AWS clients and `aws-sso` should use:
 
 `AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:4144/`
+
+**Note:** If you have configured an SSL certificate as described above, use `https://localhost:4144`.
 
 ### AWS\_CONTAINER\_CREDENTIALS\_RELATIVE\_URI
 
@@ -60,6 +112,8 @@ for all AWS Client SDKs using it.
 Ensure you have exported the following shell ENV variable:
 
 `export AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:4144/creds`
+
+**Note:** If you have configured an SSL certificate as described above, use `https://localhost:4144/creds`.
 
 Then just:
 
@@ -105,6 +159,8 @@ To see a list of profiles loaded in named slots use `aws-sso ecs list`.
 Accessing the individual credentials is done via the `profile` query parameter:
 
 `export AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:4144/slot/ExampleProfileName`
+
+**Note:** If you have configured an SSL certificate as described above, use `httpss://localhost:4144/slot/ExampleProfileName`.
 
 Would utilize the `ExampleProfileName` role.  Note that the `profile` value
 value in the URL must be [URL Escaped](https://www.w3schools.com/tags/ref_urlencode.ASP).

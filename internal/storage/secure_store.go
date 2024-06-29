@@ -43,4 +43,10 @@ type SecureStorage interface {
 	SaveEcsBearerToken(string) error
 	GetEcsBearerToken() (string, error)
 	DeleteEcsBearerToken() error
+
+	// ECS Server SSL Cert
+	SaveEcsSslKeyPair([]byte, []byte) error
+	DeleteEcsSslKeyPair() error
+	GetEcsSslCert() (string, error)
+	GetEcsSslKey() (string, error)
 }

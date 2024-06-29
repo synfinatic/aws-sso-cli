@@ -35,7 +35,6 @@ have to wait a few minutes.
 
 You can see what the AWS ListAccountRoles API is returning via `aws-sso cache -L debug`
 
-
 ## Advanced Features
 
 ### Does AWS SSO CLI support role chaining?

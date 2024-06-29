@@ -18,8 +18,7 @@ encrypted over ssh.
 
 **Note:** The root user or anyone with [CAP_NET_RAW or CAP_NET_ADMIN](https://man7.org/linux/man-pages/man7/capabilities.7.html)
 will be able to intercept the HTTP traffic on either endpoint and obtain the bearer token
-and/or any IAM Credentials stored in the ECS Server.  As of this time, `aws-sso` does
-[not support HTTPS](https://github.com/synfinatic/aws-sso-cli/issues/518) for full end-to-end encryption.
+and/or any IAM Credentials stored in the ECS Server if you have not [enabled SSL](ecs-server.md#ecs-server-security).
 
 ## On your local system
 
@@ -44,6 +43,9 @@ or [tmux](https://hamvocke.com/blog/a-quick-and-easy-guide-to-tmux/) session):
 `export AWS_CONTAINER_AUTHORIZATION_TOKEN='Bearer <secret>'`
 1. Verify everything works:
 `aws sts get-caller-identity`
+
+**Note:** If you have [loaded an SSL certificate/private](ecs-server.md#ecs-server-security)
+key into `aws-sso` use: `export AWS_CONTAINER_CREDENTIALS_FULL_URI=https://localhost:4144/` instead.
 
 **Important:** You must choose a strong secret value for your bearer token secret!  This is
 what prevents anyone else from using your IAM credentials without your permission.  Your bearer
