@@ -19,6 +19,8 @@ package storage
  */
 
 import (
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"reflect"
 	"time"
@@ -161,4 +163,28 @@ func (sc *StaticCredentials) AccountIdStr() string {
 		log.WithError(err).Panicf("Invalid AccountId from AWS static credentials: %d", sc.AccountId)
 	}
 	return s
+}
+
+// ValidateSSLCertificate ensures we have a valid SSL certificate
+func ValidateSSLCertificate(certChain []byte) error {
+	block, _ := pem.Decode(certChain)
+
+	if _, err := x509.ParseCertificate(block.Bytes); err != nil {
+		return fmt.Errorf("certificate chain file is not a valid certificate: %w", err)
+	}
+	return nil
+}
+
+// ValidateSSLPrivateKey ensures we have a valid SSL private key
+func ValidateSSLPrivateKey(privateKey []byte) error {
+	// if we have no private key, then we're good
+	if len(privateKey) == 0 {
+		return nil
+	}
+	block, _ := pem.Decode(privateKey)
+
+	if _, err := x509.ParsePKCS8PrivateKey(block.Bytes); err != nil {
+		return fmt.Errorf("private key file is not a valid private key: %s", err)
+	}
+	return nil
 }

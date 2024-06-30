@@ -228,3 +228,50 @@ func (s *JsonStoreTestSuite) TestEcsBearerToken() {
 	assert.NoError(t, err)
 	assert.Empty(t, token)
 }
+
+func (s *JsonStoreTestSuite) TestEcsSslKeyPair() { // nolint: dupl
+	t := s.T()
+
+	cert, err := s.json.GetEcsSslCert()
+	assert.NoError(t, err)
+	assert.Empty(t, cert)
+
+	key, err := s.json.GetEcsSslKey()
+	assert.NoError(t, err)
+	assert.Empty(t, key)
+
+	certBytes, err := os.ReadFile("../ecs/server/testdata/localhost.crt")
+	assert.NoError(t, err)
+	keyBytes, err := os.ReadFile("../ecs/server/testdata/localhost.key")
+	assert.NoError(t, err)
+
+	err = s.json.SaveEcsSslKeyPair([]byte{}, certBytes)
+	assert.NoError(t, err)
+
+	err = s.json.SaveEcsSslKeyPair(keyBytes, certBytes)
+	assert.NoError(t, err)
+
+	err = s.json.SaveEcsSslKeyPair(keyBytes, keyBytes)
+	assert.Error(t, err)
+	err = s.json.SaveEcsSslKeyPair(certBytes, certBytes)
+	assert.Error(t, err)
+
+	cert, err = s.json.GetEcsSslCert()
+	assert.NoError(t, err)
+	assert.Equal(t, string(certBytes), cert)
+
+	key, err = s.json.GetEcsSslKey()
+	assert.NoError(t, err)
+	assert.Equal(t, string(keyBytes), key)
+
+	err = s.json.DeleteEcsSslKeyPair()
+	assert.NoError(t, err)
+
+	cert, err = s.json.GetEcsSslCert()
+	assert.NoError(t, err)
+	assert.Empty(t, cert)
+
+	key, err = s.json.GetEcsSslKey()
+	assert.NoError(t, err)
+	assert.Empty(t, key)
+}

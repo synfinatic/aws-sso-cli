@@ -20,6 +20,8 @@ package client
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -38,16 +40,29 @@ type ECSClient struct {
 	loadSlotUrl string
 	profileUrl  string
 	listUrl     string
+	client      *http.Client
 }
 
-func NewECSClient(port int, authToken string) *ECSClient {
+func NewECSClient(port int, authToken string, certChain string) *ECSClient {
+	var client *http.Client = &http.Client{}
+	var proto string = "http"
+	var err error
+
+	if certChain != "" {
+		proto = "https"
+		client, err = NewHTTPClient(certChain)
+		if err != nil {
+			panic(fmt.Sprintf("unable to load SSL certificate: %s", err))
+		}
+	}
 	return &ECSClient{
+		client:      client,
 		port:        port,
 		authToken:   authToken,
-		loadUrl:     fmt.Sprintf("http://localhost:%d/", port),
-		loadSlotUrl: fmt.Sprintf("http://localhost:%d%s", port, ecs.SLOT_ROUTE),
-		profileUrl:  fmt.Sprintf("http://localhost:%d%s", port, ecs.PROFILE_ROUTE),
-		listUrl:     fmt.Sprintf("http://localhost:%d%s", port, ecs.SLOT_ROUTE),
+		loadUrl:     fmt.Sprintf("%s://localhost:%d/", proto, port),
+		loadSlotUrl: fmt.Sprintf("%s://localhost:%d%s", proto, port, ecs.SLOT_ROUTE),
+		profileUrl:  fmt.Sprintf("%s://localhost:%d%s", proto, port, ecs.PROFILE_ROUTE),
+		listUrl:     fmt.Sprintf("%s://localhost:%d%s", proto, port, ecs.SLOT_ROUTE),
 	}
 }
 
@@ -103,9 +118,12 @@ func (c *ECSClient) SubmitCreds(creds *storage.RoleCredentials, profile string, 
 func (c *ECSClient) GetProfile() (ecs.ListProfilesResponse, error) {
 	lpr := ecs.ListProfilesResponse{}
 	req, _ := c.newRequest(http.MethodGet, c.ProfileUrl(), nil)
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := c.client.Do(req)
 	if err != nil {
+		return lpr, err
+	}
+
+	if err := checkDoResponse(resp); err != nil {
 		return lpr, err
 	}
 
@@ -128,9 +146,12 @@ func (c *ECSClient) GetProfile() (ecs.ListProfilesResponse, error) {
 func (c *ECSClient) ListProfiles() ([]ecs.ListProfilesResponse, error) {
 	lpr := []ecs.ListProfilesResponse{}
 	req, _ := c.newRequest(http.MethodGet, c.ListUrl(), nil)
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := c.client.Do(req)
 	if err != nil {
+		return lpr, err
+	}
+
+	if err := checkDoResponse(resp); err != nil {
 		return lpr, err
 	}
 	defer resp.Body.Close()
@@ -151,8 +172,7 @@ func (c *ECSClient) ListProfiles() ([]ecs.ListProfilesResponse, error) {
 func (c *ECSClient) Delete(profile string) error {
 	req, _ := c.newRequest(http.MethodDelete, c.LoadUrl(profile), bytes.NewBuffer([]byte("")))
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -164,4 +184,28 @@ func checkDoResponse(resp *http.Response) error {
 		return fmt.Errorf("ECS Server HTTP error: %s", resp.Status)
 	}
 	return nil
+}
+
+// NewHTTPClient creates a new HTTP client with the provided cert chain
+// preloaded into the system cert pool
+func NewHTTPClient(certChain string) (*http.Client, error) {
+	rootCAs, err := x509.SystemCertPool()
+	if rootCAs == nil || err != nil {
+		rootCAs = x509.NewCertPool()
+	}
+
+	// append our cert to the pool
+	if ok := rootCAs.AppendCertsFromPEM([]byte(certChain)); !ok {
+		return nil, fmt.Errorf("unable to append cert to pool")
+	}
+
+	// Trust the augmented cert pool in our client
+	config := &tls.Config{
+		// InsecureSkipVerify: true,
+		RootCAs:    rootCAs,
+		MinVersion: tls.VersionTLS12,
+		MaxVersion: tls.VersionTLS13,
+	}
+	tr := &http.Transport{TLSClientConfig: config}
+	return &http.Client{Transport: tr}, nil
 }

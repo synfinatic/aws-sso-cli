@@ -23,6 +23,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
@@ -35,6 +37,8 @@ type EcsServer struct {
 	server       http.Server
 	DefaultCreds *ecs.ECSClientRequest
 	slottedCreds map[string]*ecs.ECSClientRequest
+	privateKey   string
+	certChain    string
 }
 
 type ExpiredCredentials struct{}
@@ -44,7 +48,7 @@ func (e *ExpiredCredentials) Error() string {
 }
 
 // NewEcsServer creates a new ECS Server
-func NewEcsServer(ctx context.Context, authToken string, listen net.Listener) (*EcsServer, error) {
+func NewEcsServer(ctx context.Context, authToken string, listen net.Listener, privateKey, certChain string) (*EcsServer, error) {
 	e := &EcsServer{
 		listener:  listen,
 		authToken: authToken,
@@ -52,6 +56,8 @@ func NewEcsServer(ctx context.Context, authToken string, listen net.Listener) (*
 			Creds: &storage.RoleCredentials{},
 		},
 		slottedCreds: map[string]*ecs.ECSClientRequest{},
+		privateKey:   privateKey,
+		certChain:    certChain,
 	}
 
 	router := http.NewServeMux()
@@ -119,7 +125,11 @@ func (e *EcsServer) ListSlottedCreds() []ecs.ListProfilesResponse {
 
 // BaseURL returns our the base URL for all requests
 func (e *EcsServer) BaseURL() string {
-	return fmt.Sprintf("http://%s", e.listener.Addr().String())
+	proto := "http"
+	if e.privateKey != "" && e.certChain != "" {
+		proto = "https"
+	}
+	return fmt.Sprintf("%s://%s", proto, e.listener.Addr().String())
 }
 
 // AuthToken returns our authToken for authentication
@@ -129,6 +139,27 @@ func (e *EcsServer) AuthToken() string {
 
 // Serve starts the sever and blocks
 func (e *EcsServer) Serve() error {
+	if e.privateKey != "" && e.certChain != "" {
+		// Go sucks... have to pass the key and cert as _files_ not strings.  Why???
+		dname, err := os.MkdirTemp("", "aws-sso")
+		if err != nil {
+			return err
+		}
+		defer os.RemoveAll(dname)
+
+		certFile := filepath.Join(dname, "cert.pem")
+		err = os.WriteFile(certFile, []byte(e.certChain), 0600)
+		if err != nil {
+			return err
+		}
+		keyFile := filepath.Join(dname, "key.pem")
+		err = os.WriteFile(keyFile, []byte(e.privateKey), 0600)
+		if err != nil {
+			return err
+		}
+
+		return e.server.ServeTLS(e.listener, certFile, keyFile)
+	}
 	return e.server.Serve(e.listener)
 }
 
@@ -141,4 +172,8 @@ func WithAuthorizationCheck(authToken string, next http.HandlerFunc) http.Handle
 		}
 		next.ServeHTTP(w, r)
 	}
+}
+
+func (e *EcsServer) Close() {
+	e.server.Close()
 }

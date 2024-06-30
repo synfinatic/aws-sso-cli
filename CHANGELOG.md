@@ -4,7 +4,8 @@
 
 ### New Features
 
- * Add support for the `AWS_CONTAINER_AUTHORIZATION_TOKEN` env variable #516
+ * Add support for HTTP Auth/`AWS_CONTAINER_AUTHORIZATION_TOKEN` env variable #516
+ * Add support for HTTPS #518
 
 ## [v1.16.1] - 2024-06-13
 
