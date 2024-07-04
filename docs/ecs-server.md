@@ -22,6 +22,18 @@ Will start the service on `localhost:4144`.   For security purposes, the `aws-ss
 ECS Server will _only_ run on localhost/127.0.0.1.  You may select an alternative
 port via the `--port` flag or setting the `AWS_SSO_ECS_PORT` environment variable.
 
+### Running the ECS Server in the background
+
+The recommended way to run the ECS server in the background is via the
+[aws-sso-cli-ecs-server](https://hub.docker.com/repository/docker/synfinatic/xb8-docsis-stats/general)
+Docker image and the `aws-sso ecs docker [start|stop]` commands as this will
+automatically configure your SSL key pair and bearer token from the secure store
+in the most secure means possible.
+
+**Note:** By default for security, the Docker container will only listen the
+host's loopback interface (`127.0.0.1`), but you can enable it listening on
+other interfaces using the `--bind-ip` flag.
+
 ### ECS Server security
 
 The ECS Server supports both SSL/TLS encryption as well as HTTP Authentication.
@@ -32,11 +44,19 @@ secure manner.
 risks any user on the system running the `aws-sso` ECS Server access to your
 AWS IAM authentication tokens.
 
-You will need to create an SSL certificate/key pair in PKCS#8/PEM format.  Typically,
+#### ECS Server SSL Certificate
+
+**Important:** Due to a [bug in the AWS Boto3 SDK](https://github.com/synfinatic/aws-sso-cli/issues/936)
+you can not enable SSL at this time.  I'm currently unsure if other AWS SDKs
+(like the Go SDK used by Terraform) also experience this issue.  __I'd greatly
+appreciate people to upvote my ticket with AWS and help get it greater
+visibility at AWS and hopefully addressed sooner rather than later.__
+
+You will need to create an SSL certificate/key pair in PKCS#8/PEM format. Typically,
 this will be a self-signed certificate which can be generated thusly:
 
 ```bash
-cat <<-EOF > config.ssl
+$ cat <<-EOF > config.ssl
 [dn]
 CN=localhost
 [req]
@@ -47,30 +67,57 @@ keyUsage=digitalSignature
 extendedKeyUsage=serverAuth
 EOF
 
-openssl req -x509 -out localhost.crt -keyout localhost.key \
+$ openssl req -x509 -out localhost.crt -keyout localhost.key \
   -newkey rsa:2048 -nodes -sha256 -subj '/CN=localhost' -extensions EXT -config config.ssl
 
-rm config.ssl
+$ rm config.ssl
 ```
 
 Once you have your certificate and private key, you will need to save them into the
 `aws-sso` secure store:
 
 ```bash
-aws-sso ecs cert --private-key localhost.key --cert-chain localhost.crt
+$ aws-sso ecs cert load --private-key localhost.key --cert-chain localhost.crt
 ```
 
 **Important:** At this point, you should delete the private key file `localhost.key` for security.
 
 The `localhost.crt` file will be automatically trusted by the `aws-sso` client if it
-uses the same secure store.  Otherwise, you will need to copy the `localhost.crt` file
-to the other host and either add it to the local secure store, or add it to the
-appropriate SSL CA trust store for your Python, Java, GoLang, etc AWS SDK.
+uses the same secure store so it will be able to validate the server before uploading any IAM
+credentials.
+
+If you lose your certificate, you can print it via:
 
 ```bash
-# add the certificate to another aws-sso secure store
-aws-sso ecs cert --cert-chain localhost.crt
+$ aws-sso ecs cert print
 ```
+
+**Note:** At this time, there is no way to extract the SSL Private Key from the Secure Store.
+
+#### AWS SDK SSL Limitations
+
+If you create a self-signed certificate as described above, you will not be able to use the
+AWS CLI tooling or other AWS SDK's without additional work.  This is because the AWS SDK does
+not trust self-signed certificates.  Right now, it is best to get a signed cert by a trusted CA
+like Let's Encrypt.  Due to the complexity of this at this time, getting this to work is left
+as an exercise to the reader.
+
+#### ECS Server HTTP Authentication
+
+The way to configure HTTP Authentication is with a
+[bearer token](https://datatracker.ietf.org/doc/html/rfc6750#section-2.1)
+as [documented by AWS](https://docs.aws.amazon.com/sdkref/latest/guide/feature-container-credentials.html).
+
+Once you have selected a sufficiently secure secret to use as the bearer token,
+you can load it into the Secure Store via:
+
+```bash
+aws-sso ecs bearer-token --token 'Bearer <token>`
+```
+
+**Important:** You must choose a strong secret value for your bearer token secret!  This is
+what prevents anyone else from using your IAM credentials without your permission.  Your bearer
+token should be long and random enough to prevent bruteforce attacks.
 
 ## Environment variables
 

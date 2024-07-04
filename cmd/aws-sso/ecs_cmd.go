@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	// "github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs/server"
 )
 
@@ -34,9 +35,10 @@ const (
 )
 
 type EcsCmd struct {
-	Run         EcsRunCmd         `kong:"cmd,help='Run the ECS Server'"`
+	Run         EcsRunCmd         `kong:"cmd,help='Run the ECS Server locally'"`
 	BearerToken EcsBearerTokenCmd `kong:"cmd,help='Configure the ECS Server/AWS Client bearer token'"`
-	Cert        EcsCertCmd        `kong:"cmd,help='Configure the ECS Server SSL certificate'"`
+	Docker      EcsDockerCmd      `kong:"cmd,help='Start the ECS Server in a Docker container'"`
+	Cert        EcsCertCmd        `kong:"cmd,help='Configure the ECS Server SSL certificate/private key'"`
 	List        EcsListCmd        `kong:"cmd,help='List profiles loaded in the ECS Server'"`
 	Load        EcsLoadCmd        `kong:"cmd,help='Load new IAM Role credentials into the ECS Server'"`
 	Unload      EcsUnloadCmd      `kong:"cmd,help='Unload the current IAM Role credentials from the ECS Server'"`
@@ -45,35 +47,68 @@ type EcsCmd struct {
 
 type EcsRunCmd struct {
 	Port int `kong:"help='TCP port to listen on',env='AWS_SSO_ECS_PORT',default=4144"`
+	// hidden flags are for internal use only when running in a docker container
+	Docker bool `kong:"hidden,help='Enable Docker support for ECS Server'"`
 }
 
 func (cc *EcsRunCmd) Run(ctx *RunContext) error {
-	l, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", ctx.Cli.Ecs.Run.Port))
+	// Start the ECS Server
+	ip := "127.0.0.1"
+	if ctx.Cli.Ecs.Run.Docker {
+		ip = "0.0.0.0"
+	}
+	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", ip, ctx.Cli.Ecs.Run.Port))
 	if err != nil {
 		return err
 	}
 
-	token, err := ctx.Store.GetEcsBearerToken()
-	if err != nil {
-		return err
-	}
-	if token == "" {
-		log.Warnf("No authentication token set, use 'aws-sso ecs bearer-token' to set one")
-	}
-	var privateKey, certChain string
-	if privateKey, err = ctx.Store.GetEcsSslKey(); err != nil {
-		return err
-	} else if privateKey != "" {
-		// only get the certificate if the private key is set
-		certChain, err = ctx.Store.GetEcsSslCert()
+	var bearerToken, privateKey, certChain string
+	if ctx.Cli.Ecs.Run.Docker {
+		// fetch the creds from our temporary file mounted in the docker container
+		f, err := ecs.OpenSecurityFile(ecs.READ_ONLY)
 		if err != nil {
+			log.Warnf("Failed to open ECS credentials file: %s", err.Error())
+		} else {
+			creds, err := ecs.ReadSecurityConfig(f)
+			if err != nil {
+				return err
+			}
+			// have to manually close since defer won't work in this case
+			f.Close()
+			os.Remove(f.Name())
+
+			bearerToken = creds.BearerToken
+			privateKey = creds.PrivateKey
+			certChain = creds.CertChain
+		}
+	} else {
+		if bearerToken, err = ctx.Store.GetEcsBearerToken(); err != nil {
 			return err
 		}
-		log.Infof("Running ECS Server with SSL/TLS enabled")
-	} else {
-		log.Infof("Running ECS Server without SSL/TLS")
+
+		if privateKey, err = ctx.Store.GetEcsSslKey(); err != nil {
+			return err
+		} else if privateKey != "" {
+			// only get the certificate if the private key is set
+			if certChain, err = ctx.Store.GetEcsSslCert(); err != nil {
+				return err
+			}
+		}
 	}
-	s, err := server.NewEcsServer(context.TODO(), token, l, privateKey, certChain)
+
+	if bearerToken == "" {
+		log.Warnf("HTTP Auth: disabled. Use 'aws-sso ecs bearer-token' to enable")
+	} else {
+		log.Info("HTTP Auth: enabled")
+	}
+
+	if privateKey != "" && certChain != "" {
+		log.Infof("SSL/TLS: enabled")
+	} else {
+		log.Warnf("SSL/TLS: disabled.  Use 'aws-sso ecs cert' to enable")
+	}
+
+	s, err := server.NewEcsServer(context.TODO(), bearerToken, l, privateKey, certChain)
 	if err != nil {
 		return err
 	}
@@ -102,30 +137,57 @@ func (cc *EcsBearerTokenCmd) Run(ctx *RunContext) error {
 }
 
 type EcsCertCmd struct {
-	CertChain  string `kong:"short=c,type='existingfile',help='Path to certificate chain PEM file',predictor='allFiles',xor='key'"`
-	PrivateKey string `kong:"short=p,type='existingfile',help='Path to private key file PEM file',predictor='allFiles',xor='cert'"`
-	Delete     bool   `kong:"short=d,help='Delete the current SSL certificate key pair',xor='key,cert'"`
+	Load   EcsCertLoadCmd   `kong:"cmd,help='Load a new SSL certificate/private key into the ECS Server'"`
+	Delete EcsCertDeleteCmd `kong:"cmd,help='Delete the current SSL certificate/private key'"`
+	Print  EcsCertPrintCmd  `kong:"cmd,help='Print the current SSL certificate'"`
 }
 
-func (cc *EcsCertCmd) Run(ctx *RunContext) error {
-	// If delete flag is set, delete the key pair
-	if ctx.Cli.Ecs.Cert.Delete {
-		return ctx.Store.DeleteEcsSslKeyPair()
-	}
+type EcsCertLoadCmd struct {
+	CertChain  string `kong:"short=c,type='existingfile',help='Path to certificate chain PEM file',predictor='allFiles',required"`
+	PrivateKey string `kong:"short=p,type='existingfile',help='Path to private key file PEM file',predictor='allFiles'"`
+	Force      bool   `kong:"hidden,help='Force loading the certificate'"`
+}
 
-	if ctx.Cli.Ecs.Cert.CertChain == "" && ctx.Cli.Ecs.Cert.PrivateKey != "" {
-		return fmt.Errorf("if --private-key is set, --cert-chain must also be set")
-	}
+type EcsCertDeleteCmd struct{}
 
-	// Else, save the key pair
-	privateKey, err := os.ReadFile(ctx.Cli.Ecs.Cert.PrivateKey)
+func (cc *EcsCertDeleteCmd) Run(ctx *RunContext) error {
+	return ctx.Store.DeleteEcsSslKeyPair()
+}
+
+type EcsCertPrintCmd struct{}
+
+func (cc *EcsCertPrintCmd) Run(ctx *RunContext) error {
+	cert, err := ctx.Store.GetEcsSslCert()
 	if err != nil {
-		return fmt.Errorf("failed to read private key file: %w", err)
+		return err
+	}
+	if cert == "" {
+		return fmt.Errorf("no certificate found")
+	}
+	fmt.Println(cert)
+	return nil
+}
+
+func (cc *EcsCertLoadCmd) Run(ctx *RunContext) error {
+	var privateKey, certChain []byte
+	var err error
+
+	if !ctx.Cli.Ecs.Cert.Load.Force {
+		log.Warn("This feature is experimental and may not work as expected.")
+		log.Warn("Please read https://github.com/synfinatic/aws-sso-cli/issues/936 before contiuing.")
+		log.Fatal("Use `--force` to continue anyways.")
 	}
 
-	certChain, err := os.ReadFile(ctx.Cli.Ecs.Cert.CertChain)
+	certChain, err = os.ReadFile(ctx.Cli.Ecs.Cert.Load.CertChain)
 	if err != nil {
 		return fmt.Errorf("failed to read certificate chain file: %w", err)
+	}
+
+	if ctx.Cli.Ecs.Cert.Load.PrivateKey != "" {
+		privateKey, err = os.ReadFile(ctx.Cli.Ecs.Cert.Load.PrivateKey)
+		if err != nil {
+			return fmt.Errorf("failed to read private key file: %w", err)
+		}
 	}
 
 	return ctx.Store.SaveEcsSslKeyPair(privateKey, certChain)

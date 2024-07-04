@@ -6,6 +6,7 @@
 
  * Add support for HTTP Auth/`AWS_CONTAINER_AUTHORIZATION_TOKEN` env variable #516
  * Add support for HTTPS #518
+ * Add Docker container support #569
 
 ## [v1.16.1] - 2024-06-13
 

@@ -1,6 +1,7 @@
-PROJECT_VERSION := 1.17.0
-DOCKER_REPO     := synfinatic
-PROJECT_NAME    := aws-sso
+PROJECT_VERSION        := 1.17.0
+DOCKER_REPO            := synfinatic
+PROJECT_NAME           := aws-sso
+DOCKER_PROJECT_NAME    := aws-sso-cli-ecs-server
 
 DIST_DIR ?= dist/
 GOOS ?= $(shell uname -s | tr "[:upper:]" "[:lower:]")
@@ -267,3 +268,7 @@ serve-docs:  ## Run mkdocs server on localhost:8000
 		-v $$(pwd):/docs \
 		-p 8000:8000 \
 		synfinatic/mkdocs-material:latest
+
+docker:  ## Build docker image
+	docker build -t $(DOCKER_REPO)/$(DOCKER_PROJECT_NAME):$(PROJECT_VERSION) \
+		-t $(DOCKER_REPO)/$(DOCKER_PROJECT_NAME):latest .

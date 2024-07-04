@@ -38,7 +38,7 @@ require (
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
-	github.com/google/uuid v1.1.2 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.0 // indirect
@@ -75,11 +75,14 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.22.0
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.24.5
 	github.com/aws/aws-sdk-go-v2/service/sts v1.28.12
+	github.com/docker/docker v27.0.3+incompatible
+	github.com/docker/go-connections v0.5.0
 	golang.org/x/net v0.26.0
 )
 
 require (
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
+	github.com/Microsoft/go-winio v0.4.14 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.5 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.12 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.12 // indirect
@@ -87,4 +90,26 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.11 // indirect
 	github.com/aws/smithy-go v1.20.2 // indirect
+	github.com/containerd/log v0.1.0 // indirect
+	github.com/distribution/reference v0.6.0 // indirect
+	github.com/docker/go-units v0.5.0 // indirect
+	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/go-logr/logr v1.4.2 // indirect
+	github.com/go-logr/stdr v1.2.2 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/moby/docker-image-spec v1.3.1 // indirect
+	github.com/moby/term v0.5.0 // indirect
+	github.com/morikuni/aec v1.0.0 // indirect
+	github.com/opencontainers/go-digest v1.0.0 // indirect
+	github.com/opencontainers/image-spec v1.1.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0 // indirect
+	go.opentelemetry.io/otel v1.28.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.28.0 // indirect
+	go.opentelemetry.io/otel/metric v1.28.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.28.0 // indirect
+	go.opentelemetry.io/otel/trace v1.28.0 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240701130421-f6361c86f094 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
+	gotest.tools/v3 v3.5.1 // indirect
 )

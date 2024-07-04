@@ -55,6 +55,14 @@ func NewECSClient(port int, authToken string, certChain string) *ECSClient {
 			panic(fmt.Sprintf("unable to load SSL certificate: %s", err))
 		}
 	}
+
+	if authToken == "" {
+		log.Warnf("No auth token provided, ECS server communication will be unauthenticated")
+	}
+	if certChain == "" {
+		log.Warnf("No SSL cert provided, ECS server communication will be unencrypted")
+	}
+
 	return &ECSClient{
 		client:      client,
 		port:        port,
@@ -90,6 +98,7 @@ func (c *ECSClient) newRequest(method, url string, body io.Reader) (*http.Reques
 	if c.authToken != "" {
 		req.Header.Set("Authorization", c.authToken)
 	}
+	log.Debugf("http req: %s", req.URL.String())
 	return req, nil
 }
 
@@ -107,8 +116,7 @@ func (c *ECSClient) SubmitCreds(creds *storage.RoleCredentials, profile string, 
 	}
 
 	req, _ := c.newRequest(http.MethodPut, c.LoadUrl(path), bytes.NewBuffer(j))
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return err
 	}
