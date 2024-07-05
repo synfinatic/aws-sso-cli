@@ -33,7 +33,7 @@ import (
 )
 
 type EcsListCmd struct {
-	Port int `kong:"help='TCP port of aws-sso ECS Server',env='AWS_SSO_ECS_PORT',default=4144"` // SEE ECS_PORT in ecs_cmd.go
+	Server string `kong:"help='Endpoint of aws-sso ECS Server',env='AWS_SSO_ECS_SERVER',default='localhost:4144'"`
 }
 
 type EcsLoadCmd struct {
@@ -44,17 +44,17 @@ type EcsLoadCmd struct {
 	Profile   string `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile',xor='account,role'"`
 
 	// Other params
-	Port    int  `kong:"help='TCP port of aws-sso ECS Server',env='AWS_SSO_ECS_PORT',default=4144"` // SEE ECS_PORT in ecs_cmd.go
-	Slotted bool `kong:"short='s',help='Load credentials in a unique slot using the ProfileName as the key'"`
+	Server  string `kong:"help='Endpoint of aws-sso ECS Server',env='AWS_SSO_ECS_SERVER',default='localhost:4144'"`
+	Slotted bool   `kong:"short='s',help='Load credentials in a unique slot using the ProfileName as the key'"`
 }
 
 type EcsProfileCmd struct {
-	Port int `kong:"help='TCP port of aws-sso ECS Server',env='AWS_SSO_ECS_PORT',default=4144"`
+	Server string `kong:"help='URL endpoint of aws-sso ECS Server',env='AWS_SSO_ECS_SERVER',default='localhost:4144'"`
 }
 
 type EcsUnloadCmd struct {
-	Port    int    `kong:"help='TCP port of aws-sso ECS Server',env='AWS_SSO_ECS_PORT',default=4144"`
 	Profile string `kong:"short='p',help='Name of AWS Profile to unload',predictor='profile'"`
+	Server  string `kong:"help='Endpoint of aws-sso ECS Server',env='AWS_SSO_ECS_SERVER',default='localhost:4144'"`
 }
 
 func (cc *EcsLoadCmd) Run(ctx *RunContext) error {
@@ -71,7 +71,7 @@ func (cc *EcsLoadCmd) Run(ctx *RunContext) error {
 }
 
 func (cc *EcsProfileCmd) Run(ctx *RunContext) error {
-	c := newClient(ctx.Cli.Ecs.Profile.Port, ctx)
+	c := newClient(ctx.Cli.Ecs.Profile.Server, ctx)
 
 	profile, err := c.GetProfile()
 	if err != nil {
@@ -89,14 +89,14 @@ func (cc *EcsProfileCmd) Run(ctx *RunContext) error {
 }
 
 func (cc *EcsUnloadCmd) Run(ctx *RunContext) error {
-	c := newClient(ctx.Cli.Ecs.Unload.Port, ctx)
+	c := newClient(ctx.Cli.Ecs.Unload.Server, ctx)
 
 	return c.Delete(ctx.Cli.Ecs.Unload.Profile)
 }
 
 // Loads our AWS API creds into the ECS Server
 func ecsLoadCmd(ctx *RunContext, awssso *sso.AWSSSO, accountId int64, role string) error {
-	c := newClient(ctx.Cli.Ecs.Load.Port, ctx)
+	c := newClient(ctx.Cli.Ecs.Load.Server, ctx)
 
 	creds := GetRoleCredentials(ctx, awssso, accountId, role)
 
@@ -123,7 +123,7 @@ func ecsLoadCmd(ctx *RunContext, awssso *sso.AWSSSO, accountId int64, role strin
 }
 
 func (cc *EcsListCmd) Run(ctx *RunContext) error {
-	c := newClient(ctx.Cli.Ecs.Profile.Port, ctx)
+	c := newClient(ctx.Cli.Ecs.Profile.Server, ctx)
 
 	profiles, err := c.ListProfiles()
 	if err != nil {
@@ -157,7 +157,7 @@ func listProfiles(profiles []ecs.ListProfilesResponse) error {
 	return err
 }
 
-func newClient(port int, ctx *RunContext) *client.ECSClient {
+func newClient(server string, ctx *RunContext) *client.ECSClient {
 	certChain, err := ctx.Store.GetEcsSslCert()
 	if err != nil {
 		log.Fatalf("Unable to get ECS SSL cert: %s", err)
@@ -166,5 +166,5 @@ func newClient(port int, ctx *RunContext) *client.ECSClient {
 	if err != nil {
 		log.Fatalf("Unable to get ECS bearer token: %s", err)
 	}
-	return client.NewECSClient(port, bearerToken, certChain)
+	return client.NewECSClient(server, bearerToken, certChain)
 }
