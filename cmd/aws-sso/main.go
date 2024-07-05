@@ -170,6 +170,11 @@ func main() {
 			log.Fatalf("%s", err.Error())
 		}
 		return
+	case "ecs run":
+		// side-step the rest of the setup...
+		if err = ctx.Run(&runCtx); err != nil {
+			log.Fatalf("%s", err.Error())
+		}
 	}
 
 	// Load the config file
@@ -231,6 +236,7 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 		"CONFIG_FILE":     CONFIG_FILE,
 		"DEFAULT_STORE":   DEFAULT_STORE,
 		"JSON_STORE_FILE": JSON_STORE_FILE,
+		"VERSION":         Version,
 	}
 
 	parser := kong.Must(
