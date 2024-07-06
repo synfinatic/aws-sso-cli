@@ -2,7 +2,7 @@ package main
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2023 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2024 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -65,7 +65,7 @@ const (
 	JSON_STORE_FILE     = CONFIG_DIR + "/store.json"
 	INSECURE_CACHE_FILE = CONFIG_DIR + "/cache.json"
 	DEFAULT_STORE       = "file"
-	COPYRIGHT_YEAR      = "2021-2023"
+	COPYRIGHT_YEAR      = "2021-2024"
 )
 
 var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{

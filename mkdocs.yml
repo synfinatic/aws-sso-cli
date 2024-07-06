@@ -1,7 +1,7 @@
 # Bump: 1
 site_name: AWS SSO CLI
 site_author: Aaron Turner
-copyright: Copyright 2021-2023 Aaron Turner
+copyright: Copyright 2021-2024 Aaron Turner
 repo_url: https://github.com/synfinatic/aws-sso-cli/
 docs_dir: docs
 
