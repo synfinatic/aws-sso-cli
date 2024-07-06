@@ -132,7 +132,7 @@ type CLI struct {
 	Completions    CompleteCmd       `kong:"cmd,help='Manage shell completions'"`
 	ConfigProfiles ConfigProfilesCmd `kong:"cmd,help='Update ~/.aws/config with AWS SSO profiles from the cache'"`
 	Config         ConfigCmd         `kong:"cmd,help='Run the configuration wizard'"`
-	Ecs            EcsCmd            `kong:"cmd,help='ECS Server commands'"`
+	Ecs            EcsCmd            `kong:"cmd,help='ECS server/client commands'"`
 	Version        VersionCmd        `kong:"cmd,help='Print version and exit'"`
 }
 
@@ -169,7 +169,7 @@ func main() {
 			log.Fatalf("%s", err.Error())
 		}
 		return
-	case "ecs run":
+	case "ecs server":
 		// side-step the rest of the setup...
 		if err = ctx.Run(&runCtx); err != nil {
 			log.Fatalf("%s", err.Error())
@@ -350,5 +350,5 @@ func logLevelValidate(level string) error {
 	if utils.StrListContains(level, VALID_LOG_LEVELS) || level == "" {
 		return nil
 	}
-	return fmt.Errorf("Invalid value for --level: %s", level)
+	return fmt.Errorf("invalid value for --level: %s", level)
 }

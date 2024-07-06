@@ -41,9 +41,9 @@ type EcsDockerCmd struct {
 }
 
 type EcsDockerStartCmd struct {
-	BindIP   string `kong:"help='Host IP address to bind to the ECS Server',default='127.0.0.1'"`
-	BindPort string `kong:"help='Host port to bind to the ECS Server',default='4144'"`
-	Version  string `kong:"help='ECS Server docker image version',default='${VERSION}'"`
+	BindIP  string `kong:"help='Host IP address to bind to the ECS Server',default='127.0.0.1'"`
+	Port    string `kong:"help='Host port to bind to the ECS Server',default='4144'"`
+	Version string `kong:"help='ECS Server docker image version',default='${VERSION}'"`
 }
 
 func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
@@ -93,7 +93,7 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 
 	portBinding := nat.PortBinding{
 		HostIP:   ctx.Cli.Ecs.Docker.Start.BindIP,
-		HostPort: ctx.Cli.Ecs.Docker.Start.BindPort,
+		HostPort: ctx.Cli.Ecs.Docker.Start.Port,
 	}
 
 	hostConfig := &container.HostConfig{

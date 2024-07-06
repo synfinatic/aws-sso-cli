@@ -1,0 +1,7 @@
+Dockerfile*
+dist/*
+*.crt
+*.key
+tags
+coverage.out
+aws-ssl-test

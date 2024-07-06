@@ -19,4 +19,4 @@ COPY --from=builder /app/dist/aws-sso .
 # Set the entrypoint for the container
 EXPOSE 4144
 
-ENTRYPOINT ["./aws-sso", "ecs", "run", "--docker"]
+ENTRYPOINT ["./aws-sso", "ecs", "server", "--docker"]
