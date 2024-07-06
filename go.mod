@@ -73,7 +73,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.18
 	github.com/aws/aws-sdk-go-v2/service/iam v1.34.0
 	github.com/aws/aws-sdk-go-v2/service/sso v1.22.0
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.24.5
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.26.2
 	github.com/aws/aws-sdk-go-v2/service/sts v1.30.1
 	github.com/docker/docker v27.0.3+incompatible
 	github.com/docker/go-connections v0.5.0
