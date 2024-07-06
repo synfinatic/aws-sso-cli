@@ -3,3 +3,6 @@ config.yaml*
 store.json
 __debug_bin
 coverage.out
+aws-ssl-test
+*.crt
+*.key
