@@ -27,6 +27,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
@@ -34,7 +36,7 @@ import (
 )
 
 type ECSClient struct {
-	port        int
+	server      string
 	authToken   string
 	loadUrl     string
 	loadSlotUrl string
@@ -43,7 +45,7 @@ type ECSClient struct {
 	client      *http.Client
 }
 
-func NewECSClient(port int, authToken string, certChain string) *ECSClient {
+func NewECSClient(server, authToken, certChain string) *ECSClient {
 	var client *http.Client = &http.Client{}
 	var proto string = "http"
 	var err error
@@ -52,25 +54,35 @@ func NewECSClient(port int, authToken string, certChain string) *ECSClient {
 		proto = "https"
 		client, err = NewHTTPClient(certChain)
 		if err != nil {
-			panic(fmt.Sprintf("unable to load SSL certificate: %s", err))
+			panic(fmt.Sprintf("unable to load SSL certificate: %s", err.Error()))
 		}
 	}
 
 	if authToken == "" {
-		log.Warnf("No auth token provided, ECS server communication will be unauthenticated")
+		log.Warnf("no auth token provided, ECS server communication will be unauthenticated")
 	}
 	if certChain == "" {
-		log.Warnf("No SSL cert provided, ECS server communication will be unencrypted")
+		log.Warnf("no SSL cert provided, ECS server communication will be unencrypted")
+	}
+
+	hostPort := strings.Split(server, ":")
+	if len(hostPort) != 2 || hostPort[0] == "" || hostPort[1] == "" {
+		panic(fmt.Sprintf("invalid --server address: %s", server))
+	}
+
+	port, err := strconv.Atoi(hostPort[1])
+	if err != nil || port < 1 || port > 65535 {
+		panic(fmt.Sprintf("invalid --server port: %s", hostPort[1]))
 	}
 
 	return &ECSClient{
+		server:      server,
 		client:      client,
-		port:        port,
 		authToken:   authToken,
-		loadUrl:     fmt.Sprintf("%s://localhost:%d/", proto, port),
-		loadSlotUrl: fmt.Sprintf("%s://localhost:%d%s", proto, port, ecs.SLOT_ROUTE),
-		profileUrl:  fmt.Sprintf("%s://localhost:%d%s", proto, port, ecs.PROFILE_ROUTE),
-		listUrl:     fmt.Sprintf("%s://localhost:%d%s", proto, port, ecs.SLOT_ROUTE),
+		loadUrl:     fmt.Sprintf("%s://%s/", proto, server),
+		loadSlotUrl: fmt.Sprintf("%s://%s%s", proto, server, ecs.SLOT_ROUTE),
+		profileUrl:  fmt.Sprintf("%s://%s%s", proto, server, ecs.PROFILE_ROUTE),
+		listUrl:     fmt.Sprintf("%s://%s%s", proto, server, ecs.SLOT_ROUTE),
 	}
 }
 

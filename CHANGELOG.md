@@ -7,6 +7,7 @@
  * Add support for HTTP Auth/`AWS_CONTAINER_AUTHORIZATION_TOKEN` env variable #516
  * Add support for HTTPS #518
  * Add Docker container support #569
+ * Replace `--port` with `--server` flag for the `aws-sso ecs [list|load|unload|profile]` commands #937
 
 ## [v1.16.1] - 2024-06-13
 
