@@ -9,6 +9,7 @@
  * Add Docker container support #569
  * Replace `--port` with `--server` flag for the `aws-sso ecs [list|load|unload|profile]` commands #937
  * Update cache during login when relevant settings in the config.yaml changes #555
+ * Add support for `$AWS_SHARED_CREDENTIALS_FILE` #914
 
 ### Changes
 
