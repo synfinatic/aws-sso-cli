@@ -42,6 +42,7 @@ type CacheTestSuite struct {
 	suite.Suite
 	cache     *Cache
 	cacheFile string
+	settings  *Settings
 }
 
 type ProfileTests map[string]Roles
@@ -53,10 +54,14 @@ func TestCacheTestSuite(t *testing.T) {
 	f.Close()
 
 	settings := &Settings{
+		SSO: map[string]*SSOConfig{
+			"Default": {},
+		},
 		HistoryLimit:   1,
 		HistoryMinutes: 90,
 		DefaultSSO:     "Default",
 		cacheFile:      f.Name(),
+		ProfileFormat:  "{{ .AccountIdPad }}:{{ .RoleName }}", // old format is easier
 	}
 
 	input, err := os.ReadFile(TEST_CACHE_FILE)
@@ -71,12 +76,19 @@ func TestCacheTestSuite(t *testing.T) {
 	s := &CacheTestSuite{
 		cache:     c,
 		cacheFile: f.Name(),
+		settings:  settings,
 	}
 	suite.Run(t, s)
 }
 
 func (suite *CacheTestSuite) TearDownAllSuite() {
 	os.Remove(suite.cacheFile)
+}
+
+func (suite *CacheTestSuite) TestNeedsRefresh() {
+	t := suite.T()
+
+	assert.True(t, suite.cache.SSO["Default"].NeedsRefresh(suite.settings.SSO["Default"], suite.settings))
 }
 
 func (suite *CacheTestSuite) TestAddHistory() {
