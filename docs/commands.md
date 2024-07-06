@@ -130,9 +130,13 @@ passing in IAM credentials via [environment variables](https://docs.aws.amazon.c
 
 Flags:
 
- * `--file <path>`, `-f` -- Specify the file to generate.  Default is to print to STDOUT.
+ * `--file <path>`, `-f` -- Specify the file to generate.  Default is to print to STDOUT ($AWS_SHARED_CREDENTIALS_FILE).
  * `--append`, `-a` -- Append to the file instead of overwriting it.
  * `--profile <profile>,...`, `-p` -- One or more profiles to include in the output.
+
+**Note:** This command honors the same [$AWS_SHARED_CREDENTIALS_FILE](https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-envvars.html)
+that is supported by the AWS SDK to load credentials.  Since these credentials are temporary, it is
+_strongly_ discouraged that users set this to `~/.aws/credentials`, but use a temporary file instead.
 
 ---
 

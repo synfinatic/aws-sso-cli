@@ -7,7 +7,7 @@ import (
 )
 
 type CredentialsCmd struct {
-	File    string   `kong:"short='f',help='File to write credentials to (default: stdout)',predictor='allFiles'"`
+	File    string   `kong:"short='f',help='File to write credentials to (default: stdout)',predictor='allFiles',env='AWS_SHARED_CREDENTIALS_FILE'"`
 	Append  bool     `kong:"short='a',help='Append to the file instead of overwriting'"`
 	Profile []string `kong:"required,short='p',name='profile',help='List of profiles to write credentials for',predictor='profile'"`
 }
