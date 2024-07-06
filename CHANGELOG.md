@@ -8,6 +8,11 @@
  * Add support for HTTPS #518
  * Add Docker container support #569
  * Replace `--port` with `--server` flag for the `aws-sso ecs [list|load|unload|profile]` commands #937
+ * Update cache during login when relevant settings in the config.yaml changes #555
+
+### Changes
+
+ * Bump cache file version to 4.
 
 ## [v1.16.1] - 2024-06-13
 
