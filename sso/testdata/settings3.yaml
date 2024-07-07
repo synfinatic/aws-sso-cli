@@ -59,9 +59,8 @@ SSOConfig:
 
 DefaultSSO: Default                       
 Browser: /Applications/Firefox.app
+ConfigProfilesUrlAction: open-url-in-container
 UrlAction: print
-ConfigUrlAction: open
-FirefoxOpenUrlInContainer: true
 SecureStore: json
 JsonStore: ./testdata/store.json
 ProfileFormat: "{{.AccountName}}/{{.RoleName}}"

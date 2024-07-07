@@ -193,7 +193,7 @@ lint:  ## Run golangci-lint
 
 test-homebrew: $(DIST_DIR)$(PROJECT_NAME)  ## Run the homebrew tests
 	@$(DIST_DIR)$(PROJECT_NAME) --config /dev/null version 2>/dev/null | grep -q "AWS SSO CLI Version $(PROJECT_VERSION)"
-	@$(DIST_DIR)$(PROJECT_NAME) --config /dev/null 2>&1 | grep -q "No AWS SSO providers have been configured."
+	@$(DIST_DIR)$(PROJECT_NAME) --config /dev/null 2>&1 | grep -q "no AWS SSO providers have been configured."
 
 # Build targets for our supported plaforms
 windows: $(WINDOWS_BIN)  ## Build 64bit x86 Windows binary

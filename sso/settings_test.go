@@ -62,13 +62,30 @@ func (suite *SettingsTestSuite) TestLoadSettings() {
 
 	assert.Equal(t, TEST_SETTINGS_FILE, suite.settings.ConfigFile())
 
-	// ensure we upgraded ConfigUrlAction to ConfigProfilesUrlAction
-	assert.Equal(t, "", suite.settings.ConfigUrlAction)
+	assert.Equal(t, "", suite.settings.ConfigUrlAction) // deprecated
+	// ensure we upgraded ConfigUrlAction to UrlAction
+	assert.Equal(t, url.OpenUrlContainer, suite.settings.UrlAction)
+	// ensure we applied UrlAction to ConfigProfilesUrlAction
 	assert.Equal(t, url.ConfigProfilesOpen, suite.settings.ConfigProfilesUrlAction)
 
 	// ensure we upgraded FirefoxOpenUrlInContainer
 	assert.False(t, suite.settings.FirefoxOpenUrlInContainer)
 	assert.Equal(t, url.OpenUrlContainer, suite.settings.UrlAction)
+}
+
+func TestConfigProfilesUrlAction(t *testing.T) {
+	t.Parallel()
+	settingsFile := "./testdata/settings2.yaml"
+	settings, err := LoadSettings(settingsFile, TEST_CACHE_FILE, map[string]interface{}{}, OverrideSettings{})
+	assert.NoError(t, err)
+
+	assert.Equal(t, url.ConfigProfilesOpen, settings.ConfigProfilesUrlAction)
+
+	settingsFile = "./testdata/settings3.yaml"
+	settings, err = LoadSettings(settingsFile, TEST_CACHE_FILE, map[string]interface{}{}, OverrideSettings{})
+	assert.NoError(t, err)
+
+	assert.Equal(t, url.ConfigProfilesOpenUrlContainer, settings.ConfigProfilesUrlAction)
 }
 
 func (suite *SettingsTestSuite) TestGetSelectedSSO() {

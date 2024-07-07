@@ -353,10 +353,11 @@ https://docs.aws.amazon.com/singlesignon/latest/userguide/howtosessionduration.h
 
 #### ConfigProfilesUrlAction
 
-This works just like `UrlAction` above, but is used for setting the default
-`--url-action` in your `~/.aws/config` when generating named AWS profiles for
-use with `$AWS_PROFILE` and the default value for the [config-profiles](
-commands.md#config-profiles) command.
+The `aws-sso config-profiles` command by default will use the same action
+to open URL's as defined in [UrlAction](#browser--urlaction--urlexeccommand),
+but you can override it via the `ConfigProfilesUrlAction`.
+
+If `UrlAction` is `print` or `printurl`, then this settings will default to `open`.
 
 Due to limitations with the AWS SDK, only the following options are valid:
 
@@ -366,8 +367,7 @@ Due to limitations with the AWS SDK, only the following options are valid:
  * `granted-containers`
  * `open-url-in-container`
 
-**Note:** This option is required if you also want to use 
-[AutoConfigCheck](#autoconfigcheck).
+**Note:** This option is required if you also want to use [AutoConfigCheck](#autoconfigcheck).
 
 **Note:** This config option was previously known as `ConfigUrlAction` which
 has been deprecated.
