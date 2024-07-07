@@ -14,6 +14,7 @@
 ### Changes
 
  * Bump cache file version to 4.
+ * `ConfigProfilesUrlAction` now defaults to value of `UrlAction` instead of `url` #946
 
 ## [v1.16.1] - 2024-06-13
 

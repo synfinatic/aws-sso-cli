@@ -146,15 +146,15 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 	// default values.  Can be overridden using:
 	// https://pkg.go.dev/github.com/c-bata/go-prompt?utm_source=godoc#Color
 	if err = konf.Load(confmap.Provider(defaults, "."), nil); err != nil {
-		return s, fmt.Errorf("Unable to load default settings: %s", err.Error())
+		return s, fmt.Errorf("unable to load default settings: %s", err.Error())
 	}
 
 	if err = konf.Load(file.Provider(configFile), yaml.Parser()); err != nil {
-		return s, fmt.Errorf("Unable to open config file %s: %s", configFile, err.Error())
+		return s, fmt.Errorf("unable to open config file %s: %s", configFile, err.Error())
 	}
 
 	if err = konf.Unmarshal("", s); err != nil {
-		return s, fmt.Errorf("Unable to process config file: %s", err.Error())
+		return s, fmt.Errorf("unable to process config file: %s", err.Error())
 	}
 
 	if len(s.AccountPrimaryTag) == 0 {
@@ -171,7 +171,7 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 	if _, ok := s.SSO[s.DefaultSSO]; !ok {
 		// Select our SSO Provider
 		if len(s.SSO) == 0 {
-			return s, fmt.Errorf("No AWS SSO providers have been configured.")
+			return s, fmt.Errorf("no AWS SSO providers have been configured")
 		} else if len(s.SSO) == 1 {
 			// If we have only one SSO configured, always use that
 			for name := range s.SSO {
@@ -184,11 +184,11 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 				names = append(names, sso)
 			}
 			if len(names) > 0 {
-				return s, fmt.Errorf("Invalid SSO name '%s'. Valid options: %s", s.DefaultSSO,
+				return s, fmt.Errorf("invalid SSO name '%s'. Valid options: %s", s.DefaultSSO,
 					strings.Join(names, ", "))
 			} else {
 				// couldn't find a valid provider
-				return s, fmt.Errorf("Please specify --sso, $AWS_SSO or set DefaultSSO in the config file")
+				return s, fmt.Errorf("please specify --sso, $AWS_SSO or set DefaultSSO in the config file")
 			}
 		}
 	}
@@ -196,6 +196,12 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 	s.SSO[s.DefaultSSO].Refresh(s)
 
 	s.applyDeprecations()
+
+	// ConfigProfilesUrlAction should track UrlAcition unless it is set
+	if s.ConfigProfilesUrlAction == "" {
+		s.ConfigProfilesUrlAction = s.UrlAction.GetConfigProfilesAction()
+	}
+
 	if err = s.Validate(); err != nil {
 		return s, err
 	}
@@ -212,7 +218,7 @@ func (s *Settings) Validate() error {
 	// Does either action call `exec` without firefox containers?
 	if s.UrlAction.IsContainer() != s.ConfigProfilesUrlAction.IsContainer() {
 		if s.UrlAction == url.Exec || s.ConfigProfilesUrlAction == url.ConfigProfilesExec {
-			return fmt.Errorf("Must not select `exec` and a Firefox container option")
+			return fmt.Errorf("must not select `exec` and a Firefox container option")
 		}
 	}
 
@@ -270,7 +276,7 @@ func (s *Settings) Save(configFile string, overwrite bool) error {
 	var err error
 
 	if _, err = os.Stat(configFile); !errors.Is(err, os.ErrNotExist) && !overwrite {
-		return fmt.Errorf("Refusing to overwrite %s", configFile)
+		return fmt.Errorf("refusing to overwrite %s", configFile)
 	}
 
 	var output bytes.Buffer
@@ -286,7 +292,7 @@ func (s *Settings) Save(configFile string, overwrite bool) error {
 	w.Flush()
 	fileBytes := output.Bytes()
 	if len(fileBytes) == 0 {
-		return fmt.Errorf("Refusing to write 0 bytes to config.yaml")
+		return fmt.Errorf("refusing to write 0 bytes to config.yaml")
 	}
 
 	configDir := utils.GetHomePath(filepath.Dir(configFile))
@@ -389,7 +395,7 @@ func (s *Settings) GetSelectedSSOName(name string) (string, error) {
 	if _, ok := s.SSO["Default"]; ok {
 		return "Default", nil
 	}
-	return "", fmt.Errorf("No available AWS SSO Instance")
+	return "", fmt.Errorf("no available AWS SSO Instance")
 }
 
 // Returns the Tag name => Environment variable name
@@ -478,7 +484,7 @@ func (p *ProfileMap) UniqueCheck(s *Settings) error {
 			}
 
 			if match, duplicate := profileUniqueCheck[profile]; duplicate {
-				return fmt.Errorf("Duplicate profile name '%s' for:\n%s: %s\n%s: %s",
+				return fmt.Errorf("duplicate profile name '%s' for:\n%s: %s\n%s: %s",
 					profile, match[0], match[1], ssoName, role.Arn)
 			}
 			profileUniqueCheck[profile] = []string{ssoName, role.Arn}

@@ -93,6 +93,16 @@ func (u Action) IsContainer() bool {
 	return u == GrantedContainer || u == OpenUrlContainer
 }
 
+// GetConfigProfileAction returns the ConfigProfilesAction for the given Action
+func (u Action) GetConfigProfilesAction() ConfigProfilesAction {
+	switch u {
+	case "print", "printurl", "":
+		return ConfigProfilesOpen
+	default:
+		return ConfigProfilesAction(u)
+	}
+}
+
 type ConfigProfilesAction string
 
 const (
