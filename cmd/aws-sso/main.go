@@ -29,6 +29,7 @@ import (
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/internal/awscreds"
+	"github.com/synfinatic/aws-sso-cli/internal/config"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs/client"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs/server"
@@ -60,12 +61,8 @@ type RunContext struct {
 }
 
 const (
-	CONFIG_DIR          = "~/.aws-sso"
-	CONFIG_FILE         = CONFIG_DIR + "/config.yaml"
-	JSON_STORE_FILE     = CONFIG_DIR + "/store.json"
-	INSECURE_CACHE_FILE = CONFIG_DIR + "/cache.json"
-	DEFAULT_STORE       = "file"
-	COPYRIGHT_YEAR      = "2021-2024"
+	DEFAULT_STORE  = "file"
+	COPYRIGHT_YEAR = "2021-2024"
 )
 
 var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
@@ -192,7 +189,7 @@ func main() {
 		log.WithError(err).Fatalf("Unable to open config file: %s", cli.ConfigFile)
 	}
 
-	cacheFile := utils.GetHomePath(INSECURE_CACHE_FILE)
+	cacheFile := config.InsecureCacheFile(true)
 
 	if runCtx.Settings, err = sso.LoadSettings(cli.ConfigFile, cacheFile, DEFAULT_CONFIG, override); err != nil {
 		log.Fatalf("%s", err.Error())
@@ -201,7 +198,7 @@ func main() {
 	// Load the secure store data
 	switch runCtx.Settings.SecureStore {
 	case "json":
-		sfile := utils.GetHomePath(JSON_STORE_FILE)
+		sfile := config.JsonStoreFile(true)
 		if runCtx.Settings.JsonStore != "" {
 			sfile = utils.GetHomePath(runCtx.Settings.JsonStore)
 		}
@@ -211,7 +208,7 @@ func main() {
 		}
 		log.Warnf("Using insecure json file for SecureStore: %s", sfile)
 	default:
-		cfg, err := storage.NewKeyringConfig(runCtx.Settings.SecureStore, CONFIG_DIR)
+		cfg, err := storage.NewKeyringConfig(runCtx.Settings.SecureStore, config.ConfigDir(true))
 		if err != nil {
 			log.WithError(err).Fatalf("Unable to create SecureStore")
 		}
@@ -231,10 +228,10 @@ func main() {
 func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 	// need to pass in the variables for defaults
 	vars := kong.Vars{
-		"CONFIG_DIR":      CONFIG_DIR,
-		"CONFIG_FILE":     CONFIG_FILE,
+		"CONFIG_DIR":      config.ConfigDir(false),
+		"CONFIG_FILE":     config.ConfigFile(false),
 		"DEFAULT_STORE":   DEFAULT_STORE,
-		"JSON_STORE_FILE": JSON_STORE_FILE,
+		"JSON_STORE_FILE": config.JsonStoreFile(false),
 		"VERSION":         Version,
 	}
 
@@ -245,7 +242,7 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 		vars,
 	)
 
-	p := predictor.NewPredictor(utils.GetHomePath(INSECURE_CACHE_FILE), utils.GetHomePath(CONFIG_FILE))
+	p := predictor.NewPredictor(config.InsecureCacheFile(true), config.ConfigFile(true))
 
 	kongplete.Complete(parser,
 		kongplete.WithPredictors(
