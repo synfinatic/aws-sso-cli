@@ -4,8 +4,8 @@
 
 ### New Features
 
- * Add support for HTTP Auth/`AWS_CONTAINER_AUTHORIZATION_TOKEN` env variable #516
- * Add support for HTTPS #518
+ * Add support for HTTP Auth/`$AWS_CONTAINER_AUTHORIZATION_TOKEN` env variable #516
+ * Add initial prototype support for HTTPS #518
  * Add Docker container support #569
  * Replace `--port` with `--server` flag for the `aws-sso ecs [list|load|unload|profile]` commands #937
  * Update cache during login when relevant settings in the config.yaml changes #555
@@ -15,6 +15,7 @@
 
  * Bump cache file version to 4.
  * `ConfigProfilesUrlAction` now defaults to value of `UrlAction` instead of `url` #946
+ * Rename/rework many of the `ecs` commands #938
 
 ## [v1.16.1] - 2024-06-13
 
@@ -32,7 +33,7 @@
 
 ### Changes
 
- * Use RFC3339 for AWS_SSO_SESSION_EXPIRATION #837
+ * Use RFC3339 for `$AWS_SSO_SESSION_EXPIRATION` #837
  * Update AWS SDK libraries and other dependencies
 
 ### Bugs
@@ -68,7 +69,7 @@
 
 ### Changes
 
- * Statically link Linux binaries (CGO\_ENABLED=0) #749
+ * Statically link Linux binaries (`$CGO\_ENABLED=0`) #749
  * Document support for Firefox Multi-Account Containers plugin #760
 
 ## [v1.14.2] - 2023-10-19
@@ -125,8 +126,8 @@
 ### Changes
 
  * ECS Server API is now more RESTful and fully document the API
- * Default profile `AWS_CONTAINER_CREDENTIALS_FULL_URI` is now `http://localhost:4144/`
- * Slotted profile `AWS_CONTAINER_CREDENTIALS_FULL_URI` is now `http://localhost:4144/slot/<profile>`
+ * Default profile `$AWS_CONTAINER_CREDENTIALS_FULL_URI` is now `http://localhost:4144/`
+ * Slotted profile `$AWS_CONTAINER_CREDENTIALS_FULL_URI` is now `http://localhost:4144/slot/<profile>`
  * `aws-sso ecs list` and `aws-sso ecs profile` now return the same output format
  * `make tags` now uses [gotags](https://github.com/jstemmer/gotags)
 

@@ -73,7 +73,11 @@ func NewEcsServer(ctx context.Context, authToken string, listen net.Listener, pr
 	router.Handle(ecs.DEFAULT_ROUTE, DefaultHandler{
 		ecs: e,
 	})
-	e.server.Handler = withLogging(WithAuthorizationCheck(e.authToken, router.ServeHTTP))
+	authTokenHeader := ""
+	if e.authToken != "" {
+		authTokenHeader = "Bearer " + e.authToken
+	}
+	e.server.Handler = withLogging(WithAuthorizationCheck(authTokenHeader, router.ServeHTTP))
 
 	return e, nil
 }
@@ -130,11 +134,6 @@ func (e *EcsServer) BaseURL() string {
 		proto = "https"
 	}
 	return fmt.Sprintf("%s://%s", proto, e.listener.Addr().String())
-}
-
-// AuthToken returns our authToken for authentication
-func (e *EcsServer) AuthToken() string {
-	return e.authToken
 }
 
 // Serve starts the sever and blocks

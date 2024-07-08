@@ -108,7 +108,7 @@ func (c *ECSClient) newRequest(method, url string, body io.Reader) (*http.Reques
 	}
 	req.Header.Set("Content-Type", ecs.CHARSET_JSON)
 	if c.authToken != "" {
-		req.Header.Set("Authorization", c.authToken)
+		req.Header.Set("Authorization", "Bearer "+c.authToken)
 	}
 	log.Debugf("http req: %s", req.URL.String())
 	return req, nil

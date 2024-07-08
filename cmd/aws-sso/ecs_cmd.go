@@ -55,8 +55,8 @@ func (cc *EcsAuthCmd) Run(ctx *RunContext) error {
 	if ctx.Cli.Ecs.Auth.BearerToken == "" {
 		return fmt.Errorf("no token provided")
 	}
-	if !strings.HasPrefix(ctx.Cli.Ecs.Auth.BearerToken, "Bearer ") {
-		return fmt.Errorf("token should start with 'Bearer '")
+	if strings.HasPrefix(ctx.Cli.Ecs.Auth.BearerToken, "Bearer ") {
+		return fmt.Errorf("token should not start with 'Bearer '")
 	}
 	return ctx.Store.SaveEcsBearerToken(ctx.Cli.Ecs.Auth.BearerToken)
 }

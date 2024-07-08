@@ -112,7 +112,7 @@ Once you have selected a sufficiently secure secret to use as the bearer token,
 you can load it into the Secure Store via:
 
 ```bash
-aws-sso ecs bearer-token --token 'Bearer <token>`
+aws-sso ecs bearer-token --token '<token>`
 ```
 
 **Important:** You must choose a strong secret value for your bearer token secret!  This is
@@ -138,7 +138,7 @@ compatible with `aws-sso`.
 ### AWS\_CONTAINER\_AUTHORIZATION\_TOKEN
 
 Specify the HTTP Authentication token used to authenticate communication between the
-ECS Server and clients (aws-sso and AWS SDK/CLI).  Typically the value should be specified
+ECS Server and clients (aws-sso and AWS SDK/CLI).  Should be specified
 in the format of `Bearer <auth token value>`.
 
 ## Selecting a role via ECS Server

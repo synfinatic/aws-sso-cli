@@ -41,9 +41,10 @@ type EcsDockerCmd struct {
 }
 
 type EcsDockerStartCmd struct {
-	BindIP  string `kong:"help='Host IP address to bind to the ECS Server',default='127.0.0.1'"`
-	Port    string `kong:"help='Host port to bind to the ECS Server',default='4144'"`
-	Version string `kong:"help='ECS Server docker image version',default='${VERSION}'"`
+	DisableSSL bool   `kong:"help='Disable SSL/TLS for the ECS Docker Server'"`
+	BindIP     string `kong:"help='Host IP address to bind to the ECS Server',default='127.0.0.1'"`
+	Port       string `kong:"help='Host port to bind to the ECS Server',default='4144'"`
+	Version    string `kong:"help='ECS Server docker image version',default='${VERSION}'"`
 }
 
 func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
@@ -53,14 +54,19 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 		return err
 	}
 
-	privateKey, err := ctx.Store.GetEcsSslKey()
-	if err != nil {
-		return err
+	var privateKey, certChain string
+
+	if !ctx.Cli.Ecs.Docker.Start.DisableSSL {
+		privateKey, err = ctx.Store.GetEcsSslKey()
+		if err != nil {
+			return err
+		}
+		certChain, err = ctx.Store.GetEcsSslCert()
+		if err != nil {
+			return err
+		}
 	}
-	certChain, err := ctx.Store.GetEcsSslCert()
-	if err != nil {
-		return err
-	}
+
 	if privateKey == "" || certChain == "" {
 		return fmt.Errorf("ECS Server SSL certificate not configured")
 	}
