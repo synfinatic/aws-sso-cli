@@ -29,8 +29,8 @@ import (
 )
 
 type EcsServerCmd struct {
-	BindIP string `kong:"help='Bind address for ECS Server',env='AWS_SSO_ECS_BIND',default='127.0.0.1'"`
-	Port   int    `kong:"help='TCP port to listen on',env='AWS_SSO_ECS_PORT',default=4144"`
+	BindIP string `kong:"help='Bind address for ECS Server',default='127.0.0.1'"`
+	Port   int    `kong:"help='TCP port to listen on',default=4144"`
 	// hidden flags are for internal use only when running in a docker container
 	Docker     bool `kong:"hidden"`
 	DisableSSL bool `kong:"help='Disable SSL/TLS for the ECS Server'"`

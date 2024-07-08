@@ -12,15 +12,30 @@ URL will utilize the same AWS IAM Role.  Note that this feature is also compatib
 with the [HTTP Client Provider](
 https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/credentials/endpointcreds).
 
+`aws-sso` can emulate this ECS service and allow any process to utilize one or more IAM
+roles backed by AWS Identity Center/SSO.
+
+One important distinction between `aws-sso` and this ECS Server, is that the ECS Server
+_does not have access to the SecureStore_.  The only SSO or IAM credentials it has
+available to it are those you manually load into it's memory.
+
+## Security Considerations
+
+The `aws-sso` ECS Server is intended to run on hosts where a single user has access.
+The security of your IAM credentials is dependent on nobody else being able to talk
+to the server. Due to a [limitation of the AWS SDK](https://github.com/boto/boto3/issues/4188),
+SSL/TLS is not well supported, which means that [enabling HTTP Authentication](
+#ecs-server-http-authentication) may not be enough to protect your credentials.
+
 ## Starting the ECS Server
 
 The server runs in the foreground to make it easy to start via systemd and Docker.
 
-`aws-sso ecs run`
+`aws-sso ecs server`
 
-Will start the service on `localhost:4144`.   For security purposes, the `aws-sso`
-ECS Server will _only_ run on localhost/127.0.0.1.  You may select an alternative
-port via the `--port` flag or setting the `AWS_SSO_ECS_PORT` environment variable.
+Will start the server on `localhost:4144`.   For security purposes, the `aws-sso`
+ECS Server will default listen on localhost (127.0.0.1) port 4144.  You may select
+an alternative IP/port via the `--bind-ip` and `--port` flags.
 
 ### Running the ECS Server in the background
 
@@ -30,7 +45,7 @@ Docker image and the `aws-sso ecs docker [start|stop]` commands as this will
 automatically configure your SSL key pair and bearer token from the secure store
 in the most secure means possible.
 
-**Note:** By default for security, the Docker container will only listen the
+**Note:** For security, by default the Docker container will default listen the
 host's loopback interface (`127.0.0.1`), but you can enable it listening on
 other interfaces using the `--bind-ip` flag.
 
@@ -77,7 +92,7 @@ Once you have your certificate and private key, you will need to save them into 
 `aws-sso` secure store:
 
 ```bash
-$ aws-sso ecs cert load --private-key localhost.key --cert-chain localhost.crt
+$ aws-sso ecs ssl save --private-key localhost.key --cert-chain localhost.crt
 ```
 
 **Important:** At this point, you should delete the private key file `localhost.key` for security.
@@ -89,7 +104,7 @@ credentials.
 If you lose your certificate, you can print it via:
 
 ```bash
-$ aws-sso ecs cert print
+$ aws-sso ecs ssl print
 ```
 
 **Note:** At this time, there is no way to extract the SSL Private Key from the Secure Store.
@@ -115,27 +130,30 @@ you can load it into the Secure Store via:
 aws-sso ecs bearer-token --token '<token>`
 ```
 
+**Note:** Unlike the `$AWS_CONTAINER_AUTHORIZATION_TOKEN` variable, do not include the
+prefix `Bearer ` in the token value.
+
 **Important:** You must choose a strong secret value for your bearer token secret!  This is
 what prevents anyone else from using your IAM credentials without your permission.  Your bearer
 token should be long and random enough to prevent bruteforce attacks.
 
 ## Environment variables
 
-### AWS\_CONTAINER\_CREDENTIALS\_FULL\_URI
+### $AWS\_CONTAINER\_CREDENTIALS\_FULL\_URI
 
 AWS clients and `aws-sso` should use:
 
-`AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:4144/`
+`export AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:4144/`
 
 **Note:** If you have configured an SSL certificate as described above, use `https://localhost:4144`.
 
-### AWS\_CONTAINER\_CREDENTIALS\_RELATIVE\_URI
+### $AWS\_CONTAINER\_CREDENTIALS\_RELATIVE\_URI
 
 It is important to _not_ set `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`
 as that takes precidence for `AWS_CONTAINER_CREDENTIALS_FULL_URI` and it is not
 compatible with `aws-sso`.
 
-### AWS\_CONTAINER\_AUTHORIZATION\_TOKEN
+### $AWS\_CONTAINER\_AUTHORIZATION\_TOKEN
 
 Specify the HTTP Authentication token used to authenticate communication between the
 ECS Server and clients (aws-sso and AWS SDK/CLI).  Should be specified
@@ -187,7 +205,7 @@ If you would like to remove the default IAM Role credentials:
 ## Storing multiple roles at a time
 
 There may be cases where you would like to make multiple roles available at the
-same time without running multiple copies of the ECS server via `aws-sso ecs run`.
+same time without running multiple copies of the ECS server via `aws-sso ecs server`.
 Each role is stored in a unique named slot based on the `ProfileName` which is
 either set via [Profile](config.md#Profile) or the [ProfileFormat](
 config.md#ProfileFormat) configuration options.
@@ -232,11 +250,13 @@ The ECS Server API endpoint generates errors with the following JSON format:
 
 ## Authentication
 
-Support for the [AWS\_CONTAINER\_AUTHORIZATION\_TOKEN](
+Support for the [$AWS\_CONTAINER\_AUTHORIZATION\_TOKEN](
 https://docs.aws.amazon.com/sdkref/latest/guide/feature-container-credentials.html) environment
 variable is supported.
 
 ## HTTPS Transport
 
-Support for using [HTTPS](https://github.com/synfinatic/aws-sso-cli/issues/518)
-is TBD.  Please vote for this feature if you want it!
+HTTPS support is a work in progress.  Right now, due to a [limitation with the AWS SDK](
+https://github.com/boto/boto3/issues/4188) only SSL certificates signed by CA that the
+AWS SDK trusts will work. If you think this feature would be useful to you, please leave
+a comment so AWS knows they should prioritize this work.
