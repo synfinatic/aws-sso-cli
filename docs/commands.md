@@ -1,4 +1,4 @@
-# aws-sso commands
+# aws-sso Commands
 
 ## Common Flags
 
@@ -37,7 +37,7 @@ for every role accessible via AWS SSO CLI.
 Flags:
 
  * `--diff` -- Print a diff of changes to the config file instead of modifying it
- * `--open` -- Specify how to open URls: [clip|exec|open]
+ * `--open` -- Specify how to open URls: [clip|exec|open|granted-containers|open-url-in-container]
  * `--print` -- Print profile entries instead of modifying config file
  * `--force` -- Write a new config file without prompting
  * `--aws-config` -- Override path to `~/.aws/config` file
@@ -142,7 +142,7 @@ _strongly_ discouraged that users set this to `~/.aws/credentials`, but use a te
 
 ### ecs
 
-For information about the ECS Server functionality, see the [ecs-server](ecs-server.md) page.
+[ecs commands](ecs-commands.md)
 
 ---
 

@@ -5,7 +5,7 @@
     * At the bottom is the list of changes, add the new version
 1. Update `Makefile`
     * Update the `PROJECT_VERSION`
-1.  Commit `CHANGELOG.md` and `Makefile` & merge to `main`
+1. Commit `CHANGELOG.md` and `Makefile` & merge to `main`
 1. Run `make release-tag` to create an annotated/signed tag
 1. Visit [github.com](https://github.com/synfinatic/aws-sso-cli) and create the release.
 1. Wait for the github actions to create the binaries and attach them to the release

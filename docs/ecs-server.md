@@ -112,7 +112,7 @@ Once you have selected a sufficiently secure secret to use as the bearer token,
 you can load it into the Secure Store via:
 
 ```bash
-aws-sso ecs bearer-token --token 'Bearer <token>`
+aws-sso ecs bearer-token --token '<token>`
 ```
 
 **Important:** You must choose a strong secret value for your bearer token secret!  This is
@@ -138,7 +138,7 @@ compatible with `aws-sso`.
 ### AWS\_CONTAINER\_AUTHORIZATION\_TOKEN
 
 Specify the HTTP Authentication token used to authenticate communication between the
-ECS Server and clients (aws-sso and AWS SDK/CLI).  Typically the value should be specified
+ECS Server and clients (aws-sso and AWS SDK/CLI).  Should be specified
 in the format of `Bearer <auth token value>`.
 
 ## Selecting a role via ECS Server
@@ -240,123 +240,3 @@ variable is supported.
 
 Support for using [HTTPS](https://github.com/synfinatic/aws-sso-cli/issues/518)
 is TBD.  Please vote for this feature if you want it!
-
-## REST API
-
-### Default credentials
-
-#### GET /
-
-Fetch default credentials.
-
-```json
-{
-    "AccessKeyId": "ASI....",
-    "SecretAccessKeyId": "<Secret Access Key ID>",
-    "Token": "<Temprorary security token>",
-    "Expiration": "<Date in RFC3339 / ISO8601 format>",
-    "RoleArn": "<ARN of the role>",
-}
-```
-
-#### GET /profile
-
-Fetch profile name of the default credentials.
-
-```json
-{
-    "ProfileName": "<aws-sso profile name>",
-    "AccountId": "<AWS Account ID>",
-    "RoleName": "<IAM Role name>",
-    "Expiration": <Unix epoch seconds>,
-    "Expires": "<how long until expires string>"
-}
-```
-
-#### PUT /
-
-Upload default credentials.
-
-```json
-{
-    "code": "<HTTP error code>",
-    "message": "<message>"
-}
-```
-
-#### DELETE /
-
-Delete default credentials.
-
-```json
-{
-    "code": "<HTTP error code>",
-    "message": "<message>"
-}
-```
-
-### Slotted credentials
-
-#### GET /slot
-
-Fetch list of default credentials.
-
-```json
-[
-    {
-        "ProfileName": "<profile name>",
-        "AccountId": "<AWS Account ID>",
-        "RoleName": "<IAM Role Name>",
-        "Expiration": <Unix Epoch Seconds>,
-        "Expires": "<how long until expires string>"
-    },
-    <more entries...>
-]
-```
-
-#### GET /slot/&lt;profile&gt;
-
-Fetch credentials of the named profile.
-
-```json
-{
-    "AccessKeyId": "ASI....",
-    "SecretAccessKeyId": "<secret access key id value>",
-    "Token": "<temprorary security token>",
-    "Expiration": "<date in RFC3339 / ISO8601 format>",
-    "RoleArn": "<ARN of the role>",
-}
-```
-
-#### PUT /slot/&lt;profile&gt;
-
-Upload credentials of the named profile.
-
-```json
-{
-    "code": "<HTTP error code>",
-    "message": "<message>"
-}
-```
-
-#### DELETE /slot/&lt;profile&gt;
-
-Delete credentials of the named profile.
-
-```json
-{
-    "code": "<HTTP error code>",
-    "message": "<message>"
-}
-```
-
-#### DELETE /slot
-
-Delete all named credentials.
-
-```json
-{
-    "code": "<HTTP error code>",
-    "message": "<message>"
-}
-```

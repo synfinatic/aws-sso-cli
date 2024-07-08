@@ -109,7 +109,7 @@ func TestECSClientListUrl(t *testing.T) {
 func TestECSClientNewRequest(t *testing.T) {
 	t.Parallel()
 
-	c := NewECSClient("localhost:4144", "Bearer token", "")
+	c := NewECSClient("localhost:4144", "token", "")
 	assert.NotNil(t, c)
 
 	req, err := c.newRequest(http.MethodGet, "http://localhost:4144", nil)

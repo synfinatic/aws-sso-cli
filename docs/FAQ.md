@@ -145,6 +145,21 @@ config.md#SSOCOnfig) blocks) then a few comments:
     https://github.com/synfinatic/aws-sso-cli/issues/382).  Instead you must
     first `export AWS_SSO=<name>` and then run the command.
 
+### Using aws-sso on remote hosts
+
+There are two primary ways of using `aws-sso` on a remote host:
+
+The first is by installing `aws-sso` and copying over your `~/.aws-sso/config.yaml`.
+You will also most likely need to set `UrlAction: print` since you will find it
+difficult to automatically open the browser.  This has the additional downside that
+you will have an independant SecureStore storing all the credentials which can be
+annoying if you're dealing with many remote hosts.
+
+The alternative is to run the [ECS Server](ecs-server.md) locally and then
+use [ssh port forwarding](remote-ssh.md) to make all the IAM credentials stored
+in the ECS Server which can then be available to any remote host you login to.
+
+
 ## Security
 
 ### How do I delete all secrets from the macOS keychain?
@@ -397,6 +412,12 @@ this warning.  If this happens more often than is acceptable, you can
 set [CacheRefresh](config.md#CacheRefresh) to a higher value
 (cache roles for longer) or you can completely disable the auto-refresh of
 the cache by setting `CacheRefresh` to `0`.
+
+### Error response from daemon: client version 1.46 is too new. Maximum supported API version is 1.45
+
+The version of the Docker Go SDK used by `aws-sso` is higher than the version supported
+by your Docker daemon.  Run `export DOCKER_API_VERSION=1.45` (set the version
+appropriate based on the error message) to fix.
 
 ## Misc
 

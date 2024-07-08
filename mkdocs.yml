@@ -26,8 +26,11 @@ nav:
     - 'Configuration': config.md
     - 'Commands & Usage': commands.md 
     - 'Frequently Asked Questions': FAQ.md
+  - 'ECS Server/Remote Access':
     - 'ECS Server Mode': ecs-server.md
-    - 'Running On Remote Hosts': remote-ssh.md
+    - 'ECS Server Commands': ecs-commands.md 
+    - 'Remote Access to IAM Roles': remote-ssh.md
+    - 'ECS Server API': ecs-api.md
   - 'About':
     - 'License': license.md
     - 'Compared to aws-vault': aws-vault.md

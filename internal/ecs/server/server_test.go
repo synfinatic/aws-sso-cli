@@ -124,14 +124,6 @@ func TestBaseURL(t *testing.T) {
 	assert.Regexp(t, regexp.MustCompile(`^https://`), str)
 }
 
-func TestAuthToken(t *testing.T) {
-	es := &EcsServer{
-		authToken: "token",
-	}
-
-	assert.Equal(t, "token", es.AuthToken())
-}
-
 func TestExpiredCredentials(t *testing.T) {
 	e := ExpiredCredentials{}
 	assert.Equal(t, "Expired Credentials", e.Error())
