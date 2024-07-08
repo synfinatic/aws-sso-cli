@@ -1,8 +1,17 @@
 # Configuration
 
-By default, `aws-sso` stores it's configuration file in `~/.aws-sso/config.yaml`,
-but this can be overridden by setting `$AWS_SSO_CONFIG` in your shell or via the
-`--config` flag.
+By default, `aws-sso` will by default store all it's configuration and state files in
+`~/.config/aws-sso` for versions `>= 1.17.0` per the [XDG spec](
+https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html).  
+Previous versions of `aws-sso` used `~/.aws-sso`.  Users at their own descresion may move the
+files to the new location.  To keep files co-located in the same place, if the directory
+`~/.aws-sso` exists, then it will be used.
+
+**Note:** The `aws-sso` documentation will generally use the older file path (`~/.aws-sso/...`)
+when describing file locations.
+
+The main configuration file is named `~/.aws-sso/config.yaml`, but this can be overridden by
+setting `$AWS_SSO_CONFIG` in your shell or via the `--config` flag.
 
 The first time you run `aws-sso` and it detects there is no configuration file,
 it will prompt you for a number of questions to give you a basic configuration.

@@ -10,12 +10,14 @@
  * Replace `--port` with `--server` flag for the `aws-sso ecs [list|load|unload|profile]` commands #937
  * Update cache during login when relevant settings in the config.yaml changes #555
  * Add support for `$AWS_SHARED_CREDENTIALS_FILE` #914
+ * Add support for `~/.config/aws-sso` #330
 
 ### Changes
 
  * Bump cache file version to 4.
  * `ConfigProfilesUrlAction` now defaults to value of `UrlAction` instead of `url` #946
  * Rename/rework many of the `ecs` commands #938
+ * New installs of `aws-sso` will default to `~/.config/aws-sso` instead of `~/.aws-sso` for configuration
 
 ## [v1.16.1] - 2024-06-13
 
