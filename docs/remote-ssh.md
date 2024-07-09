@@ -29,7 +29,7 @@ and/or any IAM Credentials stored in the ECS Server if you have not [enabled SSL
 or [tmux](https://hamvocke.com/blog/a-quick-and-easy-guide-to-tmux/) session:
 `aws-sso ecs run`
 1. Load your selected IAM credentials into the ECS Server:<br>
-`aws-sso ecs load --profile=<aws profile name>`
+`aws-sso ecs load --profile=<profile name>`
 1. SSH to the remote system using the [-R flag to forward tcp/4144](https://man.openbsd.org/ssh#R):<br>
 `ssh -R 4144:localhost:4144 <remotehost>`
 
@@ -38,11 +38,22 @@ or [tmux](https://hamvocke.com/blog/a-quick-and-easy-guide-to-tmux/) session:
 **Note:** The following commands assume you are using `bash`.  You may have to tweak for other shells.
 
 1. Tell the AWS SDK how to talk to the ECS Server over SSH:<br>
-`export AWS_CONTAINER_CREDENTIALS_FULL_URI=https://localhost:4144/` (or `http` if you did not enable SSL)
+    `export AWS_CONTAINER_CREDENTIALS_FULL_URI=https://localhost:4144/` (or `http` if you did not enable SSL)
 1. Tell the AWS SDK the bearer token secret from the first step on your local system:<br>
-`export AWS_CONTAINER_AUTHORIZATION_TOKEN='Bearer <secret>'`
-1. Verify everything works:
-`aws sts get-caller-identity`
+    `export AWS_CONTAINER_AUTHORIZATION_TOKEN='Bearer <secret>'`
+1. Verify everything works: `aws sts get-caller-identity`
 
 See the [ECS Server documentation](ecs-server.md) for more information about the ECS server and
 how to use multiple IAM role credentials simultaneously.
+
+## Advanced Usage
+
+The above instructions grant any host you ssh to, access to the same AWS IAM Role.  But what if
+you want to access multiple roles?
+
+For each role you'd like to access you will need to do two things:
+
+ 1. On your local host, load that role into an individual slot in the ECS Server:<br>
+    `aws-sso ecs load --slotted --profile <profile name>`
+ 2. On the remote host, specify the correct URL:<br>
+    `export AWS_CONTAINER_CREDENTIALS_FULL=https://localhost:4144/slot/<profile name>`

@@ -40,7 +40,7 @@ an alternative IP/port via the `--bind-ip` and `--port` flags.
 ### Running the ECS Server in the background
 
 The recommended way to run the ECS server in the background is via the
-[aws-sso-cli-ecs-server](https://hub.docker.com/repository/docker/synfinatic/xb8-docsis-stats/general)
+[aws-sso-cli-ecs-server](https://hub.docker.com/repository/docker/synfinatic/aws-sso-cli-ecs-server/general)
 Docker image and the `aws-sso ecs docker [start|stop]` commands as this will
 automatically configure your SSL key pair and bearer token from the secure store
 in the most secure means possible.
@@ -61,12 +61,16 @@ AWS IAM authentication tokens.
 
 #### ECS Server SSL Certificate
 
-**Important:** Due to a [bug in the AWS Boto3 SDK](https://github.com/synfinatic/aws-sso-cli/issues/936)
-you can not enable SSL at this time.  I'm currently unsure if other AWS SDKs
-(like the Go SDK used by Terraform) also experience this issue.  __I'd greatly
+**Important:** Due to a [bug in the AWS SDK](https://github.com/aws/aws-sdk/issues/774)
+you can not easily enable SSL at this time.  __I'd greatly
 appreciate people to upvote my ticket with AWS and help get it greater
 visibility at AWS and hopefully addressed sooner rather than later.__
 
+You will need to create an SSL certificate which is _signed by a well trusted CA_
+such as DigiCert, Let's Encrypt, Thwate, etc.  Currently, the AWS SDK does __NOT__
+support self-signed certificates or private CA's for this endpoint.
+
+<!--
 You will need to create an SSL certificate/key pair in PKCS#8/PEM format. Typically,
 this will be a self-signed certificate which can be generated thusly:
 
@@ -87,6 +91,8 @@ $ openssl req -x509 -out localhost.crt -keyout localhost.key \
 
 $ rm config.ssl
 ```
+
+-->
 
 Once you have your certificate and private key, you will need to save them into the
 `aws-sso` secure store:
@@ -109,6 +115,7 @@ $ aws-sso ecs ssl print
 
 **Note:** At this time, there is no way to extract the SSL Private Key from the Secure Store.
 
+<!--
 #### AWS SDK SSL Limitations
 
 If you create a self-signed certificate as described above, you will not be able to use the
@@ -116,6 +123,15 @@ AWS CLI tooling or other AWS SDK's without additional work.  This is because the
 not trust self-signed certificates.  Right now, it is best to get a signed cert by a trusted CA
 like Let's Encrypt.  Due to the complexity of this at this time, getting this to work is left
 as an exercise to the reader.
+
+-->
+
+##### Using self-signed certificates
+
+In theory, you can add your self-signed certificate or custom CA into the AWS SDK certificate bundle.
+However, this file is SDK specific (the Boto3 SDK ships with it's own `cacert.pem` while the Go v2 SDK uses
+the system default bundle).  Managing this is not just language specific, but likely to be site-specific
+so getting this to work is left as an exercise to the reader.
 
 #### ECS Server HTTP Authentication
 
@@ -176,9 +192,9 @@ for all AWS Client SDKs using it.
 
 Ensure you have exported the following shell ENV variable:
 
-`export AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:4144/creds`
+`export AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:4144/`
 
-**Note:** If you have configured an SSL certificate as described above, use `https://localhost:4144/creds`.
+**Note:** If you have configured an SSL certificate as described above, use `https://localhost:4144/`.
 
 Then just:
 
@@ -257,6 +273,6 @@ variable is supported.
 ## HTTPS Transport
 
 HTTPS support is a work in progress.  Right now, due to a [limitation with the AWS SDK](
-https://github.com/boto/boto3/issues/4188) only SSL certificates signed by CA that the
+https://github.com/aws/aws-sdk/issues/774) only SSL certificates signed by CA that the
 AWS SDK trusts will work. If you think this feature would be useful to you, please leave
 a comment so AWS knows they should prioritize this work.
