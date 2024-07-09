@@ -32,8 +32,9 @@ type EcsServerCmd struct {
 	BindIP string `kong:"help='Bind address for ECS Server',default='127.0.0.1'"`
 	Port   int    `kong:"help='TCP port to listen on',default=4144"`
 	// hidden flags are for internal use only when running in a docker container
-	Docker     bool `kong:"hidden"`
-	DisableSSL bool `kong:"help='Disable SSL/TLS for the ECS Server'"`
+	Docker      bool `kong:"hidden"`
+	DisableAuth bool `kong:"help='Disable HTTP Auth for the ECS Server'"`
+	DisableSSL  bool `kong:"help='Disable SSL/TLS for the ECS Server'"`
 }
 
 func (cc *EcsServerCmd) Run(ctx *RunContext) error {
@@ -86,6 +87,10 @@ func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 	if ctx.Cli.Ecs.Server.DisableSSL {
 		privateKey = ""
 		certChain = ""
+	}
+
+	if ctx.Cli.Ecs.Server.DisableAuth {
+		bearerToken = ""
 	}
 
 	if bearerToken == "" {

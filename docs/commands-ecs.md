@@ -44,7 +44,7 @@ SSL/TLS for the ECS Server.
 
 ### ecs ssl print
 
-Prints the SSL certificate stored in the SecureStore.
+Prints the SSL public certificate stored in the SecureStore.
 
 ---
 
@@ -54,7 +54,8 @@ Starts the ECS Server in the foreground.
 
 Flags:
 
- * `--disable-ssl` -- Disables SSL/TLS, even if a certificate and private key are available.
+ * `--disable-auth` -- Disables HTTP Authentication, even if a Bearer Token is available
+ * `--disable-ssl` -- Disables SSL/TLS, even if a certificate and private key are available
 
 ---
 
@@ -97,9 +98,13 @@ Flags:
  * `--account <account>`, `-A` -- AWS AccountID of role to assume (`$AWS_SSO_ACCOUNT_ID`)
  * `--role <role>`, `-R` -- Name of AWS Role to assume (requires `--account`) (`$AWS_SSO_ROLE_NAME`)
  * `--profile <profile>`, `-p` -- Name of AWS Profile to assume
- * `--account` -- AWS AccountID of the IAM Role to load.
  * `--server` -- host:port of the ECS Server (default `localhost:4144`)
  * `--slotted` -- Load the IAM credentials into a unique slot using the ProfileName as the key
+
+You can provide `--profile` or `--arn` or (`--account` and `--role`) to specify the IAM role to load.
+
+If you do not specify `--slotted`, the role will be loaded into the default URL path at `/`.  If you
+would like to load multiple roles, specify `--slotted` and the role will be loaded into `/slot/<profile name>`
 
 ---
 
@@ -109,13 +114,11 @@ Removes the AWS IAM Role credentials from the ECS Server and makes them unavaila
 
 Flags:
 
- * `--arn <arn>`, `-a` -- ARN of role to assume (`$AWS_SSO_ROLE_ARN`)
- * `--account <account>`, `-A` -- AWS AccountID of role to assume (`$AWS_SSO_ACCOUNT_ID`)
- * `--role <role>`, `-R` -- Name of AWS Role to assume (requires `--account`) (`$AWS_SSO_ROLE_NAME`)
- * `--profile <profile>`, `-p` -- Name of AWS Profile to assume
- * `--account` -- AWS AccountID of the IAM Role to load.
+ * `--profile <profile>`, `-p` -- Slot of AWS Profile to unload
  * `--server` -- host:port of the ECS Server (default `localhost:4144`)
- * `--slotted` -- Load the IAM credentials into a unique slot using the ProfileName as the key
+
+By default, this will unload the IAM credentials for the default role.  Passing in
+`--profile <profile name>` will unload the credentials in the named slot.
 
 ---
 

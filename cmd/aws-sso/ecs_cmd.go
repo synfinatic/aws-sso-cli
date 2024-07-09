@@ -62,9 +62,9 @@ func (cc *EcsAuthCmd) Run(ctx *RunContext) error {
 }
 
 type EcsSSLCmd struct {
-	Save   EcsSSLSaveCmd   `kong:"cmd,help='Save a new SSL certificate/private key'"`
 	Delete EcsSSLDeleteCmd `kong:"cmd,help='Delete the current SSL certificate/private key'"`
 	Print  EcsSSLPrintCmd  `kong:"cmd,help='Print the current SSL certificate'"`
+	Save   EcsSSLSaveCmd   `kong:"cmd,help='Save a new SSL certificate/private key'"`
 }
 
 type EcsSSLSaveCmd struct {

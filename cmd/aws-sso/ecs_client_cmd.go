@@ -32,29 +32,16 @@ import (
 	"github.com/synfinatic/gotable"
 )
 
-type EcsListCmd struct {
-	Server string `kong:"help='Endpoint of aws-sso ECS Server',env='AWS_SSO_ECS_SERVER',default='localhost:4144'"`
-}
-
 type EcsLoadCmd struct {
 	// AWS Params
-	Arn       string `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
-	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNT_ID',predictor='accountId',xor='account'"`
-	Role      string `kong:"short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE_NAME',predictor='role',xor='role'"`
-	Profile   string `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile',xor='account,role'"`
+	Arn       string `kong:"short='a',help='ARN of role to load',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
+	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to load',env='AWS_SSO_ACCOUNT_ID',predictor='accountId',xor='account'"`
+	Role      string `kong:"short='R',help='Name of AWS Role to load',env='AWS_SSO_ROLE_NAME',predictor='role',xor='role'"`
+	Profile   string `kong:"short='p',help='Name of AWS Profile to load',predictor='profile',xor='account,role'"`
 
 	// Other params
 	Server  string `kong:"help='Endpoint of aws-sso ECS Server',env='AWS_SSO_ECS_SERVER',default='localhost:4144'"`
 	Slotted bool   `kong:"short='s',help='Load credentials in a unique slot using the ProfileName as the key'"`
-}
-
-type EcsProfileCmd struct {
-	Server string `kong:"help='URL endpoint of aws-sso ECS Server',env='AWS_SSO_ECS_SERVER',default='localhost:4144'"`
-}
-
-type EcsUnloadCmd struct {
-	Profile string `kong:"short='p',help='Name of AWS Profile to unload',predictor='profile'"`
-	Server  string `kong:"help='Endpoint of aws-sso ECS Server',env='AWS_SSO_ECS_SERVER',default='localhost:4144'"`
 }
 
 func (cc *EcsLoadCmd) Run(ctx *RunContext) error {
@@ -68,6 +55,10 @@ func (cc *EcsLoadCmd) Run(ctx *RunContext) error {
 	}
 
 	return ctx.PromptExec(ecsLoadCmd)
+}
+
+type EcsProfileCmd struct {
+	Server string `kong:"help='URL endpoint of aws-sso ECS Server',env='AWS_SSO_ECS_SERVER',default='localhost:4144'"`
 }
 
 func (cc *EcsProfileCmd) Run(ctx *RunContext) error {
@@ -86,12 +77,6 @@ func (cc *EcsProfileCmd) Run(ctx *RunContext) error {
 		profile,
 	}
 	return listProfiles(profiles)
-}
-
-func (cc *EcsUnloadCmd) Run(ctx *RunContext) error {
-	c := newClient(ctx.Cli.Ecs.Unload.Server, ctx)
-
-	return c.Delete(ctx.Cli.Ecs.Unload.Profile)
 }
 
 // Loads our AWS API creds into the ECS Server
@@ -122,6 +107,10 @@ func ecsLoadCmd(ctx *RunContext, awssso *sso.AWSSSO, accountId int64, role strin
 	return c.SubmitCreds(creds, rFlat.Profile, ctx.Cli.Ecs.Load.Slotted)
 }
 
+type EcsListCmd struct {
+	Server string `kong:"help='Endpoint of aws-sso ECS Server',env='AWS_SSO_ECS_SERVER',default='localhost:4144'"`
+}
+
 func (cc *EcsListCmd) Run(ctx *RunContext) error {
 	c := newClient(ctx.Cli.Ecs.Profile.Server, ctx)
 
@@ -135,6 +124,17 @@ func (cc *EcsListCmd) Run(ctx *RunContext) error {
 	}
 
 	return listProfiles(profiles)
+}
+
+type EcsUnloadCmd struct {
+	Profile string `kong:"short='p',help='Slot of AWS Profile to unload',predictor='profile'"`
+	Server  string `kong:"help='Endpoint of aws-sso ECS Server',env='AWS_SSO_ECS_SERVER',default='localhost:4144'"`
+}
+
+func (cc *EcsUnloadCmd) Run(ctx *RunContext) error {
+	c := newClient(ctx.Cli.Ecs.Unload.Server, ctx)
+
+	return c.Delete(ctx.Cli.Ecs.Unload.Profile)
 }
 
 func listProfiles(profiles []ecs.ListProfilesResponse) error {
