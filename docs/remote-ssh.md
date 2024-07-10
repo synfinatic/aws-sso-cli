@@ -27,7 +27,7 @@ and/or any IAM Credentials stored in the ECS Server if you have not [enabled SSL
     1. In a Docker container: `aws-sso ecs docker start`
     1. Or you can use a [screen](https://www.hostinger.com/tutorials/how-to-install-and-use-linux-screen)
 or [tmux](https://hamvocke.com/blog/a-quick-and-easy-guide-to-tmux/) session:
-`aws-sso server`
+`aws-sso ecs server`
 1. Load your selected IAM credentials into the ECS Server:<br>
 `aws-sso ecs load --profile=<profile name>`
 1. SSH to the remote system using the [-R flag to forward tcp/4144](https://man.openbsd.org/ssh#R):<br>
