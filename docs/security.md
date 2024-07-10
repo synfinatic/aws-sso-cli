@@ -30,14 +30,14 @@ security threat model.
 
 ### ECS Server Mode Concerns
 
-By default, running in ECS Server Mode (`aws-sso ecs run`) an HTTP API will be
+By default, running in ECS Server Mode (`aws-sso ecs server`) an HTTP API will be
 started on a TCP port bound to localhost.  By default, loading and retrieving
 IAM Role credentials from this server will happen in the clear without
 any encryption or authentication  For this reason, it is not recommended
 to be used in this way on multi-tenant user systems or other untrusted environments.
 
 Running the [ECS Server in docker](ecs-server.md#running-the-ecs-server-in-the-background)
-will briefly expose your HTTP Authentication bearer token and SSL private key
-in clear text in `~/.aws-sso/mnt/`.  If you are running it on a system where the
-`root` user is not trusted, this may not be acceptable.  In such cases, it
-is recommended to run `aws-sso ecs run` in a screen or tmux session.
+(`aws-sso ecs docker start`) will briefly expose your HTTP Authentication bearer token and
+SSL private key in clear text in `~/.aws-sso/mnt/`.  If you are running it on a system
+where the `root` user is not trusted, this may not be acceptable.  In such cases, it
+is recommended to run `aws-sso ecs server` in a screen or tmux session.
