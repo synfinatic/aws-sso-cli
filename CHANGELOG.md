@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v1.17.0] -- 2024-07-10
+
 ### Bugs
 
  * No longer ignore the `--threads` CLI option
@@ -12,10 +14,11 @@
  * Add support for HTTP Auth/`$AWS_CONTAINER_AUTHORIZATION_TOKEN` env variable #516
  * Add initial prototype support for HTTPS #518
  * Add Docker container support #569
+ * Add support for ECS Server to listen on other interfaces other than loopback via `--bind-ip`
  * Replace `--port` with `--server` flag for the `aws-sso ecs [list|load|unload|profile]` commands #937
  * Update cache during login when relevant settings in the config.yaml changes #555
  * Add support for `$AWS_SHARED_CREDENTIALS_FILE` #914
- * Add support for `~/.config/aws-sso` #330
+ * Add support for XDG Config path standard: `~/.config/aws-sso` #330
  * Detect running the config wizard on remote hosts and limit UrlAction #757
 
 ### Changes
@@ -709,7 +712,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.16.1...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.17.0...main
+[v1.17.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.17.0
 [v1.16.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.16.1
 [v1.16.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.16.0
 [v1.15.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.15.1
