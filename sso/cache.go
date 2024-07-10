@@ -105,7 +105,7 @@ func (c *Cache) GetSSO() *SSOCache {
 // vs. the ConfigCreatedAt to determine if the cache needs to be updated
 func (c *Cache) Expired(s *SSOConfig) error {
 	if c.Version < CACHE_VERSION {
-		return fmt.Errorf("Local cache is out of date; current cache version %d is less than %d", c.Version, CACHE_VERSION)
+		return fmt.Errorf("local cache is out of date; current cache version %d is less than %d", c.Version, CACHE_VERSION)
 	}
 
 	// negative values disable refresh
@@ -116,11 +116,11 @@ func (c *Cache) Expired(s *SSOConfig) error {
 	ttl := s.settings.CacheRefresh * 60 * 60 // convert hours to seconds
 	cache := c.GetSSO()
 	if cache.LastUpdate+ttl < time.Now().Unix() {
-		return fmt.Errorf("Local cache is out of date; TTL has been exceeded.")
+		return fmt.Errorf("local cache is out of date; TTL has been exceeded.")
 	}
 
 	if s.CreatedAt() > c.ConfigCreatedAt {
-		return fmt.Errorf("Local cache is out of date; config.yaml modified.")
+		return fmt.Errorf("local cache is out of date; config.yaml modified.")
 	}
 	return nil
 }
@@ -138,15 +138,15 @@ func (c *Cache) Save(updateTime bool) error {
 	}
 	jbytes, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
-		return fmt.Errorf("Unable to marshal json: %s", err.Error())
+		return fmt.Errorf("unable to marshal json: %s", err.Error())
 	}
 	err = utils.EnsureDirExists(c.CacheFile())
 	if err != nil {
-		return fmt.Errorf("Unable to create directory for %s: %s", c.CacheFile(), err.Error())
+		return fmt.Errorf("unable to create directory for %s: %s", c.CacheFile(), err.Error())
 	}
 	err = os.WriteFile(c.CacheFile(), jbytes, 0600)
 	if err != nil {
-		return fmt.Errorf("Unable to write %s: %s", c.CacheFile(), err.Error())
+		return fmt.Errorf("unable to write %s: %s", c.CacheFile(), err.Error())
 	}
 	return nil
 }
@@ -289,9 +289,10 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads 
 	// save role creds expires time
 	expires := map[string]int64{}
 	cache := c.GetSSO()
+	now := time.Now().Unix()
 	for _, account := range cache.Roles.Accounts {
 		for _, role := range account.Roles {
-			if role.Expires > 0 {
+			if role.Expires > now {
 				expires[role.Arn] = role.Expires
 			}
 		}
@@ -512,11 +513,11 @@ func (c *Cache) addSSORoles(r *Roles, as *AWSSSO, threads int) error {
 
 	accounts, err := as.GetAccounts()
 	if err != nil {
-		return fmt.Errorf("Unable to get list of AWS accounts via AWS SSO: %s", err.Error())
+		return fmt.Errorf("unable to get list of AWS accounts via AWS SSO: %s", err.Error())
 	}
 
 	if len(accounts) == 0 {
-		return fmt.Errorf("No AWS accounts found in AWS SSO")
+		return fmt.Errorf("no AWS accounts found in AWS SSO")
 	}
 
 	// Our first query must NOT be part of the worker pool so our AccessToken
@@ -563,7 +564,7 @@ func (c *Cache) addSSORoles(r *Roles, as *AWSSSO, threads int) error {
 				count++ // increment count only when processing results
 				log.Debugf("proccessed %d accounts, added %d roles, total %d", count, len(roles), len(r.GetAllRoles()))
 			case <-ticker.C:
-				log.Warnf("Fetching roles for %d accounts, this might take a while...\n", len(accounts)+1)
+				log.Warnf("fetching roles for %d accounts, this might take a while...\n", len(accounts)+1)
 				ticker.Stop()
 			}
 		}
@@ -582,10 +583,8 @@ func (c *Cache) addConfigRoles(r *Roles, config *SSOConfig) error {
 			return err
 		}
 		if _, ok := r.Accounts[id]; !ok {
-			r.Accounts[id] = &AWSAccount{
-				Tags:  map[string]string{},
-				Roles: map[string]*AWSRole{},
-			}
+			log.Warnf("config.yaml defines AWS AccountID %d, but you don't have access.", id)
+			continue
 		}
 		r.Accounts[id].DefaultRegion = account.DefaultRegion
 		r.Accounts[id].Name = account.Name
@@ -613,9 +612,8 @@ func (c *Cache) addConfigRoles(r *Roles, config *SSOConfig) error {
 		// set the tags from the config file
 		for roleName, role := range config.Accounts[accountId].Roles {
 			if _, ok := r.Accounts[id].Roles[roleName]; !ok {
-				r.Accounts[id].Roles[roleName] = &AWSRole{
-					Tags: map[string]string{},
-				}
+				log.Warnf("config.yaml has %s but you don't have access", utils.MakeRoleARN(id, roleName))
+				continue
 			}
 			r.Accounts[id].Roles[roleName].Arn = utils.MakeRoleARN(id, roleName)
 			r.Accounts[id].Roles[roleName].Profile = role.Profile

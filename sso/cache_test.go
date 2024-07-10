@@ -580,6 +580,28 @@ func (suite *CacheTestSuite) TestPruneSSO() {
 	assert.NotContains(t, c.SSO, "Invalid")
 }
 
+func (suite *CacheTestSuite) TestAddConfigRoles() {
+	t := suite.T()
+
+	config := &SSOConfig{
+		Accounts: map[string]*SSOAccount{
+			"123456789012": {
+				Roles: map[string]*SSORole{
+					"Foo": {},
+					"Bar": {},
+				},
+			},
+		},
+	}
+
+	roles := &Roles{
+		Accounts: map[int64]*AWSAccount{},
+	}
+
+	err := suite.cache.addConfigRoles(roles, config)
+	assert.NoError(t, err)
+}
+
 func TestOpenCacheFailure(t *testing.T) {
 	s := &Settings{}
 	c, err := OpenCache("/dev/null", s)

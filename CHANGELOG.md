@@ -5,6 +5,7 @@
 ### Bugs
 
  * No longer ignore the `--threads` CLI option
+ * Warn users of invalid AWS Accounts/Roles defined in the config.yaml #962
 
 ### New Features
 

@@ -51,7 +51,6 @@ func ConfigDir(expand bool) string {
 func ConfigFile(expand bool) string {
 	var path string
 	fi, err := os.Stat(utils.GetHomePath(OLD_CONFIG_DIR))
-	fmt.Printf("fi: %v, err: %v\n", fi, err)
 	if err == nil && fi.IsDir() {
 		path = fmt.Sprintf(CONFIG_FILE, OLD_CONFIG_DIR)
 	} else {
