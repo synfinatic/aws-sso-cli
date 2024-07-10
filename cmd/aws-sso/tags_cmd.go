@@ -47,7 +47,7 @@ func (cc *TagsCmd) Run(ctx *RunContext) error {
 			log.Fatalf(err.Error())
 		}
 
-		err = set.Cache.Refresh(awssso, s, ssoName)
+		err = set.Cache.Refresh(awssso, s, ssoName, ctx.Cli.Threads)
 		if err != nil {
 			log.WithError(err).Fatalf("Unable to refresh role cache")
 		}
