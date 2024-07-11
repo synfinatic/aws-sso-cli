@@ -139,12 +139,6 @@ selected (most specific to most generic):
  1. At the AWS SSO Instance level: `SSOConfig -> <AWS SSO Instance>`
  1. At the config file level (default is `us-east-1`)
 
-### AuthUrlAction
-
-Override the global [UrlAction](#urlaction) when authenticating with your SSO provider
-to retrieve an AWS SSO token.  Generally only useful when you wish to use your default
-browser with one `SSOConfig` block to re-use your existing SSO browser authentication cookie.
-
 ### Accounts
 
 The `Accounts` block is completely optional!  The only purpose of this block
@@ -164,28 +158,28 @@ the account level will be applied to all roles in that account.
 
 Some special tags:
 
- * **Color** -- Used to specify the color of the [Firefox container](#browser--urlaction--urlexeccommand) label.  Valid values are:
-	* blue
-	* turquoise
-	* green
-	* yellow
-	* orange
-	* red
-	* pink
-	* purple
- * **Icon** -- Used to specify the icon of the [Firefox container](#browser--urlaction--urlexeccommand) label.  Valid values are:
-	* fingerprint
-	* briefcase
-	* dollar
-	* cart
-	* gift
-	* vacation
-	* food
-	* fruit
-	* pet
-	* tree
-	* chill
-	* circle
+ * **Color** -- Used to specify the color of the [Firefox container](#authurlaction--browser--urlaction--urlexeccommand) label.  Valid values are:
+   * blue
+   * turquoise
+   * green
+   * yellow
+   * orange
+   * red
+   * pink
+   * purple
+ * **Icon** -- Used to specify the icon of the [Firefox container](#authurlaction--browser--urlaction--urlexeccommand) label.  Valid values are:
+   * fingerprint
+   * briefcase
+   * dollar
+   * cart
+   * gift
+   * vacation
+   * food
+   * fruit
+   * pet
+   * tree
+   * chill
+   * circle
 
 #### Roles
 
@@ -258,23 +252,23 @@ Value must be > 0.
 
 ### Browser Integration
 
-#### Browser / UrlAction / UrlExecCommand
+#### AuthUrlAction / Browser / UrlAction / UrlExecCommand
 
 `UrlAction` gives you control over how AWS SSO and AWS Console URLs are opened
 in a browser:
 
  * `clip` -- Copies the URL to your clipboard
  * `exec` -- Execute the command provided in `UrlExecCommand`
- * `granted-containers`  -- Generates a URL for the Firefox [Granted Containers](
-	https://addons.mozilla.org/en-US/firefox/addon/granted/) plugin and
-	runs your `UrlExecCommand`
+ * `granted-containers`  -- Generates a URL for the Firefox
+    [Granted Containers](https://addons.mozilla.org/en-US/firefox/addon/granted/) plugin and
+    runs your `UrlExecCommand`
  * `open` -- Opens the URL in your default browser or the browser you specified
     via `--browser` or `Browser`
  * `open-url-in-container` -- Generates a URL for the Firefox [Open Url in Container](
     https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/) and
     [Firefox Multi-Account Containers](
     https://addons.mozilla.org/en-US/firefox/addon/multi-account-containers/)
-    plugins and runs your `UrlExecCommand`.  Please be sure to install only
+    plugins and runs your `UrlExecCommand`. Please be sure to install only
     one of these plugins. ;)
  * `print` -- Prints the URL with a message in your terminal to stderr
  * `printurl` -- Prints only the URL in your terminal to stderr
@@ -289,6 +283,9 @@ specified as a list, with the URL to open specified as the format string `%s`.
 Only one instance of `%s` is allowed.  Note that YAML requires quotes around
 strings which start with a [reserved indicator](
 https://yaml.org/spec/1.2-old/spec.html#id2774228) like `%`.
+
+`AuthUrlAction` allows you to override the global `UrlAction` when authenticating
+with your SSO provider to retrieve an AWS SSO token.
 
 Examples:
 
@@ -363,7 +360,7 @@ https://docs.aws.amazon.com/singlesignon/latest/userguide/howtosessionduration.h
 #### ConfigProfilesUrlAction
 
 The `aws-sso config-profiles` command by default will use the same action
-to open URL's as defined in [UrlAction](#browser--urlaction--urlexeccommand),
+to open URL's as defined in [UrlAction](#authurlaction--browser--urlaction--urlexeccommand),
 but you can override it via the `ConfigProfilesUrlAction`.
 
 If `UrlAction` is `print` or `printurl`, then this settings will default to `open`.
@@ -556,8 +553,7 @@ When set to `True`, when your AWS SSO roles are automatically refreshed (see
 [CacheRefresh](#cacherefresh)) `aws-sso` will also check to see if any changes
 are warranted in your `~/.aws/config`.
 
-**Note:** This option requires you to also set 
-[ConfigProfilesUrlAction](#configprofilesurlaction).
+**Note:** This option requires you to also set [ConfigProfilesUrlAction](#configprofilesurlaction).
 
 **Note:** This option can be disabled temporarily on the command line by passing
 the `--no-config-check` flag.
@@ -603,4 +599,3 @@ controlled by `aws-sso` so any existing value will be overwritten.
 
 **Note:** This feature is not compatible when using roles using the
 `$AWS_PROFILE` via the `config` command.
-

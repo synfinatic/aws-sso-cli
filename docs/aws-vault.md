@@ -143,7 +143,6 @@ and configured!
 | Detect $AWS\_PROFILE collision   | No   | Yes   | Yes    |
 | Add AWS creds into current shell | No   | Yes   | No     |
 
-
 | Select Role Via      | aws-vault | aws-sso | AWS CLI v2 |
 |----------------------|-----------|---------|------------|
 | $AWS\_PROFILE        | Yes       | Yes     | Yes        |

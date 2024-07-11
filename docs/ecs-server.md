@@ -24,8 +24,8 @@ available to it are those you manually load into it's memory.
 The `aws-sso` ECS Server is intended to run on hosts where a single user has access.
 The security of your IAM credentials is dependent on nobody else being able to talk
 to the server. Due to a [limitation of the AWS SDK](https://github.com/boto/boto3/issues/4188),
-SSL/TLS is not well supported, which means that [enabling HTTP Authentication](
-#ecs-server-http-authentication) may not be enough to protect your credentials.
+SSL/TLS is not well supported, which means that
+[enabling HTTP Authentication](#ecs-server-http-authentication) may not be enough to protect your credentials.
 
 ## Starting the ECS Server
 
@@ -62,12 +62,12 @@ AWS IAM authentication tokens.
 #### ECS Server SSL Certificate
 
 **Important:** Due to a [bug in the AWS SDK](https://github.com/aws/aws-sdk/issues/774)
-you can not easily enable SSL at this time.  __I'd greatly
+you can not easily enable SSL at this time.  _I'd greatly
 appreciate people to upvote my ticket with AWS and help get it greater
-visibility at AWS and hopefully addressed sooner rather than later.__
+visibility at AWS and hopefully addressed sooner rather than later._
 
 You will need to create an SSL certificate which is _signed by a well trusted CA_
-such as DigiCert, Let's Encrypt, Thwate, etc.  Currently, the AWS SDK does __NOT__
+such as DigiCert, Let's Encrypt, Thwate, etc.  Currently, the AWS SDK does _NOT_
 support self-signed certificates or private CA's for this endpoint.
 
 <!--
@@ -98,7 +98,7 @@ Once you have your certificate and private key, you will need to save them into 
 `aws-sso` secure store:
 
 ```bash
-$ aws-sso ecs ssl save --private-key localhost.key --cert-chain localhost.crt
+aws-sso ecs ssl save --private-key localhost.key --cert-chain localhost.crt
 ```
 
 **Important:** At this point, you should delete the private key file `localhost.key` for security.
@@ -110,7 +110,7 @@ credentials.
 If you lose your certificate, you can print it via:
 
 ```bash
-$ aws-sso ecs ssl print
+aws-sso ecs ssl print
 ```
 
 **Note:** At this time, there is no way to extract the SSL Private Key from the Secure Store.

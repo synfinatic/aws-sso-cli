@@ -20,45 +20,6 @@ Flags:
 
 ---
 
-### ecs ssl save
-
- Configures the SSL Certificate and Private Key to enable SSL/TLS.  Saves the
- SSL certificate and private key to the SecureStore.
-
- **Note:** At this time, this feature is not recommended due to a bug
- in the [AWS SDK](https://github.com/boto/boto3/issues/4188).
-
- Flags:
-
-  * `--certificate` -- Path to SSL certificate file in PEM format
-  * `--private-key` -- Path to SSL private key in PEM format
-
----
-
-### ecs ssl delete
-
-Delete the SSL certificate and private key from the Secure Store and disables
-SSL/TLS for the ECS Server.
-
----
-
-### ecs ssl print
-
-Prints the SSL public certificate stored in the SecureStore.
-
----
-
-### ecs server
-
-Starts the ECS Server in the foreground.
-
-Flags:
-
- * `--disable-auth` -- Disables HTTP Authentication, even if a Bearer Token is available
- * `--disable-ssl` -- Disables SSL/TLS, even if a certificate and private key are available
-
----
-
 ### ecs docker start
 
 Starts the ECS Server in a Docker container.
@@ -108,6 +69,55 @@ would like to load multiple roles, specify `--slotted` and the role will be load
 
 ---
 
+### ecs profile
+
+Fetches the ProfileName of the role stored in the default slot of the ECS Server.
+
+Flags:
+
+ * `--slotted` -- Load the IAM credentials into a unique slot using the ProfileName as the key
+
+---
+
+### ecs ssl save
+
+ Configures the SSL Certificate and Private Key to enable SSL/TLS.  Saves the
+ SSL certificate and private key to the SecureStore.
+
+ **Note:** At this time, this feature is not recommended due to a bug
+ in the [AWS SDK](https://github.com/boto/boto3/issues/4188).
+
+ Flags:
+
+  * `--certificate` -- Path to SSL certificate file in PEM format
+  * `--private-key` -- Path to SSL private key in PEM format
+
+---
+
+### ecs ssl delete
+
+Delete the SSL certificate and private key from the Secure Store and disables
+SSL/TLS for the ECS Server.
+
+---
+
+### ecs ssl print
+
+Prints the SSL public certificate stored in the SecureStore.
+
+---
+
+### ecs server
+
+Starts the ECS Server in the foreground.
+
+Flags:
+
+ * `--disable-auth` -- Disables HTTP Authentication, even if a Bearer Token is available
+ * `--disable-ssl` -- Disables SSL/TLS, even if a certificate and private key are available
+
+---
+
 ### ecs unload
 
 Removes the AWS IAM Role credentials from the ECS Server and makes them unavailable to any clients to use.
@@ -119,13 +129,3 @@ Flags:
 
 By default, this will unload the IAM credentials for the default role.  Passing in
 `--profile <profile name>` will unload the credentials in the named slot.
-
----
-
-### ecs profile
-
-Fetches the ProfileName of the role stored in the default slot of the ECS Server.
-
-Flags:
-
- * `--slotted` -- Load the IAM credentials into a unique slot using the ProfileName as the key

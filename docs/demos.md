@@ -1,7 +1,6 @@
 # AWS SSO CLI Demos
 
-
-### Inital setup via the wizard
+## Inital setup via the wizard
 
 Showing how to get started with AWS SSO CLI using the configuration wizard and how
 to use the `exec` command to select a role via the powerful interactive interface.
@@ -11,7 +10,7 @@ to use the `exec` command to select a role via the powerful interactive interfac
 
 ---
 
-### Using the `aws-sso-profile` command
+## Using the `aws-sso-profile` command
 
 The `aws-sso-profile` shell integration is the easiest way to source the
 necessary AWS API credentials into your current shell.
@@ -21,7 +20,7 @@ necessary AWS API credentials into your current shell.
 
 ---
 
-### Using the `config-profiles` command and `$AWS_PROFILE`
+## Using the `config-profiles` command and `$AWS_PROFILE`
 
 Do you want to just use the `$AWS_PROFILE` environment variable?  Well, AWS SSO CLI
 supports that too!  This demo shows you how to set it up and use it.
@@ -32,7 +31,7 @@ supports that too!  This demo shows you how to set it up and use it.
 ---
 
 <!-- console -->
-### Using the `console` command
+## Using the `console` command
 
 The `console` command allows you to open the AWS Console in your browser for a
 given AWS SSO role.  If you have enabled [FirefoxOpenUrlInContainer](
