@@ -115,23 +115,23 @@ type CLI struct {
 
 	// Commands
 	Cache          CacheCmd          `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
+	Completions    CompleteCmd       `kong:"cmd,help='Manage shell completions'"`
 	Console        ConsoleCmd        `kong:"cmd,help='Open AWS Console using specificed AWS role/profile'"`
+	Config         ConfigCmd         `kong:"cmd,help='Run the configuration wizard'"`
+	ConfigProfiles ConfigProfilesCmd `kong:"cmd,help='Update ~/.aws/config with AWS SSO profiles from the cache'"`
 	Credentials    CredentialsCmd    `kong:"cmd,help='Generate static AWS credentials for use with AWS CLI'"`
 	Default        DefaultCmd        `kong:"cmd,hidden,default='1'"` // list command without args
+	Ecs            EcsCmd            `kong:"cmd,help='ECS server/client commands'"`
 	Eval           EvalCmd           `kong:"cmd,help='Print AWS environment vars for use with eval $(aws-sso eval ...)'"`
 	Exec           ExecCmd           `kong:"cmd,help='Execute command using specified IAM role in a new shell'"`
 	List           ListCmd           `kong:"cmd,help='List all accounts / roles (default command)'"`
 	Login          LoginCmd          `kong:"cmd,help='Login to an AWS Identity Center instance'"`
 	Logout         LogoutCmd         `kong:"cmd,help='Logout from an AWS Identity Center instance and invalidate all credentials'"`
 	Process        ProcessCmd        `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
-	Static         StaticCmd         `kong:"cmd,hidden,help='Manage static AWS API credentials'"`
 	Tags           TagsCmd           `kong:"cmd,help='List tags'"`
 	Time           TimeCmd           `kong:"cmd,help='Print how much time before current STS Token expires'"`
-	Completions    CompleteCmd       `kong:"cmd,help='Manage shell completions'"`
-	ConfigProfiles ConfigProfilesCmd `kong:"cmd,help='Update ~/.aws/config with AWS SSO profiles from the cache'"`
-	Config         ConfigCmd         `kong:"cmd,help='Run the configuration wizard'"`
-	Ecs            EcsCmd            `kong:"cmd,help='ECS server/client commands'"`
 	Version        VersionCmd        `kong:"cmd,help='Print version and exit'"`
+	Static         StaticCmd         `kong:"cmd,hidden,help='Manage static AWS API credentials'"`
 }
 
 func main() {
@@ -259,10 +259,15 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 		"VERSION":         Version,
 	}
 
+	help := kong.HelpOptions{
+		NoExpandSubcommands: true,
+	}
+
 	parser := kong.Must(
 		cli,
 		kong.Name("aws-sso"),
 		kong.Description("Securely manage temporary AWS API Credentials issued via AWS SSO"),
+		kong.ConfigureHelp(help),
 		vars,
 	)
 

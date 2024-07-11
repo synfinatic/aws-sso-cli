@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changes
+
+ * No longer show help for sub-commands by default
+
 ### New Features
 
  * Now require `login` as a seperate step for better security #291
