@@ -39,6 +39,34 @@ const (
 	VERIFY_MSG         = "\n\tVerify this code in your browser: %s\n"
 )
 
+// ValidAuthToken returns true if we have a valid AWS SSO authentication token
+// or false if we need to authenticate.
+func (as *AWSSSO) ValidAuthToken() bool {
+	// check our cache
+	token := storage.CreateTokenResponse{}
+	err := as.store.GetCreateTokenResponse(as.StoreKey(), &token)
+	if err != nil {
+		log.Debugf(err.Error())
+		return false
+	}
+
+	if !token.Expired() {
+		as.tokenLock.Lock()
+		as.Token = token
+		as.tokenLock.Unlock()
+		return true
+	}
+
+	if token.ExpiresAt != 0 {
+		t := time.Unix(token.ExpiresAt, 0)
+		log.Infof("Cached SSO token expired at: %s.  Reauthenticating...\n",
+			t.Format("Mon Jan 2 15:04:05 -0700 MST 2006"))
+	} else {
+		log.Infof("Cached SSO token has expired.  Reauthenticating...\n")
+	}
+	return false
+}
+
 // Authenticate retrieves an AWS SSO AccessToken from our cache or by
 // making the necessary AWS SSO calls.
 func (as *AWSSSO) Authenticate(urlAction url.Action, browser string) error {
@@ -50,26 +78,6 @@ func (as *AWSSSO) Authenticate(urlAction url.Action, browser string) error {
 
 	if browser != "" {
 		as.browser = browser
-	}
-
-	// check our cache
-	token := storage.CreateTokenResponse{}
-	err := as.store.GetCreateTokenResponse(as.StoreKey(), &token)
-	if err == nil && !token.Expired() {
-		as.tokenLock.Lock()
-		as.Token = token
-		as.tokenLock.Unlock()
-		return nil
-	} else if err != nil {
-		log.Debugf(err.Error())
-	} else {
-		if token.ExpiresAt != 0 {
-			t := time.Unix(token.ExpiresAt, 0)
-			log.Infof("Cached SSO token expired at: %s.  Reauthenticating...\n",
-				t.Format("Mon Jan 2 15:04:05 -0700 MST 2006"))
-		} else {
-			log.Infof("Cached SSO token has expired.  Reauthenticating...\n")
-		}
 	}
 
 	return as.reauthenticate()

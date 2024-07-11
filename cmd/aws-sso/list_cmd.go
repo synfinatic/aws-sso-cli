@@ -187,15 +187,6 @@ func printRoles(ctx *RunContext, fields []string, csv bool, prefixSearch []strin
 	if csv {
 		err = gotable.GenerateCSV(tr, fields)
 	} else {
-		// Determine when our AWS SSO session expires
-		// list doesn't call doAuth() so we have to initialize our global *AwsSSO manually
-		var s *sso.SSOConfig
-		s, err = ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
-		if err != nil {
-			log.Fatalf("%s", err.Error())
-		}
-		AwsSSO = sso.NewAWSSSO(s, &ctx.Store)
-
 		expires := ""
 		ctr := storage.CreateTokenResponse{}
 		if err := ctx.Store.GetCreateTokenResponse(AwsSSO.StoreKey(), &ctr); err != nil {

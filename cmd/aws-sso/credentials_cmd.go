@@ -14,7 +14,6 @@ type CredentialsCmd struct {
 
 func (cc *CredentialsCmd) Run(ctx *RunContext) error {
 	cache := ctx.Settings.Cache.GetSSO()
-	awssso := doAuth(ctx)
 
 	creds := []awsconfig.ProfileCredentials{}
 
@@ -24,7 +23,7 @@ func (cc *CredentialsCmd) Run(ctx *RunContext) error {
 			return err
 		}
 
-		pCreds := GetRoleCredentials(ctx, awssso, roleFlat.AccountId, roleFlat.RoleName)
+		pCreds := GetRoleCredentials(ctx, AwsSSO, roleFlat.AccountId, roleFlat.RoleName)
 
 		creds = append(creds, awsconfig.ProfileCredentials{
 			Profile:         profile,

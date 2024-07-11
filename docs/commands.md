@@ -11,8 +11,20 @@
  * `--sso <name>`, `-S` -- Specify non-default AWS SSO instance to use (`$AWS_SSO`)
  * `--sts-refresh` -- Force refresh of STS Token Credentials
  * `--no-config-check` -- Disable automatic updating of `~/.aws/config`
+ * `--threads <int>` -- Number of threads to use with AWS (default: 5)
 
 ## Commands
+
+### cache
+
+AWS SSO CLI caches information about your AWS Accounts, Roles and Tags for
+better perfomance.  By default it will refresh this information after 24
+hours, but you can force this data to be refreshed immediately.
+
+Cache data is also automatically updated anytime the `config.yaml` file is
+modified.
+
+---
 
 ### config
 
@@ -93,11 +105,11 @@ config.md#open-url-in-firefox-container) configuration option.
 
 Flags:
 
+ * `--duration <minutes>`, `-d` -- AWS Session duration in minutes (default 60)
+ * `--prompt`, `-P` -- Force interactive prompt to select role
  * `--region <region>`, `-r` -- Specify the `$AWS_DEFAULT_REGION` to use
  * `--arn <arn>`, `-a` -- ARN of role to assume (`$AWS_SSO_ROLE_ARN`)
  * `--account <account>`, `-A` -- AWS AccountID of role to assume (`$AWS_SSO_ACCOUNT_ID`)
- * `--duration <minutes>`, `-d` -- AWS Session duration in minutes (default 60)
- * `--prompt`, `-P` -- Force interactive prompt to select role
  * `--role <role>`, `-R` -- Name of AWS Role to assume (requires `--account`) (`$AWS_SSO_ROLE_NAME`)
  * `--profile <profile>`, `-p` -- Name of AWS Profile to assume
 
@@ -166,6 +178,7 @@ Flags:
  * `--account <account>`, `-A` -- AWS AccountID of role to assume (requires `--role`)
  * `--role <role>`, `-R` -- Name of AWS Role to assume (requires `--account`)
  * `--profile <profile>`, `-p` -- Name of AWS Profile to assume
+ * `--clear`, `-c` -- Generate "unset XXXX" commands to clear the environment
  * `--no-region` -- Do not set the [AWS_DEFAULT_REGION](config.md#DefaultRegion) from config.yaml
  * `--refresh` -- Refresh current IAM credentials
 
@@ -259,22 +272,6 @@ it from working.
 
 ---
 
-### cache
-
-AWS SSO CLI caches information about your AWS Accounts, Roles and Tags for
-better perfomance.  By default it will refresh this information after 24
-hours, but you can force this data to be refreshed immediately.
-
-Cache data is also automatically updated anytime the `config.yaml` file is
-modified.
-
-Flags:
-
- * `--no-config-check` -- Disable automatic `~/.aws/config` updates if the cache is refreshed
- * `--threads <count>` -- Override the number of threads used to refresh the list of AWS SSO Roles
-
----
-
 ### list
 
 List will list all of the AWS Roles you can assume with the metadata/tags
@@ -310,34 +307,17 @@ case-sensitive manner.
 
 ---
 
-### logout
+### login
 
-Invalidates all AWS credentials with AWS for the selected SSO instance,
-including those in your browser session.
-
-If you only wish to remove the credentials from the `aws-sso` secure store, use
-the [flush](#flush) command.
+Login via AWS IAM Identity Center (AWS SSO) and retrieve a security token
+used to fetch IAM Role credentials.
 
 ---
 
-### flush
+### logout
 
-Flush any cached AWS SSO/STS credentials.  By default, it only flushes the
-temporary STS IAM role credentials for the selected SSO instance.
-
-Flags:
-
- * `--type`, `-t` -- Type of credentials to flush:
-    * `sts` -- Flush temporary STS credentials for IAM roles
-    * `sso` -- Flush temporary AWS SSO credentials
-    * `all` -- Flush temporary STS and SSO credentials
-
-**Note:** Flushing non-expired SSO credentials will not cause new credentials to be issued
-on the next call to the AWS SSO API, but rather the existing credentials will be refreshed
-from the browser session.
-
-**Note:** Flushing credentials does not invalidate them with AWS.  If you wish
-to do that, use the [logout](#logout) command.
+Invalidates the AWS Identity Center AccessToken (used to fetch new IAM Credentials)
+for the selected SSO instance and removes all IAM Role Credentials cached in the `aws-sso` secure store.
 
 ---
 
@@ -394,7 +374,6 @@ the new version.  Once the new version is installed, `--uninstall-pre-19` will
 refuse to run so you will have to either manually edit the file or run
 `--uninstall`, then `--uninstall-pre-19` and finally `--install` again.
 
-
 ## Environment Variables
 
 ### Honored Variables
@@ -444,7 +423,6 @@ The following environment variables are specific to `aws-sso`:
  * `AWS_SSO_PROFILE` -- User customizable varible using the
     [ProfileFormat](config.md#profileformat) template
  * `AWS_SSO` -- AWS SSO instance name
-
 
 **Note:** AWS SSO does _NOT_ set `$AWS_PROFILE` to avoid problems with the AWS tooling
 and SDK.

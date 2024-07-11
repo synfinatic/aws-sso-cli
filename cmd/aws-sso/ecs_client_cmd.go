@@ -28,7 +28,6 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs/client"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
-	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/synfinatic/gotable"
 )
 
@@ -46,9 +45,9 @@ type EcsLoadCmd struct {
 
 func (cc *EcsLoadCmd) Run(ctx *RunContext) error {
 	sci := NewSelectCliArgs(ctx.Cli.Ecs.Load.Arn, ctx.Cli.Ecs.Load.AccountId, ctx.Cli.Ecs.Load.Role, ctx.Cli.Ecs.Load.Profile)
-	if awssso, err := sci.Update(ctx); err == nil {
+	if err := sci.Update(ctx); err == nil {
 		// successful lookup?
-		return ecsLoadCmd(ctx, awssso, sci.AccountId, sci.RoleName)
+		return ecsLoadCmd(ctx, sci.AccountId, sci.RoleName)
 	} else if !errors.Is(err, &NoRoleSelectedError{}) {
 		// invalid arguments, not missing
 		return err
@@ -80,12 +79,12 @@ func (cc *EcsProfileCmd) Run(ctx *RunContext) error {
 }
 
 // Loads our AWS API creds into the ECS Server
-func ecsLoadCmd(ctx *RunContext, awssso *sso.AWSSSO, accountId int64, role string) error {
+func ecsLoadCmd(ctx *RunContext, accountId int64, role string) error {
 	c := newClient(ctx.Cli.Ecs.Load.Server, ctx)
 
-	creds := GetRoleCredentials(ctx, awssso, accountId, role)
+	creds := GetRoleCredentials(ctx, AwsSSO, accountId, role)
 
-	cache := ctx.Settings.Cache.GetSSO() // ctx.Settings.Cache.Refresh(awssso, ssoConfig, ctx.Cli.SSO)
+	cache := ctx.Settings.Cache.GetSSO()
 	rFlat, err := cache.Roles.GetRole(accountId, role)
 	if err != nil {
 		return err
