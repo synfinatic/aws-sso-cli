@@ -67,7 +67,7 @@ value or deletes the `$AWS_SSO_DEFAULT_REGION` then AWS SSO will no longer
 manage the variable.
 
 <!-- https://github.com/synfinatic/aws-sso-cli/issues/166 -->
-![](https://user-images.githubusercontent.com/1075352/143502947-1465f68f-0ef5-4de7-a997-ea716facc637.png)
+![graph](https://user-images.githubusercontent.com/1075352/143502947-1465f68f-0ef5-4de7-a997-ea716facc637.png)
 
 ### Example of multiple AWS SSO instances
 
@@ -313,7 +313,7 @@ Some example `ProfileFormat` values:
     [nospace](http://masterminds.github.io/sprig/strings.html#nospace))
     and then append a colon, followed by the IAM Role Name.
  * `'{{ kebabcase .AccountAlias }}:{{ .RoleName }}'`
-    -- Reformat the AWS account alias like `AStringLikeThis` into `a-string-like-this` using 
+    -- Reformat the AWS account alias like `AStringLikeThis` into `a-string-like-this` using
     the [kebabcase function](http://masterminds.github.io/sprig/strings.html#kebabcase).
 
 For a full list of available variables and functions, see the
@@ -353,12 +353,12 @@ by using the [tags](commands.md#tags) command.
 If you get this error from AWS:
 
 <!-- https://github.com/synfinatic/aws-sso-cli/issues/166 -->
-![](https://user-images.githubusercontent.com/1075352/149675666-64512a6a-f252-4841-8222-a2dc1f8f7c1f.png)
+![invalid grant provided](https://user-images.githubusercontent.com/1075352/149675666-64512a6a-f252-4841-8222-a2dc1f8f7c1f.png)
 
 Then the most likely cause is you selected the wrong AWS Region for [SSORegion](
 config.md#ssoregion) in the config file.
 
-### Error: Unable to save... org.freedesktop.DBus.Properties...
+### Error: Unable to save... org.freedesktop.DBus.Properties
 
 On Linux systems or other places that rely on the FreeDesktop [secret-service](
 https://specifications.freedesktop.org/secret-service/latest/re01.html)
@@ -383,7 +383,7 @@ indicate that AWS is throttling requests because the number of
 Note: Unlike most errors, this one is not always fatal, but it can cause `aws-sso`
 to behave very poorly.
 
-### Warning: Exceeded MaxRetry/MaxBackoff. Consider tuning values.
+### Warning: Exceeded MaxRetry/MaxBackoff. Consider tuning values
 
 While trying to refresh the cache of accounts and roles, `aws-sso` is exceeding
 the rate limits put in place by AWS and that rate limiting is causing
@@ -396,7 +396,7 @@ to reduce chances of this happening (fewer threads can increase performance
 by not incurring the backoff delay penalty) or adjust the MaxRetry and/or
 [MaxBackoff](config.md#maxbackoff) parameters.
 
-### Warning: Fetching roles for 46 accounts, this might take a while...
+### Warning: Fetching roles for 46 accounts, this might take a while
 
 Due to the AWS API and rate limits, users with many AWS Accounts may see
 this warning.  If this happens more often than is acceptable, you can
