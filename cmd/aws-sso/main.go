@@ -28,7 +28,6 @@ import (
 
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/sirupsen/logrus"
-	"github.com/synfinatic/aws-sso-cli/internal/awscreds"
 	"github.com/synfinatic/aws-sso-cli/internal/config"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs/client"
@@ -131,7 +130,6 @@ type CLI struct {
 	Tags           TagsCmd           `kong:"cmd,help='List tags'"`
 	Time           TimeCmd           `kong:"cmd,help='Print how much time before current STS Token expires'"`
 	Version        VersionCmd        `kong:"cmd,help='Print version and exit'"`
-	Static         StaticCmd         `kong:"cmd,hidden,help='Manage static AWS API credentials'"`
 }
 
 func main() {
@@ -140,7 +138,6 @@ func main() {
 
 	log = logrus.New()
 	ctx, override := parseArgs(&cli)
-	awscreds.SetLogger(log)
 	helper.SetLogger(log)
 	predictor.SetLogger(log)
 	sso.SetLogger(log)

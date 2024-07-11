@@ -26,7 +26,6 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.30.1
 	github.com/riywo/loginshell v0.0.0-20200815045211-7d26008be1ab
 	golang.org/x/term v0.22.0
-	gopkg.in/ini.v1 v1.67.0
 )
 
 require (
@@ -71,7 +70,6 @@ require (
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/aws/aws-sdk-go-v2/config v1.27.24
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.24
-	github.com/aws/aws-sdk-go-v2/service/iam v1.34.1
 	github.com/aws/aws-sdk-go-v2/service/sso v1.22.1
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.26.2
 	github.com/aws/aws-sdk-go-v2/service/sts v1.30.1
