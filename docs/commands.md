@@ -11,8 +11,20 @@
  * `--sso <name>`, `-S` -- Specify non-default AWS SSO instance to use (`$AWS_SSO`)
  * `--sts-refresh` -- Force refresh of STS Token Credentials
  * `--no-config-check` -- Disable automatic updating of `~/.aws/config`
+ * `--threads <int>` -- Number of threads to use with AWS (default: 5)
 
 ## Commands
+
+### cache
+
+AWS SSO CLI caches information about your AWS Accounts, Roles and Tags for
+better perfomance.  By default it will refresh this information after 24
+hours, but you can force this data to be refreshed immediately.
+
+Cache data is also automatically updated anytime the `config.yaml` file is
+modified.
+
+---
 
 ### config
 
@@ -93,11 +105,11 @@ config.md#open-url-in-firefox-container) configuration option.
 
 Flags:
 
+ * `--duration <minutes>`, `-d` -- AWS Session duration in minutes (default 60)
+ * `--prompt`, `-P` -- Force interactive prompt to select role
  * `--region <region>`, `-r` -- Specify the `$AWS_DEFAULT_REGION` to use
  * `--arn <arn>`, `-a` -- ARN of role to assume (`$AWS_SSO_ROLE_ARN`)
  * `--account <account>`, `-A` -- AWS AccountID of role to assume (`$AWS_SSO_ACCOUNT_ID`)
- * `--duration <minutes>`, `-d` -- AWS Session duration in minutes (default 60)
- * `--prompt`, `-P` -- Force interactive prompt to select role
  * `--role <role>`, `-R` -- Name of AWS Role to assume (requires `--account`) (`$AWS_SSO_ROLE_NAME`)
  * `--profile <profile>`, `-p` -- Name of AWS Profile to assume
 
@@ -166,6 +178,7 @@ Flags:
  * `--account <account>`, `-A` -- AWS AccountID of role to assume (requires `--role`)
  * `--role <role>`, `-R` -- Name of AWS Role to assume (requires `--account`)
  * `--profile <profile>`, `-p` -- Name of AWS Profile to assume
+ * `--clear`, `-c` -- Generate "unset XXXX" commands to clear the environment
  * `--no-region` -- Do not set the [AWS_DEFAULT_REGION](config.md#DefaultRegion) from config.yaml
  * `--refresh` -- Refresh current IAM credentials
 
@@ -256,22 +269,6 @@ Priority is given to:
 **Note:** Due to a limitation of the AWS tooling, setting `--url-action print`
 will cause an error because of a limitation of the AWS tooling which prevents
 it from working.
-
----
-
-### cache
-
-AWS SSO CLI caches information about your AWS Accounts, Roles and Tags for
-better perfomance.  By default it will refresh this information after 24
-hours, but you can force this data to be refreshed immediately.
-
-Cache data is also automatically updated anytime the `config.yaml` file is
-modified.
-
-Flags:
-
- * `--no-config-check` -- Disable automatic `~/.aws/config` updates if the cache is refreshed
- * `--threads <count>` -- Override the number of threads used to refresh the list of AWS SSO Roles
 
 ---
 
