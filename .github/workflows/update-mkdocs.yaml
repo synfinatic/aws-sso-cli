@@ -33,35 +33,6 @@ jobs:
         run: mike deploy --config-file mkdocs.yml --push develop
 
 
-name: Build/Publish Latest Release Docs
-on:
-  release:
-    types: [published]
-
-permissions:
-  contents: write
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-python@v4
-        with:
-          python-version: 3.11.6
-      - name: Install Dependencies
-        run: |
-          pip install mkdocs-material pillow cairosvg mike -r docs/requirements.txt
-      - name: Setup Docs Deploy
-        run: |
-          git config --global user.name "Docs Deploy"
-          git config --global user.email "docs.deploy@synfin.net"
-      - name: Build Docs Website
-        run: mike deploy --config-file mkdocs.yml --push --update-aliases ${{ github.event.release.tag_name }} latest
-
-
 # name: Update Docs
 # on:
 #   push:
