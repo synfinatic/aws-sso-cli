@@ -5,11 +5,15 @@ copyright: Copyright 2021-2024 Aaron Turner
 repo_url: https://github.com/synfinatic/aws-sso-cli/
 docs_dir: docs
 
+extra:
+  version:
+    provider: mike
+
 extra_css:
-  - stylesheets/asciinema-player.css
+  - css/asciinema-player.css
 
 extra_javascript:
-  - javascripts/asciinema-player.min.js
+  - js/asciinema-player.min.js
 
 theme:
   name: material
@@ -17,6 +21,15 @@ theme:
 plugins:
   - search
   - mkdocs-asciinema # https://pypi.org/project/mkdocs-asciinema/
+  - mike:
+      # These fields are all optional; the defaults are as below...
+      alias_type: symlink
+      redirect_template: null
+      deploy_prefix: ''
+      canonical_version: null
+      version_selector: true
+      css_dir: css
+      javascript_dir: js
 
 nav:
   - 'Home': index.md
