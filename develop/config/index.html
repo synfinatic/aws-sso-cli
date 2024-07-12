@@ -1,0 +1,2315 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="Aaron Turner">
+      
+      
+      
+        <link rel="prev" href="../demos/">
+      
+      
+        <link rel="next" href="../commands/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.28">
+    
+    
+      
+        <title>Configuration - AWS SSO CLI</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.6543a935.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../css/asciinema-player.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#configuration" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="AWS SSO CLI" class="md-header__button md-logo" aria-label="AWS SSO CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            AWS SSO CLI
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Configuration
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/synfinatic/aws-sso-cli/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="AWS SSO CLI" class="md-nav__button md-logo" aria-label="AWS SSO CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    AWS SSO CLI
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/synfinatic/aws-sso-cli/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quickstart
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../demos/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Demos
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    User Guide
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            User Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#ssoconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSOConfig
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="SSOConfig">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#starturl" class="md-nav__link">
+    <span class="md-ellipsis">
+      StartUrl
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssoregion" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSORegion
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#defaultregion" class="md-nav__link">
+    <span class="md-ellipsis">
+      DefaultRegion
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#accounts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Accounts
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Accounts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#name" class="md-nav__link">
+    <span class="md-ellipsis">
+      Name
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tags
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#roles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Roles
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Roles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      Profile
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#via" class="md-nav__link">
+    <span class="md-ellipsis">
+      Via
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sourceidentity" class="md-nav__link">
+    <span class="md-ellipsis">
+      SourceIdentity
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-config-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common Config Options
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Config Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#defaultsso" class="md-nav__link">
+    <span class="md-ellipsis">
+      DefaultSSO
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sso-cache-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSO Cache Options
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="SSO Cache Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cacherefresh" class="md-nav__link">
+    <span class="md-ellipsis">
+      CacheRefresh
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#threads" class="md-nav__link">
+    <span class="md-ellipsis">
+      Threads
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#maxretry" class="md-nav__link">
+    <span class="md-ellipsis">
+      MaxRetry
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#maxbackoff" class="md-nav__link">
+    <span class="md-ellipsis">
+      MaxBackoff
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#browser-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Browser Integration
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Browser Integration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#authurlaction-browser-urlaction-urlexeccommand" class="md-nav__link">
+    <span class="md-ellipsis">
+      AuthUrlAction / Browser / UrlAction / UrlExecCommand
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AuthUrlAction / Browser / UrlAction / UrlExecCommand">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#open-url-in-default-browser" class="md-nav__link">
+    <span class="md-ellipsis">
+      Open URL In Default Browser
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#open-url-in-non-default-browser" class="md-nav__link">
+    <span class="md-ellipsis">
+      Open URL In Non-Default Browser
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#open-url-in-firefox-container" class="md-nav__link">
+    <span class="md-ellipsis">
+      Open URL in Firefox Container
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-custom-shell-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use custom shell script
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#consoleduration" class="md-nav__link">
+    <span class="md-ellipsis">
+      ConsoleDuration
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aws_profile-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      AWS_PROFILE Integration
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AWS_PROFILE Integration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configprofilesurlaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      ConfigProfilesUrlAction
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configprofilesbinarypath" class="md-nav__link">
+    <span class="md-ellipsis">
+      ConfigProfilesBinaryPath
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#profileformat" class="md-nav__link">
+    <span class="md-ellipsis">
+      ProfileFormat
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configvariables" class="md-nav__link">
+    <span class="md-ellipsis">
+      ConfigVariables
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interactive-role-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      Interactive Role Selection
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Interactive Role Selection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#firsttag" class="md-nav__link">
+    <span class="md-ellipsis">
+      FirstTag
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fulltextsearch" class="md-nav__link">
+    <span class="md-ellipsis">
+      FullTextSearch
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#accountprimarytag" class="md-nav__link">
+    <span class="md-ellipsis">
+      AccountPrimaryTag
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#promptcolors" class="md-nav__link">
+    <span class="md-ellipsis">
+      PromptColors
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#historylimit" class="md-nav__link">
+    <span class="md-ellipsis">
+      HistoryLimit
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#historyminutes" class="md-nav__link">
+    <span class="md-ellipsis">
+      HistoryMinutes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#advanced-configuration-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Advanced Configuration Options
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Configuration Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#listfields" class="md-nav__link">
+    <span class="md-ellipsis">
+      ListFields
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#autoconfigcheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      AutoConfigCheck
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#loglevel-loglines" class="md-nav__link">
+    <span class="md-ellipsis">
+      LogLevel / LogLines
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#securestore-jsonstore" class="md-nav__link">
+    <span class="md-ellipsis">
+      SecureStore / JsonStore
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#envvartags" class="md-nav__link">
+    <span class="md-ellipsis">
+      EnvVarTags
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Commands & Usage
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../FAQ/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Frequently Asked Questions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    ECS Server/Remote Access
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            ECS Server/Remote Access
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecs-server/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ECS Server Mode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecs-commands/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ECS Server Commands
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../remote-ssh/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Remote Access to IAM Roles
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecs-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ECS Server API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    About
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            About
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../license/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    License
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../aws-vault/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Compared to aws-vault
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Security
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            Security
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Reporting Security Vulnerabilities
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    GPG Signing Keys
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            GPG Signing Keys
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code-sign-key.asc/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Release Signing Key
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commit-sign-key.asc/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Commit Signing Key
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Developer Notes
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            Developer Notes
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Release New Version
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#ssoconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSOConfig
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="SSOConfig">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#starturl" class="md-nav__link">
+    <span class="md-ellipsis">
+      StartUrl
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssoregion" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSORegion
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#defaultregion" class="md-nav__link">
+    <span class="md-ellipsis">
+      DefaultRegion
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#accounts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Accounts
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Accounts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#name" class="md-nav__link">
+    <span class="md-ellipsis">
+      Name
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tags
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#roles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Roles
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Roles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      Profile
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#via" class="md-nav__link">
+    <span class="md-ellipsis">
+      Via
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sourceidentity" class="md-nav__link">
+    <span class="md-ellipsis">
+      SourceIdentity
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-config-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common Config Options
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Config Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#defaultsso" class="md-nav__link">
+    <span class="md-ellipsis">
+      DefaultSSO
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sso-cache-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      SSO Cache Options
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="SSO Cache Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cacherefresh" class="md-nav__link">
+    <span class="md-ellipsis">
+      CacheRefresh
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#threads" class="md-nav__link">
+    <span class="md-ellipsis">
+      Threads
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#maxretry" class="md-nav__link">
+    <span class="md-ellipsis">
+      MaxRetry
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#maxbackoff" class="md-nav__link">
+    <span class="md-ellipsis">
+      MaxBackoff
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#browser-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Browser Integration
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Browser Integration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#authurlaction-browser-urlaction-urlexeccommand" class="md-nav__link">
+    <span class="md-ellipsis">
+      AuthUrlAction / Browser / UrlAction / UrlExecCommand
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AuthUrlAction / Browser / UrlAction / UrlExecCommand">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#open-url-in-default-browser" class="md-nav__link">
+    <span class="md-ellipsis">
+      Open URL In Default Browser
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#open-url-in-non-default-browser" class="md-nav__link">
+    <span class="md-ellipsis">
+      Open URL In Non-Default Browser
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#open-url-in-firefox-container" class="md-nav__link">
+    <span class="md-ellipsis">
+      Open URL in Firefox Container
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-custom-shell-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use custom shell script
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#consoleduration" class="md-nav__link">
+    <span class="md-ellipsis">
+      ConsoleDuration
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aws_profile-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      AWS_PROFILE Integration
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AWS_PROFILE Integration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configprofilesurlaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      ConfigProfilesUrlAction
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configprofilesbinarypath" class="md-nav__link">
+    <span class="md-ellipsis">
+      ConfigProfilesBinaryPath
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#profileformat" class="md-nav__link">
+    <span class="md-ellipsis">
+      ProfileFormat
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configvariables" class="md-nav__link">
+    <span class="md-ellipsis">
+      ConfigVariables
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interactive-role-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      Interactive Role Selection
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Interactive Role Selection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#firsttag" class="md-nav__link">
+    <span class="md-ellipsis">
+      FirstTag
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fulltextsearch" class="md-nav__link">
+    <span class="md-ellipsis">
+      FullTextSearch
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#accountprimarytag" class="md-nav__link">
+    <span class="md-ellipsis">
+      AccountPrimaryTag
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#promptcolors" class="md-nav__link">
+    <span class="md-ellipsis">
+      PromptColors
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#historylimit" class="md-nav__link">
+    <span class="md-ellipsis">
+      HistoryLimit
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#historyminutes" class="md-nav__link">
+    <span class="md-ellipsis">
+      HistoryMinutes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#advanced-configuration-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Advanced Configuration Options
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Configuration Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#listfields" class="md-nav__link">
+    <span class="md-ellipsis">
+      ListFields
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#autoconfigcheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      AutoConfigCheck
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#loglevel-loglines" class="md-nav__link">
+    <span class="md-ellipsis">
+      LogLevel / LogLines
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#securestore-jsonstore" class="md-nav__link">
+    <span class="md-ellipsis">
+      SecureStore / JsonStore
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#envvartags" class="md-nav__link">
+    <span class="md-ellipsis">
+      EnvVarTags
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="configuration">Configuration</h1>
+<p>By default, <code>aws-sso</code> will by default store all it's configuration and state files in
+<code>~/.config/aws-sso</code> for versions <code>&gt;= 1.17.0</code> per the <a href="https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html">XDG spec</a>.<br />
+Previous versions of <code>aws-sso</code> used <code>~/.aws-sso</code>.  Users at their own descresion may move the
+files to the new location.  To keep files co-located in the same place, if the directory
+<code>~/.aws-sso</code> exists, then it will be used.</p>
+<p><strong>Note:</strong> The <code>aws-sso</code> documentation will generally use the older file path (<code>~/.aws-sso/...</code>)
+when describing file locations.</p>
+<p>The main configuration file is named <code>~/.aws-sso/config.yaml</code>, but this can be overridden by
+setting <code>$AWS_SSO_CONFIG</code> in your shell or via the <code>--config</code> flag.</p>
+<p>The first time you run <code>aws-sso</code> and it detects there is no configuration file,
+it will prompt you for a number of questions to give you a basic configuration.
+Afterwords, you can edit the file and adjust the settings as desired or run
+<a href="../commands/#config">aws-sso config</a>.</p>
+<pre><code class="language-yaml">SSOConfig:
+    &lt;Name of AWS SSO&gt;:
+        SSORegion: &lt;AWS Region where AWS SSO is deployed&gt;
+        StartUrl: &lt;URL for AWS SSO Portal&gt;
+        DefaultRegion: &lt;AWS_DEFAULT_REGION&gt;
+        AuthUrlAction: [clip|exec|print|printurl|open|granted-containers|open-url-in-container]
+        Accounts:  # optional block for specifying tags &amp; overrides
+            &lt;AccountId&gt;:
+                Name: &lt;Friendly Name of Account&gt;
+                DefaultRegion: &lt;AWS_DEFAULT_REGION&gt;
+                Tags:  # tags for all roles in the account
+                    &lt;Key1&gt;: &lt;Value1&gt;
+                    &lt;Key2&gt;: &lt;Value2&gt;
+                Roles:
+                    &lt;Role Name&gt;:
+                        Profile: &lt;ProfileName&gt;
+                        DefaultRegion: &lt;AWS_DEFAULT_REGION&gt;
+                        Tags:  # tags specific for this role (will override account level tags)
+                            &lt;Key1&gt;: &lt;Value1&gt;
+                            &lt;Key2&gt;: &lt;Value2&gt;
+                        Via: &lt;Previous Role&gt;  # optional, for role chaining
+                        SourceIdentity: &lt;Source Identity&gt;
+
+# See description below for these options
+DefaultRegion: &lt;AWS_DEFAULT_REGION&gt;
+DefaultSSO: &lt;name of AWS SSO&gt;
+CacheRefresh: &lt;hours&gt;
+AutoConfigCheck: [False|True]
+Threads: &lt;integer&gt;
+MaxRetry: &lt;integer&gt;
+MaxBackoff: &lt;integer&gt;
+
+Browser: &lt;path to web browser&gt;
+UrlAction: [clip|exec|print|printurl|open|granted-containers|open-url-in-container]
+ConfigProfilesUrlAction: [clip|exec|open|granted-containers|open-url-in-container]
+ConfigProfilesBinaryPath: &lt;path to aws-sso binary&gt;
+UrlExecCommand:
+    - &lt;command&gt;
+    - &lt;arg 1&gt;
+    - &lt;arg N&gt;
+    - &quot;%s&quot;
+ConsoleDuration: &lt;minutes&gt;
+
+LogLevel: [error|warn|info|debug|trace]
+LogLines: [true|false]
+HistoryLimit: &lt;integer&gt;
+HistoryMinutes: &lt;integer&gt;
+
+SecureStore: [file|keychain|kwallet|pass|secret-service|wincred|json]
+JsonStore: &lt;path to json file&gt;
+
+ProfileFormat: &quot;&lt;template&gt;&quot;
+ConfigVariables:
+    &lt;Var1&gt;: &lt;Value1&gt;
+    &lt;Var2&gt;: &lt;Value2&gt;
+    &lt;VarN&gt;: &lt;ValueN&gt;
+
+FirstTag: &lt;Tag Name&gt;
+FullTextSearch: [true|false]
+AccountPrimaryTag:
+    - &lt;tag 1&gt;
+    - &lt;tag 2&gt;
+    - &lt;tag N&gt;
+PromptColors:
+    &lt;Option 1&gt;: &lt;Color&gt;
+    &lt;Option 2&gt;: &lt;Color&gt;
+    &lt;Option N&gt;: &lt;Color&gt;
+ListFields:
+    - &lt;field 1&gt;
+    - &lt;field 2&gt;
+    - &lt;field N&gt;
+EnvVarTags:
+    - &lt;Tag1&gt;
+    - &lt;Tag2&gt;
+    - &lt;TagN&gt;
+</code></pre>
+<h2 id="ssoconfig">SSOConfig</h2>
+<p>This is the top level block for your AWS SSO instances.  Typically an
+organization will have a single AWS SSO instance for all of their accounts
+under a single AWS master payer account.  If you have more than one AWS SSO
+instance, then <code>Default</code> will be the default unless overridden with
+<code>DefaultSSO</code>.</p>
+<p>The <code>SSOConfig</code> config block is required.</p>
+<h3 id="starturl">StartUrl</h3>
+<p>Each AWS SSO instance start URL hosted by AWS for interacting with your
+SSO provider (Okta/OneLogin/etc).  Should be in the format of
+<code>https://xxxxxxx.awsapps.com/start</code>.</p>
+<p><strong>Note:</strong> If you need to authenticate as different users to the same
+AWS SSO Instance, you can specify multiple <a href="#ssoconfig">SSOConfig</a> blocks
+with the same <code>StartUrl</code>.</p>
+<p>The <code>StartUrl</code> is required.</p>
+<h3 id="ssoregion">SSORegion</h3>
+<p>Each AWS SSO instance is configured in a specific AWS region which needs to be
+set here.</p>
+<p>The <code>SSORegion</code> is required.</p>
+<h3 id="defaultregion">DefaultRegion</h3>
+<p>The <code>DefaultRegion</code> allows you to define a value for the <code>$AWS_DEFAULT_REGION</code>
+when switching to a role.  Note that, aws-sso will NEVER change an existing
+<code>$AWS_DEFAULT_REGION</code> set by the user.</p>
+<p><code>DefaultRegion</code> can be specified at the following levels and the first match is
+selected (most specific to most generic):</p>
+<ol>
+<li>At the inidividual role level: <code>SSOConfig -&gt; &lt;AWS SSO Instance&gt; -&gt; Accounts -&gt; &lt;AccountId&gt; -&gt; Roles -&gt; &lt;RoleName&gt;</code></li>
+<li>At the AWS Account level:<code>SSOConfig -&gt; &lt;Name of the AWS SSO&gt; -&gt; Accounts -&gt; &lt;AccountId&gt;</code></li>
+<li>At the AWS SSO Instance level: <code>SSOConfig -&gt; &lt;AWS SSO Instance&gt;</code></li>
+<li>At the config file level (default is <code>us-east-1</code>)</li>
+</ol>
+<h3 id="accounts">Accounts</h3>
+<p>The <code>Accounts</code> block is completely optional!  The only purpose of this block
+is to allow you to add additional tags (key/value pairs) to your accounts/roles
+to make them easier to select.</p>
+<h4 id="name">Name</h4>
+<p>Alternate name of the account.  Shown as <code>AccountName</code> for the list command.
+Not to be confused with the <code>AccountAlias</code> which is defined by the account owner
+in AWS.  For more information, <a href="../FAQ/#accountname-vs-accountalias">read the FAQ</a></p>
+<h4 id="tags">Tags</h4>
+<p>List of key / value pairs, used by <code>aws-sso</code> in prompt mode.  Any tag placed at
+the account level will be applied to all roles in that account.</p>
+<p>Some special tags:</p>
+<ul>
+<li><strong>Color</strong> -- Used to specify the color of the <a href="#authurlaction--browser--urlaction--urlexeccommand">Firefox container</a> label.  Valid values are:</li>
+<li>blue</li>
+<li>turquoise</li>
+<li>green</li>
+<li>yellow</li>
+<li>orange</li>
+<li>red</li>
+<li>pink</li>
+<li>purple</li>
+<li><strong>Icon</strong> -- Used to specify the icon of the <a href="#authurlaction--browser--urlaction--urlexeccommand">Firefox container</a> label.  Valid values are:</li>
+<li>fingerprint</li>
+<li>briefcase</li>
+<li>dollar</li>
+<li>cart</li>
+<li>gift</li>
+<li>vacation</li>
+<li>food</li>
+<li>fruit</li>
+<li>pet</li>
+<li>tree</li>
+<li>chill</li>
+<li>circle</li>
+</ul>
+<h4 id="roles">Roles</h4>
+<p>The <code>Roles</code> block is optional, except for roles you which to assume via role chaining.</p>
+<h5 id="profile">Profile</h5>
+<p>Define a custom <code>$AWS_PROFILE</code> / <code>$AWS_SSO_PROFILE</code> value for this role which overrides
+the <a href="#profileformat">ProfileFormat</a> config option.</p>
+<p>Roles, just like <a href="#accounts">Accounts</a> also accept <a href="#tags">Tags</a> which are
+specific to that role and override any account level tags.</p>
+<h5 id="via">Via</h5>
+<p>Implements the concept of <a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_terms-and-concepts.html">role chaining</a>.</p>
+<p><code>Via</code> defines which role to assume before calling <a href="https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html">sts:AssumeRole</a> in
+order to switch to the specified role.  This allows you to define and assume
+roles in AWS accounts that are not included in your organization's AWS SSO
+scope or roles that were not defined via an <a href="https://docs.aws.amazon.com/singlesignon/latest/userguide/permissionsetsconcept.html">AWS SSO Permission Set</a>.</p>
+<h5 id="sourceidentity">SourceIdentity</h5>
+<p>An <a href="https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html#API_AssumeRole_RequestParameters">optional string</a>
+which must not start with <code>aws:</code> that your administrator may require you to set
+in order to assume a role with <code>Via</code>.</p>
+<h2 id="common-config-options">Common Config Options</h2>
+<h3 id="defaultsso">DefaultSSO</h3>
+<p>If you only have a single AWS SSO instance, then it doesn't really matter what
+you call it, but if you have two or more, than <code>Default</code> is automatically
+selected unless you manually specify it here, on the CLI (<code>--sso</code>), or via
+the <code>AWS_SSO</code> environment variable.</p>
+<h3 id="sso-cache-options">SSO Cache Options</h3>
+<h4 id="cacherefresh">CacheRefresh</h4>
+<p>This is the number of hours between automatically refreshing your AWS SSO cache
+to detect any changes in the roles you have been granted access to.  The default
+is 168 (7 days).  Disable this feature by setting to any value &lt;= 0.</p>
+<p><strong>Note:</strong> If this feature is disabled, then <a href="#autoconfigcheck">AutoConfigCheck</a>
+is also disabled.</p>
+<h4 id="threads">Threads</h4>
+<p>Certain actions when communicating with AWS can be accellerated by running multiple
+parallel threads.  Must be &gt;= 1.  Default is 5 threads.  Note that too many threads
+can actually hurt performance for large number of accounts!</p>
+<h4 id="maxretry">MaxRetry</h4>
+<p>Maximum number of attempts before aborting.  Default is 10 which seems optimal
+for &lt;= 50 accounts.  Value must be &gt; 0.</p>
+<h4 id="maxbackoff">MaxBackoff</h4>
+<p>Maximum number of seconds to wait before retrying.  Too low of a
+value will cause retries to fail more often.  Too high of a value will hurt
+performance.  Default is 5 seconds which seems optional for &lt;= 50 accounts.
+Value must be &gt; 0.</p>
+<h3 id="browser-integration">Browser Integration</h3>
+<h4 id="authurlaction-browser-urlaction-urlexeccommand">AuthUrlAction / Browser / UrlAction / UrlExecCommand</h4>
+<p><code>UrlAction</code> gives you control over how AWS SSO and AWS Console URLs are opened
+in a browser:</p>
+<ul>
+<li><code>clip</code> -- Copies the URL to your clipboard</li>
+<li><code>exec</code> -- Execute the command provided in <code>UrlExecCommand</code></li>
+<li><code>granted-containers</code>  -- Generates a URL for the Firefox
+    <a href="https://addons.mozilla.org/en-US/firefox/addon/granted/">Granted Containers</a> plugin and
+    runs your <code>UrlExecCommand</code></li>
+<li><code>open</code> -- Opens the URL in your default browser or the browser you specified
+    via <code>--browser</code> or <code>Browser</code></li>
+<li><code>open-url-in-container</code> -- Generates a URL for the Firefox <a href="https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/">Open Url in Container</a> and
+    <a href="https://addons.mozilla.org/en-US/firefox/addon/multi-account-containers/">Firefox Multi-Account Containers</a>
+    plugins and runs your <code>UrlExecCommand</code>. Please be sure to install only
+    one of these plugins. ;)</li>
+<li><code>print</code> -- Prints the URL with a message in your terminal to stderr</li>
+<li><code>printurl</code> -- Prints only the URL in your terminal to stderr</li>
+</ul>
+<p>If <code>Browser</code> is not set, then your default browser will be used and that
+browser needs to support JavaScript for the AWS SSO user interface.</p>
+<p><code>UrlExecCommand</code> is used with <code>UrlAction: exec</code> and the two Firefox containers
+plugin options (<code>granted-containers</code> / <code>open-url-in-container</code>) and allows you
+to execute arbitrary commands to handle the URL.  The command and arguments should be
+specified as a list, with the URL to open specified as the format string <code>%s</code>.
+Only one instance of <code>%s</code> is allowed.  Note that YAML requires quotes around
+strings which start with a <a href="https://yaml.org/spec/1.2-old/spec.html#id2774228">reserved indicator</a> like <code>%</code>.</p>
+<p><code>AuthUrlAction</code> allows you to override the global <code>UrlAction</code> when authenticating
+with your SSO provider to retrieve an AWS SSO token.</p>
+<p>Examples:</p>
+<h5 id="open-url-in-default-browser">Open URL In Default Browser</h5>
+<pre><code class="language-yaml">UrlAction: open
+</code></pre>
+<h5 id="open-url-in-non-default-browser">Open URL In Non-Default Browser</h5>
+<pre><code class="language-yaml">UrlAction: exec
+UrlExecCommand:
+    - open
+    - -a
+    - /Applications/Brave Browser.app
+    - --args
+    - &quot;%s&quot;
+</code></pre>
+<h5 id="open-url-in-firefox-container">Open URL in Firefox Container</h5>
+<p>Opens each IAM Role in a unique Firefox Container using either
+<a href="https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/">Open Url in Container</a> or the
+<a href="https://addons.mozilla.org/en-US/firefox/addon/multi-account-containers/">Firefox Multi-Account Containers</a>
+Firefox plugins.</p>
+<pre><code class="language-yaml">UrlAction: open-url-in-container
+UrlExecCommand:
+    - /Applications/Firefox.app/Contents/MacOS/firefox
+    - &quot;%s&quot;
+</code></pre>
+<h5 id="use-custom-shell-script">Use custom shell script</h5>
+<pre><code class="language-yaml">UrlAction: exec
+UrlExecCommand:
+    - ~/bin/open_url.sh
+    - &quot;%s&quot;
+</code></pre>
+<p><strong>Note:</strong> If your <code>ProfileFormat</code> generates a <em>ProfileName</em> with an <code>&amp;</code>, then
+<code>{{ .AccountId }}:{{ .RoleName }}</code> will be used as the Firefox container name instead.</p>
+<p><strong>Note:</strong> You can control the color and icon of the Firefox container label using
+<a href="#tags">Tags</a>.</p>
+<p><strong>Note for MacOS users:</strong> This feature does not work with the bundle directory,
+so you should specify <code>/Applications/Firefox.app/Contents/MacOS/firefox</code> (or as
+appropriate) as the command to execute.</p>
+<h4 id="consoleduration">ConsoleDuration</h4>
+<p>Number of minutes an AWS Console session is valid for (default 60).  If you wish
+to override the default session duration, you can specify the number of minutes
+here or with the <code>--duration</code> flag.</p>
+<p>Note that even though <a href="https://docs.aws.amazon.com/STS/latest/APIReference/API_GetFederationToken.html">AWS documents</a>
+the API call to get a Console URL to be between 15 minutes and 36 hours, the
+real limit is 12 hours (720 minutes) because AWS SSO sessions <a href="https://docs.aws.amazon.com/singlesignon/latest/userguide/howtosessionduration.html">are limited to
+12 hours maximum</a>.</p>
+<h3 id="aws_profile-integration">AWS_PROFILE Integration</h3>
+<h4 id="configprofilesurlaction">ConfigProfilesUrlAction</h4>
+<p>The <code>aws-sso config-profiles</code> command by default will use the same action
+to open URL's as defined in <a href="#authurlaction--browser--urlaction--urlexeccommand">UrlAction</a>,
+but you can override it via the <code>ConfigProfilesUrlAction</code>.</p>
+<p>If <code>UrlAction</code> is <code>print</code> or <code>printurl</code>, then this settings will default to <code>open</code>.</p>
+<p>Due to limitations with the AWS SDK, only the following options are valid:</p>
+<ul>
+<li><code>clip</code></li>
+<li><code>exec</code></li>
+<li><code>open</code></li>
+<li><code>granted-containers</code></li>
+<li><code>open-url-in-container</code></li>
+</ul>
+<p><strong>Note:</strong> This option is required if you also want to use <a href="#autoconfigcheck">AutoConfigCheck</a>.</p>
+<p><strong>Note:</strong> This config option was previously known as <code>ConfigUrlAction</code> which
+has been deprecated.</p>
+<h4 id="configprofilesbinarypath">ConfigProfilesBinaryPath</h4>
+<p>Override execution path for <code>aws-sso</code> when generating named AWS profiles via the
+<a href="../commands/#config-profiles">config-profiles</a>.</p>
+<h4 id="profileformat">ProfileFormat</h4>
+<p>AWS SSO CLI can set an environment variable named <code>AWS_SSO_PROFILE</code> with
+any value you can express using a <a href="https://pkg.go.dev/text/template">Go Template</a>
+which can be useful for modifying your shell prompt and integrate with your own
+tooling.</p>
+<p>The following variables are accessible from the <code>AWSRoleFlat</code> struct:</p>
+<ul>
+<li><code>Id</code> -- Unique integer defined by AWS SSO CLI for this role</li>
+<li><code>AccountId</code> -- AWS Account ID (int64! not zero padded)</li>
+<li><code>AccountIdPad</code> -- AWS Account ID (zero padded)</li>
+<li><code>AccountAlias</code> -- <a href="../FAQ/#accountname-vs-accountalias">AWS Account Name</a> defined in AWS by the account owner</li>
+<li><code>AccountName</code> -- AWS Account Name defined in <code>~/.aws-sso/config.yaml</code></li>
+<li><code>EmailAddress</code> -- Root account email address associated with the account in AWS</li>
+<li><code>ExpiresEpoch</code> -- When your API credentials expire (UNIX epoch)</li>
+<li><code>Expires</code> -- When your API credentials expire (string)</li>
+<li><code>Arn</code> -- AWS ARN for this role</li>
+<li><code>RoleName</code> -- The role name</li>
+<li><code>DefaultRegion</code> -- The manually configured default region for this role</li>
+<li><code>SSO</code> -- Name of the AWS SSO instance</li>
+<li><code>SSORegion</code> -- The AWS Region where AWS SSO is enabled in your account</li>
+<li><code>StartUrl</code> -- The AWS SSO start URL for your account</li>
+<li><code>Tags</code> -- Map of additional custom key/value pairs</li>
+<li><code>Via</code> -- Role AWS SSO CLI will assume before assuming this role</li>
+</ul>
+<p>By default, <code>ProfileFormat</code> is set to <code>{{ .AccountIdPad }}:{{ .RoleName }}</code>.</p>
+<p>AWS SSO CLI uses <a href="http://masterminds.github.io/sprig/">sprig</a> for most of its
+functions, but a few custom functions are available:</p>
+<ul>
+<li><code>AccountIdStr(x)</code> -- Converts the <code>.AccountId</code> variable to a string.  Deprecated.  Use <code>.AccountIdPad</code> variable instead.</li>
+<li><code>EmptyString(x)</code> -- Returns true/false if the value <code>x</code> is an empty string</li>
+<li><code>FirstItem([]x)</code> -- Returns the first item in a list that is not an empty string</li>
+<li><code>StringsJoin(x, []y)</code> -- Joins the items in <code>y</code> with the string <code>x</code></li>
+</ul>
+<p><strong>Note:</strong> Unlike most values stored in the <code>config.yaml</code>,  you will need to
+single-quote (<code>'</code>) the value because because <code>ProfileFormat</code> values often start
+with a <code>{</code>.</p>
+<p>For more information, <a href="../FAQ/#profiles-and-tags">see the FAQ</a>.</p>
+<h4 id="configvariables">ConfigVariables</h4>
+<p>Define a set of <a href="https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html">config settings</a> for each
+profile in your <code>~/.aws/config</code> file generated via the <a href="../commands/#config-profiles">config-profiles</a> command.</p>
+<p>Some examples to consider:</p>
+<ul>
+<li><code>sts_regional_endpoints: regional</code></li>
+<li><code>output: json</code></li>
+</ul>
+<h3 id="interactive-role-selection">Interactive Role Selection</h3>
+<h4 id="firsttag">FirstTag</h4>
+<p>When selecting a role, the tag key name at the top of the list will be this value regardless
+of sort order.  Useful if you want <code>History</code> or some other tag easily accessible via arrow keys.</p>
+<h4 id="fulltextsearch">FullTextSearch</h4>
+<p>When set to <code>true</code>, searching via interactive exec mode (<code>aws-sso exec</code> without role selector args)
+will cause searching to be done via substrings rather than the default prefix based search.</p>
+<h4 id="accountprimarytag">AccountPrimaryTag</h4>
+<p>When selecting a role, if you first select by role name (via the <code>Role</code> tag) you
+will be presented with a list of matching ARNs to select. The
+<code>AccountPrimaryTag</code> automatically includes another tag name and value as the
+description to aid in role selection.  By default the following tags are
+searched (first match is used):</p>
+<ul>
+<li><code>AccountName</code></li>
+<li><code>AccountAlias</code></li>
+<li><code>Email</code></li>
+</ul>
+<p>Set <code>AccountPrimaryTag</code> to an empty list to disable this feature.</p>
+<h4 id="promptcolors">PromptColors</h4>
+<p><code>PromptColors</code> takes a map of prompt options and color options allowing you to
+have complete control of how AWS SSO CLI looks.  You only need to specify the
+options you wish to override, but do not include the <code>PromptColors</code> if you have
+no options.  More information about the meaning and use of the options below,
+<a href="https://pkg.go.dev/github.com/c-bata/go-prompt#Option">refer to the go-prompt docs</a>.</p>
+<p>Valid options:</p>
+<ul>
+<li><code>DescriptionBGColor</code></li>
+<li><code>DescriptionTextColor</code></li>
+<li><code>InputBGColor</code></li>
+<li><code>InputTextColor</code></li>
+<li><code>PrefixBackgroundColor</code></li>
+<li><code>PrefixTextColor</code></li>
+<li><code>PreviewSuggestionBGColor</code></li>
+<li><code>PreviewSuggestionTextColor</code></li>
+<li><code>ScrollbarBGColor</code></li>
+<li><code>ScrollbarThumbColor</code></li>
+<li><code>SelectedDescriptionBGColor</code></li>
+<li><code>SelectedDescriptionTextColor</code></li>
+<li><code>SelectedSuggestionBGColor</code></li>
+<li><code>SelectedSuggestionTextColor</code></li>
+<li><code>SuggestionBGColor</code></li>
+<li><code>SuggestionTextColor</code></li>
+</ul>
+<p>Valid low intensity colors:</p>
+<ul>
+<li><code>Black</code></li>
+<li><code>DarkRed</code></li>
+<li><code>DarkGreen</code></li>
+<li><code>Brown</code></li>
+<li><code>DarkBlue</code></li>
+<li><code>Purple</code></li>
+<li><code>Cyan</code></li>
+<li><code>LightGrey</code></li>
+</ul>
+<p>Valid high intensity colors:</p>
+<ul>
+<li><code>DarkGrey</code></li>
+<li><code>Red</code></li>
+<li><code>Green</code></li>
+<li><code>Yellow</code></li>
+<li><code>Blue</code></li>
+<li><code>Fuchsia</code></li>
+<li><code>Turquoise</code></li>
+<li><code>White</code></li>
+</ul>
+<h4 id="historylimit">HistoryLimit</h4>
+<p>Limits the number of recently used roles tracked via the History tag.
+Default is last 10 unique roles.  Set to 0 to disable.</p>
+<h4 id="historyminutes">HistoryMinutes</h4>
+<p>Limits the list of recently used roles tracked via the History tag to
+roles that were last used within the last X minutes.  Set to 0 to not limit
+based on the time.  Default is 1440 minutes (24 hours).</p>
+<p>This option has no effect if <code>HistoryLimit</code> is set to 0.</p>
+<h3 id="advanced-configuration-options">Advanced Configuration Options</h3>
+<h4 id="listfields">ListFields</h4>
+<p>Specify which fields to display via the <code>list</code> command.  Valid options are:</p>
+<ul>
+<li><code>Id</code> -- Unique row identifier</li>
+<li><code>AccountAlias</code> -- <a href="../FAQ/#accountname-vs-accountalias">Account Name in AWS</a> as defined by the account owner</li>
+<li><code>AccountId</code> -- AWS Account Id</li>
+<li><code>AccountIdPad</code> -- AWS Account Id with leading zeros if necessary</li>
+<li><code>AccountName</code> -- Account Name from config.yaml</li>
+<li><code>Arn</code> -- Role ARN</li>
+<li><code>DefaultRegion</code> -- Configured default region</li>
+<li><code>EmailAddress</code> -- Email address of root account associated with AWS Account</li>
+<li><code>ExpiresEpoch</code> -- Unix epoch time when cached STS creds expire</li>
+<li><code>Expires</code> -- Hours and minutes until cached STS creds expire</li>
+<li><code>Profile</code> -- Value used for <code>$AWS_SSO_PROFILE</code> and the profile name in <code>~/.aws/config</code></li>
+<li><code>RoleName</code> -- Role name</li>
+<li><code>SSO</code> -- AWS SSO instance name</li>
+<li><code>Via</code> -- Role Chain Via</li>
+</ul>
+<h4 id="autoconfigcheck">AutoConfigCheck</h4>
+<p>When set to <code>True</code>, when your AWS SSO roles are automatically refreshed (see
+<a href="#cacherefresh">CacheRefresh</a>) <code>aws-sso</code> will also check to see if any changes
+are warranted in your <code>~/.aws/config</code>.</p>
+<p><strong>Note:</strong> This option requires you to also set <a href="#configprofilesurlaction">ConfigProfilesUrlAction</a>.</p>
+<p><strong>Note:</strong> This option can be disabled temporarily on the command line by passing
+the <code>--no-config-check</code> flag.</p>
+<p><strong>Note:</strong> If you are using a non-default path for your <code>~/.aws/config</code> file, then
+you must be sure to set the <code>AWS_CONFIG_FILE</code> environment variable to the correct
+path or disable this configuration option.</p>
+<h4 id="loglevel-loglines">LogLevel / LogLines</h4>
+<p>By default, the <code>LogLevel</code> is 'warn'.  You can override it here or via
+<code>--log-level</code> with one of the following values:</p>
+<ul>
+<li><code>error</code></li>
+<li><code>warn</code></li>
+<li><code>info</code></li>
+<li><code>debug</code></li>
+<li><code>trace</code></li>
+</ul>
+<p><code>LogLines</code> includes the file name/line and module name with each log for
+advanced debugging.</p>
+<h4 id="securestore-jsonstore">SecureStore / JsonStore</h4>
+<p><code>SecureStore</code> supports the following backends:</p>
+<ul>
+<li><code>file</code> - Encrypted local files (OS agnostic and default on Linux)</li>
+<li><code>keychain</code> - macOS <a href="https://support.apple.com/guide/mac-help/use-keychains-to-store-passwords-mchlf375f392/mac">Keychain</a> (default on macOS)</li>
+<li><code>kwallet</code> - <a href="https://github.com/KDE/kwalletmanager">KDE Wallet</a></li>
+<li><code>pass</code> - <a href="https://www.passwordstore.org">pass</a> (uses GPG on backend)</li>
+<li><code>secret-service</code> - Freedesktop.org <a href="https://specifications.freedesktop.org/secret-service/latest/re01.html">Secret Service</a></li>
+<li><code>wincred</code> - Windows <a href="https://support.microsoft.com/en-us/windows/accessing-credential-manager-1b5c916a-6a16-889f-8581-fc16e8165ac0">Credential Manager</a> (default on Windows)</li>
+<li><code>json</code> - Cleartext JSON file (very insecure and not recommended).  Location
+    can be overridden with <code>JsonStore</code></li>
+</ul>
+<h4 id="envvartags">EnvVarTags</h4>
+<p>List of tag keys that should be set as a shell environment variable when
+using the <code>eval</code> or <code>exec</code> commands.</p>
+<p><strong>Note:</strong> These environment variables are considered completely owned and
+controlled by <code>aws-sso</code> so any existing value will be overwritten.</p>
+<p><strong>Note:</strong> This feature is not compatible when using roles using the
+<code>$AWS_PROFILE</code> via the <code>config</code> command.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright 2021-2024 Aaron Turner
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.fe8b6f2b.min.js"></script>
+      
+        <script src="../js/asciinema-player.min.js"></script>
+      
+    
+  </body>
+</html>
