@@ -4,7 +4,8 @@
 
 ### Changes
 
- * No longer show help for sub-commands by default
+ * No longer show help for sub-commands by default 
+ * Warnings about invalid accounts/roles in config.yaml are now Debug messages #980
 
 ### New Features
 

@@ -583,7 +583,7 @@ func (c *Cache) addConfigRoles(r *Roles, config *SSOConfig) error {
 			return err
 		}
 		if _, ok := r.Accounts[id]; !ok {
-			log.Warnf("config.yaml defines AWS AccountID %d, but you don't have access.", id)
+			log.Debugf("config.yaml defines AWS AccountID %d, but you don't have access.", id)
 			continue
 		}
 		r.Accounts[id].DefaultRegion = account.DefaultRegion
@@ -612,7 +612,7 @@ func (c *Cache) addConfigRoles(r *Roles, config *SSOConfig) error {
 		// set the tags from the config file
 		for roleName, role := range config.Accounts[accountId].Roles {
 			if _, ok := r.Accounts[id].Roles[roleName]; !ok {
-				log.Warnf("config.yaml has %s but you don't have access", utils.MakeRoleARN(id, roleName))
+				log.Debugf("config.yaml has %s but you don't have access", utils.MakeRoleARN(id, roleName))
 				continue
 			}
 			r.Accounts[id].Roles[roleName].Arn = utils.MakeRoleARN(id, roleName)
