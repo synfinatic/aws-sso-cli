@@ -1,9 +1,9 @@
 # ECS Server REST API
 
-If you have [defined a bearer token](commands-ecs.md#ecs-auth) then all REST calls
+If you have [defined a bearer token](ecs-commands.md#ecs-auth) then all REST calls
 must define the necesary HTTP Authentication header.
 
-If you have [enabled SSL](commands-ecs.md#ecs-ssl-save) then all REST calls must
+If you have [enabled SSL](ecs-commands.md#ecs-ssl-save) then all REST calls must
 be over SSL/TLS.
 
 ## Default slot AWS IAM Role credentials

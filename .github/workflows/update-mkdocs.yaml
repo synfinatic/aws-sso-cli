@@ -1,4 +1,4 @@
-name: Update Docs
+name: Build/Publish Docs on main
 on:
   push:
     branches:
@@ -7,23 +7,86 @@ on:
       - '.github/**'
       - 'docs/**'
       - 'mkdocs.yml'
+    tags-ignore: ['**']
+
+permissions:
+  contents: write
 
 jobs:
-  build:
-    name: Deploy docs
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout main
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.11.6
+      - name: Install Dependencies
+        run: |
+          pip install mkdocs-material pillow cairosvg mike -r docs/requirements.txt
+      - name: Setup Docs Deploy
+        run: |
+          git config --global user.name "Docs Deploy"
+          git config --global user.email "docs.deploy@synfin.net"
+      - name: Build Docs Website
+        run: mike deploy --config-file mkdocs.yml --push develop
 
-      - name: Deploy docs
-        uses: synfinatic/mkdocs-deploy-gh-pages@bump-mkdocs
-        # mhausenblas/mkdocs-deploy-gh-pages@master is an old version of mkdocs, so using my own
-        # Or use mhausenblas/mkdocs-deploy-gh-pages@nomaterial to build without the mkdocs-material theme
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            # CUSTOM_DOMAIN: optionaldomain.com
-          CONFIG_FILE: mkdocs.yml
-          # EXTRA_PACKAGES: build-base
-          # GITHUB_DOMAIN: github.myenterprise.com
-          REQUIREMENTS: docs/requirements.txt
+
+name: Build/Publish Latest Release Docs
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.11.6
+      - name: Install Dependencies
+        run: |
+          pip install mkdocs-material pillow cairosvg mike -r docs/requirements.txt
+      - name: Setup Docs Deploy
+        run: |
+          git config --global user.name "Docs Deploy"
+          git config --global user.email "docs.deploy@synfin.net"
+      - name: Build Docs Website
+        run: mike deploy --config-file mkdocs.yml --push --update-aliases ${{ github.event.release.tag_name }} latest
+
+
+# name: Update Docs
+# on:
+#   push:
+#     branches:
+#       - main
+#     paths:
+#       - '.github/**'
+#       - 'docs/**'
+#       - 'mkdocs.yml'
+# jobs:
+#   build:
+#     name: Deploy docs
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout main
+#         uses: actions/checkout@v4
+# 
+#       - name: Deploy docs
+#         uses: synfinatic/mkdocs-deploy-gh-pages@bump-mkdocs
+#         # mhausenblas/mkdocs-deploy-gh-pages@master is an old version of mkdocs, so using my own
+#         # Or use mhausenblas/mkdocs-deploy-gh-pages@nomaterial to build without the mkdocs-material theme
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#             # CUSTOM_DOMAIN: optionaldomain.com
+#           CONFIG_FILE: mkdocs.yml
+#           # EXTRA_PACKAGES: build-base
+#           # GITHUB_DOMAIN: github.myenterprise.com
+#           REQUIREMENTS: docs/requirements.txt

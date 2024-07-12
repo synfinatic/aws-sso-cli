@@ -1,2 +1,2 @@
 FROM squidfunk/mkdocs-material:9.5.27
-RUN pip install -r docs/requirements.txt
+RUN pip install -r docs/requirements.txt mike
