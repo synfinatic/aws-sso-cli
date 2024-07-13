@@ -96,7 +96,7 @@ package: linux linux-arm64  ## Build deb/rpm packages
 		-v $$(pwd)/dist:/root/dist \
 		-e VERSION=$(PROJECT_VERSION) aws-sso-cli-builder:latest
 
-tags: cmd/aws-sso/*.go sso/*.go internal/*/*.go internal/*/*/*.go ## Create tags file for vim, etc
+tags: cmd/*/*.go internal/*/*.go internal/*/*/*.go ## Create tags file for vim, etc
 	@echo Make sure you have Go Tags installed: https://github.com/jstemmer/gotags
 	gotags -f tags -sort=true $$(find . -type f -name "*.go")
 
