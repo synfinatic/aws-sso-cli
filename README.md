@@ -12,7 +12,7 @@
 
 
 [Documentation](https://synfinatic.github.io/aws-sso-cli/) | 
-[Demos](https://synfinatic.github.io/aws-sso-cli/demos/) |
+[Demos](https://synfinatic.github.io/aws-sso-cli/latest/demos/) |
 [ChangeLog](CHANGELOG.md)
 
 ## About
@@ -35,26 +35,26 @@ via an interactive auto-complete experience with both automatic and user-defined
 metadata (tags) and exports the necessary [AWS STS Token credentials](
 https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_use-resources.html#using-temp-creds-sdk-cli)
 to your shell environment in a variety of ways.  It even supports sharing
-credentials via the [AWS ECS Task IAM Role](https://synfinatic.github.io/aws-sso-cli/ecs-server/).
+credentials via the [AWS ECS Task IAM Role](https://synfinatic.github.io/aws-sso-cli/latest/ecs-server/).
 
 As part of the goal of improving the end-user experience with AWS SSO, it also
-supports using [multiple AWS Web Console sessions](https://synfinatic.github.io/aws-sso-cli/quickstart/#aws-console-access)
+supports using [multiple AWS Web Console sessions](https://synfinatic.github.io/aws-sso-cli/latest/quickstart/#aws-console-access)
 and many other quality of life improvements!
 
 ## Key Features
 
  * Enhanced security over stock AWS tooling
- * Auto-discover your AWS SSO roles and [manage](https://synfinatic.github.io/aws-sso-cli/commands/#config)
+ * Auto-discover your AWS SSO roles and [manage](https://synfinatic.github.io/aws-sso-cli/latest/commands/#config)
      your `~/.aws/config` file
  * Support selecting an IAM role via `$AWS_PROFILE`, CLI (with auto-completion)
     or interactive search
- * Ability to select roles based on [user-defined](https://synfinatic.github.io/aws-sso-cli/config/#tags)
+ * Ability to select roles based on [user-defined](https://synfinatic.github.io/aws-sso-cli/latest/config/#tags)
     and auto-discovered tags
- * Support for [multiple active AWS Console sessions](https://synfinatic.github.io/aws-sso-cli/quickstart/#aws-console-access)
+ * Support for [multiple active AWS Console sessions](https://synfinatic.github.io/aws-sso-cli/latest/quickstart/#aws-console-access)
  * Guided setup to help you configure `aws-sso` the first time you run
- * Advanced configuration available to [adjust colors](https://synfinatic.github.io/aws-sso-cli/config/#PromptColors)
-    and generate [named profiles via templates](https://synfinatic.github.io/aws-sso-cli/config/#ProfileFormat)
- * Easily see how much longer your STS credentials [are valid for](https://synfinatic.github.io/aws-sso-cli/commands/#time)
+ * Advanced configuration available to [adjust colors](https://synfinatic.github.io/aws-sso-cli/latest/config/#PromptColors)
+    and generate [named profiles via templates](https://synfinatic.github.io/aws-sso-cli/latest/config/#ProfileFormat)
+ * Easily see how much longer your STS credentials [are valid for](https://synfinatic.github.io/aws-sso-cli/latest/commands/#time)
  * Written in GoLang, so only need to install a single binary (no dependencies)
  * Supports Linux, MacOS, and Windows
 
