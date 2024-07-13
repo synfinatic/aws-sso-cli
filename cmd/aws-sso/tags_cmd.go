@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/synfinatic/aws-sso-cli/sso"
+	"github.com/synfinatic/aws-sso-cli/internal/sso"
 )
 
 type TagsCmd struct {

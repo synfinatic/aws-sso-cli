@@ -26,9 +26,9 @@ import (
 	"time"
 
 	"github.com/manifoldco/promptui"
+	"github.com/synfinatic/aws-sso-cli/internal/sso"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
-	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
 var ranSetup = false

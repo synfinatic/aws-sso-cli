@@ -18,7 +18,7 @@ package main
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import (
-	"github.com/synfinatic/aws-sso-cli/sso"
+	"github.com/synfinatic/aws-sso-cli/internal/sso"
 )
 
 // LogoutCmd defines the Kong args for the flush command

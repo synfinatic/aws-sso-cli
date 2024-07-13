@@ -26,9 +26,9 @@ import (
 
 	"github.com/c-bata/go-prompt"
 	//	"github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/sso"
 	"github.com/synfinatic/aws-sso-cli/internal/tags"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
-	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
 type CompleterExec = func(*RunContext, int64, string) error
