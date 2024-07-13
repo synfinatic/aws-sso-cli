@@ -20,8 +20,8 @@ package main
 
 import (
 	"github.com/synfinatic/aws-sso-cli/internal/awsconfig"
+	"github.com/synfinatic/aws-sso-cli/internal/sso"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
-	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
 type LoginCmd struct{}

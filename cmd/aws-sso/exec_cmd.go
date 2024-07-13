@@ -25,8 +25,8 @@ import (
 	"os/exec"
 	"runtime"
 
+	"github.com/synfinatic/aws-sso-cli/internal/sso"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
-	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
 type ExecCmd struct {

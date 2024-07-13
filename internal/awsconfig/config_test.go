@@ -24,9 +24,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/synfinatic/aws-sso-cli/internal/sso"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
-	"github.com/synfinatic/aws-sso-cli/sso"
 )
 
 func TestAwsConfigFile(t *testing.T) {

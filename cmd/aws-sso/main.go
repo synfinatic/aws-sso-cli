@@ -34,11 +34,11 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/ecs/server"
 	"github.com/synfinatic/aws-sso-cli/internal/helper"
 	"github.com/synfinatic/aws-sso-cli/internal/predictor"
+	"github.com/synfinatic/aws-sso-cli/internal/sso"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/tags"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
-	"github.com/synfinatic/aws-sso-cli/sso"
 	"github.com/willabides/kongplete"
 )
 

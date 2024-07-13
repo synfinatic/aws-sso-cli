@@ -171,7 +171,7 @@ $(DIST_DIR):
 
 .PHONY: fmt
 fmt: ## Format Go code
-	@gofmt -s -w */*.go */*/*.go
+	@gofmt -s -w */*/*.go
 
 .PHONY: test-fmt
 test-fmt: fmt ## Test to make sure code if formatted correctly
