@@ -18,7 +18,7 @@ jobs:
           python-version: 3.11.6
       - name: Install Dependencies
         run: |
-          pip install mkdocs-material pillow cairosvg mike -r docs/requirements.txt
+          pip install -r docs/requirements.txt
       - name: Setup Docs Deploy
         run: |
           git config --global user.name "Docs Deploy"
