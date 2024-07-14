@@ -19,12 +19,12 @@ package main
  */
 
 import (
-	"github.com/synfinatic/aws-sso-cli/internal/awsconfig"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
-	"github.com/synfinatic/aws-sso-cli/internal/url"
 )
 
-type LoginCmd struct{}
+type LoginCmd struct {
+	Threads int `kong:"help='Override number of threads for talking to AWS',default=${DEFAULT_THREADS}"`
+}
 
 func (cc *LoginCmd) Run(ctx *RunContext) error {
 	doAuth(ctx)
@@ -71,22 +71,17 @@ func doAuth(ctx *RunContext) {
 		if err != nil {
 			log.Fatalf(err.Error())
 		}
-		if err = ctx.Settings.Cache.Refresh(AwsSSO, s, ssoName, ctx.Cli.Threads); err != nil {
+		added, deleted, err := ctx.Settings.Cache.Refresh(AwsSSO, s, ssoName, ctx.Cli.Login.Threads)
+		if err != nil {
 			log.WithError(err).Fatalf("Unable to refresh cache")
 		}
-		if err = ctx.Settings.Cache.Save(true); err != nil {
-			log.WithError(err).Errorf("Unable to save cache")
+
+		if added > 0 || deleted > 0 {
+			log.Infof("Updated cache: %d added, %d deleted", added, deleted)
 		}
 
-		// should we update our config??
-		if !ctx.Cli.NoConfigCheck && ctx.Settings.AutoConfigCheck {
-			if ctx.Settings.ConfigProfilesUrlAction != url.ConfigProfilesUndef {
-				action, _ := url.NewAction(string(ctx.Settings.ConfigProfilesUrlAction))
-				err := awsconfig.UpdateAwsConfig(ctx.Settings, action, "", true, false)
-				if err != nil {
-					log.Errorf("Unable to auto-update aws config file: %s", err.Error())
-				}
-			}
+		if err = ctx.Settings.Cache.Save(true); err != nil {
+			log.WithError(err).Errorf("Unable to save cache")
 		}
 	}
 }

@@ -26,42 +26,23 @@ import (
 )
 
 type TagsCmd struct {
-	AccountId   int64  `kong:"name='account',short='A',help='Filter results based on AWS AccountID'"`
-	Role        string `kong:"short='R',help='Filter results based on AWS Role Name'"`
-	ForceUpdate bool   `kong:"help='Force account/role cache update'"`
+	AccountId int64  `kong:"name='account',short='A',help='Filter results based on AWS AccountID'"`
+	Role      string `kong:"short='R',help='Filter results based on AWS Role Name'"`
 }
 
 func (cc *TagsCmd) Run(ctx *RunContext) error {
 	set := ctx.Settings
 	cache := ctx.Settings.Cache.GetSSO()
-	if ctx.Cli.Tags.ForceUpdate {
-		s := set.SSO[ctx.Cli.SSO]
+	s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
+	if err != nil {
+		return err
+	}
 
-		ssoName, err := ctx.Settings.GetSelectedSSOName(ctx.Cli.SSO)
-		if err != nil {
-			log.Fatalf(err.Error())
-		}
-
-		err = set.Cache.Refresh(AwsSSO, s, ssoName, ctx.Cli.Threads)
-		if err != nil {
-			log.WithError(err).Fatalf("Unable to refresh role cache")
-		}
-		err = set.Cache.Save(true)
-		if err != nil {
-			log.WithError(err).Errorf("Unable to save cache")
-		}
-	} else {
-		s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
-		if err != nil {
+	if err := set.Cache.Expired(s); err != nil {
+		log.Warn(err.Error())
+		c := &CacheCmd{}
+		if err = c.Run(ctx); err != nil {
 			return err
-		}
-
-		if err := set.Cache.Expired(s); err != nil {
-			log.Warn(err.Error())
-			c := &CacheCmd{}
-			if err = c.Run(ctx); err != nil {
-				return err
-			}
 		}
 	}
 	roles := []*sso.AWSRoleFlat{}

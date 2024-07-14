@@ -10,8 +10,6 @@
  * `--url-action`, `-u` -- How to handle URLs for your SSO provider
  * `--sso <name>`, `-S` -- Specify non-default AWS SSO instance to use (`$AWS_SSO`)
  * `--sts-refresh` -- Force refresh of STS Token Credentials
- * `--no-config-check` -- Disable automatic updating of `~/.aws/config`
- * `--threads <int>` -- Number of threads to use with AWS (default: 5)
 
 ## Commands
 
@@ -23,6 +21,11 @@ hours, but you can force this data to be refreshed immediately.
 
 Cache data is also automatically updated anytime the `config.yaml` file is
 modified.
+
+Flags:
+
+ * `--no-config-check` -- Disable automatic updating of `~/.aws/config`
+ * `--threads <int>` -- Number of threads to use with AWS (default: 5)
 
 ---
 
@@ -244,6 +247,11 @@ case-sensitive manner.
 
 Login via AWS IAM Identity Center (AWS SSO) and retrieve a security token
 used to fetch IAM Role credentials.
+
+Flags:
+
+ * `--no-config-check` -- Disable automatic updating of `~/.aws/config`
+ * `--threads <int>` -- Number of threads to use with AWS (default: 5)
 
 ---
 

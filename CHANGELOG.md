@@ -8,6 +8,8 @@
  * Warnings about invalid accounts/roles in config.yaml are now Debug messages #980
  * Default ProfileFormat is now the `Friendly` format #992
  * `config`, `config-profiles` and `completions` are now sub-commands of `setup` #975
+ * Only the and `cache` command will auto-update the contents of `~/.aws/config` #974
+ * `tags` command no longer supports the `--force-update` option
 
 ### New Features
 
