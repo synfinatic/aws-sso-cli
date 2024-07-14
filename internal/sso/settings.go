@@ -434,7 +434,7 @@ var getExecutable func() (string, error) = func() (string, error) {
 
 // GetAllProfiles returns a map of the ProfileConfig for each SSOConfig.
 // takes the binary path to `open` URL with if set
-func (s *Settings) GetAllProfiles(open url.Action) (*ProfileMap, error) {
+func (s *Settings) GetAllProfiles() (*ProfileMap, error) {
 	profiles := ProfileMap{}
 	var err error
 
@@ -462,7 +462,6 @@ func (s *Settings) GetAllProfiles(open url.Action) (*ProfileMap, error) {
 				BinaryPath:      binaryPath,
 				ConfigVariables: s.ConfigVariables,
 				DefaultRegion:   role.DefaultRegion,
-				Open:            string(open),
 				Profile:         profile,
 				Sso:             ssoName,
 			}

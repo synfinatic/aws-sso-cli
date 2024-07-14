@@ -84,7 +84,6 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"PromptColors.SuggestionTextColor":          "White",
 	"AutoConfigCheck":                           false,
 	"CacheRefresh":                              168, // 7 days in hours
-	"ConfigProfilesUrlAction":                   "open",
 	"ConsoleDuration":                           60,
 	"DefaultRegion":                             "us-east-1",
 	"DefaultSSO":                                "Default",
@@ -113,7 +112,6 @@ type CLI struct {
 
 	// Commands
 	Cache        CacheCmd        `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
-	Setup        SetupCmd        `kong:"cmd,help='Setup Wizard, Completions, etc'"`
 	Console      ConsoleCmd      `kong:"cmd,help='Open AWS Console using specificed AWS role/profile'"`
 	Credentials  CredentialsCmd  `kong:"cmd,help='Generate static AWS credentials for use with AWS CLI'"`
 	Default      DefaultCmd      `kong:"cmd,hidden,default='1'"` // list command without args
@@ -124,7 +122,8 @@ type CLI struct {
 	Login        LoginCmd        `kong:"cmd,help='Login to an AWS Identity Center instance'"`
 	Logout       LogoutCmd       `kong:"cmd,help='Logout from an AWS Identity Center instance and invalidate all credentials'"`
 	ListSSORoles ListSSORolesCmd `kong:"cmd,hidden,help='List AWS SSO Roles (debugging)'"`
-	Process      ProcessCmd      `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
+	Process      ProcessCmd      `kong:"cmd,help='Generate JSON for AWS SDK credential_process command'"`
+	Setup        SetupCmd        `kong:"cmd,help='Setup Wizard, Completions, Profiles, etc'"`
 	Tags         TagsCmd         `kong:"cmd,help='List tags'"`
 	Time         TimeCmd         `kong:"cmd,help='Print how much time before current STS Token expires'"`
 	Version      VersionCmd      `kong:"cmd,help='Print version and exit'"`
@@ -162,7 +161,7 @@ func main() {
 			log.Fatalf("%s", err.Error())
 		}
 		return
-	case "ecs server":
+	case "ecs server", "ecs list", "ecs unload", "ecs profile":
 		// side-step the rest of the setup...
 		if err = ctx.Run(&runCtx); err != nil {
 			log.Fatalf("%s", err.Error())
@@ -192,7 +191,7 @@ func main() {
 	}
 
 	switch ctx.Command() {
-	case "list", "login", "ecs list", "ecs unload", "ecs profile":
+	case "list", "login", "tags":
 		// Initialize our AwsSSO variable & SecureStore
 		c := &runCtx
 		s, err := c.Settings.GetSelectedSSO(c.Cli.SSO)

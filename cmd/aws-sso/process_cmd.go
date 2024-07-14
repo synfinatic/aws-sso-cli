@@ -38,11 +38,6 @@ type ProcessCmd struct {
 func (cc *ProcessCmd) Run(ctx *RunContext) error {
 	var err error
 
-	switch ctx.Cli.UrlAction {
-	case "print", "printurl":
-		return fmt.Errorf("unsupported --url-action=print|printurl option")
-	}
-
 	role := ctx.Cli.Process.Role
 	account := ctx.Cli.Process.AccountId
 
@@ -63,7 +58,7 @@ func (cc *ProcessCmd) Run(ctx *RunContext) error {
 	}
 
 	if role == "" || account == 0 {
-		return fmt.Errorf("Please specify --arn or --account and --role")
+		return fmt.Errorf("please specify --arn or --account and --role")
 	}
 
 	return credentialProcess(ctx, account, role)

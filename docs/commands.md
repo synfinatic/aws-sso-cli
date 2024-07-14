@@ -295,7 +295,6 @@ for every role accessible via AWS SSO CLI.
 Flags:
 
  * `--diff` -- Print a diff of changes to the config file instead of modifying it
- * `--open` -- Specify how to open URls: [clip|exec|open|granted-containers|open-url-in-container]
  * `--print` -- Print profile entries instead of modifying config file
  * `--force` -- Write a new config file without prompting
  * `--aws-config` -- Override path to `~/.aws/config` file
@@ -317,18 +316,9 @@ _automatically refresh_.  This means, if you do not have a valid AWS SSO token,
 you will be prompted to authentiate via your SSO provider and subsequent
 requests to obtain new IAM STS credentials will automatically happen as needed.
 
-**Note:** Due to a limitation in the AWS tooling, `print` and `printurl` are not
-supported values for `--url-action`.  Hence, you must use `open` or `exec` to
-auto-open URLs in your browser (recommended) or `clip` to automatically copy
-URLs to your clipboard.  _No user prompting is possible._
-
 **Note:** You should run this command any time your list of AWS roles changes
 in order to update the `~/.aws/config` file or enable [AutoConfigCheck](
-config.md#autoconfigcheck) and [ConfigProfilesUrlAction](
-config.md#configprofilesurlaction).
-
-**Note:** If `ConfigProfilesUrlAction` is set, then `--open` is optional,
-otherwise it is required.
+config.md#autoconfigcheck).
 
 **Note:** It is important that you do _NOT_ remove the `# BEGIN_AWS_SSO_CLI` and
 `# END_AWS_SSO_CLI` lines from your config file!  These markers are used to track

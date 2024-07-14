@@ -25,7 +25,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
-	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
@@ -68,7 +67,7 @@ func TestGetProfileMap(t *testing.T) {
 		},
 	}
 
-	profiles, err := getProfileMap(s, url.Open)
+	profiles, err := getProfileMap(s)
 	p := *profiles
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(p))
@@ -90,7 +89,7 @@ func TestGetProfileMap(t *testing.T) {
 			},
 		},
 	}
-	_, err = getProfileMap(s, url.Open)
+	_, err = getProfileMap(s)
 	assert.Error(t, err)
 }
 
@@ -126,7 +125,7 @@ func TestPrintAwsConfig(t *testing.T) {
 	fname := stdout.Name()
 	defer os.Remove(fname)
 
-	err = PrintAwsConfig(s, url.Open)
+	err = PrintAwsConfig(s)
 	assert.NoError(t, err)
 
 	_, err = stdout.Seek(0, 0)
@@ -137,7 +136,7 @@ func TestPrintAwsConfig(t *testing.T) {
 	assert.Error(t, err)
 	assert.Less(t, 300, len)
 	assert.Contains(t, string(buf), "[profile 000000012345:Bar]")
-	assert.Regexp(t, regexp.MustCompile(`credential_process = /[^ ]+/awsconfig.test -u open -S "Default" process --arn aws:arn:iam::12345:role/Bar`), string(buf))
+	assert.Regexp(t, regexp.MustCompile(`credential_process = /[^ ]+/awsconfig.test -S "Default" process --arn aws:arn:iam::12345:role/Bar`), string(buf))
 	assert.Regexp(t, regexp.MustCompile(`# BEGIN_AWS_SSO_CLI`), string(buf))
 	assert.Regexp(t, regexp.MustCompile(`# END_AWS_SSO_CLI`), string(buf))
 	stdout.Close()
@@ -159,7 +158,7 @@ func TestPrintAwsConfig(t *testing.T) {
 		},
 	}
 
-	err = PrintAwsConfig(s, url.Open)
+	err = PrintAwsConfig(s)
 	assert.Error(t, err)
 }
 
@@ -195,7 +194,7 @@ func TestUpdateAwsConfig(t *testing.T) {
 	defer os.Remove(fname)
 	cfile.Close()
 
-	err = UpdateAwsConfig(s, url.Open, fname, false, true)
+	err = UpdateAwsConfig(s, fname, false, true)
 	assert.NoError(t, err)
 
 	cfile, err = os.Open(fname)
@@ -206,7 +205,7 @@ func TestUpdateAwsConfig(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Less(t, 300, len)
 	assert.Contains(t, string(buf), "[profile 000000012345:Bar]")
-	assert.Regexp(t, regexp.MustCompile(`credential_process = /[^ ]+/awsconfig.test -u open -S "Default" process --arn aws:arn:iam::12345:role/Bar`), string(buf))
+	assert.Regexp(t, regexp.MustCompile(`credential_process = /[^ ]+/awsconfig.test -S "Default" process --arn aws:arn:iam::12345:role/Bar`), string(buf))
 	assert.Regexp(t, regexp.MustCompile(`# BEGIN_AWS_SSO_CLI`), string(buf))
 	assert.Regexp(t, regexp.MustCompile(`# END_AWS_SSO_CLI`), string(buf))
 
@@ -227,6 +226,6 @@ func TestUpdateAwsConfig(t *testing.T) {
 		},
 	}
 
-	err = UpdateAwsConfig(s, url.Open, fname, false, true)
+	err = UpdateAwsConfig(s, fname, false, true)
 	assert.Error(t, err)
 }
