@@ -1379,8 +1379,6 @@
 <li><code>--url-action</code>, <code>-u</code> -- How to handle URLs for your SSO provider</li>
 <li><code>--sso &lt;name&gt;</code>, <code>-S</code> -- Specify non-default AWS SSO instance to use (<code>$AWS_SSO</code>)</li>
 <li><code>--sts-refresh</code> -- Force refresh of STS Token Credentials</li>
-<li><code>--no-config-check</code> -- Disable automatic updating of <code>~/.aws/config</code></li>
-<li><code>--threads &lt;int&gt;</code> -- Number of threads to use with AWS (default: 5)</li>
 </ul>
 <h2 id="commands">Commands</h2>
 <h3 id="cache">cache</h3>
@@ -1389,6 +1387,11 @@ better perfomance.  By default it will refresh this information after 24
 hours, but you can force this data to be refreshed immediately.</p>
 <p>Cache data is also automatically updated anytime the <code>config.yaml</code> file is
 modified.</p>
+<p>Flags:</p>
+<ul>
+<li><code>--no-config-check</code> -- Disable automatic updating of <code>~/.aws/config</code></li>
+<li><code>--threads &lt;int&gt;</code> -- Number of threads to use with AWS (default: 5)</li>
+</ul>
 <hr />
 <h3 id="console">console</h3>
 <p>Console generates a URL which will grant you access to the AWS Console in your
@@ -1558,6 +1561,11 @@ case-sensitive manner.</p>
 <h3 id="login">login</h3>
 <p>Login via AWS IAM Identity Center (AWS SSO) and retrieve a security token
 used to fetch IAM Role credentials.</p>
+<p>Flags:</p>
+<ul>
+<li><code>--no-config-check</code> -- Disable automatic updating of <code>~/.aws/config</code></li>
+<li><code>--threads &lt;int&gt;</code> -- Number of threads to use with AWS (default: 5)</li>
+</ul>
 <hr />
 <h3 id="logout">logout</h3>
 <p>Invalidates the AWS Identity Center AccessToken (used to fetch new IAM Credentials)
