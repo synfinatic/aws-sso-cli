@@ -113,24 +113,22 @@ type CLI struct {
 	Threads       int    `kong:"help='Override number of threads for talking to AWS (default: 5)'"`
 
 	// Commands
-	Cache          CacheCmd          `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
-	Completions    CompleteCmd       `kong:"cmd,help='Manage shell completions'"`
-	Console        ConsoleCmd        `kong:"cmd,help='Open AWS Console using specificed AWS role/profile'"`
-	Config         ConfigCmd         `kong:"cmd,help='Run the configuration wizard'"`
-	ConfigProfiles ConfigProfilesCmd `kong:"cmd,help='Update ~/.aws/config with AWS SSO profiles from the cache'"`
-	Credentials    CredentialsCmd    `kong:"cmd,help='Generate static AWS credentials for use with AWS CLI'"`
-	Default        DefaultCmd        `kong:"cmd,hidden,default='1'"` // list command without args
-	Ecs            EcsCmd            `kong:"cmd,help='ECS server/client commands'"`
-	Eval           EvalCmd           `kong:"cmd,help='Print AWS environment vars for use with eval $(aws-sso eval ...)'"`
-	Exec           ExecCmd           `kong:"cmd,help='Execute command using specified IAM role in a new shell'"`
-	List           ListCmd           `kong:"cmd,help='List all accounts / roles (default command)'"`
-	Login          LoginCmd          `kong:"cmd,help='Login to an AWS Identity Center instance'"`
-	Logout         LogoutCmd         `kong:"cmd,help='Logout from an AWS Identity Center instance and invalidate all credentials'"`
-	ListSSORoles   ListSSORolesCmd   `kong:"cmd,hidden,help='List AWS SSO Roles (debugging)'"`
-	Process        ProcessCmd        `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
-	Tags           TagsCmd           `kong:"cmd,help='List tags'"`
-	Time           TimeCmd           `kong:"cmd,help='Print how much time before current STS Token expires'"`
-	Version        VersionCmd        `kong:"cmd,help='Print version and exit'"`
+	Cache        CacheCmd        `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
+	Setup        SetupCmd        `kong:"cmd,help='Setup Wizard, Completions, etc'"`
+	Console      ConsoleCmd      `kong:"cmd,help='Open AWS Console using specificed AWS role/profile'"`
+	Credentials  CredentialsCmd  `kong:"cmd,help='Generate static AWS credentials for use with AWS CLI'"`
+	Default      DefaultCmd      `kong:"cmd,hidden,default='1'"` // list command without args
+	Ecs          EcsCmd          `kong:"cmd,help='ECS server/client commands'"`
+	Eval         EvalCmd         `kong:"cmd,help='Print AWS environment vars for use with eval $(aws-sso eval ...)'"`
+	Exec         ExecCmd         `kong:"cmd,help='Execute command using specified IAM role in a new shell'"`
+	List         ListCmd         `kong:"cmd,help='List all accounts / roles (default command)'"`
+	Login        LoginCmd        `kong:"cmd,help='Login to an AWS Identity Center instance'"`
+	Logout       LogoutCmd       `kong:"cmd,help='Logout from an AWS Identity Center instance and invalidate all credentials'"`
+	ListSSORoles ListSSORolesCmd `kong:"cmd,hidden,help='List AWS SSO Roles (debugging)'"`
+	Process      ProcessCmd      `kong:"cmd,help='Generate JSON for credential_process in ~/.aws/config'"`
+	Tags         TagsCmd         `kong:"cmd,help='List tags'"`
+	Time         TimeCmd         `kong:"cmd,help='Print how much time before current STS Token expires'"`
+	Version      VersionCmd      `kong:"cmd,help='Print version and exit'"`
 }
 
 func main() {
@@ -177,7 +175,7 @@ func main() {
 
 	if _, err := os.Stat(cli.ConfigFile); errors.Is(err, os.ErrNotExist) {
 		log.Warnf("No config file found!  Will now prompt you for a basic config...")
-		if err = setupWizard(&runCtx, false, false, runCtx.Cli.Config.Advanced); err != nil {
+		if err = setupWizard(&runCtx, false, false, runCtx.Cli.Setup.Wizard.Advanced); err != nil {
 			log.Fatalf("%s", err.Error())
 		}
 		if ctx.Command() == "config" {

@@ -131,7 +131,7 @@ func checkPromptError(err error) {
 	switch err.Error() {
 	case "^D":
 		// https://github.com/synfinatic/aws-sso-cli/issues/531
-		log.Errorf("Sorry, <Del> not supported")
+		log.Errorf("sorry, <Del> not supported")
 	case "^C":
 		log.Fatalf("User aborted.")
 	default:
@@ -170,7 +170,7 @@ func promptStartUrl(defaultValue string) string {
 				if len(input) > 0 && len(input) < 64 && ssoHostnameRegexp.Match([]byte(input)) {
 					return nil
 				}
-				return fmt.Errorf("Invalid DNS hostname: %s", input)
+				return fmt.Errorf("invalid DNS hostname: %s", input)
 			},
 			Default:   defaultValue,
 			Stdout:    &utils.BellSkipper{},
@@ -191,7 +191,7 @@ func promptStartUrl(defaultValue string) string {
 		if _, err := net.LookupHost(val); err == nil {
 			validFQDN = true
 		} else if err != nil {
-			log.Errorf("Unable to resolve %s", val)
+			log.Errorf("unable to resolve %s", val)
 		}
 	}
 	log.Infof("Using %s", val)
@@ -474,7 +474,7 @@ func promptConsoleDuration(defaultValue int32) int32 {
 				istr := strings.TrimSpace(input)
 				x, err := strconv.ParseInt(istr, 10, 64)
 				if err != nil || x > 720 || x < 15 {
-					return fmt.Errorf("Value must be a valid integer between 15 and 720")
+					return fmt.Errorf("value must be a valid integer between 15 and 720")
 				}
 				return nil
 			},
@@ -784,7 +784,7 @@ func validateInteger(input string) error {
 	input = strings.TrimSpace(input)
 	_, err := strconv.ParseInt(input, 10, 64)
 	if err != nil {
-		return fmt.Errorf("Value must be a valid integer")
+		return fmt.Errorf("value must be a valid integer")
 	}
 	return nil
 }
