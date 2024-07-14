@@ -94,7 +94,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"HistoryMinutes":                            1440, // 24hrs
 	"ListFields":                                DEFAULT_LIST_FIELDS,
 	"UrlAction":                                 "open",
-	"LogLevel":                                  "warn",
+	"LogLevel":                                  "info",
 	"ProfileFormat":                             NICE_PROFILE_FORMAT,
 	"Threads":                                   DEFAULT_THREADS,
 	"MaxBackoff":                                5, // seconds
@@ -105,7 +105,7 @@ type CLI struct {
 	// Common Arguments
 	Browser    string `kong:"short='b',help='Path to browser to open URLs with',env='AWS_SSO_BROWSER'"`
 	ConfigFile string `kong:"name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG',predict='allFiles'"`
-	LogLevel   string `kong:"short='L',name='level',help='Logging level [error|warn|info|debug|trace] (default: warn)'"`
+	LogLevel   string `kong:"short='L',name='level',help='Logging level [error|warn|info|debug|trace] (default: info)'"`
 	Lines      bool   `kong:"help='Print line number in logs'"`
 	UrlAction  string `kong:"short='u',help='How to handle URLs [clip|exec|open|print|printurl|granted-containers|open-url-in-container] (default: open)'"`
 	SSO        string `kong:"short='S',help='Override default AWS SSO Instance',env='AWS_SSO',predictor='sso'"`

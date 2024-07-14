@@ -10,6 +10,7 @@
  * `config`, `config-profiles` and `completions` are now sub-commands of `setup` #975
  * Only the and `cache` command will auto-update the contents of `~/.aws/config` #974
  * `tags` command no longer supports the `--force-update` option
+ * Change default log level from `warn` to `info`
 
 ### New Features
 
