@@ -389,10 +389,91 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="aws-sso-profile helper script">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
 </li>
         
       </ul>
     </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-the-exec-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using the exec command
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using the exec command">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-the-aws_profile-variable" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using the $AWS_PROFILE variable
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using the $AWS_PROFILE variable">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#usage_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aws-console-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      AWS Console Access
+    </span>
+  </a>
   
 </li>
       
@@ -1077,10 +1158,91 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="aws-sso-profile helper script">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
 </li>
         
       </ul>
     </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-the-exec-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using the exec command
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using the exec command">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-the-aws_profile-variable" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using the $AWS_PROFILE variable
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using the $AWS_PROFILE variable">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#usage_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aws-console-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      AWS Console Access
+    </span>
+  </a>
   
 </li>
       
@@ -1205,8 +1367,8 @@ into your current shell.  This method has the advantage of supporting
 auto-complete of AWS Profile names and not requiring forking a new shell
 which can be confusing.</p>
 <p>Full documentation for auto-completion <a href="../commands/#shell-helpers">is available here</a>.</p>
-<p><strong>Note:</strong> Use of this feature requires [enabling auto-completion](</p>
-<h1 id="enabling-auto-completion-in-your-shell-as-described-above">enabling-auto-completion-in-your-shell) as described above.</h1>
+<p><strong>Note:</strong> Use of this feature requires
+<a href="#enabling-auto-completion-in-your-shell">enabling auto-completion</a> as described above.</p>
 <h4 id="usage">Usage</h4>
 <p>The above defines two new commands, the first of which (<code>aws-sso-profile</code>)
 allows you to easily assume a role in your current shell with auto-complete
@@ -1275,12 +1437,10 @@ via AWS API keys: set the <code>$AWS_PROFILE</code> environment variable to the 
 the profile.</p>
 <p>The only difference is that your API keys are managed via AWS SSO and always
 safely stored encrypted on disk!</p>
-<pre><code class="language-bash">$ export AWS_PROFILE=&lt;name&gt;
-$ aws sts get-caller-identity
-$ aws s3api list-buckets
+<pre><code class="language-bash">export AWS_PROFILE=&lt;name&gt;
 </code></pre>
 <p>or for a single command:</p>
-<pre><code class="language-bash">$ AWS_PROFILE=&lt;name&gt; aws sts get-caller-identity
+<pre><code class="language-bash">AWS_PROFILE=&lt;name&gt; aws sts get-caller-identity
 </code></pre>
 <p>Note that every time the <code>aws</code> tool or your code makes a request for the API
 credentials, it is calling <code>aws-sso</code>.  The first time it does this for a role,

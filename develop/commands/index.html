@@ -415,24 +415,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#config" class="md-nav__link">
-    <span class="md-ellipsis">
-      config
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#config-profiles" class="md-nav__link">
-    <span class="md-ellipsis">
-      config-profiles
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#console" class="md-nav__link">
     <span class="md-ellipsis">
       console
@@ -529,6 +511,33 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#setup-completions" class="md-nav__link">
+    <span class="md-ellipsis">
+      setup completions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      setup profiles
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-wizard" class="md-nav__link">
+    <span class="md-ellipsis">
+      setup wizard
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#tags" class="md-nav__link">
     <span class="md-ellipsis">
       tags
@@ -541,15 +550,6 @@
   <a href="#time" class="md-nav__link">
     <span class="md-ellipsis">
       time
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#completions" class="md-nav__link">
-    <span class="md-ellipsis">
-      completions
     </span>
   </a>
   
@@ -1139,24 +1139,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#config" class="md-nav__link">
-    <span class="md-ellipsis">
-      config
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#config-profiles" class="md-nav__link">
-    <span class="md-ellipsis">
-      config-profiles
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#console" class="md-nav__link">
     <span class="md-ellipsis">
       console
@@ -1253,6 +1235,33 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#setup-completions" class="md-nav__link">
+    <span class="md-ellipsis">
+      setup completions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      setup profiles
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-wizard" class="md-nav__link">
+    <span class="md-ellipsis">
+      setup wizard
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#tags" class="md-nav__link">
     <span class="md-ellipsis">
       tags
@@ -1265,15 +1274,6 @@
   <a href="#time" class="md-nav__link">
     <span class="md-ellipsis">
       time
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#completions" class="md-nav__link">
-    <span class="md-ellipsis">
-      completions
     </span>
   </a>
   
@@ -1390,52 +1390,6 @@ hours, but you can force this data to be refreshed immediately.</p>
 <p>Cache data is also automatically updated anytime the <code>config.yaml</code> file is
 modified.</p>
 <hr />
-<h3 id="config">config</h3>
-<p>Allows you to run through the configuration wizard and update your AWS SSO CLI
-config file (<code>~/.aws-sso/config.yaml</code>).   By default, it only does a very basic
-configuration to get started with.  The <code>--advanced</code> flag prompts for more
-settings and is useful for taking advantage of some of the new settings if
-you've upgraded from a previous version!</p>
-<p>Flags:</p>
-<ul>
-<li><code>--advanced</code> -- Prompts for many more config options</li>
-</ul>
-<hr />
-<h3 id="config-profiles">config-profiles</h3>
-<p>Modifies the <code>~/.aws/config</code> file to contain a <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-using-profiles">named profile</a>
-for every role accessible via AWS SSO CLI.</p>
-<p>Flags:</p>
-<ul>
-<li><code>--diff</code> -- Print a diff of changes to the config file instead of modifying it</li>
-<li><code>--open</code> -- Specify how to open URls: [clip|exec|open|granted-containers|open-url-in-container]</li>
-<li><code>--print</code> -- Print profile entries instead of modifying config file</li>
-<li><code>--force</code> -- Write a new config file without prompting</li>
-<li><code>--aws-config</code> -- Override path to <code>~/.aws/config</code> file</li>
-</ul>
-<p>By default, each profile is named according to the <a href="../config/#profileformat">ProfileFormat</a> config option or overridden by the user defined
-<a href="../config/#profile">Profile</a> option on a role by role basis.</p>
-<p>For each profile generated, it will specify a <a href="https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html">list of settings</a> as defined
-by the <a href="../config/#configvariables">ConfigVariables</a> setting in the
-<code>~/.aws-sso/config.yaml</code>.</p>
-<p>For more information on this feature, <a href="../quickstart/#integrating-with-the-aws-profile-variable">read the Quickstart Guide</a>.</p>
-<p>Unlike with other ways to use AWS SSO CLI, the AWS IAM STS credentials will
-<em>automatically refresh</em>.  This means, if you do not have a valid AWS SSO token,
-you will be prompted to authentiate via your SSO provider and subsequent
-requests to obtain new IAM STS credentials will automatically happen as needed.</p>
-<p><strong>Note:</strong> Due to a limitation in the AWS tooling, <code>print</code> and <code>printurl</code> are not
-supported values for <code>--url-action</code>.  Hence, you must use <code>open</code> or <code>exec</code> to
-auto-open URLs in your browser (recommended) or <code>clip</code> to automatically copy
-URLs to your clipboard.  <em>No user prompting is possible.</em></p>
-<p><strong>Note:</strong> You should run this command any time your list of AWS roles changes
-in order to update the <code>~/.aws/config</code> file or enable <a href="../config/#autoconfigcheck">AutoConfigCheck</a> and <a href="../config/#configprofilesurlaction">ConfigProfilesUrlAction</a>.</p>
-<p><strong>Note:</strong> If <code>ConfigProfilesUrlAction</code> is set, then <code>--open</code> is optional,
-otherwise it is required.</p>
-<p><strong>Note:</strong> It is important that you do <em>NOT</em> remove the <code># BEGIN_AWS_SSO_CLI</code> and
-<code># END_AWS_SSO_CLI</code> lines from your config file!  These markers are used to track
-which profiles are managed by AWS SSO CLI.</p>
-<p><strong>Note:</strong> This command does not honor the <code>--sso</code> option as it operates on all
-of the configured AWS SSO instances in the <code>~/.aws-sso/config.yaml</code> file.</p>
-<hr />
 <h3 id="console">console</h3>
 <p>Console generates a URL which will grant you access to the AWS Console in your
 web browser.  The URL can be sent directly to the browser (default), printed
@@ -1471,7 +1425,7 @@ what to do with the resulting URL from the <code>console</code> command.</p>
 <p>This command will expose your temporary AWS IAM credentials in clear text which can be a security issue,
 and is not recommended except for cases where going through the AWS Identity Center web-based authentication
 workflow is not possible.  The most common example of this would be integrating with Docker and needing
-multiple IAM Roles.  Most use cases are better served by using the <a href="#config-profiles">config-profiles</a> command or
+multiple IAM Roles.  Most use cases are better served by using the <a href="#setup-profiles">setup-profiles</a> command or
 passing in IAM credentials via <a href="https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-envvars.html">environment variables</a>.</p>
 <p>Flags:</p>
 <ul>
@@ -1609,6 +1563,70 @@ used to fetch IAM Role credentials.</p>
 <p>Invalidates the AWS Identity Center AccessToken (used to fetch new IAM Credentials)
 for the selected SSO instance and removes all IAM Role Credentials cached in the <code>aws-sso</code> secure store.</p>
 <hr />
+<h3 id="setup-completions">setup completions</h3>
+<p>Configures your appropriate shell configuration file to add auto-complete
+and <a href="#shell-helpers">Shell Helpers</a> functionality for commands, flags and
+options. Must restart your shell for this to take effect.</p>
+<p>For more information about this feature, please read <a href="../quickstart/#enabling-auto-completion-in-your-shell">the quickstart</a>.</p>
+<p>Flags:</p>
+<ul>
+<li><code>--install</code> -- Install the new v1.9+ shell completions scripts</li>
+<li><code>--uninstall</code> -- Uninstall the new v1.9+ shell completions scripts</li>
+<li><code>--uninstall-pre-19</code> -- Uninstall the legacy pre-v1.9 scripts</li>
+<li><code>--shell &lt;shell&gt;</code> -- Override the detected shell</li>
+<li><code>--shell-script &lt;file&gt;</code> -- Override the default shell script file to modify</li>
+</ul>
+<p><strong>Note:</strong> You should uninstall the older pre-v1.9 completions before installing
+the new version.  Once the new version is installed, <code>--uninstall-pre-19</code> will
+refuse to run so you will have to either manually edit the file or run
+<code>--uninstall</code>, then <code>--uninstall-pre-19</code> and finally <code>--install</code> again.</p>
+<hr />
+<h3 id="setup-profiles">setup profiles</h3>
+<p>Modifies the <code>~/.aws/config</code> file to contain a <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-using-profiles">named profile</a>
+for every role accessible via AWS SSO CLI.</p>
+<p>Flags:</p>
+<ul>
+<li><code>--diff</code> -- Print a diff of changes to the config file instead of modifying it</li>
+<li><code>--open</code> -- Specify how to open URls: [clip|exec|open|granted-containers|open-url-in-container]</li>
+<li><code>--print</code> -- Print profile entries instead of modifying config file</li>
+<li><code>--force</code> -- Write a new config file without prompting</li>
+<li><code>--aws-config</code> -- Override path to <code>~/.aws/config</code> file</li>
+</ul>
+<p>By default, each profile is named according to the <a href="../config/#profileformat">ProfileFormat</a> config option or overridden by the user defined
+<a href="../config/#profile">Profile</a> option on a role by role basis.</p>
+<p>For each profile generated, it will specify a <a href="https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html">list of settings</a> as defined
+by the <a href="../config/#configvariables">ConfigVariables</a> setting in the
+<code>~/.aws-sso/config.yaml</code>.</p>
+<p>For more information on this feature, <a href="../quickstart/#using-the-aws_profile-variable">read the Quickstart Guide</a>.</p>
+<p>Unlike with other ways to use AWS SSO CLI, the AWS IAM STS credentials will
+<em>automatically refresh</em>.  This means, if you do not have a valid AWS SSO token,
+you will be prompted to authentiate via your SSO provider and subsequent
+requests to obtain new IAM STS credentials will automatically happen as needed.</p>
+<p><strong>Note:</strong> Due to a limitation in the AWS tooling, <code>print</code> and <code>printurl</code> are not
+supported values for <code>--url-action</code>.  Hence, you must use <code>open</code> or <code>exec</code> to
+auto-open URLs in your browser (recommended) or <code>clip</code> to automatically copy
+URLs to your clipboard.  <em>No user prompting is possible.</em></p>
+<p><strong>Note:</strong> You should run this command any time your list of AWS roles changes
+in order to update the <code>~/.aws/config</code> file or enable <a href="../config/#autoconfigcheck">AutoConfigCheck</a> and <a href="../config/#configprofilesurlaction">ConfigProfilesUrlAction</a>.</p>
+<p><strong>Note:</strong> If <code>ConfigProfilesUrlAction</code> is set, then <code>--open</code> is optional,
+otherwise it is required.</p>
+<p><strong>Note:</strong> It is important that you do <em>NOT</em> remove the <code># BEGIN_AWS_SSO_CLI</code> and
+<code># END_AWS_SSO_CLI</code> lines from your config file!  These markers are used to track
+which profiles are managed by AWS SSO CLI.</p>
+<p><strong>Note:</strong> This command does not honor the <code>--sso</code> option as it operates on all
+of the configured AWS SSO instances in the <code>~/.aws-sso/config.yaml</code> file.</p>
+<hr />
+<h3 id="setup-wizard">setup wizard</h3>
+<p>Allows you to run through the configuration wizard and update your AWS SSO CLI
+config file (<code>~/.aws-sso/config.yaml</code>).   By default, it only does a very basic
+configuration to get started with.  The <code>--advanced</code> flag prompts for more
+settings and is useful for taking advantage of some of the new settings if
+you've upgraded from a previous version!</p>
+<p>Flags:</p>
+<ul>
+<li><code>--advanced</code> -- Prompts for many more config options</li>
+</ul>
+<hr />
 <h3 id="tags">tags</h3>
 <p>Tags dumps a list of AWS SSO roles with the available metadata tags.</p>
 <p>Flags:</p>
@@ -1632,24 +1650,6 @@ for the selected SSO instance and removes all IAM Role Credentials cached in the
 AWS Role's STS credentials are valid for in the format of <code>HHhMMm</code></p>
 <p><strong>Note:</strong> This command is only useful when you have STS credentials configured
 in your shell via <a href="#eval">eval</a> or <a href="#exec">exec</a>.</p>
-<hr />
-<h3 id="completions">completions</h3>
-<p>Configures your appropriate shell configuration file to add auto-complete
-and <a href="#shell-helpers">Shell Helpers</a> functionality for commands, flags and
-options. Must restart your shell for this to take effect.</p>
-<p>For more information about this feature, please read <a href="../quickstart/#enabling-auto-completion-in-your-shell">the quickstart</a>.</p>
-<p>Flags:</p>
-<ul>
-<li><code>--install</code> -- Install the new v1.9+ shell completions scripts</li>
-<li><code>--uninstall</code> -- Uninstall the new v1.9+ shell completions scripts</li>
-<li><code>--uninstall-pre-19</code> -- Uninstall the legacy pre-v1.9 scripts</li>
-<li><code>--shell &lt;shell&gt;</code> -- Override the detected shell</li>
-<li><code>--shell-script &lt;file&gt;</code> -- Override the default shell script file to modify</li>
-</ul>
-<p><strong>Note:</strong> You should uninstall the older pre-v1.9 completions before installing
-the new version.  Once the new version is installed, <code>--uninstall-pre-19</code> will
-refuse to run so you will have to either manually edit the file or run
-<code>--uninstall</code>, then <code>--uninstall-pre-19</code> and finally <code>--install</code> again.</p>
 <h2 id="environment-variables">Environment Variables</h2>
 <h3 id="honored-variables">Honored Variables</h3>
 <p>The following environment variables are honored by <code>aws-sso</code>:</p>
@@ -1669,7 +1669,7 @@ refuse to run so you will have to either manually edit the file or run
 <p>The <code>file</code> SecureStore will use the <code>AWS_SSO_FILE_PASSWORD</code> environment
 variable for the password if it is set. (Not recommended.)</p>
 <p>Additionally, <code>$AWS_PROFILE</code> is honored via the standard AWS tooling when using
-the <a href="#config-profiles">config-profiles</a> command to manage your <code>~/.aws/config</code> file.</p>
+the <a href="#setup-profiles">setup-profiles</a> command to manage your <code>~/.aws/config</code> file.</p>
 <hr />
 <h3 id="managed-variables">Managed Variables</h3>
 <p>The following <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html">AWS environment variables</a>
@@ -1697,7 +1697,7 @@ are automatically set by <code>aws-sso</code>:</p>
 and SDK.</p>
 <h2 id="shell-helpers">Shell Helpers</h2>
 <p>These are optional helper functions installed in your shell as part of the
-<a href="#completions">completions</a> command.  To install these helper functions,
+<a href="#setup-completions">setup-completions</a> command.  To install these helper functions,
 please see the <a href="../quickstart/">quickstart</a> page.</p>
 <p><strong>Important:</strong> Unlike the commands above, these are standalone shell functions
 and you should <em>NOT</em> prefix them with <code>aws-sso</code>.</p>
