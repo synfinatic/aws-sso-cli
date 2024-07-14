@@ -60,8 +60,9 @@ type RunContext struct {
 }
 
 const (
-	DEFAULT_STORE  = "file"
-	COPYRIGHT_YEAR = "2021-2024"
+	DEFAULT_STORE   = "file"
+	COPYRIGHT_YEAR  = "2021-2024"
+	DEFAULT_THREADS = 5
 )
 
 var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
@@ -95,22 +96,20 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"UrlAction":                                 "open",
 	"LogLevel":                                  "warn",
 	"ProfileFormat":                             NICE_PROFILE_FORMAT,
-	"Threads":                                   5,
+	"Threads":                                   DEFAULT_THREADS,
 	"MaxBackoff":                                5, // seconds
 	"MaxRetry":                                  10,
 }
 
 type CLI struct {
 	// Common Arguments
-	Browser       string `kong:"short='b',help='Path to browser to open URLs with',env='AWS_SSO_BROWSER'"`
-	ConfigFile    string `kong:"name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG',predict='allFiles'"`
-	LogLevel      string `kong:"short='L',name='level',help='Logging level [error|warn|info|debug|trace] (default: warn)'"`
-	Lines         bool   `kong:"help='Print line number in logs'"`
-	UrlAction     string `kong:"short='u',help='How to handle URLs [clip|exec|open|print|printurl|granted-containers|open-url-in-container] (default: open)'"`
-	SSO           string `kong:"short='S',help='Override default AWS SSO Instance',env='AWS_SSO',predictor='sso'"`
-	STSRefresh    bool   `kong:"help='Force refresh of STS Token Credentials'"`
-	NoConfigCheck bool   `kong:"help='Disable automatic ~/.aws/config updates'"`
-	Threads       int    `kong:"help='Override number of threads for talking to AWS (default: 5)'"`
+	Browser    string `kong:"short='b',help='Path to browser to open URLs with',env='AWS_SSO_BROWSER'"`
+	ConfigFile string `kong:"name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG',predict='allFiles'"`
+	LogLevel   string `kong:"short='L',name='level',help='Logging level [error|warn|info|debug|trace] (default: warn)'"`
+	Lines      bool   `kong:"help='Print line number in logs'"`
+	UrlAction  string `kong:"short='u',help='How to handle URLs [clip|exec|open|print|printurl|granted-containers|open-url-in-container] (default: open)'"`
+	SSO        string `kong:"short='S',help='Override default AWS SSO Instance',env='AWS_SSO',predictor='sso'"`
+	STSRefresh bool   `kong:"help='Force refresh of STS Token Credentials'"`
 
 	// Commands
 	Cache        CacheCmd        `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
@@ -251,6 +250,7 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 		"CONFIG_DIR":      config.ConfigDir(false),
 		"CONFIG_FILE":     config.ConfigFile(false),
 		"DEFAULT_STORE":   DEFAULT_STORE,
+		"DEFAULT_THREADS": fmt.Sprintf("%d", DEFAULT_THREADS),
 		"JSON_STORE_FILE": config.JsonStoreFile(false),
 		"VERSION":         Version,
 	}
@@ -292,12 +292,19 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 		log.Fatalf("Invalid --url-action %s", cli.UrlAction)
 	}
 
+	threads := 0
+	if cli.Cache.Threads != DEFAULT_THREADS {
+		threads = cli.Cache.Threads
+	} else if cli.Login.Threads != DEFAULT_THREADS {
+		threads = cli.Login.Threads
+	}
+
 	override := sso.OverrideSettings{
 		Browser:    cli.Browser,
 		DefaultSSO: cli.SSO,
 		LogLevel:   cli.LogLevel,
 		LogLines:   cli.Lines,
-		Threads:    cli.Threads,
+		Threads:    threads, // must be > 0 to override config
 		UrlAction:  action,
 	}
 

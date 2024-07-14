@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -277,11 +278,11 @@ func (c *Cache) deleteOldHistory() {
 }
 
 // Refresh updates our cached Roles based on AWS SSO & our Config
-// but does not save this data!
-func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads int) error {
+// but does not save this data!  Returns the number of roles added/deleted
+func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads int) (int, int, error) {
 	// Only refresh once per execution
 	if c.refreshed {
-		return nil
+		return 0, 0, nil
 	}
 	c.refreshed = true
 	log.Debugf("refreshing %s SSO cache", ssoName)
@@ -311,15 +312,40 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads 
 	}
 
 	// zero out our current roles cache entries so they don't get merged
+	oldRoles := cache.Roles.GetAllRoles()
+	oldRoleArns := []string{}
+	for _, role := range oldRoles {
+		oldRoleArns = append(oldRoleArns, role.Arn)
+	}
+
 	c.SSO[ssoName].Roles = &Roles{}
 	c.SSO[ssoName].ConfigHash = config.GetConfigHash(c.settings.ProfileFormat)
 
 	// load our AWSSSO & Config
 	r, err := c.NewRoles(sso, config, threads)
 	if err != nil {
-		return err
+		return 0, 0, err
 	}
 	c.SSO[ssoName].Roles = r
+
+	// figure out what roles were added/deleted
+	newRoles := c.SSO[ssoName].Roles.GetAllRoles()
+	newRoleArns := []string{}
+	for _, role := range newRoles {
+		newRoleArns = append(newRoleArns, role.Arn)
+	}
+
+	added, deleted := 0, 0
+	for _, arn := range newRoleArns {
+		if !slices.Contains(oldRoleArns, arn) {
+			added++
+		}
+	}
+	for _, arn := range oldRoleArns {
+		if !slices.Contains(newRoleArns, arn) {
+			deleted++
+		}
+	}
 
 	// restore our history tags & expires
 	for _, account := range c.SSO[ssoName].Roles.Accounts {
@@ -333,7 +359,7 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads 
 		}
 	}
 	c.ConfigCreatedAt = config.CreatedAt()
-	return nil
+	return added, deleted, nil
 }
 
 // pruneSSO removes any SSO instances that are no longer configured
