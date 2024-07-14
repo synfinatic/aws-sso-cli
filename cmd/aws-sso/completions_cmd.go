@@ -38,16 +38,16 @@ type CompleteCmd struct {
 func (cc *CompleteCmd) Run(ctx *RunContext) error {
 	var err error
 
-	if ctx.Cli.Completions.Source {
+	if ctx.Cli.Setup.Completions.Source {
 		err = helper.NewSourceHelper(os.Executable, os.Stdout).
-			Generate(ctx.Cli.Completions.Shell)
-	} else if ctx.Cli.Completions.Install {
+			Generate(ctx.Cli.Setup.Completions.Shell)
+	} else if ctx.Cli.Setup.Completions.Install {
 		// install the current auto-complete helper
-		err = helper.InstallHelper(ctx.Cli.Completions.Shell, ctx.Cli.Completions.ShellScript)
-	} else if ctx.Cli.Completions.Uninstall {
+		err = helper.InstallHelper(ctx.Cli.Setup.Completions.Shell, ctx.Cli.Setup.Completions.ShellScript)
+	} else if ctx.Cli.Setup.Completions.Uninstall {
 		// uninstall the current auto-complete helper
-		err = helper.UninstallHelper(ctx.Cli.Completions.Shell, ctx.Cli.Completions.ShellScript)
-	} else if ctx.Cli.Completions.UninstallPre19 {
+		err = helper.UninstallHelper(ctx.Cli.Setup.Completions.Shell, ctx.Cli.Setup.Completions.ShellScript)
+	} else if ctx.Cli.Setup.Completions.UninstallPre19 {
 		// make sure we haven't installed our new completions first...
 		if files := hasV19Installed(); len(files) == 0 {
 			for _, f := range files {

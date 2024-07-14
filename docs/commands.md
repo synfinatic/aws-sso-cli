@@ -26,73 +26,6 @@ modified.
 
 ---
 
-### config
-
-Allows you to run through the configuration wizard and update your AWS SSO CLI
-config file (`~/.aws-sso/config.yaml`).   By default, it only does a very basic
-configuration to get started with.  The `--advanced` flag prompts for more
-settings and is useful for taking advantage of some of the new settings if
-you've upgraded from a previous version!
-
-Flags:
-
- * `--advanced` -- Prompts for many more config options
-
----
-
-### config-profiles
-
-Modifies the `~/.aws/config` file to contain a [named profile](
-https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-using-profiles)
-for every role accessible via AWS SSO CLI.
-
-Flags:
-
- * `--diff` -- Print a diff of changes to the config file instead of modifying it
- * `--open` -- Specify how to open URls: [clip|exec|open|granted-containers|open-url-in-container]
- * `--print` -- Print profile entries instead of modifying config file
- * `--force` -- Write a new config file without prompting
- * `--aws-config` -- Override path to `~/.aws/config` file
-
-By default, each profile is named according to the [ProfileFormat](
-config.md#profileformat) config option or overridden by the user defined
-[Profile](config.md#profile) option on a role by role basis.
-
-For each profile generated, it will specify a [list of settings](
-https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html) as defined
-by the [ConfigVariables](config.md#configvariables) setting in the
-`~/.aws-sso/config.yaml`.
-
-For more information on this feature, [read the Quickstart Guide](
-quickstart.md#integrating-with-the-aws-profile-variable).
-
-Unlike with other ways to use AWS SSO CLI, the AWS IAM STS credentials will
-_automatically refresh_.  This means, if you do not have a valid AWS SSO token,
-you will be prompted to authentiate via your SSO provider and subsequent
-requests to obtain new IAM STS credentials will automatically happen as needed.
-
-**Note:** Due to a limitation in the AWS tooling, `print` and `printurl` are not
-supported values for `--url-action`.  Hence, you must use `open` or `exec` to
-auto-open URLs in your browser (recommended) or `clip` to automatically copy
-URLs to your clipboard.  _No user prompting is possible._
-
-**Note:** You should run this command any time your list of AWS roles changes
-in order to update the `~/.aws/config` file or enable [AutoConfigCheck](
-config.md#autoconfigcheck) and [ConfigProfilesUrlAction](
-config.md#configprofilesurlaction).
-
-**Note:** If `ConfigProfilesUrlAction` is set, then `--open` is optional,
-otherwise it is required.
-
-**Note:** It is important that you do _NOT_ remove the `# BEGIN_AWS_SSO_CLI` and
-`# END_AWS_SSO_CLI` lines from your config file!  These markers are used to track
-which profiles are managed by AWS SSO CLI.
-
-**Note:** This command does not honor the `--sso` option as it operates on all
-of the configured AWS SSO instances in the `~/.aws-sso/config.yaml` file.
-
----
-
 ### console
 
 Console generates a URL which will grant you access to the AWS Console in your
@@ -137,7 +70,7 @@ Generate static credentials in the format for [~/.aws/credentials](https://docs.
 This command will expose your temporary AWS IAM credentials in clear text which can be a security issue,
 and is not recommended except for cases where going through the AWS Identity Center web-based authentication
 workflow is not possible.  The most common example of this would be integrating with Docker and needing
-multiple IAM Roles.  Most use cases are better served by using the [config-profiles](#config-profiles) command or
+multiple IAM Roles.  Most use cases are better served by using the [setup-profiles](#setup-profiles) command or
 passing in IAM credentials via [environment variables](https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-envvars.html).
 
 Flags:
@@ -321,6 +254,97 @@ for the selected SSO instance and removes all IAM Role Credentials cached in the
 
 ---
 
+### setup completions
+
+Configures your appropriate shell configuration file to add auto-complete
+and [Shell Helpers](#shell-helpers) functionality for commands, flags and
+options. Must restart your shell for this to take effect.
+
+For more information about this feature, please read [the quickstart](
+quickstart.md#enabling-auto-completion-in-your-shell).
+
+Flags:
+
+ * `--install` -- Install the new v1.9+ shell completions scripts
+ * `--uninstall` -- Uninstall the new v1.9+ shell completions scripts
+ * `--uninstall-pre-19` -- Uninstall the legacy pre-v1.9 scripts
+ * `--shell <shell>` -- Override the detected shell
+ * `--shell-script <file>` -- Override the default shell script file to modify
+
+**Note:** You should uninstall the older pre-v1.9 completions before installing
+the new version.  Once the new version is installed, `--uninstall-pre-19` will
+refuse to run so you will have to either manually edit the file or run
+`--uninstall`, then `--uninstall-pre-19` and finally `--install` again.
+
+---
+
+### setup profiles
+
+Modifies the `~/.aws/config` file to contain a [named profile](
+https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-using-profiles)
+for every role accessible via AWS SSO CLI.
+
+Flags:
+
+ * `--diff` -- Print a diff of changes to the config file instead of modifying it
+ * `--open` -- Specify how to open URls: [clip|exec|open|granted-containers|open-url-in-container]
+ * `--print` -- Print profile entries instead of modifying config file
+ * `--force` -- Write a new config file without prompting
+ * `--aws-config` -- Override path to `~/.aws/config` file
+
+By default, each profile is named according to the [ProfileFormat](
+config.md#profileformat) config option or overridden by the user defined
+[Profile](config.md#profile) option on a role by role basis.
+
+For each profile generated, it will specify a [list of settings](
+https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html) as defined
+by the [ConfigVariables](config.md#configvariables) setting in the
+`~/.aws-sso/config.yaml`.
+
+For more information on this feature, [read the Quickstart Guide](
+quickstart.md#using-the-aws_profile-variable).
+
+Unlike with other ways to use AWS SSO CLI, the AWS IAM STS credentials will
+_automatically refresh_.  This means, if you do not have a valid AWS SSO token,
+you will be prompted to authentiate via your SSO provider and subsequent
+requests to obtain new IAM STS credentials will automatically happen as needed.
+
+**Note:** Due to a limitation in the AWS tooling, `print` and `printurl` are not
+supported values for `--url-action`.  Hence, you must use `open` or `exec` to
+auto-open URLs in your browser (recommended) or `clip` to automatically copy
+URLs to your clipboard.  _No user prompting is possible._
+
+**Note:** You should run this command any time your list of AWS roles changes
+in order to update the `~/.aws/config` file or enable [AutoConfigCheck](
+config.md#autoconfigcheck) and [ConfigProfilesUrlAction](
+config.md#configprofilesurlaction).
+
+**Note:** If `ConfigProfilesUrlAction` is set, then `--open` is optional,
+otherwise it is required.
+
+**Note:** It is important that you do _NOT_ remove the `# BEGIN_AWS_SSO_CLI` and
+`# END_AWS_SSO_CLI` lines from your config file!  These markers are used to track
+which profiles are managed by AWS SSO CLI.
+
+**Note:** This command does not honor the `--sso` option as it operates on all
+of the configured AWS SSO instances in the `~/.aws-sso/config.yaml` file.
+
+---
+
+### setup wizard
+
+Allows you to run through the configuration wizard and update your AWS SSO CLI
+config file (`~/.aws-sso/config.yaml`).   By default, it only does a very basic
+configuration to get started with.  The `--advanced` flag prompts for more
+settings and is useful for taking advantage of some of the new settings if
+you've upgraded from a previous version!
+
+Flags:
+
+ * `--advanced` -- Prompts for many more config options
+
+---
+
 ### tags
 
 Tags dumps a list of AWS SSO roles with the available metadata tags.
@@ -350,30 +374,6 @@ AWS Role's STS credentials are valid for in the format of `HHhMMm`
 **Note:** This command is only useful when you have STS credentials configured
 in your shell via [eval](#eval) or [exec](#exec).
 
----
-
-### completions
-
-Configures your appropriate shell configuration file to add auto-complete
-and [Shell Helpers](#shell-helpers) functionality for commands, flags and
-options. Must restart your shell for this to take effect.
-
-For more information about this feature, please read [the quickstart](
-quickstart.md#enabling-auto-completion-in-your-shell).
-
-Flags:
-
- * `--install` -- Install the new v1.9+ shell completions scripts
- * `--uninstall` -- Uninstall the new v1.9+ shell completions scripts
- * `--uninstall-pre-19` -- Uninstall the legacy pre-v1.9 scripts
- * `--shell <shell>` -- Override the detected shell
- * `--shell-script <file>` -- Override the default shell script file to modify
-
-**Note:** You should uninstall the older pre-v1.9 completions before installing
-the new version.  Once the new version is installed, `--uninstall-pre-19` will
-refuse to run so you will have to either manually edit the file or run
-`--uninstall`, then `--uninstall-pre-19` and finally `--install` again.
-
 ## Environment Variables
 
 ### Honored Variables
@@ -396,7 +396,7 @@ The `file` SecureStore will use the `AWS_SSO_FILE_PASSWORD` environment
 variable for the password if it is set. (Not recommended.)
 
 Additionally, `$AWS_PROFILE` is honored via the standard AWS tooling when using
-the [config-profiles](#config-profiles) command to manage your `~/.aws/config` file.
+the [setup-profiles](#setup-profiles) command to manage your `~/.aws/config` file.
 
 ---
 
@@ -430,7 +430,7 @@ and SDK.
 ## Shell Helpers
 
 These are optional helper functions installed in your shell as part of the
-[completions](#completions) command.  To install these helper functions,
+[setup-completions](#setup-completions) command.  To install these helper functions,
 please see the [quickstart](quickstart.md) page.
 
 **Important:** Unlike the commands above, these are standalone shell functions

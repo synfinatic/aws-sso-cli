@@ -7,7 +7,7 @@
  * Option 2: [Download RPM or DEB package](https://github.com/synfinatic/aws-sso-cli/releases)
     1. Use your package manager to install (Linux only)
  * Option 3: Build & Install via [Homebrew](https://brew.sh)
-	1. Run `brew install aws-sso-cli`
+    1. Run `brew install aws-sso-cli`
         Note: You no longer need to install the hombrew tap as `aws-sso-cli` is
         now part of [homebrew-core](
         https://github.com/Homebrew/homebrew-core/blob/master/Formula/a/aws-sso-cli.rb).
@@ -131,8 +131,8 @@ which can be confusing.
 Full documentation for auto-completion [is available here](
 commands.md#shell-helpers).
 
-**Note:** Use of this feature requires [enabling auto-completion](
-#enabling-auto-completion-in-your-shell) as described above.
+**Note:** Use of this feature requires
+[enabling auto-completion](#enabling-auto-completion-in-your-shell) as described above.
 
 #### Usage
 
@@ -214,7 +214,6 @@ docs:
  * [AutoConfigCheck / ConfigUrlAction](config.md#autoconfigcheck-configurlaction)
  * [ConfigVariables](config.md#configvariables)
 
-
 #### Usage
 
 Once your `~/.aws/config` file has been modified as described above, you can
@@ -226,15 +225,13 @@ The only difference is that your API keys are managed via AWS SSO and always
 safely stored encrypted on disk!
 
 ```bash
-$ export AWS_PROFILE=<name>
-$ aws sts get-caller-identity
-$ aws s3api list-buckets
+export AWS_PROFILE=<name>
 ```
 
 or for a single command:
 
 ```bash
-$ AWS_PROFILE=<name> aws sts get-caller-identity
+AWS_PROFILE=<name> aws sts get-caller-identity
 ```
 
 Note that every time the `aws` tool or your code makes a request for the API

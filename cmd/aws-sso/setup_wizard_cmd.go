@@ -33,17 +33,17 @@ import (
 
 var ranSetup = false
 
-type ConfigCmd struct {
+type SetupWizardCmd struct {
 	// 	AddSSO bool `kong:"help='Add a new AWS SSO instance'"`
 	Advanced bool `kong:"help='Enable advanced configuration'"`
 }
 
-func (cc *ConfigCmd) Run(ctx *RunContext) error {
+func (cc *SetupWizardCmd) Run(ctx *RunContext) error {
 	if err := backupConfig(ctx.Cli.ConfigFile); err != nil {
 		return err
 	}
 
-	return setupWizard(ctx, true, false, ctx.Cli.Config.Advanced) // ctx.Cli.Config.AddSSO)
+	return setupWizard(ctx, true, false, ctx.Cli.Setup.Wizard.Advanced) // ctx.Cli.Config.AddSSO)
 }
 
 func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
