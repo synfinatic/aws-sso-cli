@@ -6,6 +6,7 @@
 
  * No longer show help for sub-commands by default 
  * Warnings about invalid accounts/roles in config.yaml are now Debug messages #980
+ * Default ProfileFormat is now the `Friendly` format #992
 
 ### New Features
 
