@@ -35,9 +35,10 @@ type EcsCmd struct {
 	Server  EcsServerCmd  `kong:"cmd,help='Run the ECS Server locally'"`
 	Docker  EcsDockerCmd  `kong:"cmd,help='Start the ECS Server in a Docker container'"`
 	List    EcsListCmd    `kong:"cmd,help='List profiles loaded in the ECS Server'"`
-	Load    EcsLoadCmd    `kong:"cmd,help='Load new IAM Role credentials into the ECS Server'"`
 	Unload  EcsUnloadCmd  `kong:"cmd,help='Unload the current IAM Role credentials from the ECS Server'"`
 	Profile EcsProfileCmd `kong:"cmd,help='Get the current role profile name in the default slot'"`
+	// login required commands
+	Load EcsLoadCmd `kong:"cmd,help='Load new IAM Role credentials into the ECS Server',group='login-required'"`
 }
 
 type EcsAuthCmd struct {
