@@ -29,10 +29,11 @@ import (
 
 type ProcessCmd struct {
 	// AWS Params
-	Arn       string `kong:"short='a',help='ARN of role to assume',xor='arn-1',xor='arn-2',predictor='arn'"`
-	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',xor='arn-1',predictor='accountId'"`
-	Role      string `kong:"short='R',help='Name of AWS Role to assume',xor='arn-2',predictor='role'"`
-	Profile   string `kong:"short='p',help='Name of AWS Profile to assume',xor='arn-1',xor='arn-2',predictor='profile'"`
+	Arn        string `kong:"short='a',help='ARN of role to assume',xor='arn-1',xor='arn-2',predictor='arn'"`
+	AccountId  int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',xor='arn-1',predictor='accountId'"`
+	Role       string `kong:"short='R',help='Name of AWS Role to assume',xor='arn-2',predictor='role'"`
+	Profile    string `kong:"short='p',help='Name of AWS Profile to assume',xor='arn-1',xor='arn-2',predictor='profile'"`
+	STSRefresh bool   `kong:"help='Force refresh of STS Token Credentials'"`
 }
 
 func (cc *ProcessCmd) Run(ctx *RunContext) error {
@@ -93,7 +94,7 @@ func (cpo *CredentialProcessOutput) Output() (string, error) {
 }
 
 func credentialProcess(ctx *RunContext, accountId int64, role string) error {
-	creds := GetRoleCredentials(ctx, AwsSSO, accountId, role)
+	creds := GetRoleCredentials(ctx, AwsSSO, ctx.Cli.Process.STSRefresh, accountId, role)
 
 	cpo := NewCredentialsProcessOutput(creds)
 	out, err := cpo.Output()

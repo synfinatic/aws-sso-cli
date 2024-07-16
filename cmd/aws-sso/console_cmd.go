@@ -34,6 +34,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
@@ -42,9 +43,11 @@ import (
 
 type ConsoleCmd struct {
 	// Console actually should honor the --region flag
-	Duration int32  `kong:"short='d',help='AWS Session duration in minutes (default 60)'"` // default stored in DEFAULT_CONFIG
-	Prompt   bool   `kong:"short='P',help='Force interactive prompt to select role'"`
-	Region   string `kong:"help='AWS Region',env='AWS_DEFAULT_REGION',predictor='region'"`
+	Duration   int32  `kong:"short='d',help='AWS Session duration in minutes (default 60)'"` // default stored in DEFAULT_CONFIG
+	Prompt     bool   `kong:"short='P',help='Force interactive prompt to select role'"`
+	Region     string `kong:"help='AWS Region',env='AWS_DEFAULT_REGION',predictor='region'"`
+	STSRefresh bool   `kong:"help='Force refresh of STS Token Credentials'"`
+	UrlAction  string `kong:"short='u',help='How to handle URLs [clip|exec|open|print|printurl|granted-containers|open-url-in-container] (default: open)'"`
 
 	Arn       string `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
 	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNT_ID',predictor='accountId'"`
@@ -235,7 +238,7 @@ func openConsole(ctx *RunContext, accountid int64, role string) error {
 		log.WithError(err).Warnf("Unable to update cache")
 	}
 
-	creds := GetRoleCredentials(ctx, AwsSSO, accountid, role)
+	creds := GetRoleCredentials(ctx, AwsSSO, ctx.Cli.Console.STSRefresh, accountid, role)
 	return openConsoleAccessKey(ctx, creds, duration, region, accountid, role)
 }
 
@@ -287,7 +290,15 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials,
 		SigninToken: loginResponse.SigninToken,
 	}
 
-	urlOpener := url.NewHandleUrl(ctx.Settings.UrlAction, login.GetUrl(),
+	action, err := url.NewAction(ctx.Cli.Console.UrlAction)
+	if err != nil {
+		log.Fatalf("Invalid --url-action %s", ctx.Cli.Console.UrlAction)
+	}
+	if action == "" {
+		action = ctx.Settings.UrlAction
+	}
+
+	urlOpener := url.NewHandleUrl(action, login.GetUrl(),
 		ctx.Settings.Browser, ctx.Settings.UrlExecCommand)
 
 	urlOpener.ContainerSettings(containerParams(ctx, accountId, role))

@@ -7,9 +7,7 @@
  * `--config <file>` -- Specify alternative config file (`$AWS_SSO_CONFIG`)
  * `--level <level>`, `-L` -- Change default log level: [error|warn|info|debug|trace]
  * `--lines` -- Print file number with logs
- * `--url-action`, `-u` -- How to handle URLs for your SSO provider
  * `--sso <name>`, `-S` -- Specify non-default AWS SSO instance to use (`$AWS_SSO`)
- * `--sts-refresh` -- Force refresh of STS Token Credentials
 
 ## Commands
 
@@ -48,6 +46,8 @@ Flags:
  * `--account <account>`, `-A` -- AWS AccountID of role to assume (`$AWS_SSO_ACCOUNT_ID`)
  * `--role <role>`, `-R` -- Name of AWS Role to assume (requires `--account`) (`$AWS_SSO_ROLE_NAME`)
  * `--profile <profile>`, `-p` -- Name of AWS Profile to assume
+ * `--url-action`, `-u` -- How to handle URLs for your SSO provider
+ * `--sts-refresh` -- Force refresh of STS Token Credentials
 
 The generated URL is good for 15 minutes after it is created.
 
@@ -81,6 +81,7 @@ Flags:
  * `--file <path>`, `-f` -- Specify the file to generate.  Default is to print to STDOUT ($AWS_SHARED_CREDENTIALS_FILE).
  * `--append`, `-a` -- Append to the file instead of overwriting it.
  * `--profile <profile>,...`, `-p` -- One or more profiles to include in the output.
+ * `--sts-refresh` -- Force refresh of STS Token Credentials
 
 **Note:** This command honors the same [$AWS_SHARED_CREDENTIALS_FILE](https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-envvars.html)
 that is supported by the AWS SDK to load credentials.  Since these credentials are temporary, it is
@@ -163,6 +164,7 @@ Flags:
  * `--role <role>`, `-R` -- Name of AWS Role to assume (`$AWS_SSO_ROLE_NAME`)
  * `--profile <profile>`, `-p` -- Name of AWS Profile to assume
  * `--no-region` -- Do not set the [AWS_DEFAULT_REGION](config.md#DefaultRegion) from config.yaml
+ * `--sts-refresh` -- Force refresh of STS Token Credentials
 
 Arguments: `[<command>] [<args> ...]`
 
@@ -192,6 +194,7 @@ Flags:
  * `--account <account>`, `-A` -- AWS AccountID of role to assume
  * `--role <role>`, `-R` -- Name of AWS Role to assume (requires `--account`)
  * `--profile <profile>`, `-p` -- Name of AWS Profile to assume
+ * `--sts-refresh` -- Force refresh of STS Token Credentials
 
 Priority is given to:
 
@@ -251,6 +254,8 @@ used to fetch IAM Role credentials.
 Flags:
 
  * `--no-config-check` -- Disable automatic updating of `~/.aws/config`
+ * `--url-action`, `-u` -- How to handle URLs for your SSO provider
+ * `--sts-refresh` -- Force refresh of STS Token Credentials
  * `--threads <int>` -- Number of threads to use with AWS (default: 5)
 
 ---

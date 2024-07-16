@@ -84,6 +84,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"PromptColors.SuggestionTextColor":          "White",
 	"AutoConfigCheck":                           false,
 	"CacheRefresh":                              168, // 7 days in hours
+	"ConfigProfilesUrlAction":                   "open",
 	"ConsoleDuration":                           60,
 	"DefaultRegion":                             "us-east-1",
 	"DefaultSSO":                                "Default",
@@ -106,27 +107,27 @@ type CLI struct {
 	ConfigFile string `kong:"name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG',predict='allFiles'"`
 	LogLevel   string `kong:"short='L',name='level',help='Logging level [error|warn|info|debug|trace] (default: info)'"`
 	Lines      bool   `kong:"help='Print line number in logs'"`
-	UrlAction  string `kong:"short='u',help='How to handle URLs [clip|exec|open|print|printurl|granted-containers|open-url-in-container] (default: open)'"`
 	SSO        string `kong:"short='S',help='Override default AWS SSO Instance',env='AWS_SSO',predictor='sso'"`
-	STSRefresh bool   `kong:"help='Force refresh of STS Token Credentials'"`
 
 	// Commands
-	Cache        CacheCmd        `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml'"`
-	Console      ConsoleCmd      `kong:"cmd,help='Open AWS Console using specificed AWS role/profile'"`
-	Credentials  CredentialsCmd  `kong:"cmd,help='Generate static AWS credentials for use with AWS CLI'"`
 	Default      DefaultCmd      `kong:"cmd,hidden,default='1'"` // list command without args
 	Ecs          EcsCmd          `kong:"cmd,help='ECS server/client commands'"`
-	Eval         EvalCmd         `kong:"cmd,help='Print AWS environment vars for use with eval $(aws-sso eval ...)'"`
-	Exec         ExecCmd         `kong:"cmd,help='Execute command using specified IAM role in a new shell'"`
 	List         ListCmd         `kong:"cmd,help='List all accounts / roles (default command)'"`
 	Login        LoginCmd        `kong:"cmd,help='Login to an AWS Identity Center instance'"`
-	Logout       LogoutCmd       `kong:"cmd,help='Logout from an AWS Identity Center instance and invalidate all credentials'"`
 	ListSSORoles ListSSORolesCmd `kong:"cmd,hidden,help='List AWS SSO Roles (debugging)'"`
-	Process      ProcessCmd      `kong:"cmd,help='Generate JSON for AWS SDK credential_process command'"`
 	Setup        SetupCmd        `kong:"cmd,help='Setup Wizard, Completions, Profiles, etc'"`
 	Tags         TagsCmd         `kong:"cmd,help='List tags'"`
 	Time         TimeCmd         `kong:"cmd,help='Print how much time before current STS Token expires'"`
 	Version      VersionCmd      `kong:"cmd,help='Print version and exit'"`
+
+	// Login Commands
+	Cache       CacheCmd       `kong:"cmd,help='Force reload of cached AWS SSO role info and config.yaml',group='login-required'"`
+	Console     ConsoleCmd     `kong:"cmd,help='Open AWS Console using specificed AWS role/profile',group='login-required'"`
+	Credentials CredentialsCmd `kong:"cmd,help='Generate static AWS credentials for use with AWS CLI',group='login-required'"`
+	Eval        EvalCmd        `kong:"cmd,help='Print AWS environment vars for use with eval $(aws-sso eval ...)',group='login-required'"`
+	Exec        ExecCmd        `kong:"cmd,help='Execute command using specified IAM role in a new shell',group='login-required'"`
+	Logout      LogoutCmd      `kong:"cmd,help='Logout from an AWS Identity Center instance and invalidate all credentials',group='login-required'"`
+	Process     ProcessCmd     `kong:"cmd,help='Generate JSON for AWS SDK credential_process command',group='login-required'"`
 }
 
 func main() {
@@ -258,12 +259,20 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 		NoExpandSubcommands: true,
 	}
 
+	groups := []kong.Group{
+		{
+			Title: "Commands requiring login:",
+			Key:   "login-required",
+		},
+	}
+
 	parser := kong.Must(
 		cli,
 		kong.Name("aws-sso"),
 		kong.Description("Securely manage temporary AWS API Credentials issued via AWS SSO"),
 		kong.ConfigureHelp(help),
 		vars,
+		kong.ExplicitGroups(groups),
 	)
 
 	p := predictor.NewPredictor(config.InsecureCacheFile(true), config.ConfigFile(true))
@@ -286,11 +295,6 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 	ctx, err := parser.Parse(os.Args[1:])
 	parser.FatalIfErrorf(err)
 
-	action, err := url.NewAction(cli.UrlAction)
-	if err != nil {
-		log.Fatalf("Invalid --url-action %s", cli.UrlAction)
-	}
-
 	threads := 0
 	if cli.Cache.Threads != DEFAULT_THREADS {
 		threads = cli.Cache.Threads
@@ -304,7 +308,6 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 		LogLevel:   cli.LogLevel,
 		LogLines:   cli.Lines,
 		Threads:    threads, // must be > 0 to override config
-		UrlAction:  action,
 	}
 
 	log.SetFormatter(&logrus.TextFormatter{
@@ -330,13 +333,13 @@ func (cc *VersionCmd) Run(ctx *RunContext) error {
 }
 
 // Get our RoleCredentials from the secure store or from AWS SSO
-func GetRoleCredentials(ctx *RunContext, awssso *sso.AWSSSO, accountid int64, role string) *storage.RoleCredentials {
+func GetRoleCredentials(ctx *RunContext, awssso *sso.AWSSSO, refreshSTS bool, accountid int64, role string) *storage.RoleCredentials {
 	creds := storage.RoleCredentials{}
 
 	// First look for our creds in the secure store, if we're not forcing a refresh
 	arn := utils.MakeRoleARN(accountid, role)
 	log.Debugf("Getting role credentials for %s", arn)
-	if !ctx.Cli.STSRefresh {
+	if !refreshSTS {
 		if roleFlat, err := ctx.Settings.Cache.GetRole(arn); err == nil {
 			if !roleFlat.IsExpired() {
 				if err := ctx.Store.GetRoleCredentials(arn, &creds); err == nil {

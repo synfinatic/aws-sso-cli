@@ -23,7 +23,7 @@ func (cc *CredentialsCmd) Run(ctx *RunContext) error {
 			return err
 		}
 
-		pCreds := GetRoleCredentials(ctx, AwsSSO, roleFlat.AccountId, roleFlat.RoleName)
+		pCreds := GetRoleCredentials(ctx, AwsSSO, ctx.Cli.Console.STSRefresh, roleFlat.AccountId, roleFlat.RoleName)
 
 		creds = append(creds, awsconfig.ProfileCredentials{
 			Profile:         profile,

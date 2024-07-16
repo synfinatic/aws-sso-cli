@@ -130,7 +130,6 @@ type OverrideSettings struct {
 	DefaultSSO string
 	LogLevel   string
 	LogLines   bool
-	UrlAction  url.Action
 	Threads    int
 }
 
@@ -337,10 +336,6 @@ func (s *Settings) setOverrides(override OverrideSettings) {
 	}
 	if override.DefaultSSO != "" {
 		s.DefaultSSO = override.DefaultSSO
-	}
-
-	if override.UrlAction != "" {
-		s.UrlAction = override.UrlAction
 	}
 
 	if override.Threads > 0 {
