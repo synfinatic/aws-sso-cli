@@ -556,27 +556,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#ecs-ssl-save" class="md-nav__link">
+  <a href="#ecs-ssl" class="md-nav__link">
     <span class="md-ellipsis">
-      ecs ssl save
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#ecs-ssl-delete" class="md-nav__link">
-    <span class="md-ellipsis">
-      ecs ssl delete
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#ecs-ssl-print" class="md-nav__link">
-    <span class="md-ellipsis">
-      ecs ssl print
+      ecs ssl
     </span>
   </a>
   
@@ -1049,27 +1031,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#ecs-ssl-save" class="md-nav__link">
+  <a href="#ecs-ssl" class="md-nav__link">
     <span class="md-ellipsis">
-      ecs ssl save
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#ecs-ssl-delete" class="md-nav__link">
-    <span class="md-ellipsis">
-      ecs ssl delete
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#ecs-ssl-print" class="md-nav__link">
-    <span class="md-ellipsis">
-      ecs ssl print
+      ecs ssl
     </span>
   </a>
   
@@ -1173,23 +1137,18 @@ would like to load multiple roles, specify <code>--slotted</code> and the role w
 <li><code>--slotted</code> -- Load the IAM credentials into a unique slot using the ProfileName as the key</li>
 </ul>
 <hr />
-<h3 id="ecs-ssl-save">ecs ssl save</h3>
+<h3 id="ecs-ssl">ecs ssl</h3>
 <p>Configures the SSL Certificate and Private Key to enable SSL/TLS.  Saves the
  SSL certificate and private key to the SecureStore.</p>
 <p><strong>Note:</strong> At this time, this feature is not recommended due to a bug
  in the <a href="https://github.com/boto/boto3/issues/4188">AWS SDK</a>.</p>
 <p>Flags:</p>
 <ul>
+<li><code>--delete</code> -- Disables SSL and deletes both the SSL certificate and private key from the Secure Store</li>
+<li><code>--print</code> -- Prints the SSL certificate</li>
 <li><code>--certificate</code> -- Path to SSL certificate file in PEM format</li>
 <li><code>--private-key</code> -- Path to SSL private key in PEM format</li>
 </ul>
-<hr />
-<h3 id="ecs-ssl-delete">ecs ssl delete</h3>
-<p>Delete the SSL certificate and private key from the Secure Store and disables
-SSL/TLS for the ECS Server.</p>
-<hr />
-<h3 id="ecs-ssl-print">ecs ssl print</h3>
-<p>Prints the SSL public certificate stored in the SecureStore.</p>
 <hr />
 <h3 id="ecs-server">ecs server</h3>
 <p>Starts the ECS Server in the foreground.</p>

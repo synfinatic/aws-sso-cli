@@ -1376,9 +1376,7 @@
 <li><code>--config &lt;file&gt;</code> -- Specify alternative config file (<code>$AWS_SSO_CONFIG</code>)</li>
 <li><code>--level &lt;level&gt;</code>, <code>-L</code> -- Change default log level: [error|warn|info|debug|trace]</li>
 <li><code>--lines</code> -- Print file number with logs</li>
-<li><code>--url-action</code>, <code>-u</code> -- How to handle URLs for your SSO provider</li>
 <li><code>--sso &lt;name&gt;</code>, <code>-S</code> -- Specify non-default AWS SSO instance to use (<code>$AWS_SSO</code>)</li>
-<li><code>--sts-refresh</code> -- Force refresh of STS Token Credentials</li>
 </ul>
 <h2 id="commands">Commands</h2>
 <h3 id="cache">cache</h3>
@@ -1408,6 +1406,8 @@ a time, but multiple session are supported via the <a href="../config/#open-url-
 <li><code>--account &lt;account&gt;</code>, <code>-A</code> -- AWS AccountID of role to assume (<code>$AWS_SSO_ACCOUNT_ID</code>)</li>
 <li><code>--role &lt;role&gt;</code>, <code>-R</code> -- Name of AWS Role to assume (requires <code>--account</code>) (<code>$AWS_SSO_ROLE_NAME</code>)</li>
 <li><code>--profile &lt;profile&gt;</code>, <code>-p</code> -- Name of AWS Profile to assume</li>
+<li><code>--url-action</code>, <code>-u</code> -- How to handle URLs for your SSO provider</li>
+<li><code>--sts-refresh</code> -- Force refresh of STS Token Credentials</li>
 </ul>
 <p>The generated URL is good for 15 minutes after it is created.</p>
 <p>The common flag <code>--url-action</code> is used both for AWS SSO authentication as well as
@@ -1435,6 +1435,7 @@ passing in IAM credentials via <a href="https://docs.aws.amazon.com/cli/v1/userg
 <li><code>--file &lt;path&gt;</code>, <code>-f</code> -- Specify the file to generate.  Default is to print to STDOUT ($AWS_SHARED_CREDENTIALS_FILE).</li>
 <li><code>--append</code>, <code>-a</code> -- Append to the file instead of overwriting it.</li>
 <li><code>--profile &lt;profile&gt;,...</code>, <code>-p</code> -- One or more profiles to include in the output.</li>
+<li><code>--sts-refresh</code> -- Force refresh of STS Token Credentials</li>
 </ul>
 <p><strong>Note:</strong> This command honors the same <a href="https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-envvars.html">$AWS_SHARED_CREDENTIALS_FILE</a>
 that is supported by the AWS SDK to load credentials.  Since these credentials are temporary, it is
@@ -1494,6 +1495,7 @@ commands.</p>
 <li><code>--role &lt;role&gt;</code>, <code>-R</code> -- Name of AWS Role to assume (<code>$AWS_SSO_ROLE_NAME</code>)</li>
 <li><code>--profile &lt;profile&gt;</code>, <code>-p</code> -- Name of AWS Profile to assume</li>
 <li><code>--no-region</code> -- Do not set the <a href="../config/#DefaultRegion">AWS_DEFAULT_REGION</a> from config.yaml</li>
+<li><code>--sts-refresh</code> -- Force refresh of STS Token Credentials</li>
 </ul>
 <p>Arguments: <code>[&lt;command&gt;] [&lt;args&gt; ...]</code></p>
 <p>Priority is given to:</p>
@@ -1516,6 +1518,7 @@ with profiles defined in <code>~/.aws/config</code>.</p>
 <li><code>--account &lt;account&gt;</code>, <code>-A</code> -- AWS AccountID of role to assume</li>
 <li><code>--role &lt;role&gt;</code>, <code>-R</code> -- Name of AWS Role to assume (requires <code>--account</code>)</li>
 <li><code>--profile &lt;profile&gt;</code>, <code>-p</code> -- Name of AWS Profile to assume</li>
+<li><code>--sts-refresh</code> -- Force refresh of STS Token Credentials</li>
 </ul>
 <p>Priority is given to:</p>
 <ul>
@@ -1564,6 +1567,8 @@ used to fetch IAM Role credentials.</p>
 <p>Flags:</p>
 <ul>
 <li><code>--no-config-check</code> -- Disable automatic updating of <code>~/.aws/config</code></li>
+<li><code>--url-action</code>, <code>-u</code> -- How to handle URLs for your SSO provider</li>
+<li><code>--sts-refresh</code> -- Force refresh of STS Token Credentials</li>
 <li><code>--threads &lt;int&gt;</code> -- Number of threads to use with AWS (default: 5)</li>
 </ul>
 <hr />
@@ -1595,7 +1600,6 @@ for every role accessible via AWS SSO CLI.</p>
 <p>Flags:</p>
 <ul>
 <li><code>--diff</code> -- Print a diff of changes to the config file instead of modifying it</li>
-<li><code>--open</code> -- Specify how to open URls: [clip|exec|open|granted-containers|open-url-in-container]</li>
 <li><code>--print</code> -- Print profile entries instead of modifying config file</li>
 <li><code>--force</code> -- Write a new config file without prompting</li>
 <li><code>--aws-config</code> -- Override path to <code>~/.aws/config</code> file</li>
@@ -1610,14 +1614,8 @@ by the <a href="../config/#configvariables">ConfigVariables</a> setting in the
 <em>automatically refresh</em>.  This means, if you do not have a valid AWS SSO token,
 you will be prompted to authentiate via your SSO provider and subsequent
 requests to obtain new IAM STS credentials will automatically happen as needed.</p>
-<p><strong>Note:</strong> Due to a limitation in the AWS tooling, <code>print</code> and <code>printurl</code> are not
-supported values for <code>--url-action</code>.  Hence, you must use <code>open</code> or <code>exec</code> to
-auto-open URLs in your browser (recommended) or <code>clip</code> to automatically copy
-URLs to your clipboard.  <em>No user prompting is possible.</em></p>
 <p><strong>Note:</strong> You should run this command any time your list of AWS roles changes
-in order to update the <code>~/.aws/config</code> file or enable <a href="../config/#autoconfigcheck">AutoConfigCheck</a> and <a href="../config/#configprofilesurlaction">ConfigProfilesUrlAction</a>.</p>
-<p><strong>Note:</strong> If <code>ConfigProfilesUrlAction</code> is set, then <code>--open</code> is optional,
-otherwise it is required.</p>
+in order to update the <code>~/.aws/config</code> file or enable <a href="../config/#autoconfigcheck">AutoConfigCheck</a>.</p>
 <p><strong>Note:</strong> It is important that you do <em>NOT</em> remove the <code># BEGIN_AWS_SSO_CLI</code> and
 <code># END_AWS_SSO_CLI</code> lines from your config file!  These markers are used to track
 which profiles are managed by AWS SSO CLI.</p>

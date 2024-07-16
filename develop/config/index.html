@@ -638,15 +638,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#configprofilesurlaction" class="md-nav__link">
-    <span class="md-ellipsis">
-      ConfigProfilesUrlAction
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#configprofilesbinarypath" class="md-nav__link">
     <span class="md-ellipsis">
       ConfigProfilesBinaryPath
@@ -1590,15 +1581,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#configprofilesurlaction" class="md-nav__link">
-    <span class="md-ellipsis">
-      ConfigProfilesUrlAction
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#configprofilesbinarypath" class="md-nav__link">
     <span class="md-ellipsis">
       ConfigProfilesBinaryPath
@@ -1830,7 +1812,6 @@ MaxBackoff: &lt;integer&gt;
 
 Browser: &lt;path to web browser&gt;
 UrlAction: [clip|exec|print|printurl|open|granted-containers|open-url-in-container]
-ConfigProfilesUrlAction: [clip|exec|open|granted-containers|open-url-in-container]
 ConfigProfilesBinaryPath: &lt;path to aws-sso binary&gt;
 UrlExecCommand:
     - &lt;command&gt;
@@ -2055,22 +2036,6 @@ the API call to get a Console URL to be between 15 minutes and 36 hours, the
 real limit is 12 hours (720 minutes) because AWS SSO sessions <a href="https://docs.aws.amazon.com/singlesignon/latest/userguide/howtosessionduration.html">are limited to
 12 hours maximum</a>.</p>
 <h3 id="aws_profile-integration">AWS_PROFILE Integration</h3>
-<h4 id="configprofilesurlaction">ConfigProfilesUrlAction</h4>
-<p>The <code>aws-sso config-profiles</code> command by default will use the same action
-to open URL's as defined in <a href="#authurlaction--browser--urlaction--urlexeccommand">UrlAction</a>,
-but you can override it via the <code>ConfigProfilesUrlAction</code>.</p>
-<p>If <code>UrlAction</code> is <code>print</code> or <code>printurl</code>, then this settings will default to <code>open</code>.</p>
-<p>Due to limitations with the AWS SDK, only the following options are valid:</p>
-<ul>
-<li><code>clip</code></li>
-<li><code>exec</code></li>
-<li><code>open</code></li>
-<li><code>granted-containers</code></li>
-<li><code>open-url-in-container</code></li>
-</ul>
-<p><strong>Note:</strong> This option is required if you also want to use <a href="#autoconfigcheck">AutoConfigCheck</a>.</p>
-<p><strong>Note:</strong> This config option was previously known as <code>ConfigUrlAction</code> which
-has been deprecated.</p>
 <h4 id="configprofilesbinarypath">ConfigProfilesBinaryPath</h4>
 <p>Override execution path for <code>aws-sso</code> when generating named AWS profiles via the
 <a href="../commands/#config-profiles">config-profiles</a>.</p>
@@ -2216,7 +2181,6 @@ based on the time.  Default is 1440 minutes (24 hours).</p>
 <p>When set to <code>True</code>, when your AWS SSO roles are automatically refreshed (see
 <a href="#cacherefresh">CacheRefresh</a>) <code>aws-sso</code> will also check to see if any changes
 are warranted in your <code>~/.aws/config</code>.</p>
-<p><strong>Note:</strong> This option requires you to also set <a href="#configprofilesurlaction">ConfigProfilesUrlAction</a>.</p>
 <p><strong>Note:</strong> This option can be disabled temporarily on the command line by passing
 the <code>--no-config-check</code> flag.</p>
 <p><strong>Note:</strong> If you are using a non-default path for your <code>~/.aws/config</code> file, then
