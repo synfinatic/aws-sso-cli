@@ -323,7 +323,6 @@ func (suite *SettingsTestSuite) TestSetOverrides() {
 		LogLines:   true,
 		Browser:    "my-browser",
 		DefaultSSO: "hello",
-		UrlAction:  url.PrintUrl,
 		Threads:    10,
 	}
 
@@ -333,7 +332,6 @@ func (suite *SettingsTestSuite) TestSetOverrides() {
 	assert.True(t, log.ReportCaller)
 	assert.Equal(t, "my-browser", s.Browser)
 	assert.Equal(t, "hello", s.DefaultSSO)
-	assert.Equal(t, url.PrintUrl, s.UrlAction)
 	assert.Equal(t, 10, s.Threads)
 }
 

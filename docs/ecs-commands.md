@@ -79,7 +79,7 @@ Flags:
 
 ---
 
-### ecs ssl save
+### ecs ssl
 
  Configures the SSL Certificate and Private Key to enable SSL/TLS.  Saves the
  SSL certificate and private key to the SecureStore.
@@ -89,21 +89,10 @@ Flags:
 
  Flags:
 
+  * `--delete` -- Disables SSL and deletes both the SSL certificate and private key from the Secure Store
+  * `--print` -- Prints the SSL certificate
   * `--certificate` -- Path to SSL certificate file in PEM format
   * `--private-key` -- Path to SSL private key in PEM format
-
----
-
-### ecs ssl delete
-
-Delete the SSL certificate and private key from the Secure Store and disables
-SSL/TLS for the ECS Server.
-
----
-
-### ecs ssl print
-
-Prints the SSL public certificate stored in the SecureStore.
 
 ---
 

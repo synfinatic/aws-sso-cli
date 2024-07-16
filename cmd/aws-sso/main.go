@@ -264,6 +264,10 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 			Title: "Commands requiring login:",
 			Key:   "login-required",
 		},
+		{
+			Title: "Add SSL Certificate/Key:",
+			Key:   "add-ssl",
+		},
 	}
 
 	parser := kong.Must(

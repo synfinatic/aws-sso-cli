@@ -11,6 +11,8 @@
    * `config` is now `setup wizard` and `ConfigProfilesUrlAction` config option is no longer used
    * `config-profiles` is now `setup profiles`
    * `completions` is now `setup completions`
+   * Make `--url-action` and `--sts-refresh` command specific options
+   * Refactor `ecs ssl` commands to be just flags.
  * Remove `--open` option from `process` command #291
  * Only the and `cache` command will auto-update the contents of `~/.aws/config` #974
  * `tags` command no longer supports the `--force-update` option
