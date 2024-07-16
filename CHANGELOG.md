@@ -7,7 +7,13 @@
  * No longer show help for sub-commands by default 
  * Warnings about invalid accounts/roles in config.yaml are now Debug messages #980
  * Default ProfileFormat is now the `Friendly` format #992
- * `config`, `config-profiles` and `completions` are now sub-commands of `setup` #975
+ * Refactor commands under `setup`: #975
+   * `config` is now `setup wizard` and `ConfigProfilesUrlAction` config option is no longer used
+   * `config-profiles` is now `setup profiles`
+   * `completions` is now `setup completions`
+   * Make `--url-action` and `--sts-refresh` command specific options
+   * Refactor `ecs ssl` commands to be just flags.
+ * Remove `--open` option from `process` command #291
  * Only the and `cache` command will auto-update the contents of `~/.aws/config` #974
  * `tags` command no longer supports the `--force-update` option
  * Change default log level from `warn` to `info`

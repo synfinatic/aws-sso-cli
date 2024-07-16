@@ -53,7 +53,6 @@ MaxBackoff: <integer>
 
 Browser: <path to web browser>
 UrlAction: [clip|exec|print|printurl|open|granted-containers|open-url-in-container]
-ConfigProfilesUrlAction: [clip|exec|open|granted-containers|open-url-in-container]
 ConfigProfilesBinaryPath: <path to aws-sso binary>
 UrlExecCommand:
     - <command>
@@ -357,27 +356,6 @@ https://docs.aws.amazon.com/singlesignon/latest/userguide/howtosessionduration.h
 
 ### AWS_PROFILE Integration
 
-#### ConfigProfilesUrlAction
-
-The `aws-sso config-profiles` command by default will use the same action
-to open URL's as defined in [UrlAction](#authurlaction--browser--urlaction--urlexeccommand),
-but you can override it via the `ConfigProfilesUrlAction`.
-
-If `UrlAction` is `print` or `printurl`, then this settings will default to `open`.
-
-Due to limitations with the AWS SDK, only the following options are valid:
-
- * `clip`
- * `exec`
- * `open`
- * `granted-containers`
- * `open-url-in-container`
-
-**Note:** This option is required if you also want to use [AutoConfigCheck](#autoconfigcheck).
-
-**Note:** This config option was previously known as `ConfigUrlAction` which
-has been deprecated.
-
 #### ConfigProfilesBinaryPath
 
 Override execution path for `aws-sso` when generating named AWS profiles via the
@@ -552,8 +530,6 @@ Specify which fields to display via the `list` command.  Valid options are:
 When set to `True`, when your AWS SSO roles are automatically refreshed (see
 [CacheRefresh](#cacherefresh)) `aws-sso` will also check to see if any changes
 are warranted in your `~/.aws/config`.
-
-**Note:** This option requires you to also set [ConfigProfilesUrlAction](#configprofilesurlaction).
 
 **Note:** This option can be disabled temporarily on the command line by passing
 the `--no-config-check` flag.

@@ -260,12 +260,12 @@ func (suite *SettingsTestSuite) TestGetAllProfiles() {
 	t := suite.T()
 
 	getExecutable = func() (string, error) { return "", fmt.Errorf("failed") }
-	_, err := suite.settings.GetAllProfiles("open firefox")
+	_, err := suite.settings.GetAllProfiles()
 	assert.Error(t, err)
 
 	getExecutable = os.Executable
 
-	profiles, err := suite.settings.GetAllProfiles("open firefox")
+	profiles, err := suite.settings.GetAllProfiles()
 	assert.NoError(t, err)
 
 	assert.Len(t, *profiles, 1)
@@ -281,7 +281,6 @@ func (suite *SettingsTestSuite) TestGetAllProfiles() {
 	assert.Equal(t, x.Arn, "arn:aws:iam::833365043586:role/AWSAdministratorAccess")
 	assert.NotEmpty(t, x.BinaryPath)
 	assert.Equal(t, map[string]interface{}(nil), x.ConfigVariables)
-	assert.Equal(t, "open firefox", x.Open)
 	assert.Equal(t, "Log archive/AWSAdministratorAccess", x.Profile)
 	assert.Equal(t, "Default", x.Sso)
 
@@ -300,7 +299,7 @@ func (suite *SettingsTestSuite) TestGetAllProfiles() {
 	assert.Error(t, profiles.UniqueCheck(suite.settings))
 
 	suite.settings.ProfileFormat = "{{ .GetAllProfilesFailure }}"
-	_, err = suite.settings.GetAllProfiles("open firefox")
+	_, err = suite.settings.GetAllProfiles()
 	assert.Error(t, err)
 
 	suite.settings.ProfileFormat = oldFormat
@@ -324,7 +323,6 @@ func (suite *SettingsTestSuite) TestSetOverrides() {
 		LogLines:   true,
 		Browser:    "my-browser",
 		DefaultSSO: "hello",
-		UrlAction:  url.PrintUrl,
 		Threads:    10,
 	}
 
@@ -334,7 +332,6 @@ func (suite *SettingsTestSuite) TestSetOverrides() {
 	assert.True(t, log.ReportCaller)
 	assert.Equal(t, "my-browser", s.Browser)
 	assert.Equal(t, "hello", s.DefaultSSO)
-	assert.Equal(t, url.PrintUrl, s.UrlAction)
 	assert.Equal(t, 10, s.Threads)
 }
 

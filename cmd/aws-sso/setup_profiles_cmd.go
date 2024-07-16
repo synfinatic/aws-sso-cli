@@ -19,10 +19,7 @@ package main
  */
 
 import (
-	"fmt"
-
 	"github.com/synfinatic/aws-sso-cli/internal/awsconfig"
-	"github.com/synfinatic/aws-sso-cli/internal/url"
 )
 
 const (
@@ -37,28 +34,12 @@ credential_process = {{ $profile.BinaryPath }} -u {{ $profile.Open }} -S "{{ $pr
 type SetupProfilesCmd struct {
 	Diff      bool   `kong:"help='Print a diff of changes to the config file instead of modifying it',xor='action'"`
 	Force     bool   `kong:"help='Write a new config file without prompting'"`
-	Open      string `kong:"help='Specify how to open URLs: [clip|exec|open|granted-containers|open-url-in-container]'"`
 	Print     bool   `kong:"help='Print profile entries instead of modifying config file',xor='action'"`
 	AwsConfig string `kong:"help='Path to AWS config file',env='AWS_CONFIG_FILE',default='~/.aws/config'"`
 }
 
 func (cc *SetupProfilesCmd) Run(ctx *RunContext) error {
 	var err error
-	var action url.ConfigProfilesAction
-
-	if ctx.Cli.Setup.Profiles.Open != "" {
-		if action, err = url.NewConfigProfilesAction(ctx.Cli.Setup.Profiles.Open); err != nil {
-			return err
-		}
-	} else {
-		action = ctx.Settings.ConfigProfilesUrlAction
-	}
-
-	if action == url.ConfigProfilesUndef {
-		return fmt.Errorf("%s", "please specify --open [clip|exec|open|granted-containers|open-url-in-container]")
-	}
-
-	urlAction, _ := url.NewAction(string(action))
 
 	// always refresh our cache
 	c := &CacheCmd{}
@@ -67,8 +48,8 @@ func (cc *SetupProfilesCmd) Run(ctx *RunContext) error {
 	}
 
 	if ctx.Cli.Setup.Profiles.Print {
-		return awsconfig.PrintAwsConfig(ctx.Settings, urlAction)
+		return awsconfig.PrintAwsConfig(ctx.Settings)
 	}
-	return awsconfig.UpdateAwsConfig(ctx.Settings, urlAction, ctx.Cli.Setup.Profiles.AwsConfig,
+	return awsconfig.UpdateAwsConfig(ctx.Settings, ctx.Cli.Setup.Profiles.AwsConfig,
 		ctx.Cli.Setup.Profiles.Diff, ctx.Cli.Setup.Profiles.Force)
 }

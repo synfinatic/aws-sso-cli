@@ -33,10 +33,11 @@ import (
 
 type EcsLoadCmd struct {
 	// AWS Params
-	Arn       string `kong:"short='a',help='ARN of role to load',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
-	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to load',env='AWS_SSO_ACCOUNT_ID',predictor='accountId',xor='account'"`
-	Role      string `kong:"short='R',help='Name of AWS Role to load',env='AWS_SSO_ROLE_NAME',predictor='role',xor='role'"`
-	Profile   string `kong:"short='p',help='Name of AWS Profile to load',predictor='profile',xor='account,role'"`
+	Arn        string `kong:"short='a',help='ARN of role to load',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
+	AccountId  int64  `kong:"name='account',short='A',help='AWS AccountID of role to load',env='AWS_SSO_ACCOUNT_ID',predictor='accountId',xor='account'"`
+	Role       string `kong:"short='R',help='Name of AWS Role to load',env='AWS_SSO_ROLE_NAME',predictor='role',xor='role'"`
+	Profile    string `kong:"short='p',help='Name of AWS Profile to load',predictor='profile',xor='account,role'"`
+	STSRefresh bool   `kong:"help='Force refresh of STS Token Credentials'"`
 
 	// Other params
 	Server  string `kong:"help='Endpoint of aws-sso ECS Server',env='AWS_SSO_ECS_SERVER',default='localhost:4144'"`
@@ -82,7 +83,7 @@ func (cc *EcsProfileCmd) Run(ctx *RunContext) error {
 func ecsLoadCmd(ctx *RunContext, accountId int64, role string) error {
 	c := newClient(ctx.Cli.Ecs.Load.Server, ctx)
 
-	creds := GetRoleCredentials(ctx, AwsSSO, accountId, role)
+	creds := GetRoleCredentials(ctx, AwsSSO, ctx.Cli.Ecs.Load.STSRefresh, accountId, role)
 
 	cache := ctx.Settings.Cache.GetSSO()
 	rFlat, err := cache.Roles.GetRole(accountId, role)

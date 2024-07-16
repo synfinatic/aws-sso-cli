@@ -20,10 +20,12 @@ package main
 
 import (
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
+	"github.com/synfinatic/aws-sso-cli/internal/url"
 )
 
 type LoginCmd struct {
-	Threads int `kong:"help='Override number of threads for talking to AWS',default=${DEFAULT_THREADS}"`
+	UrlAction string `kong:"short='u',help='How to handle URLs [clip|exec|open|print|printurl|granted-containers|open-url-in-container] (default: open)'"`
+	Threads   int    `kong:"help='Override number of threads for talking to AWS',default=${DEFAULT_THREADS}"`
 }
 
 func (cc *LoginCmd) Run(ctx *RunContext) error {
@@ -55,7 +57,14 @@ func doAuth(ctx *RunContext) {
 		return
 	}
 
-	err := AwsSSO.Authenticate(ctx.Settings.UrlAction, ctx.Settings.Browser)
+	action, err := url.NewAction(ctx.Cli.Login.UrlAction)
+	if err != nil {
+		log.Fatalf("Invalid --url-action %s", ctx.Cli.Login.UrlAction)
+	}
+	if action == "" {
+		action = ctx.Settings.UrlAction
+	}
+	err = AwsSSO.Authenticate(action, ctx.Settings.Browser)
 	if err != nil {
 		log.WithError(err).Fatalf("Unable to authenticate")
 	}

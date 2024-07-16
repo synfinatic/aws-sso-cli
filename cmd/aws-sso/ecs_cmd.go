@@ -62,54 +62,44 @@ func (cc *EcsAuthCmd) Run(ctx *RunContext) error {
 }
 
 type EcsSSLCmd struct {
-	Delete EcsSSLDeleteCmd `kong:"cmd,help='Delete the current SSL certificate/private key'"`
-	Print  EcsSSLPrintCmd  `kong:"cmd,help='Print the current SSL certificate'"`
-	Save   EcsSSLSaveCmd   `kong:"cmd,help='Save a new SSL certificate/private key'"`
-}
-
-type EcsSSLSaveCmd struct {
-	Certificate string `kong:"short=c,type='existingfile',help='Path to certificate chain PEM file',predictor='allFiles',required"`
-	PrivateKey  string `kong:"short=p,type='existingfile',help='Path to private key file PEM file',predictor='allFiles'"`
+	Delete      bool   `kong:"short=d,help='Disable SSL and delete the current SSL cert/key',xor='flag,cert,key'"`
+	Print       bool   `kong:"short=p,help='Print the current SSL certificate',xor='flag,cert,key'"`
+	Certificate string `kong:"short=c,type='existingfile',help='Path to certificate chain PEM file',predictor='allFiles',group='add-ssl',xor='cert'"`
+	PrivateKey  string `kong:"short=k,type='existingfile',help='Path to private key file PEM file',predictor='allFiles',group='add-ssl',xor='key'"`
 	Force       bool   `kong:"hidden,help='Force loading the certificate'"`
 }
 
-type EcsSSLDeleteCmd struct{}
-
-func (cc *EcsSSLDeleteCmd) Run(ctx *RunContext) error {
-	return ctx.Store.DeleteEcsSslKeyPair()
-}
-
-type EcsSSLPrintCmd struct{}
-
-func (cc *EcsSSLPrintCmd) Run(ctx *RunContext) error {
-	cert, err := ctx.Store.GetEcsSslCert()
-	if err != nil {
-		return err
+func (cc *EcsSSLCmd) Run(ctx *RunContext) error {
+	if ctx.Cli.Ecs.SSL.Delete {
+		return ctx.Store.DeleteEcsSslKeyPair()
+	} else if ctx.Cli.Ecs.SSL.Print {
+		cert, err := ctx.Store.GetEcsSslCert()
+		if err != nil {
+			return err
+		}
+		if cert == "" {
+			return fmt.Errorf("no certificate found")
+		}
+		fmt.Println(cert)
+		return nil
 	}
-	if cert == "" {
-		return fmt.Errorf("no certificate found")
-	}
-	fmt.Println(cert)
-	return nil
-}
 
-func (cc *EcsSSLSaveCmd) Run(ctx *RunContext) error {
 	var privateKey, certChain []byte
 	var err error
 
-	if !ctx.Cli.Ecs.SSL.Save.Force {
+	if !ctx.Cli.Ecs.SSL.Force {
 		log.Warn("This feature is experimental and may not work as expected.")
 		log.Warn("Please read https://github.com/synfinatic/aws-sso-cli/issues/936 before contiuing.")
 		log.Fatal("Use `--force` to continue anyways.")
 	}
 
-	certChain, err = os.ReadFile(ctx.Cli.Ecs.SSL.Save.Certificate)
+	certChain, err = os.ReadFile(ctx.Cli.Ecs.SSL.Certificate)
 	if err != nil {
 		return fmt.Errorf("failed to read certificate chain file: %w", err)
 	}
 
-	if ctx.Cli.Ecs.SSL.Save.PrivateKey != "" {
-		privateKey, err = os.ReadFile(ctx.Cli.Ecs.SSL.Save.PrivateKey)
+	if ctx.Cli.Ecs.SSL.PrivateKey != "" {
+		privateKey, err = os.ReadFile(ctx.Cli.Ecs.SSL.PrivateKey)
 		if err != nil {
 			return fmt.Errorf("failed to read private key file: %w", err)
 		}
