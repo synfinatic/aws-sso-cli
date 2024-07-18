@@ -40,6 +40,12 @@ type EvalCmd struct {
 	EnvArn   string `kong:"hidden,env='AWS_SSO_ROLE_ARN'"` // used for refresh
 }
 
+// AfterApply determines if SSO auth token is required
+func (l EvalCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_REQUIRED
+	return nil
+}
+
 func (cc *EvalCmd) Run(ctx *RunContext) error {
 	var err error
 

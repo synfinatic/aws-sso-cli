@@ -52,11 +52,21 @@ var VALID_LOG_LEVELS = []string{"error", "warn", "info", "debug", "trace"}
 
 var AwsSSO *sso.AWSSSO // global
 
+type CommandAuth int
+
+const (
+	AUTH_UNKNOWN CommandAuth = iota
+	AUTH_RUN_ECS_EARLY
+	AUTH_REQUIRED
+	AUTH_NO
+)
+
 type RunContext struct {
 	Kctx     *kong.Context
 	Cli      *CLI
 	Settings *sso.Settings // unified config & cache
 	Store    storage.SecureStorage
+	Auth     CommandAuth
 }
 
 const (
@@ -133,9 +143,14 @@ type CLI struct {
 func main() {
 	cli := CLI{}
 	var err error
+	runCtx := RunContext{
+		Cli:  &cli,
+		Auth: AUTH_UNKNOWN,
+	}
 
 	log = logrus.New()
-	ctx, override := parseArgs(&cli)
+	override := parseArgs(&runCtx)
+
 	helper.SetLogger(log)
 	predictor.SetLogger(log)
 	sso.SetLogger(log)
@@ -151,20 +166,17 @@ func main() {
 		log.Fatalf("%s", err.Error())
 	}
 
-	runCtx := RunContext{
-		Kctx: ctx,
-		Cli:  &cli,
-	}
-
-	switch ctx.Command() {
+	switch runCtx.Kctx.Command() {
 	case "version":
-		if err = ctx.Run(&runCtx); err != nil {
+		if err = runCtx.Kctx.Run(&runCtx); err != nil {
 			log.Fatalf("%s", err.Error())
 		}
 		return
-	case "ecs server", "ecs list", "ecs unload", "ecs profile":
+	}
+
+	if runCtx.Auth == AUTH_RUN_ECS_EARLY {
 		// side-step the rest of the setup...
-		if err = ctx.Run(&runCtx); err != nil {
+		if err = runCtx.Kctx.Run(&runCtx); err != nil {
 			log.Fatalf("%s", err.Error())
 		}
 	}
@@ -177,7 +189,7 @@ func main() {
 		if err = setupWizard(&runCtx, false, false, runCtx.Cli.Setup.Wizard.Advanced); err != nil {
 			log.Fatalf("%s", err.Error())
 		}
-		if ctx.Command() == "setup wizard" {
+		if runCtx.Kctx.Command() == "setup wizard" {
 			// we're done.
 			return
 		}
@@ -191,8 +203,15 @@ func main() {
 		log.Fatalf("%s", err.Error())
 	}
 
-	switch ctx.Command() {
-	case "list", "login", "tags", "time", "list-sso-roles", "setup completions", "setup profiles", "setup ecs auth", "setup ecs ssl":
+	switch runCtx.Auth {
+	case AUTH_REQUIRED:
+		// make sure we have authenticated via AWS SSO and init SecureStore
+		loadSecureStore(&runCtx)
+		if !checkAuth(&runCtx) {
+			log.Fatalf("Must run `aws-sso login` before running `aws-sso %s`", runCtx.Kctx.Command())
+		}
+
+	case AUTH_NO:
 		// commands which don't need to be authenticated to SSO
 		c := &runCtx
 		s, err := c.Settings.GetSelectedSSO(c.Cli.SSO)
@@ -202,16 +221,11 @@ func main() {
 
 		loadSecureStore(c)
 		AwsSSO = sso.NewAWSSSO(s, &c.Store)
-
-	default: // includes "ecs load"
-		// make sure we have authenticated via AWS SSO and init SecureStore
-		loadSecureStore(&runCtx)
-		if !checkAuth(&runCtx) {
-			log.Fatalf("Must run `aws-sso login` before running `aws-sso %s`", ctx.Command())
-		}
+	case AUTH_UNKNOWN:
+		log.Fatal("Internal error: AUTH_UNKNOWN")
 	}
 
-	err = ctx.Run(&runCtx)
+	err = runCtx.Kctx.Run(&runCtx)
 	if err != nil {
 		log.Fatalf("%s", err.Error())
 	}
@@ -244,7 +258,9 @@ func loadSecureStore(ctx *RunContext) {
 }
 
 // parseArgs parses our CLI arguments
-func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
+func parseArgs(ctx *RunContext) sso.OverrideSettings {
+	var err error
+
 	// need to pass in the variables for defaults
 	vars := kong.Vars{
 		"CONFIG_DIR":      config.ConfigDir(false),
@@ -270,6 +286,8 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 		},
 	}
 
+	cli := ctx.Cli
+
 	parser := kong.Must(
 		cli,
 		kong.Name("aws-sso"),
@@ -277,6 +295,7 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 		kong.ConfigureHelp(help),
 		vars,
 		kong.ExplicitGroups(groups),
+		kong.Bind(ctx),
 	)
 
 	p := predictor.NewPredictor(config.InsecureCacheFile(true), config.ConfigFile(true))
@@ -296,7 +315,7 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 		),
 	)
 
-	ctx, err := parser.Parse(os.Args[1:])
+	ctx.Kctx, err = parser.Parse(os.Args[1:])
 	parser.FatalIfErrorf(err)
 
 	threads := 0
@@ -320,7 +339,7 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 		DisableTimestamp:       true,
 	})
 
-	return ctx, override
+	return override
 }
 
 type VersionCmd struct{} // takes no arguments

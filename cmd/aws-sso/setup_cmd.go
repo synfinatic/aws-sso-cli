@@ -41,6 +41,12 @@ type EcsAuthCmd struct {
 	Delete      bool   `kong:"short=d,help='Delete the current bearer token',xor='flag'"`
 }
 
+// AfterApply determines if SSO auth token is required
+func (l EcsAuthCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_NO
+	return nil
+}
+
 func (cc *EcsAuthCmd) Run(ctx *RunContext) error {
 	// Delete the token
 	if ctx.Cli.Setup.Ecs.Auth.Delete {
@@ -63,6 +69,12 @@ type EcsSSLCmd struct {
 	Certificate string `kong:"short=c,type='existingfile',help='Path to certificate chain PEM file',predictor='allFiles',group='add-ssl',xor='cert'"`
 	PrivateKey  string `kong:"short=k,type='existingfile',help='Path to private key file PEM file',predictor='allFiles',group='add-ssl',xor='key'"`
 	Force       bool   `kong:"hidden,help='Force loading the certificate'"`
+}
+
+// AfterApply determines if SSO auth token is required
+func (l EcsSSLCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_NO
+	return nil
 }
 
 func (cc *EcsSSLCmd) Run(ctx *RunContext) error {

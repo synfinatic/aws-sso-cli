@@ -43,6 +43,12 @@ type ExecCmd struct {
 	Args []string `kong:"arg,optional,passthrough,name='args',help='Associated arguments for the command'"`
 }
 
+// AfterApply determines if SSO auth token is required
+func (l ExecCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_REQUIRED
+	return nil
+}
+
 func (cc *ExecCmd) Run(ctx *RunContext) error {
 	err := checkAwsEnvironment()
 	if err != nil {

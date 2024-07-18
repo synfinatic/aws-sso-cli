@@ -38,6 +38,12 @@ type SetupProfilesCmd struct {
 	AwsConfig string `kong:"help='Path to AWS config file',env='AWS_CONFIG_FILE',default='~/.aws/config'"`
 }
 
+// AfterApply determines if SSO auth token is required
+func (l SetupProfilesCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_NO
+	return nil
+}
+
 func (cc *SetupProfilesCmd) Run(ctx *RunContext) error {
 	var err error
 

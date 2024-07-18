@@ -27,6 +27,12 @@ import (
 
 type TimeCmd struct{}
 
+// AfterApply determines if SSO auth token is required
+func (l TimeCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_NO
+	return nil
+}
+
 func (cc *TimeCmd) Run(ctx *RunContext) error {
 	expires, isset := os.LookupEnv("AWS_SSO_SESSION_EXPIRATION")
 	if !isset {

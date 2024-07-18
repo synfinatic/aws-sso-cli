@@ -24,6 +24,12 @@ import (
 // LogoutCmd defines the Kong args for the flush command
 type LogoutCmd struct{}
 
+// AfterApply determines if SSO auth token is required
+func (l LogoutCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_NO
+	return nil
+}
+
 // Run executes the flush command
 func (cc *LogoutCmd) Run(ctx *RunContext) error {
 	var err error

@@ -38,6 +38,12 @@ type SetupWizardCmd struct {
 	Advanced bool `kong:"help='Enable advanced configuration'"`
 }
 
+// AfterApply determines if SSO auth token is required
+func (l SetupWizardCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_NO
+	return nil
+}
+
 func (cc *SetupWizardCmd) Run(ctx *RunContext) error {
 	if err := backupConfig(ctx.Cli.ConfigFile); err != nil {
 		return err

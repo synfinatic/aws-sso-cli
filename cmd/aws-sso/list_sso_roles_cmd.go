@@ -27,6 +27,12 @@ import (
 
 type ListSSORolesCmd struct{}
 
+// AfterApply determines if SSO auth token is required
+func (l ListSSORolesCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_NO
+	return nil
+}
+
 func (cc *ListSSORolesCmd) Run(ctx *RunContext) error {
 	var err error
 

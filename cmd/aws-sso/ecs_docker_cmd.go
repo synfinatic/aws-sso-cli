@@ -47,6 +47,12 @@ type EcsDockerStartCmd struct {
 	Version    string `kong:"help='ECS Server docker image version',default='${VERSION}'"`
 }
 
+// AfterApply determines if SSO auth token is required
+func (l EcsDockerStartCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_NO
+	return nil
+}
+
 func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 	// Start the ECS Server in a Docker container
 	cli, err := client.NewClientWithOpts(client.FromEnv)
@@ -146,6 +152,12 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 
 type EcsDockerStopCmd struct {
 	Version string `kong:"help='ECS Server Version',default='latest'"`
+}
+
+// AfterApply determines if SSO auth token is required
+func (l EcsDockerStopCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_NO
+	return nil
 }
 
 func (cc *EcsDockerStopCmd) Run(ctx *RunContext) error {

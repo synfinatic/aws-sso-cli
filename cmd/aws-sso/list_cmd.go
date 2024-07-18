@@ -40,6 +40,12 @@ type ListCmd struct {
 	Reverse    bool     `kong:"help='Reverse sort results',env='AWS_SSO_FIELD_SORT_REVERSE'"`
 }
 
+// AfterApply list command doesnt require a valid SSO auth token
+func (l ListCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_NO
+	return nil
+}
+
 // Actually used in main.go, but definied here for locality
 var DEFAULT_LIST_FIELDS []string = []string{"AccountIdPad", "AccountAlias", "RoleName", "Profile", "Expires"}
 
