@@ -14,7 +14,7 @@ type CredentialsCmd struct {
 
 // AfterApply determines if SSO auth token is required
 func (c CredentialsCmd) AfterApply(runCtx *RunContext) error {
-	runCtx.Auth = AUTH_SKIP
+	runCtx.Auth = AUTH_REQUIRED
 	return nil
 }
 
