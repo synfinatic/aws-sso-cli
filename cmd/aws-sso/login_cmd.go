@@ -28,6 +28,12 @@ type LoginCmd struct {
 	Threads   int    `kong:"help='Override number of threads for talking to AWS',default=${DEFAULT_THREADS}"`
 }
 
+// AfterApply determines if SSO auth token is required
+func (l LoginCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_SKIP
+	return nil
+}
+
 func (cc *LoginCmd) Run(ctx *RunContext) error {
 	doAuth(ctx)
 	return nil

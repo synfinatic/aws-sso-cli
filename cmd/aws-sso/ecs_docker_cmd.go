@@ -41,10 +41,18 @@ type EcsDockerCmd struct {
 }
 
 type EcsDockerStartCmd struct {
-	DisableSSL bool   `kong:"help='Disable SSL/TLS for the ECS Docker Server'"`
-	BindIP     string `kong:"help='Host IP address to bind to the ECS Server',default='127.0.0.1'"`
-	Port       string `kong:"help='Host port to bind to the ECS Server',default='4144'"`
-	Version    string `kong:"help='ECS Server docker image version',default='${VERSION}'"`
+	DisableAuth bool   `kong:"help='Disable HTTP Auth for the ECS Docker Server'"`
+	DisableSSL  bool   `kong:"help='Disable SSL/TLS for the ECS Docker Server'"`
+	BindIP      string `kong:"help='Host IP address to bind to the ECS Server',default='127.0.0.1'"`
+	Port        string `kong:"help='Host port to bind to the ECS Server',default='4144'"`
+	Image       string `kong:"help='ECS Server docker image',default='synfinatic/aws-sso-cli-ecs-server'"`
+	Version     string `kong:"help='ECS Server docker image version',default='${VERSION}'"`
+}
+
+// AfterApply determines if SSO auth token is required
+func (e EcsDockerStartCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_SKIP
+	return nil
 }
 
 func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
@@ -54,7 +62,7 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 		return err
 	}
 
-	var privateKey, certChain string
+	var privateKey, certChain, bearerToken string
 
 	if !ctx.Cli.Ecs.Docker.Start.DisableSSL {
 		privateKey, err = ctx.Store.GetEcsSslKey()
@@ -67,19 +75,14 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 		}
 	}
 
-	if privateKey == "" || certChain == "" {
-		return fmt.Errorf("ECS Server SSL certificate not configured")
+	if !ctx.Cli.Ecs.Docker.Start.DisableAuth {
+		bearerToken, err = ctx.Store.GetEcsBearerToken()
+		if err != nil {
+			return err
+		}
 	}
 
-	bearerToken, err := ctx.Store.GetEcsBearerToken()
-	if err != nil {
-		return err
-	}
-	if bearerToken == "" {
-		return fmt.Errorf("ECS Server bearer token not configured")
-	}
-
-	image := imageName(ctx.Cli.Ecs.Docker.Start.Version)
+	image := fmt.Sprintf("%s:%s", ctx.Cli.Ecs.Docker.Start.Image, ctx.Cli.Ecs.Docker.Start.Version)
 
 	config := &container.Config{
 		AttachStdout: true,
@@ -94,7 +97,7 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 		User: fmt.Sprintf("%d:%d", os.Getuid(), os.Getgid()),
 	}
 	if ctx.Cli.LogLevel == "debug" || ctx.Cli.LogLevel == "trace" {
-		config.Entrypoint = []string{"./aws-sso", "ecs", "run", "--level", ctx.Cli.LogLevel, "--docker"}
+		config.Entrypoint = []string{"./aws-sso", "ecs", "run", "--level", string(ctx.Cli.LogLevel), "--docker"}
 	}
 
 	portBinding := nat.PortBinding{
@@ -148,6 +151,12 @@ type EcsDockerStopCmd struct {
 	Version string `kong:"help='ECS Server Version',default='latest'"`
 }
 
+// AfterApply determines if SSO auth token is required
+func (e EcsDockerStopCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_SKIP
+	return nil
+}
+
 func (cc *EcsDockerStopCmd) Run(ctx *RunContext) error {
 	// Stop the ECS Server in a Docker container
 	cli, err := client.NewClientWithOpts(client.FromEnv)
@@ -160,8 +169,4 @@ func (cc *EcsDockerStopCmd) Run(ctx *RunContext) error {
 	}
 
 	return cli.ContainerRemove(context.Background(), CONTAINER_NAME, container.RemoveOptions{})
-}
-
-func imageName(version string) string {
-	return fmt.Sprintf("synfinatic/aws-sso-cli-ecs-server:%s", version)
 }

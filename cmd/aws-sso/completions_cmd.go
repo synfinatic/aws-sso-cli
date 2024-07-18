@@ -35,6 +35,12 @@ type CompleteCmd struct {
 	ShellScript    string `kong:"help='Override file to (un)install shell completions',xor='script'"`
 }
 
+// AfterApply determines if SSO auth token is required
+func (c CompleteCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_SKIP
+	return nil
+}
+
 func (cc *CompleteCmd) Run(ctx *RunContext) error {
 	var err error
 

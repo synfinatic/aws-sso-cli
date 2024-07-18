@@ -4,13 +4,14 @@
 
 ### Changes
 
- * No longer show help for sub-commands by default 
+ * No longer show help for sub-commands by default
  * Warnings about invalid accounts/roles in config.yaml are now Debug messages #980
  * Default ProfileFormat is now the `Friendly` format #992
  * Refactor commands under `setup`: #975
    * `config` is now `setup wizard` and `ConfigProfilesUrlAction` config option is no longer used
    * `config-profiles` is now `setup profiles`
    * `completions` is now `setup completions`
+   * `ecs ssl` is now `setup ecs ssl`
    * Make `--url-action` and `--sts-refresh` command specific options
    * Refactor `ecs ssl` commands to be just flags.
  * Remove `--open` option from `process` command #291
@@ -24,6 +25,7 @@
  * Remove `flush` command.  Use `logout`
  * `aws-sso` commands other than `cache` and `login` no longer can trigger a cache refresh without
     update of `~/.aws/config` file
+ * Add support for running ECS Server via docker (`aws-sso ecs docker ...`)
 
 ## [v1.17.0] - 2024-07-10
 

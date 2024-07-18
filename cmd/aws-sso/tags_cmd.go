@@ -30,6 +30,12 @@ type TagsCmd struct {
 	Role      string `kong:"short='R',help='Filter results based on AWS Role Name'"`
 }
 
+// AfterApply determines if SSO auth token is required
+func (t TagsCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_SKIP
+	return nil
+}
+
 func (cc *TagsCmd) Run(ctx *RunContext) error {
 	set := ctx.Settings
 	cache := ctx.Settings.Cache.GetSSO()

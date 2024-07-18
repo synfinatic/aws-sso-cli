@@ -36,6 +36,12 @@ type ProcessCmd struct {
 	STSRefresh bool   `kong:"help='Force refresh of STS Token Credentials'"`
 }
 
+// AfterApply list command requires a valid SSO auth token
+func (p ProcessCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_REQUIRED
+	return nil
+}
+
 func (cc *ProcessCmd) Run(ctx *RunContext) error {
 	var err error
 

@@ -60,6 +60,12 @@ type ConsoleCmd struct {
 	AwsProfile      string `kong:"env='AWS_PROFILE',hidden"`
 }
 
+// AfterApply determines if SSO auth token is required
+func (c ConsoleCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_SKIP
+	return nil
+}
+
 func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 	if ctx.Cli.Console.Duration > 0 {
 		ctx.Settings.ConsoleDuration = ctx.Cli.Console.Duration

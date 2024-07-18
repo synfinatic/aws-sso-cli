@@ -37,6 +37,12 @@ type EcsServerCmd struct {
 	DisableSSL  bool `kong:"help='Disable SSL/TLS for the ECS Server'"`
 }
 
+// AfterApply determines if SSO auth token is required
+func (e EcsServerCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_NO_CONFIG
+	return nil
+}
+
 func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 	// Start the ECS Server
 	bindIP := ctx.Cli.Ecs.Server.BindIP

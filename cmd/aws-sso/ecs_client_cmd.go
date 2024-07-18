@@ -44,6 +44,12 @@ type EcsLoadCmd struct {
 	Slotted bool   `kong:"short='s',help='Load credentials in a unique slot using the ProfileName as the key'"`
 }
 
+// AfterApply determines if SSO auth token is required
+func (e EcsLoadCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_REQUIRED
+	return nil
+}
+
 func (cc *EcsLoadCmd) Run(ctx *RunContext) error {
 	sci := NewSelectCliArgs(ctx.Cli.Ecs.Load.Arn, ctx.Cli.Ecs.Load.AccountId, ctx.Cli.Ecs.Load.Role, ctx.Cli.Ecs.Load.Profile)
 	if err := sci.Update(ctx); err == nil {
@@ -59,6 +65,12 @@ func (cc *EcsLoadCmd) Run(ctx *RunContext) error {
 
 type EcsProfileCmd struct {
 	Server string `kong:"help='URL endpoint of aws-sso ECS Server',env='AWS_SSO_ECS_SERVER',default='localhost:4144'"`
+}
+
+// AfterApply determines if SSO auth token is required
+func (e EcsProfileCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_NO_CONFIG
+	return nil
 }
 
 func (cc *EcsProfileCmd) Run(ctx *RunContext) error {
@@ -111,6 +123,12 @@ type EcsListCmd struct {
 	Server string `kong:"help='Endpoint of aws-sso ECS Server',env='AWS_SSO_ECS_SERVER',default='localhost:4144'"`
 }
 
+// AfterApply determines if SSO auth token is required
+func (e EcsListCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_NO_CONFIG
+	return nil
+}
+
 func (cc *EcsListCmd) Run(ctx *RunContext) error {
 	c := newClient(ctx.Cli.Ecs.Profile.Server, ctx)
 
@@ -129,6 +147,12 @@ func (cc *EcsListCmd) Run(ctx *RunContext) error {
 type EcsUnloadCmd struct {
 	Profile string `kong:"short='p',help='Slot of AWS Profile to unload',predictor='profile'"`
 	Server  string `kong:"help='Endpoint of aws-sso ECS Server',env='AWS_SSO_ECS_SERVER',default='localhost:4144'"`
+}
+
+// AfterApply determines if SSO auth token is required
+func (e EcsUnloadCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_NO_CONFIG
+	return nil
 }
 
 func (cc *EcsUnloadCmd) Run(ctx *RunContext) error {

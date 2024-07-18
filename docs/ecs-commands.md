@@ -4,7 +4,7 @@ For information about the ECS Server functionality, see the [ecs-server](ecs-ser
 
 ## Commands
 
-### ecs auth
+### setup ecs auth
 
 Configures the HTTP Authentication BearerToken.  Once set, all future client
 requests to the ECS Server will need to provide the correct credentials.  
@@ -20,16 +20,35 @@ Flags:
 
 ---
 
+### setup ecs ssl
+
+ Configures the SSL Certificate and Private Key to enable SSL/TLS.  Saves the
+ SSL certificate and private key to the SecureStore.
+
+ **Note:** At this time, this feature is not recommended due to a bug
+ in the [AWS SDK](https://github.com/boto/boto3/issues/4188).
+
+ Flags:
+
+  * `--delete` -- Disables SSL and deletes both the SSL certificate and private key from the Secure Store
+  * `--print` -- Prints the SSL certificate
+  * `--certificate` -- Path to SSL certificate file in PEM format
+  * `--private-key` -- Path to SSL private key in PEM format
+
+---
+
 ### ecs docker start
 
 Starts the ECS Server in a Docker container.
 
 Flags:
 
+  * `--disable-auth` -- Disables HTTP Auth, even if a bearer token is available
   * `--disable-ssl` -- Disables SSL/TLS, even if a certificate and private key are available.
   * `--bind-ip` -- IP address to bind the service to.  (default 127.0.0.1)
   * `--port` -- Port to listen on.  (default 4144)
-  * `--version` -- Version of the `synfinatic/aws-sso-cli-ecs-server` docker image to use
+  * `--image` -- Docker image to use.  (default `synfinatic/aws-sso-cli-ecs-version`)
+  * `--version` -- Version of the docker image to use (default matches `aws-sso` binary version)
 
 ---
 
@@ -76,23 +95,6 @@ Fetches the ProfileName of the role stored in the default slot of the ECS Server
 Flags:
 
  * `--slotted` -- Load the IAM credentials into a unique slot using the ProfileName as the key
-
----
-
-### ecs ssl
-
- Configures the SSL Certificate and Private Key to enable SSL/TLS.  Saves the
- SSL certificate and private key to the SecureStore.
-
- **Note:** At this time, this feature is not recommended due to a bug
- in the [AWS SDK](https://github.com/boto/boto3/issues/4188).
-
- Flags:
-
-  * `--delete` -- Disables SSL and deletes both the SSL certificate and private key from the Secure Store
-  * `--print` -- Prints the SSL certificate
-  * `--certificate` -- Path to SSL certificate file in PEM format
-  * `--private-key` -- Path to SSL private key in PEM format
 
 ---
 

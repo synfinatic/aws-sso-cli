@@ -30,6 +30,12 @@ type CacheCmd struct {
 	Threads       int  `kong:"help='Override number of threads for talking to AWS',default=${DEFAULT_THREADS}"`
 }
 
+// AfterApply determines if SSO auth token is required
+func (c CacheCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_REQUIRED
+	return nil
+}
+
 func (cc *CacheCmd) Run(ctx *RunContext) error {
 	s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
 	if err != nil {

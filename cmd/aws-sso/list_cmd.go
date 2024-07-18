@@ -40,6 +40,12 @@ type ListCmd struct {
 	Reverse    bool     `kong:"help='Reverse sort results',env='AWS_SSO_FIELD_SORT_REVERSE'"`
 }
 
+// AfterApply list command doesnt require a valid SSO auth token
+func (l ListCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_SKIP
+	return nil
+}
+
 // Actually used in main.go, but definied here for locality
 var DEFAULT_LIST_FIELDS []string = []string{"AccountIdPad", "AccountAlias", "RoleName", "Profile", "Expires"}
 
@@ -88,7 +94,7 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 
 	for _, f := range fields {
 		if !predictor.SupportedListField(f) {
-			return fmt.Errorf("Unsupported field: '%s'", f)
+			return fmt.Errorf("unsupported field: '%s'", f)
 		}
 	}
 
@@ -98,6 +104,11 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 // DefaultCmd has no args, and just prints the default fields and exists because
 // as of Kong 0.2.18 you can't have a default command which takes args
 type DefaultCmd struct{}
+
+func (d DefaultCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_SKIP
+	return nil
+}
 
 func (cc *DefaultCmd) Run(ctx *RunContext) error {
 	s, err := ctx.Settings.GetSelectedSSO("")
@@ -136,7 +147,7 @@ func printRoles(ctx *RunContext, fields []string, csv bool, prefixSearch []strin
 	sort.SliceStable(allRoles, func(i, j int) bool {
 		a, err := allRoles[i].GetSortableField(sortby)
 		if err != nil {
-			sortError = fmt.Errorf("Invalid --sort: %s", err.Error())
+			sortError = fmt.Errorf("invalid --sort: %s", err.Error())
 			return false
 		}
 		b, _ := allRoles[j].GetSortableField(sortby)
@@ -157,7 +168,7 @@ func printRoles(ctx *RunContext, fields []string, csv bool, prefixSearch []strin
 			}
 
 		default:
-			sortError = fmt.Errorf("Unable to sort by field: %s", sortby)
+			sortError = fmt.Errorf("unable to sort by field: %s", sortby)
 			return false
 		}
 	})

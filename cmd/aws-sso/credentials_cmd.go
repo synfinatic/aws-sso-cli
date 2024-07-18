@@ -12,6 +12,12 @@ type CredentialsCmd struct {
 	Profile []string `kong:"required,short='p',name='profile',help='List of profiles to write credentials for',predictor='profile'"`
 }
 
+// AfterApply determines if SSO auth token is required
+func (c CredentialsCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_REQUIRED
+	return nil
+}
+
 func (cc *CredentialsCmd) Run(ctx *RunContext) error {
 	cache := ctx.Settings.Cache.GetSSO()
 

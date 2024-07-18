@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/alecthomas/kong"
 	"github.com/posener/complete"
@@ -52,11 +53,21 @@ var VALID_LOG_LEVELS = []string{"error", "warn", "info", "debug", "trace"}
 
 var AwsSSO *sso.AWSSSO // global
 
+type CommandAuth int
+
+const (
+	AUTH_UNKNOWN   CommandAuth = iota
+	AUTH_NO_CONFIG             // run command without loading config
+	AUTH_SKIP                  // load config, but no need to SSO auth
+	AUTH_REQUIRED              // load config and require SSO auth
+)
+
 type RunContext struct {
 	Kctx     *kong.Context
 	Cli      *CLI
 	Settings *sso.Settings // unified config & cache
 	Store    storage.SecureStorage
+	Auth     CommandAuth
 }
 
 const (
@@ -101,13 +112,22 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"MaxRetry":                                  10,
 }
 
+type LogLevelType string
+
+func (level LogLevelType) Validate() error {
+	if utils.StrListContains(string(level), VALID_LOG_LEVELS) || level == "" {
+		return nil
+	}
+	return fmt.Errorf("invalid value: %s.  Must be one of: %s", level, strings.Join(VALID_LOG_LEVELS, ", "))
+}
+
 type CLI struct {
 	// Common Arguments
-	Browser    string `kong:"short='b',help='Path to browser to open URLs with',env='AWS_SSO_BROWSER'"`
-	ConfigFile string `kong:"name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG',predict='allFiles'"`
-	LogLevel   string `kong:"short='L',name='level',help='Logging level [error|warn|info|debug|trace] (default: info)'"`
-	Lines      bool   `kong:"help='Print line number in logs'"`
-	SSO        string `kong:"short='S',help='Override default AWS SSO Instance',env='AWS_SSO',predictor='sso'"`
+	Browser    string       `kong:"short='b',help='Path to browser to open URLs with',env='AWS_SSO_BROWSER'"`
+	ConfigFile string       `kong:"name='config',default='${CONFIG_FILE}',help='Config file',env='AWS_SSO_CONFIG',predict='allFiles'"`
+	LogLevel   LogLevelType `kong:"short='L',name='level',help='Logging level [error|warn|info|debug|trace] (default: info)'"`
+	Lines      bool         `kong:"help='Print line number in logs'"`
+	SSO        string       `kong:"short='S',help='Override default AWS SSO Instance',env='AWS_SSO',predictor='sso'"`
 
 	// Commands
 	Default      DefaultCmd      `kong:"cmd,hidden,default='1'"` // list command without args
@@ -133,9 +153,14 @@ type CLI struct {
 func main() {
 	cli := CLI{}
 	var err error
+	runCtx := RunContext{
+		Cli:  &cli,
+		Auth: AUTH_UNKNOWN,
+	}
 
 	log = logrus.New()
-	ctx, override := parseArgs(&cli)
+	override := parseArgs(&runCtx)
+
 	helper.SetLogger(log)
 	predictor.SetLogger(log)
 	sso.SetLogger(log)
@@ -147,38 +172,23 @@ func main() {
 	server.SetLogger(log)
 	client.SetLogger(log)
 
-	if err := logLevelValidate(cli.LogLevel); err != nil {
-		log.Fatalf("%s", err.Error())
-	}
-
-	runCtx := RunContext{
-		Kctx: ctx,
-		Cli:  &cli,
-	}
-
-	switch ctx.Command() {
-	case "version":
-		if err = ctx.Run(&runCtx); err != nil {
-			log.Fatalf("%s", err.Error())
-		}
-		return
-	case "ecs server", "ecs list", "ecs unload", "ecs profile":
+	if runCtx.Auth == AUTH_NO_CONFIG {
 		// side-step the rest of the setup...
-		if err = ctx.Run(&runCtx); err != nil {
+		if err = runCtx.Kctx.Run(&runCtx); err != nil {
 			log.Fatalf("%s", err.Error())
 		}
 	}
 
 	// Load the config file
-	cli.ConfigFile = utils.GetHomePath(cli.ConfigFile)
+	runCtx.Cli.ConfigFile = utils.GetHomePath(runCtx.Cli.ConfigFile)
 
 	if _, err := os.Stat(cli.ConfigFile); errors.Is(err, os.ErrNotExist) {
 		log.Warnf("No config file found!  Will now prompt you for a basic config...")
 		if err = setupWizard(&runCtx, false, false, runCtx.Cli.Setup.Wizard.Advanced); err != nil {
 			log.Fatalf("%s", err.Error())
 		}
-		if ctx.Command() == "config" {
-			// we're done.
+		if runCtx.Kctx.Command() == "setup wizard" {
+			// don't run the wizard again, we're done.
 			return
 		}
 	} else if err != nil {
@@ -187,13 +197,20 @@ func main() {
 
 	cacheFile := config.InsecureCacheFile(true)
 
-	if runCtx.Settings, err = sso.LoadSettings(cli.ConfigFile, cacheFile, DEFAULT_CONFIG, override); err != nil {
+	if runCtx.Settings, err = sso.LoadSettings(runCtx.Cli.ConfigFile, cacheFile, DEFAULT_CONFIG, override); err != nil {
 		log.Fatalf("%s", err.Error())
 	}
 
-	switch ctx.Command() {
-	case "list", "login", "tags":
-		// Initialize our AwsSSO variable & SecureStore
+	switch runCtx.Auth {
+	case AUTH_REQUIRED:
+		// make sure we have authenticated via AWS SSO and init SecureStore
+		loadSecureStore(&runCtx)
+		if !checkAuth(&runCtx) {
+			log.Fatalf("Must run `aws-sso login` before running `aws-sso %s`", runCtx.Kctx.Command())
+		}
+
+	case AUTH_SKIP:
+		// commands which don't need to be authenticated to SSO
 		c := &runCtx
 		s, err := c.Settings.GetSelectedSSO(c.Cli.SSO)
 		if err != nil {
@@ -202,16 +219,11 @@ func main() {
 
 		loadSecureStore(c)
 		AwsSSO = sso.NewAWSSSO(s, &c.Store)
-
-	default: // includes "ecs load"
-		// make sure we have authenticated via AWS SSO and init SecureStore
-		loadSecureStore(&runCtx)
-		if !checkAuth(&runCtx) {
-			log.Fatalf("Must run `aws-sso login` before running `aws-sso %s`", ctx.Command())
-		}
+	case AUTH_UNKNOWN:
+		log.Fatal("Internal error: AUTH_UNKNOWN, please open a bug report")
 	}
 
-	err = ctx.Run(&runCtx)
+	err = runCtx.Kctx.Run(&runCtx)
 	if err != nil {
 		log.Fatalf("%s", err.Error())
 	}
@@ -244,7 +256,9 @@ func loadSecureStore(ctx *RunContext) {
 }
 
 // parseArgs parses our CLI arguments
-func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
+func parseArgs(ctx *RunContext) sso.OverrideSettings {
+	var err error
+
 	// need to pass in the variables for defaults
 	vars := kong.Vars{
 		"CONFIG_DIR":      config.ConfigDir(false),
@@ -270,6 +284,8 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 		},
 	}
 
+	cli := ctx.Cli
+
 	parser := kong.Must(
 		cli,
 		kong.Name("aws-sso"),
@@ -277,6 +293,7 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 		kong.ConfigureHelp(help),
 		vars,
 		kong.ExplicitGroups(groups),
+		kong.Bind(ctx),
 	)
 
 	p := predictor.NewPredictor(config.InsecureCacheFile(true), config.ConfigFile(true))
@@ -296,7 +313,7 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 		),
 	)
 
-	ctx, err := parser.Parse(os.Args[1:])
+	ctx.Kctx, err = parser.Parse(os.Args[1:])
 	parser.FatalIfErrorf(err)
 
 	threads := 0
@@ -309,7 +326,7 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 	override := sso.OverrideSettings{
 		Browser:    cli.Browser,
 		DefaultSSO: cli.SSO,
-		LogLevel:   cli.LogLevel,
+		LogLevel:   string(cli.LogLevel),
 		LogLines:   cli.Lines,
 		Threads:    threads, // must be > 0 to override config
 	}
@@ -320,12 +337,12 @@ func parseArgs(cli *CLI) (*kong.Context, sso.OverrideSettings) {
 		DisableTimestamp:       true,
 	})
 
-	return ctx, override
+	return override
 }
 
 type VersionCmd struct{} // takes no arguments
 
-func (cc *VersionCmd) Run(ctx *RunContext) error {
+func (v VersionCmd) BeforeReset(ctx *RunContext) error {
 	delta := ""
 	if len(Delta) > 0 {
 		delta = fmt.Sprintf(" [%s delta]", Delta)
@@ -333,6 +350,11 @@ func (cc *VersionCmd) Run(ctx *RunContext) error {
 	}
 	fmt.Printf("AWS SSO CLI Version %s -- Copyright %s Aaron Turner\n", Version, COPYRIGHT_YEAR)
 	fmt.Printf("%s (%s)%s built at %s\n", CommitID, Tag, delta, Buildinfos)
+	os.Exit(0)
+	return nil
+}
+
+func (cc *VersionCmd) Run(ctx *RunContext) error {
 	return nil
 }
 
@@ -379,11 +401,4 @@ func GetRoleCredentials(ctx *RunContext, awssso *sso.AWSSSO, refreshSTS bool, ac
 		log.WithError(err).Warnf("Unable to update cache")
 	}
 	return &creds
-}
-
-func logLevelValidate(level string) error {
-	if utils.StrListContains(level, VALID_LOG_LEVELS) || level == "" {
-		return nil
-	}
-	return fmt.Errorf("invalid value for --level: %s", level)
 }
