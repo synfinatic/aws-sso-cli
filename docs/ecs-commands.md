@@ -43,10 +43,12 @@ Starts the ECS Server in a Docker container.
 
 Flags:
 
+  * `--disable-auth` -- Disables HTTP Auth, even if a bearer token is available
   * `--disable-ssl` -- Disables SSL/TLS, even if a certificate and private key are available.
   * `--bind-ip` -- IP address to bind the service to.  (default 127.0.0.1)
   * `--port` -- Port to listen on.  (default 4144)
-  * `--version` -- Version of the `synfinatic/aws-sso-cli-ecs-server` docker image to use
+  * `--image` -- Docker image to use.  (default `synfinatic/aws-sso-cli-ecs-version`)
+  * `--version` -- Version of the docker image to use (default matches `aws-sso` binary version)
 
 ---
 
