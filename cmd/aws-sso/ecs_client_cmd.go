@@ -69,7 +69,7 @@ type EcsProfileCmd struct {
 
 // AfterApply determines if SSO auth token is required
 func (l EcsProfileCmd) AfterApply(runCtx *RunContext) error {
-	runCtx.Auth = AUTH_RUN_ECS_EARLY
+	runCtx.Auth = AUTH_NO_CONFIG
 	return nil
 }
 
@@ -125,7 +125,7 @@ type EcsListCmd struct {
 
 // AfterApply determines if SSO auth token is required
 func (l EcsListCmd) AfterApply(runCtx *RunContext) error {
-	runCtx.Auth = AUTH_RUN_ECS_EARLY
+	runCtx.Auth = AUTH_NO_CONFIG
 	return nil
 }
 
@@ -151,7 +151,7 @@ type EcsUnloadCmd struct {
 
 // AfterApply determines if SSO auth token is required
 func (l EcsUnloadCmd) AfterApply(runCtx *RunContext) error {
-	runCtx.Auth = AUTH_RUN_ECS_EARLY
+	runCtx.Auth = AUTH_NO_CONFIG
 	return nil
 }
 

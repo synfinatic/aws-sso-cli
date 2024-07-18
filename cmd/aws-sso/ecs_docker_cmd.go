@@ -51,7 +51,7 @@ type EcsDockerStartCmd struct {
 
 // AfterApply determines if SSO auth token is required
 func (l EcsDockerStartCmd) AfterApply(runCtx *RunContext) error {
-	runCtx.Auth = AUTH_NO
+	runCtx.Auth = AUTH_SKIP
 	return nil
 }
 
@@ -97,7 +97,7 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 		User: fmt.Sprintf("%d:%d", os.Getuid(), os.Getgid()),
 	}
 	if ctx.Cli.LogLevel == "debug" || ctx.Cli.LogLevel == "trace" {
-		config.Entrypoint = []string{"./aws-sso", "ecs", "run", "--level", ctx.Cli.LogLevel, "--docker"}
+		config.Entrypoint = []string{"./aws-sso", "ecs", "run", "--level", string(ctx.Cli.LogLevel), "--docker"}
 	}
 
 	portBinding := nat.PortBinding{
@@ -153,7 +153,7 @@ type EcsDockerStopCmd struct {
 
 // AfterApply determines if SSO auth token is required
 func (l EcsDockerStopCmd) AfterApply(runCtx *RunContext) error {
-	runCtx.Auth = AUTH_NO
+	runCtx.Auth = AUTH_SKIP
 	return nil
 }
 
