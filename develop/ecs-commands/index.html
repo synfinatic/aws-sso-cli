@@ -502,9 +502,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#ecs-auth" class="md-nav__link">
+  <a href="#setup-ecs-auth" class="md-nav__link">
     <span class="md-ellipsis">
-      ecs auth
+      setup ecs auth
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-ecs-ssl" class="md-nav__link">
+    <span class="md-ellipsis">
+      setup ecs ssl
     </span>
   </a>
   
@@ -550,15 +559,6 @@
   <a href="#ecs-profile" class="md-nav__link">
     <span class="md-ellipsis">
       ecs profile
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#ecs-ssl" class="md-nav__link">
-    <span class="md-ellipsis">
-      ecs ssl
     </span>
   </a>
   
@@ -977,9 +977,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#ecs-auth" class="md-nav__link">
+  <a href="#setup-ecs-auth" class="md-nav__link">
     <span class="md-ellipsis">
-      ecs auth
+      setup ecs auth
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-ecs-ssl" class="md-nav__link">
+    <span class="md-ellipsis">
+      setup ecs ssl
     </span>
   </a>
   
@@ -1031,15 +1040,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#ecs-ssl" class="md-nav__link">
-    <span class="md-ellipsis">
-      ecs ssl
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#ecs-server" class="md-nav__link">
     <span class="md-ellipsis">
       ecs server
@@ -1083,7 +1083,7 @@
 <h1 id="ecs-commands">ECS Commands</h1>
 <p>For information about the ECS Server functionality, see the <a href="../ecs-server/">ecs-server</a> page.</p>
 <h2 id="commands">Commands</h2>
-<h3 id="ecs-auth">ecs auth</h3>
+<h3 id="setup-ecs-auth">setup ecs auth</h3>
 <p>Configures the HTTP Authentication BearerToken.  Once set, all future client
 requests to the ECS Server will need to provide the correct credentials.<br />
 <code>aws-sso</code> utilizing the same SecureStore as the ECS Server will automatically
@@ -1095,14 +1095,29 @@ AWS SDK will require <a href="https://docs.aws.amazon.com/sdkref/latest/guide/fe
 <li><code>--delete</code> -- Delete the bearer token and disable authentication.</li>
 </ul>
 <hr />
+<h3 id="setup-ecs-ssl">setup ecs ssl</h3>
+<p>Configures the SSL Certificate and Private Key to enable SSL/TLS.  Saves the
+ SSL certificate and private key to the SecureStore.</p>
+<p><strong>Note:</strong> At this time, this feature is not recommended due to a bug
+ in the <a href="https://github.com/boto/boto3/issues/4188">AWS SDK</a>.</p>
+<p>Flags:</p>
+<ul>
+<li><code>--delete</code> -- Disables SSL and deletes both the SSL certificate and private key from the Secure Store</li>
+<li><code>--print</code> -- Prints the SSL certificate</li>
+<li><code>--certificate</code> -- Path to SSL certificate file in PEM format</li>
+<li><code>--private-key</code> -- Path to SSL private key in PEM format</li>
+</ul>
+<hr />
 <h3 id="ecs-docker-start">ecs docker start</h3>
 <p>Starts the ECS Server in a Docker container.</p>
 <p>Flags:</p>
 <ul>
+<li><code>--disable-auth</code> -- Disables HTTP Auth, even if a bearer token is available</li>
 <li><code>--disable-ssl</code> -- Disables SSL/TLS, even if a certificate and private key are available.</li>
 <li><code>--bind-ip</code> -- IP address to bind the service to.  (default 127.0.0.1)</li>
 <li><code>--port</code> -- Port to listen on.  (default 4144)</li>
-<li><code>--version</code> -- Version of the <code>synfinatic/aws-sso-cli-ecs-server</code> docker image to use</li>
+<li><code>--image</code> -- Docker image to use.  (default <code>synfinatic/aws-sso-cli-ecs-version</code>)</li>
+<li><code>--version</code> -- Version of the docker image to use (default matches <code>aws-sso</code> binary version)</li>
 </ul>
 <hr />
 <h3 id="ecs-docker-stop">ecs docker stop</h3>
@@ -1135,19 +1150,6 @@ would like to load multiple roles, specify <code>--slotted</code> and the role w
 <p>Flags:</p>
 <ul>
 <li><code>--slotted</code> -- Load the IAM credentials into a unique slot using the ProfileName as the key</li>
-</ul>
-<hr />
-<h3 id="ecs-ssl">ecs ssl</h3>
-<p>Configures the SSL Certificate and Private Key to enable SSL/TLS.  Saves the
- SSL certificate and private key to the SecureStore.</p>
-<p><strong>Note:</strong> At this time, this feature is not recommended due to a bug
- in the <a href="https://github.com/boto/boto3/issues/4188">AWS SDK</a>.</p>
-<p>Flags:</p>
-<ul>
-<li><code>--delete</code> -- Disables SSL and deletes both the SSL certificate and private key from the Secure Store</li>
-<li><code>--print</code> -- Prints the SSL certificate</li>
-<li><code>--certificate</code> -- Path to SSL certificate file in PEM format</li>
-<li><code>--private-key</code> -- Path to SSL private key in PEM format</li>
 </ul>
 <hr />
 <h3 id="ecs-server">ecs server</h3>
