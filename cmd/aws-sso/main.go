@@ -177,7 +177,7 @@ func main() {
 		if err = setupWizard(&runCtx, false, false, runCtx.Cli.Setup.Wizard.Advanced); err != nil {
 			log.Fatalf("%s", err.Error())
 		}
-		if ctx.Command() == "config" {
+		if ctx.Command() == "setup wizard" {
 			// we're done.
 			return
 		}
@@ -192,8 +192,8 @@ func main() {
 	}
 
 	switch ctx.Command() {
-	case "list", "login", "tags":
-		// Initialize our AwsSSO variable & SecureStore
+	case "list", "login", "tags", "time", "list-sso-roles", "setup completions", "setup profiles", "setup ecs auth", "setup ecs ssl":
+		// commands which don't need to be authenticated to SSO
 		c := &runCtx
 		s, err := c.Settings.GetSelectedSSO(c.Cli.SSO)
 		if err != nil {
