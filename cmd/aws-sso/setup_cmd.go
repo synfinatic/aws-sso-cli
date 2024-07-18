@@ -42,7 +42,7 @@ type EcsAuthCmd struct {
 }
 
 // AfterApply determines if SSO auth token is required
-func (l EcsAuthCmd) AfterApply(runCtx *RunContext) error {
+func (e EcsAuthCmd) AfterApply(runCtx *RunContext) error {
 	runCtx.Auth = AUTH_SKIP
 	return nil
 }
@@ -72,7 +72,7 @@ type EcsSSLCmd struct {
 }
 
 // AfterApply determines if SSO auth token is required
-func (l EcsSSLCmd) AfterApply(runCtx *RunContext) error {
+func (e EcsSSLCmd) AfterApply(runCtx *RunContext) error {
 	runCtx.Auth = AUTH_SKIP
 	return nil
 }

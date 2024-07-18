@@ -31,7 +31,7 @@ type TagsCmd struct {
 }
 
 // AfterApply determines if SSO auth token is required
-func (l TagsCmd) AfterApply(runCtx *RunContext) error {
+func (t TagsCmd) AfterApply(runCtx *RunContext) error {
 	runCtx.Auth = AUTH_SKIP
 	return nil
 }

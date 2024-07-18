@@ -38,7 +38,7 @@ type EcsServerCmd struct {
 }
 
 // AfterApply determines if SSO auth token is required
-func (l EcsServerCmd) AfterApply(runCtx *RunContext) error {
+func (e EcsServerCmd) AfterApply(runCtx *RunContext) error {
 	runCtx.Auth = AUTH_NO_CONFIG
 	return nil
 }

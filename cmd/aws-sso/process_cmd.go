@@ -37,7 +37,7 @@ type ProcessCmd struct {
 }
 
 // AfterApply list command requires a valid SSO auth token
-func (l ProcessCmd) AfterApply(runCtx *RunContext) error {
+func (p ProcessCmd) AfterApply(runCtx *RunContext) error {
 	runCtx.Auth = AUTH_REQUIRED
 	return nil
 }

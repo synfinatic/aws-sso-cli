@@ -31,7 +31,7 @@ type CacheCmd struct {
 }
 
 // AfterApply determines if SSO auth token is required
-func (l CacheCmd) AfterApply(runCtx *RunContext) error {
+func (c CacheCmd) AfterApply(runCtx *RunContext) error {
 	runCtx.Auth = AUTH_REQUIRED
 	return nil
 }

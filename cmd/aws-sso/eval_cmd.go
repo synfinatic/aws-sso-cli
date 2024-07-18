@@ -41,7 +41,7 @@ type EvalCmd struct {
 }
 
 // AfterApply determines if SSO auth token is required
-func (l EvalCmd) AfterApply(runCtx *RunContext) error {
+func (e EvalCmd) AfterApply(runCtx *RunContext) error {
 	runCtx.Auth = AUTH_REQUIRED
 	return nil
 }

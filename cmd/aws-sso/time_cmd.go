@@ -28,7 +28,7 @@ import (
 type TimeCmd struct{}
 
 // AfterApply determines if SSO auth token is required
-func (l TimeCmd) AfterApply(runCtx *RunContext) error {
+func (t TimeCmd) AfterApply(runCtx *RunContext) error {
 	runCtx.Auth = AUTH_SKIP
 	return nil
 }

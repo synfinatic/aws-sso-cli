@@ -39,7 +39,7 @@ type SetupProfilesCmd struct {
 }
 
 // AfterApply determines if SSO auth token is required
-func (l SetupProfilesCmd) AfterApply(runCtx *RunContext) error {
+func (s SetupProfilesCmd) AfterApply(runCtx *RunContext) error {
 	runCtx.Auth = AUTH_SKIP
 	return nil
 }

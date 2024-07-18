@@ -39,7 +39,7 @@ type SetupWizardCmd struct {
 }
 
 // AfterApply determines if SSO auth token is required
-func (l SetupWizardCmd) AfterApply(runCtx *RunContext) error {
+func (s SetupWizardCmd) AfterApply(runCtx *RunContext) error {
 	runCtx.Auth = AUTH_SKIP
 	return nil
 }

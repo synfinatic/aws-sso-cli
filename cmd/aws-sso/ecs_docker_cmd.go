@@ -50,7 +50,7 @@ type EcsDockerStartCmd struct {
 }
 
 // AfterApply determines if SSO auth token is required
-func (l EcsDockerStartCmd) AfterApply(runCtx *RunContext) error {
+func (e EcsDockerStartCmd) AfterApply(runCtx *RunContext) error {
 	runCtx.Auth = AUTH_SKIP
 	return nil
 }
@@ -152,7 +152,7 @@ type EcsDockerStopCmd struct {
 }
 
 // AfterApply determines if SSO auth token is required
-func (l EcsDockerStopCmd) AfterApply(runCtx *RunContext) error {
+func (e EcsDockerStopCmd) AfterApply(runCtx *RunContext) error {
 	runCtx.Auth = AUTH_SKIP
 	return nil
 }

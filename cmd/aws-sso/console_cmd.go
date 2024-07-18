@@ -61,7 +61,7 @@ type ConsoleCmd struct {
 }
 
 // AfterApply determines if SSO auth token is required
-func (l ConsoleCmd) AfterApply(runCtx *RunContext) error {
+func (c ConsoleCmd) AfterApply(runCtx *RunContext) error {
 	runCtx.Auth = AUTH_SKIP
 	return nil
 }

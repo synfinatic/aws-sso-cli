@@ -36,7 +36,7 @@ type CompleteCmd struct {
 }
 
 // AfterApply determines if SSO auth token is required
-func (l CompleteCmd) AfterApply(runCtx *RunContext) error {
+func (c CompleteCmd) AfterApply(runCtx *RunContext) error {
 	runCtx.Auth = AUTH_SKIP
 	return nil
 }
