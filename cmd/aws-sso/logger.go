@@ -18,18 +18,10 @@ package main
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import (
-	"github.com/sirupsen/logrus"
-)
+import "github.com/synfinatic/aws-sso-cli/internal/logger"
 
-var log *logrus.Logger
+var log *logger.Logger
 
-/*
-func SetLogger(l *logrus.Logger) {
-	log = l
+func init() {
+	log = logger.GetLogger()
 }
-
-func GetLogger() *logrus.Logger {
-	return log
-}
-*/

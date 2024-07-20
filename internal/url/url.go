@@ -27,9 +27,17 @@ import (
 	"strings"
 
 	"github.com/atotto/clipboard"
-	"github.com/skratchdot/open-golang/open" // default opener
+	"github.com/skratchdot/open-golang/open"
+	"github.com/synfinatic/aws-sso-cli/internal/logger"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
+	// default opener
 )
+
+var log *logger.Logger
+
+func init() {
+	log = logger.GetLogger()
+}
 
 // taken from https://github.com/honsiorovskyi/open-url-in-container/blob/1.0.3/launcher.sh
 var FIREFOX_PLUGIN_COLORS []string = []string{

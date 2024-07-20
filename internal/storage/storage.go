@@ -25,9 +25,16 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/synfinatic/aws-sso-cli/internal/logger"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/gotable"
 )
+
+var log *logger.Logger
+
+func init() {
+	log = logger.GetLogger()
+}
 
 // this struct should be cached for long term if possible
 type RegisterClientData struct {

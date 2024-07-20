@@ -32,6 +32,7 @@ import (
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"github.com/synfinatic/aws-sso-cli/internal/logger"
 )
 
 type KeyringSuite struct {
@@ -493,16 +494,16 @@ func TestSplitCredentials(t *testing.T) {
 	assert.NoError(t, err)
 
 	// setup logger for testing
-	logger, hook := test.NewNullLogger()
-	logger.SetLevel(logrus.DebugLevel)
-	oldLogger := GetLogger()
-	SetLogger(logger)
+	logrusLogger, hook := test.NewNullLogger()
+	logrusLogger.SetLevel(logrus.DebugLevel)
+	oldLog := log
+	log = logger.NewLogger(logrusLogger)
+	defer func() { log = oldLog }()
 
 	defer func() {
 		os.RemoveAll(d)
 		os.Unsetenv(ENV_SSO_FILE_PASSWORD)
 		keyringGOOS = ""
-		SetLogger(oldLogger)
 	}()
 
 	os.Setenv(ENV_SSO_FILE_PASSWORD, "justapassword")

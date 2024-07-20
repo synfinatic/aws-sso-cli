@@ -28,8 +28,15 @@ import (
 
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
+	"github.com/synfinatic/aws-sso-cli/internal/logger"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
+
+var log *logger.Logger
+
+func init() {
+	log = logger.GetLogger()
+}
 
 type EcsServer struct {
 	listener     net.Listener

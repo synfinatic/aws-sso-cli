@@ -26,7 +26,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -228,17 +227,6 @@ func TestNewAction(t *testing.T) {
 	b, err = NewConfigProfilesAction("missing")
 	assert.Error(t, err)
 	assert.Equal(t, ConfigProfilesAction(ConfigProfilesOpen), b)
-}
-
-func TestLogger(t *testing.T) {
-	first := GetLogger()
-	defer SetLogger(first)
-
-	log := logrus.New()
-	SetLogger(log)
-
-	l := GetLogger()
-	assert.Equal(t, log, l)
 }
 func TestNewConfigProfilesAction(t *testing.T) {
 	t.Parallel()
