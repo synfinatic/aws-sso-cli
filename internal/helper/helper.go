@@ -27,8 +27,15 @@ import (
 	"path"
 
 	"github.com/riywo/loginshell"
+	"github.com/synfinatic/aws-sso-cli/internal/logger"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
+
+var log *logger.Logger
+
+func init() {
+	log = logger.GetLogger()
+}
 
 //go:embed bash_profile.sh zshrc.sh aws-sso.fish
 var embedFiles embed.FS

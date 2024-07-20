@@ -28,17 +28,11 @@ import (
 	"github.com/posener/complete"
 
 	// "github.com/davecgh/go-spew/spew"
-	"github.com/sirupsen/logrus"
+
 	"github.com/synfinatic/aws-sso-cli/internal/config"
-	"github.com/synfinatic/aws-sso-cli/internal/ecs"
-	"github.com/synfinatic/aws-sso-cli/internal/ecs/client"
-	"github.com/synfinatic/aws-sso-cli/internal/ecs/server"
-	"github.com/synfinatic/aws-sso-cli/internal/helper"
 	"github.com/synfinatic/aws-sso-cli/internal/predictor"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
-	"github.com/synfinatic/aws-sso-cli/internal/tags"
-	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/willabides/kongplete"
 )
@@ -158,19 +152,7 @@ func main() {
 		Auth: AUTH_UNKNOWN,
 	}
 
-	log = logrus.New()
 	override := parseArgs(&runCtx)
-
-	helper.SetLogger(log)
-	predictor.SetLogger(log)
-	sso.SetLogger(log)
-	storage.SetLogger(log)
-	tags.SetLogger(log)
-	url.SetLogger(log)
-	utils.SetLogger(log)
-	ecs.SetLogger(log)
-	server.SetLogger(log)
-	client.SetLogger(log)
 
 	if runCtx.Auth == AUTH_NO_CONFIG {
 		// side-step the rest of the setup...
@@ -330,12 +312,6 @@ func parseArgs(ctx *RunContext) sso.OverrideSettings {
 		LogLines:   cli.Lines,
 		Threads:    threads, // must be > 0 to override config
 	}
-
-	log.SetFormatter(&logrus.TextFormatter{
-		DisableLevelTruncation: true,
-		PadLevelText:           true,
-		DisableTimestamp:       true,
-	})
 
 	return override
 }

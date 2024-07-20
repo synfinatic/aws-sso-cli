@@ -27,7 +27,15 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/synfinatic/aws-sso-cli/internal/logger"
 )
+
+var log *logger.Logger
+
+func init() {
+	log = logger.GetLogger()
+}
 
 const MAX_AWS_ACCOUNTID = 999999999999
 

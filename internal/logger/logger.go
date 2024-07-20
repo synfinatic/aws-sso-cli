@@ -1,4 +1,4 @@
-package predictor
+package logger
 
 /*
  * AWS SSO CLI
@@ -22,19 +22,29 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var log *logrus.Logger
+var log *Logger
 
-func SetLogger(l *logrus.Logger) {
+type Logger struct {
+	*logrus.Logger
+}
+
+func NewLogger(l *logrus.Logger) *Logger {
+	return &Logger{l}
+}
+
+func init() {
+	log = &Logger{logrus.New()}
+	log.SetFormatter(&logrus.TextFormatter{
+		DisableLevelTruncation: true,
+		PadLevelText:           true,
+		DisableTimestamp:       true,
+	})
+}
+
+func SetLogger(l *Logger) {
 	log = l
 }
 
-/*
-func GetLogger() *logrus.Logger {
+func GetLogger() *Logger {
 	return log
-}
-*/
-
-// this is configured by cmd/main.go, but we have this here for unit tests
-func init() {
-	log = logrus.New()
 }
