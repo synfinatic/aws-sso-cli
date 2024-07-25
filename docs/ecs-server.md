@@ -98,7 +98,7 @@ Once you have your certificate and private key, you will need to save them into 
 `aws-sso` secure store:
 
 ```bash
-aws-sso ecs ssl save --private-key localhost.key --cert-chain localhost.crt
+aws-sso setup ecs ssl --private-key localhost.key --cert-chain localhost.crt
 ```
 
 **Important:** At this point, you should delete the private key file `localhost.key` for security.
@@ -110,7 +110,7 @@ credentials.
 If you lose your certificate, you can print it via:
 
 ```bash
-aws-sso ecs ssl print
+aws-sso setup ecs ssl --print
 ```
 
 **Note:** At this time, there is no way to extract the SSL Private Key from the Secure Store.
@@ -143,7 +143,7 @@ Once you have selected a sufficiently secure secret to use as the bearer token,
 you can load it into the Secure Store via:
 
 ```bash
-aws-sso ecs bearer-token --token '<token>`
+aws-sso setup ecs auth --bearer-token '<token>`
 ```
 
 **Note:** Unlike the `$AWS_CONTAINER_AUTHORIZATION_TOKEN` variable, do not include the

@@ -16,9 +16,8 @@ running locally and then using ssh to forward the port to the remote host.
 Security is provided via a bearer token you configure on each side and all traffic is
 encrypted over ssh.
 
-**Note:** The root user or anyone with [CAP_NET_RAW or CAP_NET_ADMIN](https://man7.org/linux/man-pages/man7/capabilities.7.html)
-will be able to intercept the HTTP traffic on either endpoint and obtain the bearer token
-and/or any IAM Credentials stored in the ECS Server if you have not [enabled SSL](ecs-server.md#ecs-server-security).
+**Warning:** Running [without SSL](ecs-server.md#ecs-server-security) is not recommend as it
+may allow even a non-root user on the remote host to steal your AWS API credentials.
 
 ## On your local system
 
@@ -26,12 +25,10 @@ and/or any IAM Credentials stored in the ECS Server if you have not [enabled SSL
 1. Start the ECS Server:
     1. In a Docker container: `aws-sso ecs docker start`
     1. Or you can use a [screen](https://www.hostinger.com/tutorials/how-to-install-and-use-linux-screen)
-or [tmux](https://hamvocke.com/blog/a-quick-and-easy-guide-to-tmux/) session:
-`aws-sso ecs server`
-1. Load your selected IAM credentials into the ECS Server:<br>
-`aws-sso ecs load --profile=<profile name>`
-1. SSH to the remote system using the [-R flag to forward tcp/4144](https://man.openbsd.org/ssh#R):<br>
-`ssh -R 4144:localhost:4144 <remotehost>`
+or [tmux](https://hamvocke.com/blog/a-quick-and-easy-guide-to-tmux/) session: `aws-sso ecs server`
+1. Load your selected IAM credentials into the ECS Server: `aws-sso ecs load --profile=<profile name>`
+1. SSH to the remote system using the [-R flag to forward tcp/4144](https://man.openbsd.org/ssh#R):
+    `ssh -R 4144:localhost:4144 <remotehost>`
 
 ## On your remote system (once you have logged in as described above)
 
