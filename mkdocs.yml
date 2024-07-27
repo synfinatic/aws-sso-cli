@@ -30,7 +30,6 @@ plugins:
       version_selector: true
       css_dir: css
       javascript_dir: js
-      version_selector: true
 
 nav:
   - 'Home': index.md
@@ -55,3 +54,4 @@ nav:
       - 'Commit Signing Key': commit-sign-key.asc.md
   - 'Developer Notes':
     - 'Release New Version': release.md
+    - 'ECS Server Threat Model': ecs-threats.md
