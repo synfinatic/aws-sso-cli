@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [v2.0.0] - ????-??-??
+
+### Bugs
+
+ * Fix fatal error with `time` command #1008
+
 ### Changes
 
  * No longer show help for sub-commands by default
@@ -761,7 +767,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v1.17.0...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.0.0...main
+[v2.0.0]: https://github.com/synfinatic/aws-sso-cli/compare/v2.0.0...v1.17.0
 [v1.17.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.17.0
 [v1.16.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.16.1
 [v1.16.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.16.0
