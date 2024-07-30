@@ -32,6 +32,7 @@
  * `aws-sso` commands other than `cache` and `login` no longer can trigger a cache refresh without
     update of `~/.aws/config` file
  * Add support for running ECS Server via docker (`aws-sso ecs docker ...`)
+ * Add support for `XDG_CONFIG_HOME` env variable to specify config location #1003
 
 ## [v1.17.0] - 2024-07-10
 

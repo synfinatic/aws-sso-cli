@@ -27,20 +27,32 @@ import (
 
 const (
 	OLD_CONFIG_DIR      = "~/.aws-sso"
-	CONFIG_DIR          = "~/.config/aws-sso"
 	CONFIG_FILE         = "%s/config.yaml"
 	JSON_STORE_FILE     = "%s/store.json"
 	INSECURE_CACHE_FILE = "%s/cache.json"
 )
 
+// ConfigDir returns the path to the config directory
 func ConfigDir(expand bool) string {
-	var path string
+	path := "~/.config/aws-sso" // default XDG path is default
+
+	// check if the user has a custom XDG_CONFIG_HOME
+	xdgPath, ok := os.LookupEnv("XDG_CONFIG_HOME")
+	if ok {
+		// fixup the path if it's the default, otherwise our tests are a disaster
+		if xdgPath == fmt.Sprintf("%s/.config", os.Getenv("HOME")) {
+			xdgPath = "~/.config"
+		}
+		path = fmt.Sprintf("%s/aws-sso", xdgPath)
+	}
+
+	// check if the user has an old config directory which overrides
+	// the XDG_CONFIG_HOME
 	fi, err := os.Stat(utils.GetHomePath(OLD_CONFIG_DIR))
 	if err == nil && fi.IsDir() {
 		path = OLD_CONFIG_DIR
-	} else {
-		path = CONFIG_DIR
 	}
+
 	if expand {
 		path = utils.GetHomePath(path)
 	}
@@ -49,45 +61,15 @@ func ConfigDir(expand bool) string {
 
 // ConfigFile returns the path to the config file
 func ConfigFile(expand bool) string {
-	var path string
-	fi, err := os.Stat(utils.GetHomePath(OLD_CONFIG_DIR))
-	if err == nil && fi.IsDir() {
-		path = fmt.Sprintf(CONFIG_FILE, OLD_CONFIG_DIR)
-	} else {
-		path = fmt.Sprintf(CONFIG_FILE, CONFIG_DIR)
-	}
-	if expand {
-		path = utils.GetHomePath(path)
-	}
-	return path
+	return fmt.Sprintf(CONFIG_FILE, ConfigDir(expand))
 }
 
 // JsonStoreFile returns the path to the JSON store file
 func JsonStoreFile(expand bool) string {
-	var path string
-	fi, err := os.Stat(utils.GetHomePath(OLD_CONFIG_DIR))
-	if err == nil && fi.IsDir() {
-		path = fmt.Sprintf(JSON_STORE_FILE, OLD_CONFIG_DIR)
-	} else {
-		path = fmt.Sprintf(JSON_STORE_FILE, CONFIG_DIR)
-	}
-	if expand {
-		path = utils.GetHomePath(path)
-	}
-	return path
+	return fmt.Sprintf(JSON_STORE_FILE, ConfigDir(expand))
 }
 
 // InsecureCacheFile returns the path to the insecure cache file
 func InsecureCacheFile(expand bool) string {
-	var path string
-	fi, err := os.Stat(utils.GetHomePath(OLD_CONFIG_DIR))
-	if err == nil && fi.IsDir() {
-		path = fmt.Sprintf(INSECURE_CACHE_FILE, OLD_CONFIG_DIR)
-	} else {
-		path = fmt.Sprintf(INSECURE_CACHE_FILE, CONFIG_DIR)
-	}
-	if expand {
-		path = utils.GetHomePath(path)
-	}
-	return path
+	return fmt.Sprintf(INSECURE_CACHE_FILE, ConfigDir(expand))
 }
