@@ -39,8 +39,7 @@ import (
 )
 
 const (
-	AWS_SSO_SESSION_EXPIRATION_FORMAT = "2006-01-02 15:04:05 -0700 MST"
-	NIX_STORE_PREFIX                  = "/nix/store/"
+	NIX_STORE_PREFIX = "/nix/store/"
 )
 
 type Settings struct {

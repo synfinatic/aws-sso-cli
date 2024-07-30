@@ -40,6 +40,7 @@ func TestUtilsSuite(t *testing.T) {
 
 func (suite *UtilsTestSuite) TestParseRoleARN() {
 	t := suite.T()
+	t.Parallel()
 
 	a, r, err := ParseRoleARN("arn:aws:iam::11111:role/Foo")
 	assert.NoError(t, err)
@@ -84,6 +85,7 @@ func (suite *UtilsTestSuite) TestParseRoleARN() {
 
 func (suite *UtilsTestSuite) TestMakeRoleARN() {
 	t := suite.T()
+	t.Parallel()
 
 	assert.Equal(t, "arn:aws:iam::000000011111:role/Foo", MakeRoleARN(11111, "Foo"))
 	assert.Equal(t, "arn:aws:iam::000000711111:role/Foo", MakeRoleARN(711111, "Foo"))
@@ -94,6 +96,7 @@ func (suite *UtilsTestSuite) TestMakeRoleARN() {
 
 func (suite *UtilsTestSuite) TestMakeUserARN() {
 	t := suite.T()
+	t.Parallel()
 
 	assert.Equal(t, "arn:aws:iam::000000011111:user/Foo", MakeUserARN(11111, "Foo"))
 	assert.Equal(t, "arn:aws:iam::000000711111:user/Foo", MakeUserARN(711111, "Foo"))
@@ -104,6 +107,7 @@ func (suite *UtilsTestSuite) TestMakeUserARN() {
 
 func (suite *UtilsTestSuite) TestMakeRoleARNs() {
 	t := suite.T()
+	t.Parallel()
 
 	assert.Equal(t, "arn:aws:iam::000000011111:role/Foo", MakeRoleARNs("11111", "Foo"))
 	assert.Equal(t, "arn:aws:iam::000000711111:role/Foo", MakeRoleARNs("711111", "Foo"))
@@ -115,6 +119,7 @@ func (suite *UtilsTestSuite) TestMakeRoleARNs() {
 
 func (suite *UtilsTestSuite) TestEnsureDirExists() {
 	t := suite.T()
+	t.Parallel()
 
 	defer os.RemoveAll("./does_not_exist_dir")
 	assert.NoError(t, EnsureDirExists("./testdata/role_tags.yaml"))
@@ -133,6 +138,7 @@ func (suite *UtilsTestSuite) TestEnsureDirExists() {
 
 func (suite *UtilsTestSuite) TestGetHomePath() {
 	t := suite.T()
+	t.Parallel()
 
 	assert.Equal(t, "/", GetHomePath("/"))
 	assert.Equal(t, ".", GetHomePath("."))
@@ -146,6 +152,7 @@ func (suite *UtilsTestSuite) TestGetHomePath() {
 
 func (suite *UtilsTestSuite) TestAccountToString() {
 	t := suite.T()
+	t.Parallel()
 
 	a, err := AccountIdToString(0)
 	assert.NoError(t, err)
@@ -171,6 +178,7 @@ func (suite *UtilsTestSuite) TestAccountToString() {
 
 func (suite *UtilsTestSuite) TestAccountToInt64() {
 	t := suite.T()
+	t.Parallel()
 
 	_, err := AccountIdToInt64("")
 	assert.Error(t, err)
@@ -195,8 +203,9 @@ func (suite *UtilsTestSuite) TestAccountToInt64() {
 
 func (suite *UtilsTestSuite) TestParseTimeString() {
 	t := suite.T()
+	t.Parallel()
 
-	x, e := ParseTimeString("1970-01-01 00:00:00 +0000 GMT")
+	x, e := ParseTimeString("1970-01-01T00:00:00Z")
 	assert.NoError(t, e)
 	assert.Equal(t, int64(0), x)
 
@@ -206,6 +215,7 @@ func (suite *UtilsTestSuite) TestParseTimeString() {
 
 func (suite *UtilsTestSuite) TestTimeRemain() {
 	t := suite.T()
+	t.Parallel()
 
 	x, e := TimeRemain(0, false)
 	assert.NoError(t, e)
@@ -246,6 +256,7 @@ func (suite *UtilsTestSuite) TestTimeRemain() {
 }
 
 func TestStrListContains(t *testing.T) {
+	t.Parallel()
 	x := []string{"yes", "no"}
 	assert.True(t, StrListContains("yes", x))
 	assert.False(t, StrListContains("nope", x))

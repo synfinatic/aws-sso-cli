@@ -11,7 +11,7 @@ keyUsage=digitalSignature
 extendedKeyUsage=serverAuth
 EOF
 
-openssl req -x509 -out localhost.crt -keyout localhost.key \
+openssl req -x509 -out localhost.crt -keyout localhost.key -days 3065 \
   -newkey rsa:2048 -nodes -sha256 -subj '/CN=localhost' -extensions EXT -config config.ssl
 
 rm config.ssl

@@ -71,19 +71,19 @@ func ParseRoleARN(arn string) (int64, string, error) {
 		accountid = s[4]
 		s = strings.Split(s[5], "/")
 		if len(s) != 2 {
-			return 0, "", fmt.Errorf("Unable to parse ARN: %s", arn)
+			return 0, "", fmt.Errorf("unable to parse ARN: %s", arn)
 		}
 		role = s[1]
 	default:
-		return 0, "", fmt.Errorf("Unable to parse ARN: %s", arn)
+		return 0, "", fmt.Errorf("unable to parse ARN: %s", arn)
 	}
 
 	aId, err := strconv.ParseInt(accountid, 10, 64)
 	if err != nil {
-		return 0, "", fmt.Errorf("Unable to parse ARN: %s", arn)
+		return 0, "", fmt.Errorf("unable to parse ARN: %s", arn)
 	}
 	if aId < 0 {
-		return 0, "", fmt.Errorf("Invalid AccountID: %d", aId)
+		return 0, "", fmt.Errorf("invalid AccountID: %d", aId)
 	}
 	return aId, role, nil
 }
@@ -97,7 +97,7 @@ func ParseUserARN(arn string) (int64, string, error) {
 func MakeRoleARN(account int64, name string) string {
 	a, err := AccountIdToString(account)
 	if err != nil {
-		log.WithError(err).Panicf("Unable to MakeRoleARN")
+		log.WithError(err).Panicf("unable to MakeRoleARN")
 	}
 	return fmt.Sprintf("arn:aws:iam::%s:role/%s", a, name)
 }
@@ -106,7 +106,7 @@ func MakeRoleARN(account int64, name string) string {
 func MakeUserARN(account int64, name string) string {
 	a, err := AccountIdToString(account)
 	if err != nil {
-		log.WithError(err).Panicf("Unable to MakeUserARN")
+		log.WithError(err).Panicf("unable to MakeUserARN")
 	}
 	return fmt.Sprintf("arn:aws:iam::%s:user/%s", a, name)
 }
@@ -115,7 +115,7 @@ func MakeUserARN(account int64, name string) string {
 func MakeRoleARNs(account, name string) string {
 	x, err := AccountIdToInt64(account)
 	if err != nil {
-		log.WithError(err).Panicf("Unable to AccountIdToInt64 in MakeRoleARNs")
+		log.WithError(err).Panicf("unable to AccountIdToInt64 in MakeRoleARNs")
 	}
 
 	a, _ := AccountIdToString(x)
@@ -129,7 +129,7 @@ func EnsureDirExists(filename string) error {
 	f, err := os.Open(storeDir)
 	if os.IsNotExist(err) {
 		if err := os.MkdirAll(storeDir, 0700); err != nil {
-			return fmt.Errorf("Unable to create %s: %s", storeDir, err.Error())
+			return fmt.Errorf("unable to create %s: %s", storeDir, err.Error())
 		}
 		return nil
 	} else if err != nil {
@@ -137,19 +137,19 @@ func EnsureDirExists(filename string) error {
 	}
 	info, err := f.Stat()
 	if err != nil {
-		return fmt.Errorf("Unable to stat %s: %s", storeDir, err.Error())
+		return fmt.Errorf("unable to stat %s: %s", storeDir, err.Error())
 	}
 	if !info.IsDir() {
-		return fmt.Errorf("%s exists and is not a directory!", storeDir)
+		return fmt.Errorf("%s exists and is not a directory", storeDir)
 	}
 	return nil
 }
 
-// ParseTimeString converts a standard time string to Unix Epoch
+// ParseTimeString converts a standard RFC3339 time string to Unix Epoch
 func ParseTimeString(t string) (int64, error) {
-	i, err := time.Parse("2006-01-02 15:04:05 -0700 MST", t)
+	i, err := time.Parse(time.RFC3339, t)
 	if err != nil {
-		return 0, fmt.Errorf("Unable to parse %s: %s", t, err.Error())
+		return 0, fmt.Errorf("unable to parse %s: %s", t, err.Error())
 	}
 	return i.Unix(), nil
 }
@@ -186,7 +186,7 @@ func TimeRemain(expires int64, space bool) (string, error) {
 // AccountIdToString returns a string version of AWS AccountID
 func AccountIdToString(a int64) (string, error) {
 	if a < 0 || a > MAX_AWS_ACCOUNTID {
-		return "", fmt.Errorf("Invalid AWS AccountId: %d", a)
+		return "", fmt.Errorf("invalid AWS AccountId: %d", a)
 	}
 	return fmt.Sprintf("%012d", a), nil
 }
@@ -198,7 +198,7 @@ func AccountIdToInt64(a string) (int64, error) {
 		return 0, err
 	}
 	if x < 0 {
-		return 0, fmt.Errorf("Invalid AWS AccountId: %s", a)
+		return 0, fmt.Errorf("invalid AWS AccountId: %s", a)
 	}
 	return x, nil
 }
