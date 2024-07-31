@@ -178,7 +178,7 @@ func NewHandleUrl(action Action, url, browser string, command []string) *HandleU
 	}
 
 	if (action == Exec || action.IsContainer()) && len(command) == 0 {
-		log.Panicf("Unable to call exec or open firefox container with an empty command")
+		panic("Unable to call exec or open firefox container with an empty command")
 	}
 
 	h := &HandleUrl{
@@ -210,7 +210,7 @@ func (h *HandleUrl) Open() error {
 	case Clip:
 		err = clipboardWriter(h.Url)
 		if err == nil {
-			log.Infof("Please open URL copied to clipboard.\n")
+			log.Info("Please open URL copied to clipboard.\n")
 		} else {
 			err = fmt.Errorf("unable to copy URL to clipboard: %s", err.Error())
 		}
@@ -243,7 +243,7 @@ func (h *HandleUrl) Open() error {
 		if err != nil {
 			err = fmt.Errorf("unable to open URL with %s: %s", browser, err.Error())
 		} else {
-			log.Infof("Opening URL in: %s\n", browser)
+			log.Info("Opening URL", "browser", browser)
 		}
 
 	default:
@@ -270,14 +270,14 @@ func selectElement(seed string, options []string) string {
 func formatContainerUrl(format, targetUrl, name, color, icon string) string {
 	if !utils.StrListContains(color, FIREFOX_PLUGIN_COLORS) {
 		if color != "" {
-			log.Warnf("Invalid Firefox Container color: %s", color)
+			log.Warn("Invalid Firefox Container color", "color", color)
 		}
 		color = selectElement(name, FIREFOX_PLUGIN_COLORS)
 	}
 
 	if !utils.StrListContains(icon, FIREFOX_PLUGIN_ICONS) {
 		if icon != "" {
-			log.Warnf("Invalid Firefox Container icon: %s", icon)
+			log.Warn("Invalid Firefox Container icon", "icon", icon)
 		}
 		icon = selectElement(name, FIREFOX_PLUGIN_ICONS)
 	}
@@ -295,7 +295,7 @@ func execWithUrl(command []string, url string) error {
 	}
 
 	cmdStr := fmt.Sprintf("%s %s", program, strings.Join(cmdList, " "))
-	log.Debugf("exec command as array: %s", cmdStr)
+	log.Debug("exec command as array", "command", cmdStr)
 	cmd = exec.Command(program, cmdList...)
 
 	// add $HOME to our environment
@@ -307,7 +307,7 @@ func execWithUrl(command []string, url string) error {
 	if err != nil {
 		err = fmt.Errorf("unable to exec `%s`: %s", cmdStr, err)
 	}
-	log.Debugf("Opened our URL with %s", command[0])
+	log.Debug("Opened our URL", "command", command[0])
 	return err
 }
 

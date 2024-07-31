@@ -66,10 +66,10 @@ func NewECSClient(server, authToken, certChain string) *ECSClient {
 	}
 
 	if authToken == "" {
-		log.Warnf("no auth token provided, ECS server communication will be unauthenticated")
+		log.Warn("no auth token provided, ECS server communication will be unauthenticated")
 	}
 	if certChain == "" {
-		log.Warnf("no SSL cert provided, ECS server communication will be unencrypted")
+		log.Warn("no SSL cert provided, ECS server communication will be unencrypted")
 	}
 
 	hostPort := strings.Split(server, ":")
@@ -117,12 +117,12 @@ func (c *ECSClient) newRequest(method, url string, body io.Reader) (*http.Reques
 	if c.authToken != "" {
 		req.Header.Set("Authorization", "Bearer "+c.authToken)
 	}
-	log.Debugf("http req: %s", req.URL.String())
+	log.Debug("http req", "url", req.URL.String())
 	return req, nil
 }
 
 func (c *ECSClient) SubmitCreds(creds *storage.RoleCredentials, profile string, slotted bool) error {
-	log.Debugf("loading %s in a slot: %v", profile, slotted)
+	log.Debug("loading in slot", "profile", profile, "slot", slotted)
 	cr := ecs.ECSClientRequest{
 		Creds:       creds,
 		ProfileName: profile,
@@ -164,7 +164,7 @@ func (c *ECSClient) GetProfile() (ecs.ListProfilesResponse, error) {
 	if err = json.Unmarshal(body, &lpr); err != nil {
 		return lpr, err
 	}
-	log.Debugf("resp: %s", spew.Sdump(lpr))
+	log.Debug("response", "body", spew.Sdump(lpr))
 
 	return lpr, nil
 }
@@ -191,7 +191,7 @@ func (c *ECSClient) ListProfiles() ([]ecs.ListProfilesResponse, error) {
 	if err = json.Unmarshal(body, &lpr); err != nil {
 		return lpr, err
 	}
-	log.Debugf("resp: %s", spew.Sdump(lpr))
+	log.Debug("response", "body", spew.Sdump(lpr))
 
 	return lpr, nil
 }

@@ -41,7 +41,7 @@ func (ctx *RunContext) PromptExec(exec CompleterExec) error {
 		return err
 	}
 	if err = ctx.Settings.Cache.Expired(sso); err != nil {
-		log.Infof(err.Error())
+		log.Info("cache has expired", "error", err.Error())
 		c := &CacheCmd{}
 		if err = c.Run(ctx); err != nil {
 			return err
@@ -138,21 +138,21 @@ func (tc *TagsCompleter) Executor(args string) {
 
 		ssoRoles := tc.roleTags.GetMatchingRoles(argsMap)
 		if len(ssoRoles) == 0 {
-			log.Fatalf("Invalid selection: No matching roles.")
+			log.Fatal("Invalid selection: No matching roles.")
 		} else if len(ssoRoles) > 1 {
-			log.Fatalf("Invalid selection: Too many roles match selected values.")
+			log.Fatal("Invalid selection: Too many roles match selected values.")
 		}
 		roleArn = ssoRoles[0]
 	}
 
 	aId, rName, err := utils.ParseRoleARN(roleArn)
 	if err != nil {
-		log.Fatalf("Unable to parse %s: %s", roleArn, err.Error())
+		log.Fatal("Unable to parse", "arn", roleArn, "error", err.Error())
 	}
 
 	err = tc.exec(tc.ctx, aId, rName)
 	if err != nil {
-		log.Fatalf("Unable to exec: %s", err.Error())
+		log.Fatal("Unable to exec TagsCompleter", "error", err.Error())
 	}
 }
 

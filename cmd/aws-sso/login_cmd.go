@@ -46,7 +46,7 @@ func checkAuth(ctx *RunContext) bool {
 	if AwsSSO == nil {
 		s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
 		if err != nil {
-			log.Fatalf("%s", err.Error())
+			log.Fatal("unable to select SSO", "sso", ctx.Cli.SSO, err.Error())
 		}
 
 		AwsSSO = sso.NewAWSSSO(s, &ctx.Store)
@@ -59,44 +59,44 @@ func checkAuth(ctx *RunContext) bool {
 func doAuth(ctx *RunContext) {
 	if checkAuth(ctx) {
 		// nothing to do here
-		log.Infof("You are already logged in. :)")
+		log.Info("You are already logged in. :)")
 		return
 	}
 
 	action, err := url.NewAction(ctx.Cli.Login.UrlAction)
 	if err != nil {
-		log.Fatalf("Invalid --url-action %s", ctx.Cli.Login.UrlAction)
+		log.Fatal("Invalid --url-action", "action", ctx.Cli.Login.UrlAction)
 	}
 	if action == "" {
 		action = ctx.Settings.UrlAction
 	}
 	err = AwsSSO.Authenticate(action, ctx.Settings.Browser)
 	if err != nil {
-		log.WithError(err).Fatalf("Unable to authenticate")
+		log.Fatal("Unable to authenticate", "error", err.Error())
 	}
 
 	s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
 	if err != nil {
-		log.Fatalf("%s", err.Error())
+		log.Fatal("unable to select SSO", "sso", ctx.Cli.SSO, "error", err.Error())
 	}
 
 	if err = ctx.Settings.Cache.Expired(s); err != nil {
 		ssoName, err := ctx.Settings.GetSelectedSSOName(ctx.Cli.SSO)
-		log.Infof("Refreshing AWS SSO role cache for %s, please wait...", ssoName)
 		if err != nil {
-			log.Fatalf(err.Error())
+			log.Fatal("unable to GetSelectedSSOName", "sso", ctx.Cli.SSO, "error", err.Error())
 		}
+		log.Info("Refreshing AWS SSO role cache, please wait...", "sso", ssoName)
 		added, deleted, err := ctx.Settings.Cache.Refresh(AwsSSO, s, ssoName, ctx.Cli.Login.Threads)
 		if err != nil {
-			log.WithError(err).Fatalf("Unable to refresh cache")
+			log.Fatal("Unable to refresh cache", "error", err.Error())
 		}
 
 		if added > 0 || deleted > 0 {
-			log.Infof("Updated cache: %d added, %d deleted", added, deleted)
+			log.Info("Updated cache", "added", added, "deletd", deleted)
 		}
 
 		if err = ctx.Settings.Cache.Save(true); err != nil {
-			log.WithError(err).Errorf("Unable to save cache")
+			log.Error("Unable to save cache", "error", err.Error())
 		}
 	}
 }

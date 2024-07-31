@@ -131,20 +131,20 @@ func checkPromptError(err error) {
 	switch err.Error() {
 	case "^D":
 		// https://github.com/synfinatic/aws-sso-cli/issues/531
-		log.Errorf("sorry, <Del> not supported")
+		log.Error("sorry, <Del> not supported")
 	case "^C":
-		log.Fatalf("User aborted.")
+		log.Fatal("User aborted.")
 	default:
-		log.Error(err)
+		log.Error(err.Error())
 	}
 }
 
 func checkSelectError(err error) {
 	switch err.Error() {
 	case "^C":
-		log.Fatalf("User aborted.")
+		log.Fatal("User aborted.")
 	default:
-		log.Error(err)
+		log.Error(err.Error())
 	}
 }
 
@@ -191,10 +191,10 @@ func promptStartUrl(defaultValue string) string {
 		if _, err := net.LookupHost(val); err == nil {
 			validFQDN = true
 		} else if err != nil {
-			log.Errorf("unable to resolve %s", val)
+			log.Error("unable to resolve", "host", val)
 		}
 	}
-	log.Infof("Using %s", val)
+	log.Info(fmt.Sprintf("Using %s", val))
 
 	return val
 }
@@ -224,7 +224,7 @@ func promptAwsSsoRegion(defaultValue string) string {
 		Templates:    makeSelectTemplate(label),
 	}
 	if i, _, err = sel.Run(); err != nil {
-		log.Error(err)
+		log.Error(err.Error())
 	}
 
 	return items[i].Value

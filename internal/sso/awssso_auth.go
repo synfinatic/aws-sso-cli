@@ -46,7 +46,7 @@ func (as *AWSSSO) ValidAuthToken() bool {
 	token := storage.CreateTokenResponse{}
 	err := as.store.GetCreateTokenResponse(as.StoreKey(), &token)
 	if err != nil {
-		log.Debugf(err.Error())
+		log.Debug(err.Error())
 		return false
 	}
 
@@ -59,10 +59,10 @@ func (as *AWSSSO) ValidAuthToken() bool {
 
 	if token.ExpiresAt != 0 {
 		t := time.Unix(token.ExpiresAt, 0)
-		log.Infof("Cached SSO token expired at: %s.  Reauthenticating...\n",
-			t.Format("Mon Jan 2 15:04:05 -0700 MST 2006"))
+		log.Info("Cached SSO token has expired.  Reauthenticating...",
+			"time", t.Format("Mon Jan 2 15:04:05 -0700 MST 2006"))
 	} else {
-		log.Infof("Cached SSO token has expired.  Reauthenticating...\n")
+		log.Info("Cached SSO token has expired.  Reauthenticating...")
 	}
 	return false
 }
@@ -70,7 +70,7 @@ func (as *AWSSSO) ValidAuthToken() bool {
 // Authenticate retrieves an AWS SSO AccessToken from our cache or by
 // making the necessary AWS SSO calls.
 func (as *AWSSSO) Authenticate(urlAction url.Action, browser string) error {
-	log.Tracef("Authenticate(%s, %s)", urlAction, browser)
+	log.Trace("Authenticate", "urlAction", urlAction, "browser", browser)
 	// cache urlAction and browser for subsequent calls if necessary
 	if urlAction != "" {
 		as.urlAction = urlAction
@@ -94,17 +94,17 @@ func (as *AWSSSO) reauthenticate() error {
 	as.authenticateLock.Lock()
 	defer as.authenticateLock.Unlock()
 
-	log.Tracef("reauthenticate() for %s", as.StoreKey())
+	log.Trace("reauthenticate()", "storeKey", as.StoreKey())
 	err := as.registerClient(false)
 	if err != nil {
 		return fmt.Errorf("unable to register client with AWS SSO: %s", err.Error())
 	}
-	log.Tracef("<- reauthenticate()")
+	log.Trace("<- reauthenticate()")
 
 	err = as.startDeviceAuthorization()
-	log.Tracef("<- reauthenticate()")
+	log.Trace("<- reauthenticate()")
 	if err != nil {
-		log.Debugf("startDeviceAuthorization failed.  Forcing refresh of registerClient")
+		log.Debug("startDeviceAuthorization failed.  Forcing refresh of registerClient")
 		// startDeviceAuthorization can fail if our cached registerClient token is invalid
 		if err = as.registerClient(true); err != nil {
 			return fmt.Errorf("unable to register client with AWS SSO: %s", err.Error())
@@ -115,7 +115,7 @@ func (as *AWSSSO) reauthenticate() error {
 	}
 
 	auth, err := as.getDeviceAuthInfo()
-	log.Tracef("<- reauthenticate()")
+	log.Trace("<- reauthenticate()")
 	if err != nil {
 		return fmt.Errorf("unable to get device auth info from AWS SSO: %s", err.Error())
 	}
@@ -133,7 +133,7 @@ func (as *AWSSSO) reauthenticate() error {
 		return err
 	}
 
-	log.Infof("Waiting for SSO authentication...")
+	log.Info("Waiting for SSO authentication...")
 
 	err = as.createToken()
 	if err != nil {
@@ -156,12 +156,12 @@ const (
 // registerClient does the needful to talk to AWS or read our cache to get the
 // RegisterClientData for later steps and saves it to our secret store
 func (as *AWSSSO) registerClient(force bool) error {
-	log.Tracef("registerClient()")
+	log.Trace("registerClient()")
 	if !force {
 		log.Trace("Checking cache for RegisterClientData")
 		err := as.store.GetRegisterClientData(as.StoreKey(), &as.ClientData)
 		if err == nil && !as.ClientData.Expired() {
-			log.Debugf("Using RegisterClient cache for %s", as.StoreKey())
+			log.Debug("Using RegisterClient cache", "storeKey", as.StoreKey())
 			return nil
 		}
 	}
@@ -189,7 +189,7 @@ func (as *AWSSSO) registerClient(force bool) error {
 	}
 	err = as.store.SaveRegisterClientData(as.StoreKey(), as.ClientData)
 	if err != nil {
-		log.WithError(err).Errorf("unable to save RegisterClientData for %s", as.StoreKey())
+		log.Error("unable to save RegisterClientData", "storeKey", as.StoreKey(), "error", err.Error())
 	}
 	return nil
 }
@@ -197,7 +197,7 @@ func (as *AWSSSO) registerClient(force bool) error {
 // startDeviceAuthorization makes the call to AWS to initiate the OIDC auth
 // to the SSO provider.
 func (as *AWSSSO) startDeviceAuthorization() error {
-	log.Tracef("startDeviceAuthorization() for %s", as.StoreKey())
+	log.Trace("startDeviceAuthorization()", "storeKey", as.StoreKey())
 	input := ssooidc.StartDeviceAuthorizationInput{
 		StartUrl:     aws.String(as.StartUrl),
 		ClientId:     aws.String(as.ClientData.ClientId),
@@ -216,8 +216,7 @@ func (as *AWSSSO) startDeviceAuthorization() error {
 		ExpiresIn:               resp.ExpiresIn,
 		Interval:                resp.Interval,
 	}
-	log.Debugf("Created OIDC device code for %s (expires in: %ds)",
-		as.StoreKey(), as.DeviceAuth.ExpiresIn)
+	log.Debug("Created OIDC device code", "storeKey", as.StoreKey(), "expires", as.DeviceAuth.ExpiresIn)
 
 	fmt.Fprintf(os.Stderr, VERIFY_MSG, as.DeviceAuth.UserCode)
 
@@ -232,7 +231,7 @@ type DeviceAuthInfo struct {
 
 // getDeviceAuthInfo generates a DeviceAuthInfo struct
 func (as *AWSSSO) getDeviceAuthInfo() (DeviceAuthInfo, error) {
-	log.Tracef("getDeviceAuthInfo()")
+	log.Trace("getDeviceAuthInfo()")
 	if as.DeviceAuth.VerificationUri == "" {
 		return DeviceAuthInfo{}, fmt.Errorf("no valid verification url is available for %s", as.StoreKey())
 	}
@@ -248,7 +247,7 @@ func (as *AWSSSO) getDeviceAuthInfo() (DeviceAuthInfo, error) {
 // createToken blocks until we have a new SSO AccessToken and saves it
 // to our secret store
 func (as *AWSSSO) createToken() error {
-	log.Tracef("createToken()")
+	log.Trace("createToken()")
 	input := ssooidc.CreateTokenInput{
 		ClientId:     aws.String(as.ClientData.ClientId),
 		ClientSecret: aws.String(as.ClientData.ClientSecret),
@@ -277,7 +276,7 @@ func (as *AWSSSO) createToken() error {
 		var ape *oidctypes.AuthorizationPendingException
 
 		if errors.As(err, &sde) {
-			log.Debugf("Slowing down CreateToken()")
+			log.Debug("Slowing down CreateToken()")
 			retryInterval += slowDown
 			time.Sleep(retryInterval)
 		} else if errors.As(err, &ape) {
@@ -302,7 +301,7 @@ func (as *AWSSSO) createToken() error {
 	err = as.store.SaveCreateTokenResponse(as.StoreKey(), as.Token)
 	as.tokenLock.RUnlock()
 	if err != nil {
-		log.WithError(err).Errorf("unable to save CreateTokenResponse")
+		log.Error("unable to save CreateTokenResponse", "error", err.Error())
 	}
 
 	return nil
@@ -322,7 +321,7 @@ func (as *AWSSSO) Logout() error {
 
 		// delete the value from the store so we don't think we have a valid token
 		if err := as.store.DeleteCreateTokenResponse(as.key); err != nil {
-			log.WithError(err).Errorf("unable to delete AccessToken from secure store")
+			log.Error("unable to delete AccessToken from secure store", "error", err.Error())
 		}
 	}
 

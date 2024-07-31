@@ -39,12 +39,12 @@ func (c CacheCmd) AfterApply(runCtx *RunContext) error {
 func (cc *CacheCmd) Run(ctx *RunContext) error {
 	s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
 	if err != nil {
-		log.Fatalf("%s", err.Error())
+		log.Fatal("unable to select SSO instance", "sso", ctx.Cli.SSO, "error", err.Error())
 	}
 
 	ssoName, err := ctx.Settings.GetSelectedSSOName(ctx.Cli.SSO)
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal("unable to get name for SSO instance", "sso", ctx.Cli.SSO, "error", err.Error())
 	}
 
 	added, deleted, err := ctx.Settings.Cache.Refresh(AwsSSO, s, ssoName, ctx.Cli.Cache.Threads)
@@ -59,13 +59,13 @@ func (cc *CacheCmd) Run(ctx *RunContext) error {
 	}
 
 	if added > 0 || deleted > 0 {
-		log.Infof("Updated cache: %d added, %d deleted", added, deleted)
+		log.Info("Updated cache", "added", added, "deleted", deleted)
 		// should we update our config??
 		if !ctx.Cli.Cache.NoConfigCheck && ctx.Settings.AutoConfigCheck {
 			if ctx.Settings.ConfigProfilesUrlAction != url.ConfigProfilesUndef {
 				err := awsconfig.UpdateAwsConfig(ctx.Settings, "", true, false)
 				if err != nil {
-					log.Errorf("Unable to auto-update aws config file: %s", err.Error())
+					log.Error("Unable to auto-update aws config file", "error", err.Error())
 				}
 			}
 		}

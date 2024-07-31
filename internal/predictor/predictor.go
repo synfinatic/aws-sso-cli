@@ -97,7 +97,7 @@ func (p *Predictor) newPredictor(s *sso.Settings, c *sso.Cache) *Predictor {
 			uniqueRoles[roleName] = true
 			profile, err := rFlat.ProfileName(s)
 			if err != nil {
-				log.Warnf(err.Error())
+				log.Warn("unable to find Profile for ARN", "arn", rFlat.Arn, "error", err.Error())
 				continue
 			}
 			p.profiles = append(p.profiles, profile)
@@ -165,7 +165,7 @@ func (p *Predictor) SsoComplete() complete.Predictor {
 				ssos = append(ssos, sso)
 			}
 		} else {
-			log.Panicf("error: %s", err.Error())
+			log.Fatal("unable to process file", "file", p.configFile, "error", err.Error())
 		}
 	}
 	return complete.PredictSet(ssos...)

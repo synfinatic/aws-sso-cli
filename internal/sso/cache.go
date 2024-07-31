@@ -19,6 +19,7 @@ package sso
  */
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -223,7 +224,7 @@ func (c *Cache) deleteOldHistory() {
 	for _, arn := range cache.History {
 		id, role, err := utils.ParseRoleARN(arn)
 		if err != nil {
-			log.Debugf("Unable to parse History ARN %s: %s", arn, err.Error())
+			log.Debug("Unable to parse History ARN", "arn", arn, "error", err.Error())
 			c.deleteHistoryItem(arn)
 			continue
 		}
@@ -235,20 +236,20 @@ func (c *Cache) deleteOldHistory() {
 				history, ok := r.Tags["History"]
 				if !ok || history == "" {
 					// doesn't have anything to expires
-					log.Debugf("%s is in history list without a History tag in cache?", arn)
+					log.Debug("ARN in history list without a History tag in cache?", "arn", arn)
 					c.deleteHistoryItem(arn)
 					continue
 				}
 
 				values := strings.SplitN(history, ",", 2)
 				if len(values) != 2 {
-					log.Debugf("Too few fields for %s History Tag: '%s'", r.Arn, history)
+					log.Debug("Too few fields for History Tag", "arn", r.Arn, "history", history)
 					c.deleteHistoryItem(arn)
 					continue
 				}
 				lastTime, err := strconv.ParseInt(values[1], 10, 64)
 				if err != nil {
-					log.Debugf("Unable to parse %s History Tag '%s': %s", r.Arn, history, err.Error())
+					log.Debug("Unable to parse History Tag", "arn", r.Arn, "history", history, "error", err.Error())
 					c.deleteHistoryItem(arn)
 					continue
 				}
@@ -262,15 +263,15 @@ func (c *Cache) deleteOldHistory() {
 					// not appending it to newHistoryItems
 					delete(r.Tags, "History")
 					c.deleteHistoryItem(arn)
-					log.Debugf("Removed expired history role: %s", r.Arn)
+					log.Debug("Removed expired history role", "arn", r.Arn)
 				}
 			} else {
 				c.deleteHistoryItem(arn)
-				log.Debugf("History contains %s, but no role by that name", arn)
+				log.Debug("History contains but no role by that name", "arn", arn)
 			}
 		} else {
 			c.deleteHistoryItem(arn)
-			log.Debugf("History contains %s, but no account by that name", arn)
+			log.Debug("History contains but no account by that name", "arn", arn)
 		}
 	}
 
@@ -285,7 +286,7 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads 
 		return 0, 0, nil
 	}
 	c.refreshed = true
-	log.Debugf("refreshing %s SSO cache", ssoName)
+	log.Debug("refreshing SSO cache", "SSOname", ssoName)
 
 	// save role creds expires time
 	expires := map[string]int64{}
@@ -364,18 +365,18 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads 
 
 // pruneSSO removes any SSO instances that are no longer configured
 func (c *Cache) PruneSSO(settings *Settings) {
-	log.Debugf("pruning our cache of outdated SSO instances")
+	log.Debug("pruning our cache of outdated SSO instances")
 	for sso := range c.SSO {
 		hasSSO := false
 		for s := range settings.SSO {
 			if s == sso {
-				log.Debugf("keeping %s in cache", sso)
+				log.Debug("keeping in cache", "SSOName", sso)
 				hasSSO = true
 				break
 			}
 		}
 		if !hasSSO {
-			log.Debugf("pruning %s from cache", sso)
+			log.Debug("pruning from cache", "SSOName", sso)
 			delete(c.SSO, sso)
 		}
 	}
@@ -485,10 +486,10 @@ func fetchSSORole(id int, as *AWSSSO, aInfo <-chan AccountInfo, rInfo chan<- []R
 			// need some way to exit our worker...
 			break
 		}
-		log.Debugf("Worker %d processing AccountId: %s", id, a.AccountId)
+		log.Debug("Worker processing", "worker", id, "accountID", a.AccountId)
 		roles, err := as.GetRoles(a)
 		if err != nil {
-			log.Panicf("Unable to get AWS SSO roles: %s", err.Error())
+			panic(fmt.Sprintf("Unable to get AWS SSO roles: %s", err.Error()))
 		}
 		rInfo <- roles
 	}
@@ -498,7 +499,7 @@ func fetchSSORole(id int, as *AWSSSO, aInfo <-chan AccountInfo, rInfo chan<- []R
 // and using our SSOCache
 func processSSORoles(roles []RoleInfo, cache *SSOCache, r *Roles) {
 	for _, role := range roles {
-		log.Debugf("Processing %s:%s", role.AccountId, role.RoleName)
+		log.Debug("Processing %s:%s", role.AccountId, role.RoleName)
 		accountId := role.GetAccountId64()
 
 		if _, ok := r.Accounts[accountId]; !ok {
@@ -588,9 +589,9 @@ func (c *Cache) addSSORoles(r *Roles, as *AWSSSO, threads int) error {
 			case roles := <-results:
 				processSSORoles(roles, cache, r)
 				count++ // increment count only when processing results
-				log.Debugf("proccessed %d accounts, added %d roles, total %d", count, len(roles), len(r.GetAllRoles()))
+				log.Debug("proccessed", "accounts", count, "new_roles", len(roles), "total_roles", len(r.GetAllRoles()))
 			case <-ticker.C:
-				log.Warnf("fetching roles for %d accounts, this might take a while...\n", len(accounts)+1)
+				log.Warn(fmt.Sprintf("fetching roles for %d accounts, this might take a while...", len(accounts)+1))
 				ticker.Stop()
 			}
 		}
@@ -608,8 +609,9 @@ func (c *Cache) addConfigRoles(r *Roles, config *SSOConfig) error {
 		if err != nil {
 			return err
 		}
+		ctx := context.WithValue(context.Background(), "accountID", id)
 		if _, ok := r.Accounts[id]; !ok {
-			log.Debugf("config.yaml defines AWS AccountID %d, but you don't have access.", id)
+			log.DebugContext(ctx, "config.yaml defines an AWS AccountID, but you don't have access.")
 			continue
 		}
 		r.Accounts[id].DefaultRegion = account.DefaultRegion
@@ -638,7 +640,7 @@ func (c *Cache) addConfigRoles(r *Roles, config *SSOConfig) error {
 		// set the tags from the config file
 		for roleName, role := range config.Accounts[accountId].Roles {
 			if _, ok := r.Accounts[id].Roles[roleName]; !ok {
-				log.Debugf("config.yaml has %s but you don't have access", utils.MakeRoleARN(id, roleName))
+				log.DebugContext(ctx, "config.yaml defines a role but you don't have access", "role", roleName)
 				continue
 			}
 			r.Accounts[id].Roles[roleName].Arn = utils.MakeRoleARN(id, roleName)

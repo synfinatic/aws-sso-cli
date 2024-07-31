@@ -241,7 +241,7 @@ func openConsole(ctx *RunContext, accountid int64, role string) error {
 
 	ctx.Settings.Cache.AddHistory(utils.MakeRoleARN(accountid, role))
 	if err := ctx.Settings.Cache.Save(false); err != nil {
-		log.WithError(err).Warnf("Unable to update cache")
+		log.Warn("Unable to update cache", "error", err.Error())
 	}
 
 	creds := GetRoleCredentials(ctx, AwsSSO, ctx.Cli.Console.STSRefresh, accountid, role)
@@ -263,7 +263,7 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials,
 
 	resp, err := http.Get(signin.GetUrl())
 	if err != nil {
-		log.Debugf(err.Error())
+		log.Debug("http get", "url", signin.GetUrl(), "error", err.Error())
 		// sanitize error and remove sensitive URL from normal output
 		r := regexp.MustCompile(`Get "[^"]+": `)
 		e := r.ReplaceAllString(err.Error(), "")
@@ -279,7 +279,7 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials,
 	loginResponse := LoginResponse{}
 	err = json.Unmarshal(body, &loginResponse)
 	if err != nil {
-		log.Tracef("LoginResponse body: %s", body)
+		log.Trace("LoginResponse", "body", body)
 		return fmt.Errorf("Error parsing Login response: %s", err.Error())
 	}
 
@@ -298,7 +298,7 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials,
 
 	action, err := url.NewAction(ctx.Cli.Console.UrlAction)
 	if err != nil {
-		log.Fatalf("Invalid --url-action %s", ctx.Cli.Console.UrlAction)
+		log.Fatal("Invalid --url-action", "action", ctx.Cli.Console.UrlAction)
 	}
 	if action == "" {
 		action = ctx.Settings.UrlAction

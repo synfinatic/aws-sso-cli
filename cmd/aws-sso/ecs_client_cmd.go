@@ -112,10 +112,10 @@ func ecsLoadCmd(ctx *RunContext, accountId int64, role string) error {
 	// save history
 	ctx.Settings.Cache.AddHistory(utils.MakeRoleARN(rFlat.AccountId, rFlat.RoleName))
 	if err := ctx.Settings.Cache.Save(false); err != nil {
-		log.WithError(err).Warnf("Unable to update cache")
+		log.Warn("Unable to update cache", "error", err.Error())
 	}
 
-	log.Debugf("%s", spew.Sdump(rFlat))
+	log.Debug("role", "dump", spew.Sdump(rFlat))
 	return c.SubmitCreds(creds, rFlat.Profile, ctx.Cli.Ecs.Load.Slotted)
 }
 
@@ -184,11 +184,11 @@ func listProfiles(profiles []ecs.ListProfilesResponse) error {
 func newClient(server string, ctx *RunContext) *client.ECSClient {
 	certChain, err := ctx.Store.GetEcsSslCert()
 	if err != nil {
-		log.Fatalf("Unable to get ECS SSL cert: %s", err)
+		log.Fatal("Unable to get ECS SSL cert", "error", err.Error())
 	}
 	bearerToken, err := ctx.Store.GetEcsBearerToken()
 	if err != nil {
-		log.Fatalf("Unable to get ECS bearer token: %s", err)
+		log.Fatal("Unable to get ECS bearer token", "error", err)
 	}
 	return client.NewECSClient(server, bearerToken, certChain)
 }

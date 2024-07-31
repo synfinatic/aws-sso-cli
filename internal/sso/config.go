@@ -249,7 +249,7 @@ func (r *SSORole) GetRoleName() string {
 func (r *SSORole) GetAccountId() string {
 	a, err := utils.AccountIdToString(r.GetAccountId64())
 	if err != nil {
-		log.WithError(err).Errorf("Unable to parse AccountId '%s'", a)
+		log.Error("Unable to parse AccountId", "error", err.Error(), "accountID", r.GetAccountId64())
 		return ""
 	}
 	return a
@@ -259,7 +259,7 @@ func (r *SSORole) GetAccountId() string {
 func (r *SSORole) GetAccountId64() int64 {
 	a, _, err := utils.ParseRoleARN(r.ARN)
 	if err != nil {
-		log.WithError(err).Panicf("Unable to parse %s", r.ARN)
+		log.Fatal("Unable to parse", "arn", r.ARN, "error", err.Error())
 	}
 	return a
 }

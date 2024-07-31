@@ -110,7 +110,7 @@ func (r *RoleCredentials) ExpireString() string {
 func (r *RoleCredentials) AccountIdStr() string {
 	s, err := utils.AccountIdToString(r.AccountId)
 	if err != nil {
-		log.WithError(err).Fatalf("unable to parse accountId from AWS role credentials")
+		panic(fmt.Sprintf("unable to parse accountId from AWS role credentials: %s", err.Error()))
 	}
 	return s
 }
@@ -167,7 +167,7 @@ func (sc *StaticCredentials) UserArn() string {
 func (sc *StaticCredentials) AccountIdStr() string {
 	s, err := utils.AccountIdToString(sc.AccountId)
 	if err != nil {
-		log.WithError(err).Panicf("Invalid AccountId from AWS static credentials: %d", sc.AccountId)
+		panic(fmt.Sprintf("Invalid AccountId from AWS static credentials: %d", sc.AccountId))
 	}
 	return s
 }

@@ -111,7 +111,7 @@ func (s *Settings) GetColorOptions() []prompt.Option {
 		value := v.Field(i).String()
 		field := t.Field(i).Name
 		optionName := fmt.Sprintf("Option%s", field)
-		log.Debugf("%s => %s", field, value)
+		log.Trace("ColorOption", "field", field, "value", value)
 
 		colorValue := PROMPT_COLORS[value]
 

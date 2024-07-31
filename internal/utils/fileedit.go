@@ -116,7 +116,7 @@ func (f *FileEdit) UpdateConfig(printDiff, force bool, configFile string) (bool,
 
 	if len(diff) == 0 {
 		// do nothing if there is no diff
-		log.Infof("no changes made to %s", configFile)
+		log.Info("no changes made config file", "file", configFile)
 		return false, "", nil
 	}
 
