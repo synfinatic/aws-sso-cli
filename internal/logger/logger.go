@@ -27,7 +27,7 @@ import (
 	"strings"
 )
 
-var log *Logger
+var logger *Logger
 
 const (
 	LevelTrace  = slog.Level(-8)
@@ -57,52 +57,63 @@ type Logger struct {
 	level     *slog.LevelVar
 }
 
+// initialize the default logger to log to stderr and log at the warn level
+func init() {
+	logger = NewLogger(true, slog.LevelWarn)
+	slog.SetDefault(logger.Logger)
+}
+
 // NewLogger creates a new logger with the given log level and whether to add source information
 func NewLogger(addSource bool, level slog.Leveler) *Logger {
 	lvl := new(slog.LevelVar)
 	lvl.Set(level.Level())
 
-	opts := &slog.HandlerOptions{
-		Level:     lvl,
-		AddSource: addSource,
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			// Remove time from the output for predictable test output.
-			if a.Key == slog.TimeKey {
-				return slog.Attr{}
-			}
-
-			// Fix level names and pad the names
-			if a.Key == slog.LevelKey {
-				level := a.Value.Any().(slog.Level)
-				levelLabel, exists := LevelNames[level]
-				if !exists {
-					levelLabel = level.String()
+	opts := PrettyHandlerOptions{
+		TimeFormat: "",
+		HandlerOptions: &slog.HandlerOptions{
+			AddSource: addSource,
+			Level:     lvl,
+			ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+				// Remove time from the output for predictable test output.
+				if a.Key == slog.TimeKey {
+					return slog.Attr{}
 				}
 
-				// Pad the level name to 8 characters
-				a.Value = slog.StringValue(fmt.Sprintf("%8s", levelLabel))
-			}
+				// Fix level names and pad the names
+				if a.Key == slog.LevelKey {
+					level := a.Value.Any().(slog.Level)
 
-			// Rename the source attributes if they came from Trace/Fatal to the correct names
-			// so the old values get overwritten
-			if groups[0] == "source" {
-				switch a.Key {
-				case FileKey:
-					a.Key = "file"
-				case LineKey:
-					a.Key = "line"
-				case FunctionKey:
-					a.Key = "function"
-				default:
-					break // do nothing
+					levelLabel, exists := LevelNames[level]
+					if !exists {
+						levelLabel = level.String()
+					}
+
+					// Pad the level name to 8 characters
+					a.Value = slog.StringValue(levelLabel) // fmt.Sprintf("%8s", levelLabel))
 				}
-			}
 
-			return a
+				// Rename the source attributes if they came from Trace/Fatal to the correct names
+				// so the old values get overwritten
+				if len(groups) > 0 && groups[0] == "source" {
+					switch a.Key {
+					case FileKey:
+						a.Key = "file"
+					case LineKey:
+						a.Key = "line"
+					case FunctionKey:
+						a.Key = "function"
+					default:
+						break // do nothing
+					}
+				}
+
+				return a
+			},
 		},
 	}
 
-	var handler slog.Handler = slog.NewTextHandler(os.Stderr, opts)
+	// var handler slog.Handler = slog.NewTextHandler(os.Stderr, opts)
+	var handler slog.Handler = NewPrettyHandler(os.Stderr, opts)
 	return &Logger{
 		Logger:    slog.New(handler),
 		addSource: addSource,
@@ -140,18 +151,12 @@ func (l *Logger) GetLevel() slog.Leveler {
 	return slog.Level(l.level.Level())
 }
 
-// initialize the default logger to log to stderr and log at the warn level
-func init() {
-	log = NewLogger(false, slog.LevelWarn)
-	slog.SetDefault(log.Logger)
-}
-
 func SetLogger(l *Logger) {
-	log = l
+	logger = l
 }
 
 func GetLogger() *Logger {
-	return log
+	return logger
 }
 
 func SetDefaultLogger(l *Logger) {
