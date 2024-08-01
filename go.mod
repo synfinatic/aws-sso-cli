@@ -2,6 +2,9 @@ module github.com/synfinatic/aws-sso-cli
 
 go 1.21
 
+// FIXME: temporary development
+replace github.com/lmittmann/tint v1.0.5 => ../tint
+
 require (
 	github.com/99designs/keyring v1.2.2
 	github.com/Masterminds/sprig/v3 v3.2.3
@@ -34,7 +37,7 @@ require (
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
-	github.com/fatih/color v1.10.0 // indirect
+	github.com/fatih/color v1.17.0
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -43,8 +46,8 @@ require (
 	github.com/hashicorp/go-multierror v1.1.0 // indirect
 	github.com/huandu/xstrings v1.3.3 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
-	github.com/mattn/go-colorable v0.1.8 // indirect
-	github.com/mattn/go-isatty v0.0.12 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mattn/go-tty v0.0.3 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -75,6 +78,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.30.1
 	github.com/docker/docker v27.1.2+incompatible
 	github.com/docker/go-connections v0.5.0
+	github.com/lmittmann/tint v1.0.5
 	golang.org/x/net v0.27.0
 )
 

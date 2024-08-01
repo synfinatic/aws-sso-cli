@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"log/slog"
+	"os"
 
 	"github.com/fatih/color"
 )
@@ -18,16 +19,35 @@ type PrettyHandlerOptions struct {
 	NoColor    bool
 }
 
+// NewPrettyLogger creates a new logger with the given log level and whether to add source information
+func NewPrettyLogger(addSource bool, level slog.Leveler) *Logger {
+	lvl := new(slog.LevelVar)
+	lvl.Set(level.Level())
+
+	opts := PrettyHandlerOptions{
+		TimeFormat: "",
+		HandlerOptions: &slog.HandlerOptions{
+			AddSource:   addSource,
+			Level:       lvl,
+			ReplaceAttr: replaceAttr,
+		},
+	}
+
+	// var handler slog.Handler = slog.NewTextHandler(os.Stderr, opts)
+	var handler slog.Handler = NewPrettyHandler(os.Stderr, opts)
+	return &Logger{
+		Logger:    slog.New(handler),
+		addSource: addSource,
+		level:     lvl,
+	}
+}
+
 type PrettyHandler struct {
 	slog.Handler
 	l          *log.Logger
 	TimeFormat string
 	NoColor    bool
 }
-
-const (
-	DefaultTimeFormat = "15:04:05.000"
-)
 
 func (h *PrettyHandler) Handle(ctx context.Context, r slog.Record) error {
 	color.NoColor = h.NoColor // disable color if NoColor is set

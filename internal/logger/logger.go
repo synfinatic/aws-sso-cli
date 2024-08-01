@@ -25,16 +25,17 @@ import (
 	"os"
 	"runtime"
 	"strings"
+
+	"github.com/fatih/color"
+	"github.com/lmittmann/tint"
+	"github.com/mattn/go-isatty"
 )
 
 var logger *Logger
 
 const (
-	LevelTrace  = slog.Level(-8)
-	LevelFatal  = slog.Level(12)
-	LineKey     = "_line"
-	FileKey     = "_file"
-	FunctionKey = "_function"
+	LevelTrace = slog.Level(-8)
+	LevelFatal = slog.Level(12)
 )
 
 var LevelNames = map[slog.Leveler]string{
@@ -59,63 +60,35 @@ type Logger struct {
 
 // initialize the default logger to log to stderr and log at the warn level
 func init() {
-	logger = NewLogger(true, slog.LevelWarn)
-	slog.SetDefault(logger.Logger)
+	w := os.Stderr
+	logger = NewTincLogger(w, false, slog.LevelWarn)
+	// slog.SetDefault(logger.Logger)
 }
 
-// NewLogger creates a new logger with the given log level and whether to add source information
-func NewLogger(addSource bool, level slog.Leveler) *Logger {
+func NewTincLogger(w *os.File, addSource bool, level slog.Leveler) *Logger {
 	lvl := new(slog.LevelVar)
 	lvl.Set(level.Level())
 
-	opts := PrettyHandlerOptions{
+	opts := tint.Options{
+		Level:       lvl,
+		AddSource:   addSource,
+		ReplaceAttr: replaceAttr,
+		// TimeFormat: time.Kitchen,
 		TimeFormat: "",
-		HandlerOptions: &slog.HandlerOptions{
-			AddSource: addSource,
-			Level:     lvl,
-			ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-				// Remove time from the output for predictable test output.
-				if a.Key == slog.TimeKey {
-					return slog.Attr{}
-				}
-
-				// Fix level names and pad the names
-				if a.Key == slog.LevelKey {
-					level := a.Value.Any().(slog.Level)
-
-					levelLabel, exists := LevelNames[level]
-					if !exists {
-						levelLabel = level.String()
-					}
-
-					// Pad the level name to 8 characters
-					a.Value = slog.StringValue(levelLabel) // fmt.Sprintf("%8s", levelLabel))
-				}
-
-				// Rename the source attributes if they came from Trace/Fatal to the correct names
-				// so the old values get overwritten
-				if len(groups) > 0 && groups[0] == "source" {
-					switch a.Key {
-					case FileKey:
-						a.Key = "file"
-					case LineKey:
-						a.Key = "line"
-					case FunctionKey:
-						a.Key = "function"
-					default:
-						break // do nothing
-					}
-				}
-
-				return a
-			},
+		LevelColorsMap: tint.LevelColorsMapping{
+			LevelTrace:      {Name: "TRACE", Color: color.FgGreen},
+			LevelFatal:      {Name: "FATAL", Color: color.FgRed},
+			slog.LevelInfo:  {Name: "INFO ", Color: color.FgBlue},
+			slog.LevelWarn:  {Name: "WARN ", Color: color.FgYellow},
+			slog.LevelError: {Name: "ERROR", Color: color.FgRed},
+			slog.LevelDebug: {Name: "DEBUG", Color: color.FgMagenta},
 		},
+		NoColor: !isatty.IsTerminal(w.Fd()),
 	}
 
-	// var handler slog.Handler = slog.NewTextHandler(os.Stderr, opts)
-	var handler slog.Handler = NewPrettyHandler(os.Stderr, opts)
+	var handle slog.Handler = tint.NewHandler(w, &opts)
 	return &Logger{
-		Logger:    slog.New(handler),
+		Logger:    slog.New(handle),
 		addSource: addSource,
 		level:     lvl,
 	}
@@ -180,11 +153,12 @@ func (l *Logger) logWithSource(level slog.Level, msg string, args ...interface{}
 	allArgs = append(allArgs, args...)
 
 	if l.addSource {
-		var functionName string = ""
-		pc, file, line, ok := runtime.Caller(2) // go up two levels to get the caller
+		pc, _, _, ok := runtime.Caller(2) // go up two levels to get the caller
 		if ok {
-			functionName = runtime.FuncForPC(pc).Name()
-			allArgs = append(allArgs, slog.Group("source", slog.String(FileKey, file), slog.Int(LineKey, line), slog.String(FunctionKey, functionName)))
+			fs := runtime.CallersFrames([]uintptr{pc})
+			f, _ := fs.Next()
+			allArgs = append(allArgs, slog.Group("source",
+				slog.String("file", f.File), slog.Int("line", f.Line), slog.String("func", f.Function)))
 		}
 	}
 	l.Logger.Log(ctx, level, msg, allArgs...)
