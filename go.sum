@@ -392,6 +392,8 @@ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsT
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/synfinatic/gotable v0.0.3 h1:KI01OLECmOv7laXVNtw6T4kEHue09z9OuQwtNB8D5Mw=
 github.com/synfinatic/gotable v0.0.3/go.mod h1:kWXD1bxZY6tyu6tWK3CIbGAOrtF7teg0ZQotUMDvoMw=
+github.com/synfinatic/tint v0.0.0-20240801234705-50f64e87e8db h1:tLDMrB9hhcOE8EstxtUx3EA/Ag2qQ1hGdkACxLIOyVA=
+github.com/synfinatic/tint v0.0.0-20240801234705-50f64e87e8db/go.mod h1:U8412el5hDkno2/xAgVuq4+z5CXJQvRv3Nv81kIqByc=
 github.com/willabides/kongplete v0.2.0 h1:C6wYVn+IPyA8rAGRGLLkuxhhSQTEECX4t8u3gi+fuD0=
 github.com/willabides/kongplete v0.2.0/go.mod h1:kFVw+PkQsqkV7O4tfIBo6iJ9qY94PJC8sPfMgFG5AdM=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=

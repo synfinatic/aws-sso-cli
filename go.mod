@@ -3,7 +3,7 @@ module github.com/synfinatic/aws-sso-cli
 go 1.21
 
 // FIXME: temporary development
-replace github.com/lmittmann/tint v1.0.5 => ../tint
+replace github.com/lmittmann/tint v1.0.5 => github.com/synfinatic/tint v0.0.0-20240801234705-50f64e87e8db
 
 require (
 	github.com/99designs/keyring v1.2.2
@@ -47,7 +47,7 @@ require (
 	github.com/huandu/xstrings v1.3.3 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-isatty v0.0.20
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mattn/go-tty v0.0.3 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect

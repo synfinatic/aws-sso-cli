@@ -23,15 +23,17 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"runtime"
 	"strings"
-
-	"github.com/fatih/color"
-	"github.com/lmittmann/tint"
-	"github.com/mattn/go-isatty"
 )
 
 var logger *Logger
+
+type Logger struct {
+	*slog.Logger
+	writer    *os.File
+	addSource bool
+	level     *slog.LevelVar
+}
 
 const (
 	LevelTrace = slog.Level(-8)
@@ -43,6 +45,10 @@ var LevelNames = map[slog.Leveler]string{
 	LevelFatal: "FATAL",
 }
 
+type NewLoggerFunc func(w *os.File, addSource bool, level slog.Leveler) (slog.Handler, *slog.LevelVar)
+
+var NewLogger NewLoggerFunc = NewConsole
+
 var LevelStrings = map[string]slog.Leveler{
 	"TRACE": LevelTrace,
 	"FATAL": LevelFatal,
@@ -52,46 +58,22 @@ var LevelStrings = map[string]slog.Leveler{
 	"DEBUG": slog.LevelDebug,
 }
 
-type Logger struct {
-	*slog.Logger
-	addSource bool
-	level     *slog.LevelVar
-}
-
 // initialize the default logger to log to stderr and log at the warn level
 func init() {
 	w := os.Stderr
-	logger = NewTincLogger(w, false, slog.LevelWarn)
-	// slog.SetDefault(logger.Logger)
-}
+	addSource := false
+	level := slog.LevelWarn
+	// logger = NewTincLogger(w, false, slog.LevelWarn)
+	handle, lvl := NewLogger(w, addSource, level)
 
-func NewTincLogger(w *os.File, addSource bool, level slog.Leveler) *Logger {
-	lvl := new(slog.LevelVar)
-	lvl.Set(level.Level())
-
-	opts := tint.Options{
-		Level:       lvl,
-		AddSource:   addSource,
-		ReplaceAttr: replaceAttr,
-		// TimeFormat: time.Kitchen,
-		TimeFormat: "",
-		LevelColorsMap: tint.LevelColorsMapping{
-			LevelTrace:      {Name: "TRACE", Color: color.FgGreen},
-			LevelFatal:      {Name: "FATAL", Color: color.FgRed},
-			slog.LevelInfo:  {Name: "INFO ", Color: color.FgBlue},
-			slog.LevelWarn:  {Name: "WARN ", Color: color.FgYellow},
-			slog.LevelError: {Name: "ERROR", Color: color.FgRed},
-			slog.LevelDebug: {Name: "DEBUG", Color: color.FgMagenta},
-		},
-		NoColor: !isatty.IsTerminal(w.Fd()),
-	}
-
-	var handle slog.Handler = tint.NewHandler(w, &opts)
-	return &Logger{
+	logger = &Logger{
 		Logger:    slog.New(handle),
+		writer:    w,
 		addSource: addSource,
 		level:     lvl,
 	}
+
+	slog.SetDefault(logger.Logger)
 }
 
 // SetLevel sets the log level for the logger
@@ -112,11 +94,9 @@ func (l *Logger) SetReportCaller(reportCaller bool) {
 		return // do nothing
 	}
 	l.addSource = reportCaller
-	l.Logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-		Level:     l.level,
-		AddSource: reportCaller,
-	}))
-	slog.SetDefault(l.Logger)
+	handler, _ := NewLogger(l.writer, l.addSource, slog.LevelWarn)
+	logger.Logger = slog.New(handler)
+	slog.SetDefault(logger.Logger)
 }
 
 // GetLevel returns the current log level
@@ -147,19 +127,16 @@ func (l *Logger) Fatal(msg string, args ...interface{}) {
 	os.Exit(1)
 }
 
+// logWithSource sets the __source attribute so that our Handler knows
+// to modify the r.PC value to include the original caller.
 func (l *Logger) logWithSource(level slog.Level, msg string, args ...interface{}) {
 	ctx := context.Background()
 	var allArgs []interface{}
 	allArgs = append(allArgs, args...)
 
 	if l.addSource {
-		pc, _, _, ok := runtime.Caller(2) // go up two levels to get the caller
-		if ok {
-			fs := runtime.CallersFrames([]uintptr{pc})
-			f, _ := fs.Next()
-			allArgs = append(allArgs, slog.Group("source",
-				slog.String("file", f.File), slog.Int("line", f.Line), slog.String("func", f.Function)))
-		}
+		// 5 is the number of stack frames to skip in Handler.Handle()
+		allArgs = append(allArgs, slog.Int(FrameMarker, 5))
 	}
 	l.Logger.Log(ctx, level, msg, allArgs...)
 }
