@@ -8,7 +8,7 @@ import (
 	"github.com/lmittmann/tint"
 )
 
-func NewTinc(w io.Writer, addSource bool, level slog.Leveler, color bool) (slog.Handler, *slog.LevelVar) {
+func NewTint(w io.Writer, addSource bool, level slog.Leveler, color bool) (slog.Handler, *slog.LevelVar) {
 	lvl := new(slog.LevelVar)
 	lvl.Set(level.Level())
 
@@ -17,8 +17,7 @@ func NewTinc(w io.Writer, addSource bool, level slog.Leveler, color bool) (slog.
 		AddSource:   addSource,
 		ReplaceAttr: replaceAttrConsole,
 		TimeFormat:  time.Kitchen,
-		// TimeFormat: "",
-		NoColor: !color,
+		NoColor:     !color,
 	}
 
 	return tint.NewHandler(w, &opts), lvl

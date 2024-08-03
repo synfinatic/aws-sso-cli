@@ -1,9 +1,8 @@
 module github.com/synfinatic/aws-sso-cli
 
-go 1.21
+go 1.22
 
-// FIXME: temporary development
-replace github.com/lmittmann/tint v1.0.5 => github.com/synfinatic/tint v0.0.0-20240801234705-50f64e87e8db
+toolchain go1.22.5
 
 require (
 	github.com/99designs/keyring v1.2.2
@@ -78,7 +77,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.30.1
 	github.com/docker/docker v27.1.2+incompatible
 	github.com/docker/go-connections v0.5.0
+	github.com/go-json-experiment/json v0.0.0-20240524174822-2d9f40f7385b
 	github.com/lmittmann/tint v1.0.5
+	github.com/veqryn/slog-json v0.3.0
 	golang.org/x/net v0.27.0
 )
 

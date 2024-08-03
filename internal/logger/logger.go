@@ -19,16 +19,13 @@ package logger
  */
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"log/slog"
-	"os"
 	"strings"
-
-	"github.com/fatih/color"
 )
 
+// Our logger which wraps slog.Logger
 type Logger struct {
 	*slog.Logger
 	addSource bool
@@ -37,6 +34,7 @@ type Logger struct {
 	writer    io.Writer
 }
 
+// NewLoggerFunc creates a new Logger
 func NewLogger(f NewLoggerFunc, w io.Writer, addSource bool, level slog.Leveler, color bool) *Logger {
 	handle, lvl := f(w, addSource, level, color)
 	return &Logger{
@@ -48,32 +46,27 @@ func NewLogger(f NewLoggerFunc, w io.Writer, addSource bool, level slog.Leveler,
 	}
 }
 
-const (
-	LevelTrace = slog.Level(-8)
-	LevelFatal = slog.Level(12)
-)
-
-var LevelNames = map[slog.Leveler]string{
-	LevelTrace: "TRACE",
-	LevelFatal: "FATAL",
+// Copy returns a copy of the Logger current Logger
+func (l *Logger) Copy() *Logger {
+	return NewLogger(CreateLogger, l.writer, l.addSource, l.level, l.color)
 }
 
-var LevelStrings = map[string]slog.Leveler{
-	"TRACE": LevelTrace,
-	"FATAL": LevelFatal,
-	"INFO":  slog.LevelInfo,
-	"WARN":  slog.LevelWarn,
-	"ERROR": slog.LevelError,
-	"DEBUG": slog.LevelDebug,
-}
+// SwitchLogger changes the current logger to the specified type
+func SwitchLogger(name string) {
+	var loggers = map[string]NewLoggerFunc{
+		"console": NewConsole,
+		"json":    NewJSON,
+		"tint":    NewTint,
+	}
+	var ok bool
+	CreateLogger, ok = loggers[name]
+	if !ok {
+		logger.Fatal("Invalid logger", "name", name)
+	}
 
-var LevelColorsMap map[slog.Level]LevelColor = map[slog.Level]LevelColor{
-	LevelTrace:      {Name: "TRACE", Color: color.FgGreen},
-	LevelFatal:      {Name: "FATAL", Color: color.FgRed},
-	slog.LevelInfo:  {Name: "INFO ", Color: color.FgBlue},
-	slog.LevelWarn:  {Name: "WARN ", Color: color.FgYellow},
-	slog.LevelError: {Name: "ERROR", Color: color.FgRed},
-	slog.LevelDebug: {Name: "DEBUG", Color: color.FgMagenta},
+	// switch the logger
+	logger = NewLogger(CreateLogger, logger.writer, logger.addSource, logger.level, logger.color)
+	slog.SetDefault(logger.Logger)
 }
 
 // SetLevel sets the log level for the logger
@@ -89,6 +82,8 @@ func (l *Logger) SetLevelString(level string) error {
 	return nil
 }
 
+// SetReportCaller sets whether to include the source file and line number in the log output
+// Doing so will replace the current logger with a new one that has the new setting
 func (l *Logger) SetReportCaller(reportCaller bool) {
 	if l.addSource == reportCaller {
 		return // do nothing
@@ -114,29 +109,4 @@ func GetLogger() *Logger {
 
 func SetDefaultLogger(l *Logger) {
 	slog.SetDefault(l.Logger)
-}
-
-// Log a message at the Trace level
-func (l *Logger) Trace(msg string, args ...interface{}) {
-	l.logWithSource(LevelTrace, msg, args...)
-}
-
-// Log a message at the Fatal level and exit
-func (l *Logger) Fatal(msg string, args ...interface{}) {
-	l.logWithSource(LevelFatal, msg, args...)
-	os.Exit(1)
-}
-
-// logWithSource sets the __source attribute so that our Handler knows
-// to modify the r.PC value to include the original caller.
-func (l *Logger) logWithSource(level slog.Level, msg string, args ...interface{}) {
-	ctx := context.Background()
-	var allArgs []interface{}
-	allArgs = append(allArgs, args...)
-
-	if l.addSource {
-		// 5 is the number of stack frames to skip in Handler.Handle()
-		allArgs = append(allArgs, slog.Int(FrameMarker, 5))
-	}
-	l.Logger.Log(ctx, level, msg, allArgs...)
 }
