@@ -21,18 +21,31 @@ package logger
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"strings"
-)
 
-var logger *Logger
+	"github.com/fatih/color"
+)
 
 type Logger struct {
 	*slog.Logger
-	writer    *os.File
 	addSource bool
+	color     bool
 	level     *slog.LevelVar
+	writer    io.Writer
+}
+
+func NewLogger(f NewLoggerFunc, w io.Writer, addSource bool, level slog.Leveler, color bool) *Logger {
+	handle, lvl := f(w, addSource, level, color)
+	return &Logger{
+		Logger:    slog.New(handle),
+		addSource: addSource,
+		color:     color,
+		level:     lvl,
+		writer:    w,
+	}
 }
 
 const (
@@ -45,10 +58,6 @@ var LevelNames = map[slog.Leveler]string{
 	LevelFatal: "FATAL",
 }
 
-type NewLoggerFunc func(w *os.File, addSource bool, level slog.Leveler) (slog.Handler, *slog.LevelVar)
-
-var NewLogger NewLoggerFunc = NewConsole
-
 var LevelStrings = map[string]slog.Leveler{
 	"TRACE": LevelTrace,
 	"FATAL": LevelFatal,
@@ -58,22 +67,13 @@ var LevelStrings = map[string]slog.Leveler{
 	"DEBUG": slog.LevelDebug,
 }
 
-// initialize the default logger to log to stderr and log at the warn level
-func init() {
-	w := os.Stderr
-	addSource := false
-	level := slog.LevelWarn
-	// logger = NewTincLogger(w, false, slog.LevelWarn)
-	handle, lvl := NewLogger(w, addSource, level)
-
-	logger = &Logger{
-		Logger:    slog.New(handle),
-		writer:    w,
-		addSource: addSource,
-		level:     lvl,
-	}
-
-	slog.SetDefault(logger.Logger)
+var LevelColorsMap map[slog.Level]LevelColor = map[slog.Level]LevelColor{
+	LevelTrace:      {Name: "TRACE", Color: color.FgGreen},
+	LevelFatal:      {Name: "FATAL", Color: color.FgRed},
+	slog.LevelInfo:  {Name: "INFO ", Color: color.FgBlue},
+	slog.LevelWarn:  {Name: "WARN ", Color: color.FgYellow},
+	slog.LevelError: {Name: "ERROR", Color: color.FgRed},
+	slog.LevelDebug: {Name: "DEBUG", Color: color.FgMagenta},
 }
 
 // SetLevel sets the log level for the logger
@@ -94,7 +94,7 @@ func (l *Logger) SetReportCaller(reportCaller bool) {
 		return // do nothing
 	}
 	l.addSource = reportCaller
-	handler, _ := NewLogger(l.writer, l.addSource, slog.LevelWarn)
+	handler, _ := CreateLogger(l.writer, l.addSource, slog.LevelWarn, l.color)
 	logger.Logger = slog.New(handler)
 	slog.SetDefault(logger.Logger)
 }
