@@ -264,11 +264,8 @@ in a browser:
  * `open` -- Opens the URL in your default browser or the browser you specified
     via `--browser` or `Browser`
  * `open-url-in-container` -- Generates a URL for the Firefox [Open Url in Container](
-    https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/) and
-    [Firefox Multi-Account Containers](
-    https://addons.mozilla.org/en-US/firefox/addon/multi-account-containers/)
-    plugins and runs your `UrlExecCommand`. Please be sure to install only
-    one of these plugins. ;)
+    https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/)
+    plugin and runs your `UrlExecCommand`.
  * `print` -- Prints the URL with a message in your terminal to stderr
  * `printurl` -- Prints only the URL in your terminal to stderr
 
@@ -308,14 +305,28 @@ UrlExecCommand:
 
 ##### Open URL in Firefox Container
 
-Opens each IAM Role in a unique Firefox Container using either
+Opens each IAM Role (and SSO Login page) in a unique Firefox Container using the
 [Open Url in Container](
-https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/) or the
-[Firefox Multi-Account Containers](
-https://addons.mozilla.org/en-US/firefox/addon/multi-account-containers/)
-Firefox plugins.
+https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/)
+Firefox plugin.
 
 ```yaml
+UrlAction: open-url-in-container
+UrlExecCommand:
+    - /Applications/Firefox.app/Contents/MacOS/firefox
+    - "%s"
+```
+
+**Note:** If you do not want your SSO Login page to be opened in a container,
+use the [AuthUrlAction](#authurlaction--browser--urlaction--urlexeccommand)
+option to specify a different action:
+
+```yaml
+SSOConfig:
+    Default:
+        SSORegion: us-east-1
+        StartUrl: https://example.awsapps.com/start
+        AuthUrlAction: open
 UrlAction: open-url-in-container
 UrlExecCommand:
     - /Applications/Firefox.app/Contents/MacOS/firefox
