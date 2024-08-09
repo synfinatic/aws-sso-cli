@@ -20,16 +20,18 @@ package sso
 
 import (
 	"fmt"
+	"io"
+	"log/slog"
 	"os"
 	"testing"
 	"time"
 
 	// "github.com/davecgh/go-spew/spew"
-	"github.com/sirupsen/logrus"
-	"github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/synfinatic/aws-sso-cli/internal/logger"
+	"github.com/synfinatic/aws-sso-cli/internal/logger/test"
 )
 
 const (
@@ -265,11 +267,11 @@ func (suite *CacheTestSuite) TestDeleteOldHistory() {
 		c.SSO["Default"].Roles.Accounts[123456789012].Roles["Foo"].Tags)
 
 	// setup logger for tests
-	logrusLogger, hook := test.NewNullLogger()
-	logrusLogger.SetLevel(logrus.DebugLevel)
-	oldLog := log
-	log = logger.NewLogger(logrusLogger)
-	defer func() { log = oldLog }()
+	oldLogger := log.Copy()
+	testLogger := test.NewTestLogger("DEBUG")
+	logger.SetLogger(testLogger)
+
+	defer func() { logger.SetLogger(oldLogger) }()
 
 	// remove one because of HistoryMinutes expires
 	c = suite.setupDeleteOldHistory()

@@ -30,7 +30,7 @@ import (
 	"github.com/synfinatic/gotable"
 )
 
-var log *logger.Logger
+var log logger.CustomLogger
 
 func init() {
 	log = logger.GetLogger()

@@ -25,7 +25,7 @@ import (
 	"strings"
 )
 
-// Our logger which wraps slog.Logger
+// Our logger which wraps slog.Logger and impliments CustomLogger
 type Logger struct {
 	*slog.Logger
 	addSource bool
@@ -47,26 +47,39 @@ func NewLogger(f NewLoggerFunc, w io.Writer, addSource bool, level slog.Leveler,
 }
 
 // Copy returns a copy of the Logger current Logger
-func (l *Logger) Copy() *Logger {
+func (l *Logger) Copy() CustomLogger {
 	return NewLogger(CreateLogger, l.writer, l.addSource, l.level, l.color)
 }
 
-// SwitchLogger changes the current logger to the specified type
-func SwitchLogger(name string) {
-	var loggers = map[string]NewLoggerFunc{
-		"console": NewConsole,
-		"json":    NewJSON,
-		"tint":    NewTint,
-	}
-	var ok bool
-	CreateLogger, ok = loggers[name]
-	if !ok {
-		logger.Fatal("Invalid logger", "name", name)
-	}
+func (l *Logger) Writer() io.Writer {
+	return l.writer
+}
 
-	// switch the logger
-	logger = NewLogger(CreateLogger, logger.writer, logger.addSource, logger.level, logger.color)
-	slog.SetDefault(logger.Logger)
+func (l *Logger) AddSource() bool {
+	return l.addSource
+}
+
+func (l *Logger) Level() *slog.LevelVar {
+	return l.level
+}
+
+func (l *Logger) Color() bool {
+	return l.color
+}
+
+/*
+// Clone returns a clone of the current Logger with a new Logging function
+func (l *Logger) Clone(f NewLoggerFunc, w io.Writer) *Logger {
+	return NewLogger(f, w, l.addSource, l.level, l.color)
+}
+*/
+
+func (l *Logger) GetLogger() *slog.Logger {
+	return l.Logger
+}
+
+func (l *Logger) SetLogger(logger *slog.Logger) {
+	l.Logger = logger
 }
 
 // SetLevel sets the log level for the logger
@@ -90,23 +103,10 @@ func (l *Logger) SetReportCaller(reportCaller bool) {
 	}
 	l.addSource = reportCaller
 	handler, _ := CreateLogger(l.writer, l.addSource, slog.LevelWarn, l.color)
-	logger.Logger = slog.New(handler)
-	slog.SetDefault(logger.Logger)
+	logger.SetLogger(slog.New(handler))
 }
 
 // GetLevel returns the current log level
 func (l *Logger) GetLevel() slog.Leveler {
 	return slog.Level(l.level.Level())
-}
-
-func SetLogger(l *Logger) {
-	logger = l
-}
-
-func GetLogger() *Logger {
-	return logger
-}
-
-func SetDefaultLogger(l *Logger) {
-	slog.SetDefault(l.Logger)
 }

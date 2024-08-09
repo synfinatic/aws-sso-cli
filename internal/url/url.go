@@ -33,7 +33,7 @@ import (
 	// default opener
 )
 
-var log *logger.Logger
+var log logger.CustomLogger
 
 func init() {
 	log = logger.GetLogger()

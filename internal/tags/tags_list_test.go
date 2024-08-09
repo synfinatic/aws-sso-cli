@@ -26,12 +26,12 @@ const (
 func TestTagsListSuite(t *testing.T) {
 	info, err := os.Stat(TEST_TAGS_LIST_FILE)
 	if err != nil {
-		log.WithError(err).Fatalf("os.Stat %s", TEST_TAGS_LIST_FILE)
+		log.Fatal("os.Stat", "file", TEST_TAGS_LIST_FILE, "error", err)
 	}
 
 	file, err := os.Open(TEST_TAGS_LIST_FILE)
 	if err != nil {
-		log.WithError(err).Fatalf("os.Open %s", TEST_TAGS_LIST_FILE)
+		log.Fatal("os.Open", "file", TEST_TAGS_LIST_FILE, "error", err)
 	}
 
 	defer file.Close()
@@ -39,13 +39,13 @@ func TestTagsListSuite(t *testing.T) {
 	buf := make([]byte, info.Size())
 	_, err = file.Read(buf)
 	if err != nil {
-		log.WithError(err).Fatalf("Error reading %d bytes from %s", info.Size(), TEST_TAGS_LIST_FILE)
+		log.Fatal("file.Read", "file", TEST_TAGS_LIST_FILE, "error", err, "byteLen", info.Size())
 	}
 
 	s := &TagsListTestSuite{}
 	err = yaml.Unmarshal(buf, &s.File)
 	if err != nil {
-		log.WithError(err).Fatalf("Failed parsing %s", TEST_TAGS_LIST_FILE)
+		log.Fatal("yaml.Unmarshal", "file", TEST_TAGS_LIST_FILE, "error", err)
 	}
 
 	suite.Run(t, s)

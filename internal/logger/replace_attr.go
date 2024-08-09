@@ -18,7 +18,7 @@ func replaceAttrConsole(groups []string, a slog.Attr) slog.Attr {
 		level := a.Value.Any().(slog.Level)
 		levelColor, ok := LevelColorsMap[level]
 		if ok {
-			a.Value = slog.StringValue(levelColor.String(logger.color))
+			a.Value = slog.StringValue(levelColor.String(logger.Color()))
 		}
 	}
 
@@ -29,6 +29,15 @@ func replaceAttrJson(groups []string, a slog.Attr) slog.Attr {
 	// Remove the frame marker attribute flag if it's present
 	if a.Key == FrameMarker {
 		return slog.Attr{}
+	}
+
+	// Rename the log level
+	if a.Key == slog.LevelKey {
+		level := a.Value.Any().(slog.Level)
+		levelColor, ok := LevelColorsMap[level]
+		if ok {
+			a.Value = slog.StringValue(levelColor.String(false))
+		}
 	}
 
 	return a

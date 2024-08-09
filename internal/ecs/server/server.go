@@ -32,7 +32,7 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
 
-var log *logger.Logger
+var log logger.CustomLogger
 
 func init() {
 	log = logger.GetLogger()
