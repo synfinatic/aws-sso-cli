@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.30">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.31">
     
     
       
@@ -1995,10 +1995,8 @@ in a browser:</p>
     runs your <code>UrlExecCommand</code></li>
 <li><code>open</code> -- Opens the URL in your default browser or the browser you specified
     via <code>--browser</code> or <code>Browser</code></li>
-<li><code>open-url-in-container</code> -- Generates a URL for the Firefox <a href="https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/">Open Url in Container</a> and
-    <a href="https://addons.mozilla.org/en-US/firefox/addon/multi-account-containers/">Firefox Multi-Account Containers</a>
-    plugins and runs your <code>UrlExecCommand</code>. Please be sure to install only
-    one of these plugins. ;)</li>
+<li><code>open-url-in-container</code> -- Generates a URL for the Firefox <a href="https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/">Open Url in Container</a>
+    plugin and runs your <code>UrlExecCommand</code>.</li>
 <li><code>print</code> -- Prints the URL with a message in your terminal to stderr</li>
 <li><code>printurl</code> -- Prints only the URL in your terminal to stderr</li>
 </ul>
@@ -2026,11 +2024,23 @@ UrlExecCommand:
     - &quot;%s&quot;
 </code></pre>
 <h5 id="open-url-in-firefox-container">Open URL in Firefox Container</h5>
-<p>Opens each IAM Role in a unique Firefox Container using either
-<a href="https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/">Open Url in Container</a> or the
-<a href="https://addons.mozilla.org/en-US/firefox/addon/multi-account-containers/">Firefox Multi-Account Containers</a>
-Firefox plugins.</p>
+<p>Opens each IAM Role (and SSO Login page) in a unique Firefox Container using the
+<a href="https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/">Open Url in Container</a>
+Firefox plugin.</p>
 <pre><code class="language-yaml">UrlAction: open-url-in-container
+UrlExecCommand:
+    - /Applications/Firefox.app/Contents/MacOS/firefox
+    - &quot;%s&quot;
+</code></pre>
+<p><strong>Note:</strong> If you do not want your SSO Login page to be opened in a container,
+use the <a href="#authurlaction--browser--urlaction--urlexeccommand">AuthUrlAction</a>
+option to specify a different action:</p>
+<pre><code class="language-yaml">SSOConfig:
+    Default:
+        SSORegion: us-east-1
+        StartUrl: https://example.awsapps.com/start
+        AuthUrlAction: open
+UrlAction: open-url-in-container
 UrlExecCommand:
     - /Applications/Firefox.app/Contents/MacOS/firefox
     - &quot;%s&quot;
