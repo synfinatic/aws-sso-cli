@@ -24,6 +24,7 @@
  * Only the and `cache` command will auto-update the contents of `~/.aws/config` #974
  * `tags` command no longer supports the `--force-update` option
  * Change default log level from `warn` to `info`
+ * Remove mention from docs that Firefox Multi-Account Containers plugin is supported #1021
 
 ### New Features
 
