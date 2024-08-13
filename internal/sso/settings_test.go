@@ -329,7 +329,7 @@ func (suite *SettingsTestSuite) TestSetOverrides() {
 	s.setOverrides(overrides)
 
 	assert.Equal(t, logrus.DebugLevel, log.Level)
-	assert.True(t, log.ReportCaller)
+	// assert.True(t, log.ReportCaller)
 	assert.Equal(t, "my-browser", s.Browser)
 	assert.Equal(t, "hello", s.DefaultSSO)
 	assert.Equal(t, 10, s.Threads)

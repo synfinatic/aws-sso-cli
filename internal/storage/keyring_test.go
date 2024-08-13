@@ -21,6 +21,7 @@ package storage
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path"
 	"strings"
@@ -28,11 +29,10 @@ import (
 	"time"
 
 	"github.com/99designs/keyring"
-	"github.com/sirupsen/logrus"
-	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/synfinatic/aws-sso-cli/internal/logger"
+	testlogger "github.com/synfinatic/aws-sso-cli/internal/logger/test"
 )
 
 type KeyringSuite struct {
@@ -494,11 +494,10 @@ func TestSplitCredentials(t *testing.T) {
 	assert.NoError(t, err)
 
 	// setup logger for testing
-	logrusLogger, hook := test.NewNullLogger()
-	logrusLogger.SetLevel(logrus.DebugLevel)
-	oldLog := log
-	log = logger.NewLogger(logrusLogger)
-	defer func() { log = oldLog }()
+	oldLogger := log.Copy()
+	tLogger := testlogger.NewTestLogger("DEBUG")
+	logger.SetLogger(tLogger)
+	defer func() { logger.SetLogger(oldLogger) }()
 
 	defer func() {
 		os.RemoveAll(d)
@@ -578,7 +577,10 @@ func TestSplitCredentials(t *testing.T) {
 	// but OpenKeyring is fine, just returns a warning
 	_, err = OpenKeyring(c)
 	assert.NoError(t, err)
-	assert.NotNil(t, hook.LastEntry())
-	assert.Equal(t, logrus.WarnLevel, hook.LastEntry().Level)
-	assert.Contains(t, hook.LastEntry().Message, "unable to fetch")
+
+	msg := testlogger.LogMessage{}
+	tLogger.RefreshBuffer()
+	assert.NoError(t, tLogger.GetLast(&msg))
+	assert.Equal(t, slog.LevelWarn, msg.Level)
+	assert.Contains(t, "unable to fetch", msg.Message)
 }

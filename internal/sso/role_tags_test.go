@@ -55,12 +55,12 @@ const (
 func TestRoleTagsTestSuite(t *testing.T) {
 	info, err := os.Stat(TEST_ROLE_TAGS_FILE)
 	if err != nil {
-		log.WithError(err).Fatalf("os.Stat %s", TEST_ROLE_TAGS_FILE)
+		log.Fatal("os.Stat failure", "file", TEST_ROLE_TAGS_FILE, "error", err.Error())
 	}
 
 	file, err := os.Open(TEST_ROLE_TAGS_FILE)
 	if err != nil {
-		log.WithError(err).Fatalf("os.Open %s", TEST_ROLE_TAGS_FILE)
+		log.Fatal("os.Open failure", "file", TEST_ROLE_TAGS_FILE, "error", err.Error())
 	}
 
 	defer file.Close()
@@ -68,13 +68,13 @@ func TestRoleTagsTestSuite(t *testing.T) {
 	buf := make([]byte, info.Size())
 	_, err = file.Read(buf)
 	if err != nil {
-		log.WithError(err).Fatalf("Error reading %d bytes from %s", info.Size(), TEST_ROLE_TAGS_FILE)
+		log.Fatal("Error reading file", "bytes", info.Size(), "file", TEST_ROLE_TAGS_FILE, "error", err.Error())
 	}
 
 	s := &RoleTagsTestSuite{}
 	err = yaml.Unmarshal(buf, &s.File)
 	if err != nil {
-		log.WithError(err).Fatalf("Failed parsing %s", TEST_ROLE_TAGS_FILE)
+		log.Fatal("Failed parsing", "file", TEST_ROLE_TAGS_FILE, "error", err.Error())
 	}
 
 	suite.Run(t, s)

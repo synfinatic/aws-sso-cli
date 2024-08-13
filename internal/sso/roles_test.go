@@ -415,9 +415,6 @@ func TestAWSRoleFlatHasPrefix(t *testing.T) {
 	}
 
 	for k, v := range valid {
-		if k == "Via" {
-			log.Errorf("%s = %s", k, v)
-		}
 		ret, err := f.HasPrefix(k, v)
 		assert.NoError(t, err)
 		assert.True(t, ret)

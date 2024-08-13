@@ -30,7 +30,7 @@ func NewJSON(w io.Writer, addSource bool, level slog.Leveler, _ bool) (slog.Hand
 		),
 	}
 
-	return slogjson.NewHandler(w, &opts), lvl
+	return NewJSONHandler(w, &opts), lvl
 }
 
 type JsonHandler struct {
@@ -61,4 +61,22 @@ func (h *JsonHandler) Handle(ctx context.Context, r slog.Record) error {
 		return h.Handler.Handle(ctx, rn)
 	}
 	return h.Handler.Handle(ctx, r)
+}
+
+func replaceAttrJson(groups []string, a slog.Attr) slog.Attr {
+	// Remove the frame marker attribute flag if it's present
+	if a.Key == FrameMarker {
+		return slog.Attr{}
+	}
+
+	// Rename the log level
+	if a.Key == slog.LevelKey {
+		level := a.Value.Any().(slog.Level)
+		levelColor, ok := LevelColorsMap[level]
+		if ok {
+			a.Value = slog.StringValue(levelColor.String(false))
+		}
+	}
+
+	return a
 }

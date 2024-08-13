@@ -20,7 +20,7 @@ var LevelNames = map[slog.Leveler]string{
 	LevelFatal: "FATAL",
 }
 
-var LevelStrings = map[string]slog.Leveler{
+var LevelStrings = map[string]slog.Level{
 	"TRACE": LevelTrace,
 	"FATAL": LevelFatal,
 	"INFO":  slog.LevelInfo,
@@ -69,5 +69,5 @@ func (l *Logger) logWithSource(ctx context.Context, level slog.Level, msg string
 	if l.addSource {
 		allArgs = append(allArgs, slog.Int(FrameMarker, StackFrames))
 	}
-	l.Logger.Log(ctx, level, msg, allArgs...)
+	l.logger.Log(ctx, level, msg, allArgs...)
 }

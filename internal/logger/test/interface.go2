@@ -1,0 +1,16 @@
+/*
+package test
+
+import (
+	"github.com/synfinatic/aws-sso-cli/internal/logger"
+)
+
+func (tl *TestLogger) Log(ctx context.Context, level slog.Level, msg string, args ...any) {
+	tl.Logger.Log(ctx, level, msg, args...)
+}
+
+// TestLogger impliments logger.CustomLogger
+func (tl *TestLogger) Debug(msg string, args ...any) {
+	tl.Logger.Debug(msg, args...)
+}
+*/

@@ -1,14 +1,17 @@
 package test
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/davecgh/go-spew/spew"
 	lossless "github.com/joeshaw/json-lossless"
@@ -18,14 +21,19 @@ import (
 // TeslLogger impliments logger.CustomLogger
 type TestLogger struct {
 	*logger.Logger
-	r *io.PipeReader
-	w *io.PipeWriter
+	r        *io.PipeReader
+	w        *io.PipeWriter
+	rch      chan []byte
+	messages LogMessages
+	close    bool
+	mutex    sync.Mutex
 }
 
 type LogMessages []LogMessage
 
 type LogMessage struct {
-	Level         string     `json:"level"`
+	LevelStr      string `json:"level"`
+	Level         slog.Level
 	Message       string     `json:"msg"`
 	Time          string     `json:"time"`
 	Source        FileSource `json:"source"`
@@ -43,49 +51,131 @@ func NewTestLogger(level string) *TestLogger {
 
 	l := logger.LevelStrings[strings.ToUpper(level)].Level()
 
-	return &TestLogger{
-		Logger: logger.NewLogger(logger.NewJSON, writer, false, l, false),
-		r:      reader,
-		w:      writer,
+	tl := TestLogger{
+		Logger:   logger.NewLogger(logger.NewJSON, writer, false, l, false),
+		w:        writer,
+		r:        reader,
+		messages: LogMessages{},
+		close:    false,
+		mutex:    sync.Mutex{},
 	}
+
+	// start a goroutine to read from the pipe and decode the log messages
+	go func() {
+		r := bufio.NewReader(tl.r)
+
+		for !tl.close {
+			line, err := r.ReadString('\n')
+			if err != nil {
+				if err == io.EOF {
+					break
+				} else {
+					fmt.Fprintf(os.Stderr, "unable to read log message: %s", err.Error())
+					break
+				}
+			}
+			msg := LogMessage{}
+			if err := json.Unmarshal([]byte(line), &msg); err != nil {
+				panic(fmt.Sprintf("unable to decode log message: %s", err.Error()))
+			}
+
+			tl.mutex.Lock()
+			tl.messages = append(tl.messages, msg)
+			tl.mutex.Unlock()
+		}
+	}()
+
+	return &tl
 }
 
 func (tl *TestLogger) Close() {
+	tl.close = true
 	tl.w.Close()
 	tl.r.Close()
 }
 
-func (tl *TestLogger) GetLast(level slog.Level) (*LogMessage, error) {
-	messages := LogMessages{}
-	decoder := json.NewDecoder(tl.r)
-	if err := decoder.Decode(&messages); err != nil {
-		return nil, err
+func (tl *TestLogger) ResetBuffer() {
+	tl.mutex.Lock()
+	defer tl.mutex.Unlock()
+	tl.messages = LogMessages{}
+}
+
+func (tl *TestLogger) GetLast(msg *LogMessage) error {
+	if len(tl.messages) > 0 {
+		last := len(tl.messages) - 1
+		msg.Level = tl.messages[last].Level
+		msg.LevelStr = tl.messages[last].LevelStr
+		msg.Message = tl.messages[last].Message
+		msg.Time = tl.messages[last].Time
+		msg.Source = tl.messages[last].Source
+		return nil
 	}
-	for i := len(messages) - 1; i >= 0; i-- {
-		msg := messages[i]
-		if msg.Level == level.String() {
-			return &msg, nil
+
+	return errors.New("no log messages found")
+}
+
+// Returns the last log message of the given level
+func (tl *TestLogger) GetLastLevel(level slog.Level, msg *LogMessage) error {
+	for i := len(tl.messages) - 1; i >= 0; i-- {
+		if tl.messages[i].Level == level {
+			msg.Level = tl.messages[i].Level
+			msg.LevelStr = tl.messages[i].LevelStr
+			msg.Message = tl.messages[i].Message
+			msg.Time = tl.messages[i].Time
+			msg.Source = tl.messages[i].Source
+			return nil
 		}
 	}
 
-	return nil, errors.New(fmt.Sprintf("No %s messages found", level.String()))
+	return fmt.Errorf("no log message found for level %s", level.String())
 }
 
-func (tl *TestLogger) CheckLastEqual(level slog.Level, field, value string) (bool, error) {
-	msg, err := tl.GetLast(level)
+func (tl *TestLogger) CheckLastLevelEqual(level slog.Level, field, value string) (bool, error) {
+	msg := LogMessage{}
+	err := tl.GetLastLevel(level, &msg)
 	if err != nil {
 		return false, err
 	}
 
-	fmt.Printf("CheckLastEqual decoded msg: %s", spew.Sdump(msg))
+	fmt.Printf("CheckLastLevelEqual decoded msg: %s", spew.Sdump(msg))
 	if reflect.ValueOf(msg).FieldByName(field).String() == value {
 		return true, nil
 	}
 	return false, nil
 }
 
-func (tl *TestLogger) CheckLastMatch(level slog.Level, field string, match *regexp.Regexp) (bool, error) {
-	msg, err := tl.GetLast(level)
+func (tl *TestLogger) CheckLastLevelMatch(level slog.Level, field string, match *regexp.Regexp) (bool, error) {
+	msg := LogMessage{}
+	err := tl.GetLastLevel(level, &msg)
+	if err != nil {
+		return false, err
+	}
+
+	fmt.Printf("CheckLastLevelMatch decoded msg: %s", spew.Sdump(msg))
+	value := reflect.ValueOf(msg).FieldByName(field).String()
+	if match.MatchString(value) {
+		return true, nil
+	}
+	return false, nil
+}
+
+func (tl *TestLogger) CheckLastEqual(field, value string) (bool, error) {
+	msg := LogMessage{}
+	err := tl.GetLast(&msg)
+	if err != nil {
+		return false, err
+	}
+
+	fmt.Printf("CheckLast decoded msg: %s", spew.Sdump(msg))
+	if reflect.ValueOf(msg).FieldByName(field).String() == value {
+		return true, nil
+	}
+	return false, nil
+}
+
+func (tl *TestLogger) CheckLastMatch(field string, match *regexp.Regexp) (bool, error) {
+	msg := LogMessage{}
+	err := tl.GetLast(&msg)
 	if err != nil {
 		return false, err
 	}

@@ -19,6 +19,7 @@ package logger
  */
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
@@ -27,7 +28,7 @@ import (
 
 // Our logger which wraps slog.Logger and impliments CustomLogger
 type Logger struct {
-	*slog.Logger
+	logger    *slog.Logger
 	addSource bool
 	color     bool
 	level     *slog.LevelVar
@@ -38,12 +39,66 @@ type Logger struct {
 func NewLogger(f NewLoggerFunc, w io.Writer, addSource bool, level slog.Leveler, color bool) *Logger {
 	handle, lvl := f(w, addSource, level, color)
 	return &Logger{
-		Logger:    slog.New(handle),
+		logger:    slog.New(handle),
 		addSource: addSource,
 		color:     color,
 		level:     lvl,
 		writer:    w,
 	}
+}
+
+// Debug logs a message at the debug level
+func (l *Logger) Debug(msg string, args ...any) {
+	l.logger.Debug(msg, args...)
+}
+
+// DebugContext logs a message at the debug level with context
+func (l *Logger) DebugContext(ctx context.Context, msg string, args ...any) {
+	l.logger.DebugContext(ctx, msg, args...)
+}
+
+func (l *Logger) Error(msg string, args ...any) {
+	l.logger.Error(msg, args...)
+}
+
+func (l *Logger) ErrorContext(ctx context.Context, msg string, args ...any) {
+	l.logger.ErrorContext(ctx, msg, args...)
+}
+
+func (l *Logger) Info(msg string, args ...any) {
+	l.logger.Info(msg, args...)
+}
+
+func (l *Logger) InfoContext(ctx context.Context, msg string, args ...any) {
+	l.logger.InfoContext(ctx, msg, args...)
+}
+
+func (l *Logger) Log(ctx context.Context, level slog.Level, msg string, args ...any) {
+	l.logger.Log(ctx, level, msg, args...)
+}
+
+func (l *Logger) LogAttrs(ctx context.Context, level slog.Level, msg string, attrs ...slog.Attr) {
+	l.logger.LogAttrs(ctx, level, msg, attrs...)
+}
+
+func (l *Logger) Warn(msg string, args ...any) {
+	l.logger.Warn(msg, args...)
+}
+
+func (l *Logger) WarnContext(ctx context.Context, msg string, args ...any) {
+	l.logger.WarnContext(ctx, msg, args...)
+}
+
+func (l *Logger) Handler() slog.Handler {
+	return l.logger.Handler()
+}
+
+func (l *Logger) With(args ...any) *slog.Logger {
+	return l.logger.With(args...)
+}
+
+func (l *Logger) WithGroup(name string) *slog.Logger {
+	return l.logger.WithGroup(name)
 }
 
 // Copy returns a copy of the Logger current Logger
@@ -67,6 +122,10 @@ func (l *Logger) Color() bool {
 	return l.color
 }
 
+func (l *Logger) Enabled(ctx context.Context, level slog.Level) bool {
+	return l.logger.Enabled(ctx, level)
+}
+
 /*
 // Clone returns a clone of the current Logger with a new Logging function
 func (l *Logger) Clone(f NewLoggerFunc, w io.Writer) *Logger {
@@ -75,11 +134,11 @@ func (l *Logger) Clone(f NewLoggerFunc, w io.Writer) *Logger {
 */
 
 func (l *Logger) GetLogger() *slog.Logger {
-	return l.Logger
+	return l.logger
 }
 
 func (l *Logger) SetLogger(logger *slog.Logger) {
-	l.Logger = logger
+	l.logger = logger
 }
 
 // SetLevel sets the log level for the logger
