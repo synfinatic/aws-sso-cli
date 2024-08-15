@@ -16,7 +16,6 @@ require (
 	github.com/knadh/koanf v1.5.0
 	github.com/manifoldco/promptui v0.9.0
 	github.com/posener/complete v1.2.3
-	github.com/sirupsen/logrus v1.9.3
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/stretchr/testify v1.9.0
 	github.com/synfinatic/gotable v0.0.3
@@ -78,7 +77,6 @@ require (
 	github.com/docker/docker v27.1.2+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/go-json-experiment/json v0.0.0-20240524174822-2d9f40f7385b
-	github.com/joeshaw/json-lossless v0.0.0-20181204200226-e0cd1ca6349b
 	github.com/lmittmann/tint v1.0.5
 	github.com/veqryn/slog-json v0.3.0
 	golang.org/x/net v0.27.0
@@ -94,7 +92,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.15 // indirect
 	github.com/aws/smithy-go v1.20.3 // indirect
-	github.com/bitly/go-simplejson v0.5.1 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect

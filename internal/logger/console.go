@@ -50,7 +50,7 @@ func NewConsole(w io.Writer, addSource bool, level slog.Leveler, color bool) (sl
 	return NewConsoleHandler(w, &opts), lvl
 }
 
-// impliment the slog.Handler interface via the tint.Handler
+// implement the slog.Handler interface via the tint.Handler
 type ConsoleHandler struct {
 	slog.Handler
 }

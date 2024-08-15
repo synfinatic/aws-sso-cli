@@ -51,6 +51,7 @@ func NewPredictor(cacheFile, configFile string) *Predictor {
 	// select our SSO from a CLI flag or env var, else use our default
 	override := sso.OverrideSettings{
 		DefaultSSO: getSSOValue(),
+		LogLevel:   "warn",
 	}
 
 	p := Predictor{

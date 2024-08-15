@@ -25,7 +25,7 @@ type CustomLogger interface {
 	// custom methods
 	Copy() CustomLogger
 	// Clone(f NewLoggerFunc, w io.Writer) *CustomLogger
-	GetLevel() slog.Leveler
+	GetLevel() slog.Level
 	GetLogger() *slog.Logger
 	SetLevel(level slog.Leveler)
 	SetLevelString(level string) error

@@ -26,7 +26,7 @@ import (
 	"strings"
 )
 
-// Our logger which wraps slog.Logger and impliments CustomLogger
+// Our logger which wraps slog.Logger and implements CustomLogger
 type Logger struct {
 	logger    *slog.Logger
 	addSource bool
@@ -166,6 +166,6 @@ func (l *Logger) SetReportCaller(reportCaller bool) {
 }
 
 // GetLevel returns the current log level
-func (l *Logger) GetLevel() slog.Leveler {
+func (l *Logger) GetLevel() slog.Level {
 	return slog.Level(l.level.Level())
 }

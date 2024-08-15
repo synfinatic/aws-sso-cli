@@ -41,33 +41,33 @@ var LevelColorsMap map[slog.Level]LevelColor = map[slog.Level]LevelColor{
 // Log a message at the Trace level
 func (l *Logger) Trace(msg string, args ...interface{}) {
 	ctx := context.Background()
-	l.logWithSource(ctx, LevelTrace, msg, args...)
+	l.LogWithSource(ctx, LevelTrace, StackFrames, msg, args...)
 }
 
 func (l *Logger) TraceContext(ctx context.Context, msg string, args ...interface{}) {
-	l.logWithSource(ctx, LevelTrace, msg, args...)
+	l.LogWithSource(ctx, LevelTrace, StackFrames, msg, args...)
 }
 
 // Log a message at the Fatal level and exit
 func (l *Logger) Fatal(msg string, args ...interface{}) {
 	ctx := context.Background()
-	l.logWithSource(ctx, LevelFatal, msg, args...)
+	l.LogWithSource(ctx, LevelFatal, StackFrames, msg, args...)
 	os.Exit(1)
 }
 
 func (l *Logger) FatalContext(ctx context.Context, msg string, args ...interface{}) {
-	l.logWithSource(ctx, LevelFatal, msg, args...)
+	l.LogWithSource(ctx, LevelFatal, StackFrames, msg, args...)
 	os.Exit(1)
 }
 
 // logWithSource sets the __source attribute so that our Handler knows
 // to modify the r.PC value to include the original caller.
-func (l *Logger) logWithSource(ctx context.Context, level slog.Level, msg string, args ...interface{}) {
+func (l *Logger) LogWithSource(ctx context.Context, level slog.Level, frames int, msg string, args ...interface{}) {
 	var allArgs []interface{}
 	allArgs = append(allArgs, args...)
 
 	if l.addSource {
-		allArgs = append(allArgs, slog.Int(FrameMarker, StackFrames))
+		allArgs = append(allArgs, slog.Int(FrameMarker, frames))
 	}
 	l.logger.Log(ctx, level, msg, allArgs...)
 }

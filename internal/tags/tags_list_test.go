@@ -9,6 +9,8 @@ import (
 	yaml "github.com/goccy/go-yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"github.com/synfinatic/aws-sso-cli/internal/logger"
+	testlogger "github.com/synfinatic/aws-sso-cli/internal/logger/test"
 )
 
 type TagsListTestSuite struct {
@@ -150,6 +152,12 @@ func (suite *TagsListTestSuite) TestUniqueValues() {
 func (suite *TagsListTestSuite) TestReformatHistory() {
 	t := suite.T()
 
+	oldLogger := log.Copy()
+	tLogger := testlogger.NewTestLogger("DEBUG")
+	defer tLogger.Close()
+	log = tLogger
+	defer func() { log = oldLogger }()
+
 	// special case, has no timestamp
 	assert.Equal(t, "foo", ReformatHistory("foo"))
 
@@ -158,8 +166,14 @@ func (suite *TagsListTestSuite) TestReformatHistory() {
 		"foo,bar",
 	}
 
+	msg := testlogger.LogMessage{}
+
 	for _, x := range invalidTS {
-		assert.Panics(t, func() { ReformatHistory(x) })
+		ReformatHistory(x)
+		assert.NoError(t, tLogger.GetNext(&msg))
+		assert.Contains(t, msg.Message, "unable to parse epoch")
+		assert.Equal(t, logger.LevelFatal, msg.Level)
+		tLogger.Reset()
 	}
 
 	// valid case

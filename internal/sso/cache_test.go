@@ -27,7 +27,6 @@ import (
 
 	// "github.com/davecgh/go-spew/spew"
 
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	testlogger "github.com/synfinatic/aws-sso-cli/internal/logger/test"
@@ -268,6 +267,7 @@ func (suite *CacheTestSuite) TestDeleteOldHistory() {
 	// setup logger for tests
 	oldLogger := log.Copy()
 	tLogger := testlogger.NewTestLogger("DEBUG")
+	defer tLogger.Close()
 	log = tLogger
 
 	defer func() { log = oldLogger }()
@@ -278,46 +278,46 @@ func (suite *CacheTestSuite) TestDeleteOldHistory() {
 	c.deleteOldHistory()
 
 	msg := testlogger.LogMessage{}
-	tLogger.RefreshBuffer()
-	assert.NoError(t, tLogger.GetLast(&msg))
+	assert.NoError(t, tLogger.GetNext(&msg))
 	assert.NotEmpty(t, msg.Message)
 	assert.Equal(t, slog.LevelDebug, msg.Level)
 	assert.Contains(t, "Removed expired history role", msg.Message)
 	assert.Equal(t, []string{"arn:aws:iam::123456789012:role/Test"}, c.GetSSO().History)
 
+	tLogger.Reset()
 	c = suite.setupDeleteOldHistory()
 	c.GetSSO().History = append(c.GetSSO().History, "arn:aws:iam:")
 	c.deleteOldHistory()
-	tLogger.RefreshBuffer()
-	assert.NoError(t, tLogger.GetLast(&msg))
+	assert.NoError(t, tLogger.GetNext(&msg))
 	assert.Equal(t, slog.LevelDebug, msg.Level)
 	assert.Contains(t, "Unable to parse History ARN", msg.Message)
 
+	tLogger.Reset()
 	c = suite.setupDeleteOldHistory()
 	c.GetSSO().History = append(c.GetSSO().History, "arn:aws:iam::123456789012:role/NoHistoryTag")
 	c.deleteOldHistory()
-	tLogger.RefreshBuffer()
-	assert.NotNil(t, tLogger.GetLast(&msg))
-	assert.Equal(t, logrus.DebugLevel, msg.Level)
-	assert.Contains(t, "but no role by that name", msg.Message)
+	assert.NoError(t, tLogger.GetNext(&msg))
+	assert.Equal(t, slog.LevelDebug, msg.Level)
+	assert.Contains(t, msg.Message, "but no role by that name")
 
+	tLogger.Reset()
 	c = suite.setupDeleteOldHistory()
 	c.GetSSO().History = append(c.GetSSO().History, "arn:aws:iam::1234567890:role/NoHistoryTag")
 	c.deleteOldHistory()
-	tLogger.RefreshBuffer()
-	assert.NotNil(t, tLogger.GetLast(&msg))
+	assert.NoError(t, tLogger.GetNext(&msg))
 	assert.Equal(t, slog.LevelDebug, msg.Level)
-	assert.Contains(t, "but no account by that name", msg.Message)
+	assert.Contains(t, msg.Message, "but no account by that name")
 
+	tLogger.Reset()
 	c = suite.setupDeleteOldHistory()
 	c.GetSSO().History = append(c.GetSSO().History, "arn:aws:iam::123456789012:role/NoHistoryTag")
 	c.GetSSO().Roles.Accounts[123456789012].Roles["NoHistoryTag"] = &AWSRole{}
 	c.deleteOldHistory()
-	tLogger.RefreshBuffer()
-	assert.NotNil(t, tLogger.GetLast(&msg))
+	assert.NoError(t, tLogger.GetNext(&msg))
 	assert.Equal(t, slog.LevelDebug, msg.Level)
-	assert.Contains(t, "is in history list without a History tag", msg.Message)
+	assert.Contains(t, msg.Message, "in history list without a History tag")
 
+	tLogger.Reset()
 	c = suite.setupDeleteOldHistory()
 	c.GetSSO().History = append(c.GetSSO().History, "arn:aws:iam::123456789012:role/MissingHistoryTag")
 	c.GetSSO().Roles.Accounts[123456789012].Roles["MissingHistoryTag"] = &AWSRole{
@@ -326,11 +326,11 @@ func (suite *CacheTestSuite) TestDeleteOldHistory() {
 		},
 	}
 	c.deleteOldHistory()
-	tLogger.RefreshBuffer()
-	assert.NotNil(t, tLogger.GetLast(&msg))
+	assert.NoError(t, tLogger.GetNext(&msg))
 	assert.Equal(t, slog.LevelDebug, msg.Level)
-	assert.Contains(t, "Too few fields for", msg.Message)
+	assert.Contains(t, msg.Message, "Too few fields for")
 
+	tLogger.Reset()
 	c = suite.setupDeleteOldHistory()
 	c.GetSSO().History = append(c.GetSSO().History, "arn:aws:iam::123456789012:role/MissingHistoryTag")
 	c.GetSSO().Roles.Accounts[123456789012].Roles["MissingHistoryTag"] = &AWSRole{
@@ -339,10 +339,11 @@ func (suite *CacheTestSuite) TestDeleteOldHistory() {
 		},
 	}
 	c.deleteOldHistory()
-	tLogger.RefreshBuffer()
-	assert.NotNil(t, tLogger.GetLast(&msg))
+	assert.NoError(t, tLogger.GetNext(&msg))
 	assert.Equal(t, slog.LevelDebug, msg.Level)
-	assert.Contains(t, "Unable to parse", msg.Message)
+	assert.Contains(t, msg.Message, "Unable to parse")
+
+	tLogger.Reset()
 }
 
 func (suite *CacheTestSuite) TestExpired() {

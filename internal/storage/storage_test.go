@@ -24,6 +24,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/synfinatic/aws-sso-cli/internal/logger"
+	testlogger "github.com/synfinatic/aws-sso-cli/internal/logger/test"
 )
 
 func TestCreateTokenResponseExpired(t *testing.T) {
@@ -115,6 +117,14 @@ func TestGetArn(t *testing.T) {
 }
 
 func TestGetAccountIdStr(t *testing.T) {
+	// setup logger for testing
+	oldLogger := log.Copy()
+	tLogger := testlogger.NewTestLogger("DEBUG")
+	defer tLogger.Close()
+
+	log = tLogger
+	defer func() { log = oldLogger }()
+
 	x := StaticCredentials{
 		UserName:  "foobar",
 		AccountId: 23456789012,
@@ -125,7 +135,11 @@ func TestGetAccountIdStr(t *testing.T) {
 		UserName:  "foobar",
 		AccountId: -1,
 	}
-	assert.Panics(t, func() { x.AccountIdStr() })
+	_ = x.AccountIdStr()
+	msg := testlogger.LogMessage{}
+	assert.NoError(t, tLogger.GetNext(&msg))
+	assert.Contains(t, msg.Message, "Invalid AccountId")
+	assert.Equal(t, logger.LevelFatal, msg.Level)
 }
 
 func TestGetHeader(t *testing.T) {

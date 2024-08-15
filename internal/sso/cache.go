@@ -600,6 +600,12 @@ func (c *Cache) addSSORoles(r *Roles, as *AWSSSO, threads int) error {
 	return nil
 }
 
+type contextKey string
+
+const (
+	accountIdKey contextKey = "accountID"
+)
+
 // addConfigRoles decorates the provided Roles with the contents of our config
 func (c *Cache) addConfigRoles(r *Roles, config *SSOConfig) error {
 	// The load all the Config file stuff.  Normally this is just adding markup, but
@@ -609,7 +615,7 @@ func (c *Cache) addConfigRoles(r *Roles, config *SSOConfig) error {
 		if err != nil {
 			return err
 		}
-		ctx := context.WithValue(context.Background(), "accountID", id)
+		ctx := context.WithValue(context.Background(), accountIdKey, id)
 		if _, ok := r.Accounts[id]; !ok {
 			log.DebugContext(ctx, "config.yaml defines an AWS AccountID, but you don't have access.")
 			continue

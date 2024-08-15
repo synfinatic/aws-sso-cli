@@ -317,7 +317,10 @@ func (s *Settings) setOverrides(override OverrideSettings) {
 		s.LogLevel = override.LogLevel
 	}
 
-	log.SetLevelString(s.LogLevel)
+	err := log.SetLevelString(s.LogLevel)
+	if err != nil {
+		log.Fatal("Invalid log level", "level", s.LogLevel, "error", err.Error())
+	}
 
 	// Other overrides from CLI
 	if override.Browser != "" {

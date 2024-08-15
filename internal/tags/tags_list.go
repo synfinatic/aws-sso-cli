@@ -20,7 +20,6 @@ package tags
 
 import (
 	"fmt"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -139,8 +138,7 @@ func ReformatHistory(value string) string {
 
 	i, err := strconv.ParseInt(x[1], 10, 64)
 	if err != nil {
-		log.Error("unable to parse epoch", "value", value, "epoch", x[1], "split", x, "error", err)
-		os.Exit(1)
+		log.Fatal("unable to parse epoch", "value", value, "epoch", x[1], "split", x, "error", err)
 	}
 
 	d := time.Since(time.Unix(i, 0)).Truncate(time.Second)
