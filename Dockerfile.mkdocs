@@ -1,3 +1,3 @@
-FROM squidfunk/mkdocs-material:9.5.27
+FROM squidfunk/mkdocs-material:9.5.32
 COPY docs/requirements.txt .
 RUN pip install -r requirements.txt
