@@ -27,14 +27,14 @@ import (
 	"path"
 
 	"github.com/riywo/loginshell"
-	"github.com/synfinatic/aws-sso-cli/internal/logger"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
+	"github.com/synfinatic/flexlog"
 )
 
-var log logger.CustomLogger
+var log flexlog.FlexLogger
 
 func init() {
-	log = logger.GetLogger()
+	log = flexlog.GetLogger()
 }
 
 //go:embed bash_profile.sh zshrc.sh aws-sso.fish

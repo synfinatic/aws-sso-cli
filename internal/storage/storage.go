@@ -25,15 +25,15 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/synfinatic/aws-sso-cli/internal/logger"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
+	"github.com/synfinatic/flexlog"
 	"github.com/synfinatic/gotable"
 )
 
-var log logger.CustomLogger
+var log flexlog.FlexLogger
 
 func init() {
-	log = logger.GetLogger()
+	log = flexlog.GetLogger()
 }
 
 // this struct should be cached for long term if possible

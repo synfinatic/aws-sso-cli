@@ -28,15 +28,15 @@ import (
 
 	"github.com/atotto/clipboard"
 	"github.com/skratchdot/open-golang/open"
-	"github.com/synfinatic/aws-sso-cli/internal/logger"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
+	"github.com/synfinatic/flexlog"
 	// default opener
 )
 
-var log logger.CustomLogger
+var log flexlog.FlexLogger
 
 func init() {
-	log = logger.GetLogger()
+	log = flexlog.GetLogger()
 }
 
 // taken from https://github.com/honsiorovskyi/open-url-in-container/blob/1.0.3/launcher.sh

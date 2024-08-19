@@ -27,9 +27,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"github.com/synfinatic/aws-sso-cli/internal/logger"
-	testlogger "github.com/synfinatic/aws-sso-cli/internal/logger/test"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
+	"github.com/synfinatic/flexlog"
+	testlogger "github.com/synfinatic/flexlog/test"
 )
 
 const (
@@ -239,7 +239,7 @@ func (suite *SettingsTestSuite) TestGetDefaultRegion() {
 	msg := testlogger.LogMessage{}
 	assert.NoError(t, tLogger.GetNext(&msg))
 	assert.Contains(t, msg.Message, "Unable to GetDefaultRegion")
-	assert.Equal(t, logger.LevelFatal, msg.Level)
+	assert.Equal(t, flexlog.LevelFatal, msg.Level)
 }
 
 func (suite *SettingsTestSuite) TestOtherSSO() {
@@ -360,7 +360,7 @@ func TestCreatedAt(t *testing.T) {
 	msg := testlogger.LogMessage{}
 	assert.NoError(t, tLogger.GetNext(&msg))
 	assert.Contains(t, msg.Message, "Unable to open")
-	assert.Equal(t, logger.LevelFatal, msg.Level)
+	assert.Equal(t, flexlog.LevelFatal, msg.Level)
 }
 
 func TestApplyDeprecations(t *testing.T) {

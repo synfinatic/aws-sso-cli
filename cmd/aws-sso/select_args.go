@@ -40,7 +40,7 @@ func (e *InvalidArgsError) Error() string {
 	if e.arg != "" {
 		return fmt.Sprintf(e.msg, e.arg)
 	}
-	return fmt.Sprintf(e.msg)
+	return e.msg
 }
 
 type NoRoleSelectedError struct{}

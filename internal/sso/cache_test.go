@@ -29,7 +29,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	testlogger "github.com/synfinatic/aws-sso-cli/internal/logger/test"
+	testlogger "github.com/synfinatic/flexlog/test"
 )
 
 const (

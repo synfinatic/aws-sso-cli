@@ -24,8 +24,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/synfinatic/aws-sso-cli/internal/logger"
-	testlogger "github.com/synfinatic/aws-sso-cli/internal/logger/test"
+	"github.com/synfinatic/flexlog"
+	testlogger "github.com/synfinatic/flexlog/test"
 )
 
 func TestCreateTokenResponseExpired(t *testing.T) {
@@ -139,7 +139,7 @@ func TestGetAccountIdStr(t *testing.T) {
 	msg := testlogger.LogMessage{}
 	assert.NoError(t, tLogger.GetNext(&msg))
 	assert.Contains(t, msg.Message, "Invalid AccountId")
-	assert.Equal(t, logger.LevelFatal, msg.Level)
+	assert.Equal(t, flexlog.LevelFatal, msg.Level)
 }
 
 func TestGetHeader(t *testing.T) {

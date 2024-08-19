@@ -18,10 +18,10 @@ package main
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import "github.com/synfinatic/aws-sso-cli/internal/logger"
+import "github.com/synfinatic/flexlog"
 
-var log logger.CustomLogger
+var log flexlog.FlexLogger
 
 func init() {
-	log = logger.GetLogger()
+	log = flexlog.GetLogger()
 }
