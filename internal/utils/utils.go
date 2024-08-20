@@ -28,13 +28,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/synfinatic/aws-sso-cli/internal/logger"
 	"github.com/synfinatic/flexlog"
 )
 
 var log flexlog.FlexLogger
 
 func init() {
-	log = flexlog.GetLogger()
+	log = logger.GetLogger()
 }
 
 const MAX_AWS_ACCOUNTID = 999999999999

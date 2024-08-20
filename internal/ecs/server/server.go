@@ -28,6 +28,7 @@ import (
 
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
+	"github.com/synfinatic/aws-sso-cli/internal/logger"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/flexlog"
 )
@@ -35,7 +36,7 @@ import (
 var log flexlog.FlexLogger
 
 func init() {
-	log = flexlog.GetLogger()
+	log = logger.GetLogger()
 }
 
 type EcsServer struct {
