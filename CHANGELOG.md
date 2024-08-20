@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [v2.0.0-beta3] - 2024-08-19
+
+### Bugs
+
+ * Fix ecs docker image build problems
+
 ## [v2.0.0-beta2] - 2024-08-19
 
 ### Bugs
@@ -770,7 +776,8 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.0.0-beta2...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.0.0-beta3...main
+[v2.0.0-beta3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.0.0-beta3
 [v2.0.0-beta2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.0.0-beta2
 [v1.17.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.17.0
 [v1.16.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.16.1
