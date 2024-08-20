@@ -27,14 +27,14 @@ import (
 	"path"
 
 	"github.com/riywo/loginshell"
-	"github.com/synfinatic/aws-sso-cli/internal/logger"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
+	"github.com/synfinatic/flexlog"
 )
 
-var log *logger.Logger
+var log flexlog.FlexLogger
 
 func init() {
-	log = logger.GetLogger()
+	log = flexlog.GetLogger()
 }
 
 //go:embed bash_profile.sh zshrc.sh aws-sso.fish
@@ -83,7 +83,7 @@ func getScript(shell string) ([]byte, string, error) {
 			return bytes, "", err
 		}
 	}
-	log.Debugf("using %s as our shell", shell)
+	log.Debug("detected our shell", "shell", shell)
 
 	if shellFile, ok = SHELL_SCRIPTS[shell]; !ok {
 		return bytes, "", fmt.Errorf("unsupported shell: %s", shell)
@@ -221,7 +221,7 @@ func uninstallConfigFile(path string) error {
 
 	_, _, err = fe.UpdateConfig(false, false, path)
 	if err != nil {
-		log.Warnf("unable to remove config: %s", err.Error())
+		log.Warn("unable to remove config", "error", err.Error())
 	}
 
 	return nil
@@ -237,7 +237,7 @@ func detectShell() (string, error) {
 	}
 
 	_, shell := path.Split(shellPath)
-	log.Debugf("detected configured shell as: %s", shell)
+	log.Debug("detected our shell", "shell", shell)
 	return shell, nil
 }
 

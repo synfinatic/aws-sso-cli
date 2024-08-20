@@ -154,7 +154,7 @@ func fileKeyringPassword(prompt string) (string, error) {
 	s := string(b)
 	if s == "" {
 		fmt.Println()
-		log.Fatalf("Aborting with empty password")
+		panic("Aborting with empty password")
 	}
 	fmt.Println()
 	return s, nil
@@ -199,7 +199,7 @@ func (kr *KeyringStore) getStorageData(s *StorageData) error {
 	}
 
 	if err != nil {
-		log.Warn(err)
+		log.Warn("unable to load keyring data", "error", err.Error())
 		// Didn't find anything in our keyring
 		*s = NewStorageData()
 		return nil

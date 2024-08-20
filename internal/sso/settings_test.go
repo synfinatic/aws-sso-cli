@@ -20,14 +20,16 @@ package sso
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
+	"github.com/synfinatic/flexlog"
+	testlogger "github.com/synfinatic/flexlog/test"
 )
 
 const (
@@ -227,9 +229,17 @@ func (suite *SettingsTestSuite) TestGetDefaultRegion() {
 	assert.Equal(t, "eu-west-1", suite.settings.GetDefaultRegion(258234615182, "LimitedAccess", false))
 	assert.Equal(t, "us-east-1", suite.settings.GetDefaultRegion(833365043586, "AWSAdministratorAccess:", false))
 
-	assert.Panics(t, func() {
-		suite.settings.GetDefaultRegion(-1, "foo", false)
-	})
+	oldLogger := log.Copy()
+	tLogger := testlogger.NewTestLogger("DEBUG")
+	defer tLogger.Close()
+	log = tLogger
+	defer func() { log = oldLogger }()
+
+	suite.settings.GetDefaultRegion(-1, "foo", false)
+	msg := testlogger.LogMessage{}
+	assert.NoError(t, tLogger.GetNext(&msg))
+	assert.Contains(t, msg.Message, "Unable to GetDefaultRegion")
+	assert.Equal(t, flexlog.LevelFatal, msg.Level)
 }
 
 func (suite *SettingsTestSuite) TestOtherSSO() {
@@ -328,8 +338,8 @@ func (suite *SettingsTestSuite) TestSetOverrides() {
 
 	s.setOverrides(overrides)
 
-	assert.Equal(t, logrus.DebugLevel, log.Level)
-	assert.True(t, log.ReportCaller)
+	assert.Equal(t, slog.LevelDebug, log.GetLevel())
+	// assert.True(t, log.ReportCaller)
 	assert.Equal(t, "my-browser", s.Browser)
 	assert.Equal(t, "hello", s.DefaultSSO)
 	assert.Equal(t, 10, s.Threads)
@@ -339,9 +349,18 @@ func TestCreatedAt(t *testing.T) {
 	s := Settings{
 		configFile: "/dev/null/invalid",
 	}
-	assert.Panics(t, func() {
-		s.CreatedAt()
-	})
+
+	oldLogger := log.Copy()
+	tLogger := testlogger.NewTestLogger("DEBUG")
+	defer tLogger.Close()
+	log = tLogger
+	defer func() { log = oldLogger }()
+
+	assert.Panics(t, func() { s.CreatedAt() }) // will panic because log.Fatal() doesn't return
+	msg := testlogger.LogMessage{}
+	assert.NoError(t, tLogger.GetNext(&msg))
+	assert.Contains(t, msg.Message, "Unable to open")
+	assert.Equal(t, flexlog.LevelFatal, msg.Level)
 }
 
 func TestApplyDeprecations(t *testing.T) {

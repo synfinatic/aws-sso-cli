@@ -72,10 +72,10 @@ func OpenJsonStore(filename string) (*JsonStore, error) {
 
 // save writes the JSON store file, creating the directory if necessary
 func (jc *JsonStore) save() error {
-	log.Debugf("Saving JSON Cache")
+	log.Debug("Saving JSON Cache")
 	jbytes, err := json.MarshalIndent(jc, "", "  ")
 	if err != nil {
-		log.WithError(err).Errorf("Unable to marshal json")
+		log.Error("Unable to marshal json", "error", err)
 		return err
 	}
 

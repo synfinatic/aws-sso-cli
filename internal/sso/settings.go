@@ -33,7 +33,6 @@ import (
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/file"
-	"github.com/sirupsen/logrus"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
@@ -87,14 +86,14 @@ func (s *Settings) GetDefaultRegion(id int64, roleName string, noRegion bool) st
 
 	accountId, err := utils.AccountIdToString(id)
 	if err != nil {
-		log.WithError(err).Panicf("Unable to GetDefaultRegion()")
+		log.Fatal("Unable to GetDefaultRegion()", "error", err.Error())
 	}
 
 	currentRegion := os.Getenv("AWS_DEFAULT_REGION")
 	ssoManagedRegion := os.Getenv("AWS_SSO_DEFAULT_REGION")
 
 	if len(currentRegion) > 0 && currentRegion != ssoManagedRegion {
-		log.Debugf("Will not override current AWS_DEFAULT_REGION=%s", currentRegion)
+		log.Debug("Will not override current AWS_DEFAULT_REGION", "region", currentRegion)
 		return ""
 	}
 
@@ -206,7 +205,7 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 
 	// load the cache
 	if s.Cache, err = OpenCache(s.cacheFile, s); err != nil {
-		log.Infof("%s", err.Error())
+		log.Info("unable to open cache file", "error", err.Error())
 	}
 
 	return s, nil
@@ -234,7 +233,7 @@ func (s *Settings) applyDeprecations() bool {
 	if s.ConfigUrlAction != "" && s.ConfigProfilesUrlAction == "" {
 		s.ConfigProfilesUrlAction, err = url.NewConfigProfilesAction(s.ConfigUrlAction)
 		if err != nil {
-			log.Warnf("Invalid value for ConfigUrlAction: %s", s.ConfigUrlAction)
+			log.Warn("Invalid value for ConfigUrlAction", "value", s.ConfigUrlAction)
 		}
 		s.ConfigUrlAction = string(url.Undef) // disable old value so it is omitempty
 		change = true
@@ -306,27 +305,21 @@ func (s *Settings) Save(configFile string, overwrite bool) error {
 // configure our settings using the overrides
 func (s *Settings) setOverrides(override OverrideSettings) {
 	// Setup Logging
-	if override.LogLevel != "" {
-		s.LogLevel = override.LogLevel
-	}
-
-	lvls := map[string]logrus.Level{
-		"trace": logrus.TraceLevel,
-		"debug": logrus.DebugLevel,
-		"info":  logrus.InfoLevel,
-		"warn":  logrus.WarnLevel,
-		"error": logrus.ErrorLevel,
-	}
-
-	lvl := lvls[s.LogLevel]
-	log.SetLevel(lvl)
-
 	if override.LogLines {
 		s.LogLines = true
 	}
 
 	if s.LogLines {
 		log.SetReportCaller(true)
+	}
+
+	if override.LogLevel != "" {
+		s.LogLevel = override.LogLevel
+	}
+
+	err := log.SetLevelString(s.LogLevel)
+	if err != nil {
+		log.Fatal("Invalid log level", "level", s.LogLevel, "error", err.Error())
 	}
 
 	// Other overrides from CLI
@@ -349,13 +342,13 @@ func (s *Settings) ConfigFile() string {
 func (s *Settings) CreatedAt() int64 {
 	f, err := os.Open(s.configFile)
 	if err != nil {
-		log.WithError(err).Panicf("Unable to open %s", s.configFile)
+		log.Fatal("Unable to open", "file", s.configFile, "error", err.Error())
 	}
 	defer f.Close()
 
 	info, err := f.Stat()
 	if err != nil {
-		log.WithError(err).Panicf("Unable to Stat() %s", s.configFile)
+		log.Fatal("Unable to Stat()", "file", s.configFile, "error", err.Error())
 	}
 	return info.ModTime().Unix()
 }
@@ -420,7 +413,7 @@ var getExecutable func() (string, error) = func() (string, error) {
 		return "", err
 	}
 	if strings.HasPrefix(exec, NIX_STORE_PREFIX) {
-		log.Warnf("Detected NIX. Using $PATH to find `aws-sso`. Override with `ConfigProfilesBinaryPath`")
+		log.Warn("Detected NIX. Using $PATH to find `aws-sso`. Override with `ConfigProfilesBinaryPath`")
 		exec = "aws-sso"
 	}
 	return exec, nil

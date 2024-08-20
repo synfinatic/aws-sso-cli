@@ -83,7 +83,7 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 	if err = ctx.Settings.Cache.Expired(s); err != nil {
 		c := &CacheCmd{}
 		if err = c.Run(ctx); err != nil {
-			log.WithError(err).Errorf("Unable to refresh local cache")
+			log.Error("Unable to refresh local cache", "error", err.Error())
 		}
 	}
 
@@ -120,7 +120,7 @@ func (cc *DefaultCmd) Run(ctx *RunContext) error {
 	if err = ctx.Settings.Cache.Expired(s); err != nil {
 		c := &CacheCmd{}
 		if err = c.Run(ctx); err != nil {
-			log.WithError(err).Errorf("Unable to refresh local cache")
+			log.Error("Unable to refresh local cache", "error", err.Error())
 		}
 	}
 
@@ -201,10 +201,10 @@ func printRoles(ctx *RunContext, fields []string, csv bool, prefixSearch []strin
 		expires := ""
 		ctr := storage.CreateTokenResponse{}
 		if err := ctx.Store.GetCreateTokenResponse(AwsSSO.StoreKey(), &ctr); err != nil {
-			log.Debugf("Unable to get SSO session expire time: %s", err.Error())
+			log.Debug("Unable to get SSO session expire time", "error", err.Error())
 		} else {
 			if exp, err := utils.TimeRemain(ctr.ExpiresAt, true); err != nil {
-				log.Errorf("Unable to determine time remain for %d: %s", ctr.ExpiresAt, err)
+				log.Error("Unable to determine time remain", "expiresAt", ctr.ExpiresAt, "error", err.Error())
 			} else {
 				expires = fmt.Sprintf(" [Expires in: %s]", strings.TrimSpace(exp))
 			}
@@ -249,7 +249,7 @@ func listAllFields() {
 
 	fields := []string{"Field", "Description"}
 	if err := gotable.GenerateTable(ts, fields); err != nil {
-		log.WithError(err).Fatalf("Unable to generate report")
+		log.Fatal("Unable to generate report", "error", err.Error())
 	}
 	fmt.Printf("\n")
 }

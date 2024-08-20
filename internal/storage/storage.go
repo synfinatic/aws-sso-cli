@@ -25,15 +25,15 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/synfinatic/aws-sso-cli/internal/logger"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
+	"github.com/synfinatic/flexlog"
 	"github.com/synfinatic/gotable"
 )
 
-var log *logger.Logger
+var log flexlog.FlexLogger
 
 func init() {
-	log = logger.GetLogger()
+	log = flexlog.GetLogger()
 }
 
 // this struct should be cached for long term if possible
@@ -110,7 +110,7 @@ func (r *RoleCredentials) ExpireString() string {
 func (r *RoleCredentials) AccountIdStr() string {
 	s, err := utils.AccountIdToString(r.AccountId)
 	if err != nil {
-		log.WithError(err).Fatalf("unable to parse accountId from AWS role credentials")
+		log.Fatal("unable to parse accountId from AWS role credentials", "error", err.Error())
 	}
 	return s
 }
@@ -167,7 +167,7 @@ func (sc *StaticCredentials) UserArn() string {
 func (sc *StaticCredentials) AccountIdStr() string {
 	s, err := utils.AccountIdToString(sc.AccountId)
 	if err != nil {
-		log.WithError(err).Panicf("Invalid AccountId from AWS static credentials: %d", sc.AccountId)
+		log.Fatal("Invalid AccountId from AWS static credentials", "accountId", sc.AccountId)
 	}
 	return s
 }

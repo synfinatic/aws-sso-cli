@@ -20,16 +20,16 @@ package sso
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"testing"
 	"time"
 
 	// "github.com/davecgh/go-spew/spew"
-	"github.com/sirupsen/logrus"
-	"github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"github.com/synfinatic/aws-sso-cli/internal/logger"
+	testlogger "github.com/synfinatic/flexlog/test"
 )
 
 const (
@@ -265,54 +265,59 @@ func (suite *CacheTestSuite) TestDeleteOldHistory() {
 		c.SSO["Default"].Roles.Accounts[123456789012].Roles["Foo"].Tags)
 
 	// setup logger for tests
-	logrusLogger, hook := test.NewNullLogger()
-	logrusLogger.SetLevel(logrus.DebugLevel)
-	oldLog := log
-	log = logger.NewLogger(logrusLogger)
-	defer func() { log = oldLog }()
+	oldLogger := log.Copy()
+	tLogger := testlogger.NewTestLogger("DEBUG")
+	defer tLogger.Close()
+	log = tLogger
+
+	defer func() { log = oldLogger }()
 
 	// remove one because of HistoryMinutes expires
 	c = suite.setupDeleteOldHistory()
 	c.settings.HistoryMinutes = 1
 	c.deleteOldHistory()
-	assert.NotNil(t, hook.LastEntry())
-	assert.Equal(t, logrus.DebugLevel, hook.LastEntry().Level)
-	assert.Contains(t, hook.LastEntry().Message, "Removed expired history role")
+
+	msg := testlogger.LogMessage{}
+	assert.NoError(t, tLogger.GetNext(&msg))
+	assert.NotEmpty(t, msg.Message)
+	assert.Equal(t, slog.LevelDebug, msg.Level)
+	assert.Contains(t, "Removed expired history role", msg.Message)
 	assert.Equal(t, []string{"arn:aws:iam::123456789012:role/Test"}, c.GetSSO().History)
 
+	tLogger.Reset()
 	c = suite.setupDeleteOldHistory()
 	c.GetSSO().History = append(c.GetSSO().History, "arn:aws:iam:")
 	c.deleteOldHistory()
-	assert.NotNil(t, hook.LastEntry())
-	assert.Equal(t, logrus.DebugLevel, hook.LastEntry().Level)
-	assert.Contains(t, hook.LastEntry().Message, "Unable to parse History ARN")
-	hook.Reset()
+	assert.NoError(t, tLogger.GetNext(&msg))
+	assert.Equal(t, slog.LevelDebug, msg.Level)
+	assert.Contains(t, "Unable to parse History ARN", msg.Message)
 
+	tLogger.Reset()
 	c = suite.setupDeleteOldHistory()
 	c.GetSSO().History = append(c.GetSSO().History, "arn:aws:iam::123456789012:role/NoHistoryTag")
 	c.deleteOldHistory()
-	assert.NotNil(t, hook.LastEntry())
-	assert.Equal(t, logrus.DebugLevel, hook.LastEntry().Level)
-	assert.Contains(t, hook.LastEntry().Message, "but no role by that name")
-	hook.Reset()
+	assert.NoError(t, tLogger.GetNext(&msg))
+	assert.Equal(t, slog.LevelDebug, msg.Level)
+	assert.Contains(t, msg.Message, "but no role by that name")
 
+	tLogger.Reset()
 	c = suite.setupDeleteOldHistory()
 	c.GetSSO().History = append(c.GetSSO().History, "arn:aws:iam::1234567890:role/NoHistoryTag")
 	c.deleteOldHistory()
-	assert.NotNil(t, hook.LastEntry())
-	assert.Equal(t, logrus.DebugLevel, hook.LastEntry().Level)
-	assert.Contains(t, hook.LastEntry().Message, "but no account by that name")
-	hook.Reset()
+	assert.NoError(t, tLogger.GetNext(&msg))
+	assert.Equal(t, slog.LevelDebug, msg.Level)
+	assert.Contains(t, msg.Message, "but no account by that name")
 
+	tLogger.Reset()
 	c = suite.setupDeleteOldHistory()
 	c.GetSSO().History = append(c.GetSSO().History, "arn:aws:iam::123456789012:role/NoHistoryTag")
 	c.GetSSO().Roles.Accounts[123456789012].Roles["NoHistoryTag"] = &AWSRole{}
 	c.deleteOldHistory()
-	assert.NotNil(t, hook.LastEntry())
-	assert.Equal(t, logrus.DebugLevel, hook.LastEntry().Level)
-	assert.Contains(t, hook.LastEntry().Message, "is in history list without a History tag")
-	hook.Reset()
+	assert.NoError(t, tLogger.GetNext(&msg))
+	assert.Equal(t, slog.LevelDebug, msg.Level)
+	assert.Contains(t, msg.Message, "in history list without a History tag")
 
+	tLogger.Reset()
 	c = suite.setupDeleteOldHistory()
 	c.GetSSO().History = append(c.GetSSO().History, "arn:aws:iam::123456789012:role/MissingHistoryTag")
 	c.GetSSO().Roles.Accounts[123456789012].Roles["MissingHistoryTag"] = &AWSRole{
@@ -321,10 +326,11 @@ func (suite *CacheTestSuite) TestDeleteOldHistory() {
 		},
 	}
 	c.deleteOldHistory()
-	assert.NotNil(t, hook.LastEntry())
-	assert.Equal(t, logrus.DebugLevel, hook.LastEntry().Level)
-	assert.Contains(t, hook.LastEntry().Message, "Too few fields for")
+	assert.NoError(t, tLogger.GetNext(&msg))
+	assert.Equal(t, slog.LevelDebug, msg.Level)
+	assert.Contains(t, msg.Message, "Too few fields for")
 
+	tLogger.Reset()
 	c = suite.setupDeleteOldHistory()
 	c.GetSSO().History = append(c.GetSSO().History, "arn:aws:iam::123456789012:role/MissingHistoryTag")
 	c.GetSSO().Roles.Accounts[123456789012].Roles["MissingHistoryTag"] = &AWSRole{
@@ -333,9 +339,11 @@ func (suite *CacheTestSuite) TestDeleteOldHistory() {
 		},
 	}
 	c.deleteOldHistory()
-	assert.NotNil(t, hook.LastEntry())
-	assert.Equal(t, logrus.DebugLevel, hook.LastEntry().Level)
-	assert.Contains(t, hook.LastEntry().Message, "Unable to parse")
+	assert.NoError(t, tLogger.GetNext(&msg))
+	assert.Equal(t, slog.LevelDebug, msg.Level)
+	assert.Contains(t, msg.Message, "Unable to parse")
+
+	tLogger.Reset()
 }
 
 func (suite *CacheTestSuite) TestExpired() {

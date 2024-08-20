@@ -60,7 +60,7 @@ func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 		// fetch the creds from our temporary file mounted in the docker container
 		f, err := ecs.OpenSecurityFile(ecs.READ_ONLY)
 		if err != nil {
-			log.Warnf("Failed to open ECS credentials file: %s", err.Error())
+			log.Warn("Failed to open ECS credentials file", "error", err.Error())
 		} else {
 			creds, err := ecs.ReadSecurityConfig(f)
 			if err != nil {
@@ -100,15 +100,15 @@ func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 	}
 
 	if bearerToken == "" {
-		log.Warnf("HTTP Auth: disabled. Use 'aws-sso ecs bearer-token' to enable")
+		log.Warn("HTTP Auth: disabled. Use 'aws-sso ecs bearer-token' to enable")
 	} else {
 		log.Info("HTTP Auth: enabled")
 	}
 
 	if privateKey != "" && certChain != "" {
-		log.Infof("SSL/TLS: enabled")
+		log.Info("SSL/TLS: enabled")
 	} else {
-		log.Warnf("SSL/TLS: disabled.  Use 'aws-sso ecs cert' to enable")
+		log.Warn("SSL/TLS: disabled.  Use 'aws-sso ecs cert' to enable")
 	}
 
 	s, err := server.NewEcsServer(context.TODO(), bearerToken, l, privateKey, certChain)

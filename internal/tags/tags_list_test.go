@@ -9,6 +9,8 @@ import (
 	yaml "github.com/goccy/go-yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"github.com/synfinatic/flexlog"
+	testlogger "github.com/synfinatic/flexlog/test"
 )
 
 type TagsListTestSuite struct {
@@ -26,12 +28,12 @@ const (
 func TestTagsListSuite(t *testing.T) {
 	info, err := os.Stat(TEST_TAGS_LIST_FILE)
 	if err != nil {
-		log.WithError(err).Fatalf("os.Stat %s", TEST_TAGS_LIST_FILE)
+		log.Fatal("os.Stat", "file", TEST_TAGS_LIST_FILE, "error", err)
 	}
 
 	file, err := os.Open(TEST_TAGS_LIST_FILE)
 	if err != nil {
-		log.WithError(err).Fatalf("os.Open %s", TEST_TAGS_LIST_FILE)
+		log.Fatal("os.Open", "file", TEST_TAGS_LIST_FILE, "error", err)
 	}
 
 	defer file.Close()
@@ -39,13 +41,13 @@ func TestTagsListSuite(t *testing.T) {
 	buf := make([]byte, info.Size())
 	_, err = file.Read(buf)
 	if err != nil {
-		log.WithError(err).Fatalf("Error reading %d bytes from %s", info.Size(), TEST_TAGS_LIST_FILE)
+		log.Fatal("file.Read", "file", TEST_TAGS_LIST_FILE, "error", err, "byteLen", info.Size())
 	}
 
 	s := &TagsListTestSuite{}
 	err = yaml.Unmarshal(buf, &s.File)
 	if err != nil {
-		log.WithError(err).Fatalf("Failed parsing %s", TEST_TAGS_LIST_FILE)
+		log.Fatal("yaml.Unmarshal", "file", TEST_TAGS_LIST_FILE, "error", err)
 	}
 
 	suite.Run(t, s)
@@ -150,6 +152,12 @@ func (suite *TagsListTestSuite) TestUniqueValues() {
 func (suite *TagsListTestSuite) TestReformatHistory() {
 	t := suite.T()
 
+	oldLogger := log.Copy()
+	tLogger := testlogger.NewTestLogger("DEBUG")
+	defer tLogger.Close()
+	log = tLogger
+	defer func() { log = oldLogger }()
+
 	// special case, has no timestamp
 	assert.Equal(t, "foo", ReformatHistory("foo"))
 
@@ -158,8 +166,14 @@ func (suite *TagsListTestSuite) TestReformatHistory() {
 		"foo,bar",
 	}
 
+	msg := testlogger.LogMessage{}
+
 	for _, x := range invalidTS {
-		assert.Panics(t, func() { ReformatHistory(x) })
+		ReformatHistory(x)
+		assert.NoError(t, tLogger.GetNext(&msg))
+		assert.Contains(t, msg.Message, "unable to parse epoch")
+		assert.Equal(t, flexlog.LevelFatal, msg.Level)
+		tLogger.Reset()
 	}
 
 	// valid case

@@ -28,13 +28,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/synfinatic/aws-sso-cli/internal/logger"
+	"github.com/synfinatic/flexlog"
 )
 
-var log *logger.Logger
+var log flexlog.FlexLogger
 
 func init() {
-	log = logger.GetLogger()
+	log = flexlog.GetLogger()
 }
 
 const MAX_AWS_ACCOUNTID = 999999999999
@@ -49,7 +49,7 @@ func GetHomePath(path string) string {
 	if strings.HasPrefix(p, "~") {
 		home, err := os.UserHomeDir()
 		if err != nil {
-			log.WithError(err).Fatalf("Unable to GetHomePath(%s)", path)
+			panic(fmt.Sprintf("unable to GetHomePath: %s", path))
 		}
 
 		p = strings.Replace(p, "~", home, 1)
@@ -97,7 +97,7 @@ func ParseUserARN(arn string) (int64, string, error) {
 func MakeRoleARN(account int64, name string) string {
 	a, err := AccountIdToString(account)
 	if err != nil {
-		log.WithError(err).Panicf("unable to MakeRoleARN")
+		panic(fmt.Sprintf("unable to MakeRoleARN: %s", err.Error()))
 	}
 	return fmt.Sprintf("arn:aws:iam::%s:role/%s", a, name)
 }
@@ -106,7 +106,7 @@ func MakeRoleARN(account int64, name string) string {
 func MakeUserARN(account int64, name string) string {
 	a, err := AccountIdToString(account)
 	if err != nil {
-		log.WithError(err).Panicf("unable to MakeUserARN")
+		panic(fmt.Sprintf("unable to MakeUserARN: %s", err.Error()))
 	}
 	return fmt.Sprintf("arn:aws:iam::%s:user/%s", a, name)
 }
@@ -115,7 +115,7 @@ func MakeUserARN(account int64, name string) string {
 func MakeRoleARNs(account, name string) string {
 	x, err := AccountIdToInt64(account)
 	if err != nil {
-		log.WithError(err).Panicf("unable to AccountIdToInt64 in MakeRoleARNs")
+		panic(fmt.Sprintf("unable to MakeRoleARNs: %s", err.Error()))
 	}
 
 	a, _ := AccountIdToString(x)

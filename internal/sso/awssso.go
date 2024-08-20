@@ -91,7 +91,7 @@ func NewAWSSSO(s *SSOConfig, store *storage.SecureStorage) *AWSSSO {
 	if s.MaxBackoff > 0 {
 		maxBackoff = s.MaxBackoff
 	}
-	log.Debugf("loading SSO using %d retries and max %dsec backoff", maxRetry, maxBackoff)
+	log.Debug("loading SSO", "retries", maxRetry, "maxBackoff", maxBackoff)
 
 	r := retry.NewStandard(func(o *retry.StandardOptions) {
 		o.MaxAttempts = maxRetry
@@ -154,10 +154,10 @@ func (ri RoleInfo) RoleArn() string {
 func (ri RoleInfo) GetAccountId64() int64 {
 	i64, err := strconv.ParseInt(ri.AccountId, 10, 64)
 	if err != nil {
-		log.WithError(err).Panicf("Invalid AWS AccountID from AWS SSO: %s", ri.AccountId)
+		panic(fmt.Sprintf("Invalid AWS AccountID from AWS SSO: %s", ri.AccountId))
 	}
 	if i64 < 0 {
-		log.WithError(err).Panicf("AWS AccountID must be >= 0: %s", ri.AccountId)
+		panic(fmt.Sprintf("AWS AccountID must be >= 0: %s", ri.AccountId))
 	}
 	return i64
 }
@@ -237,7 +237,7 @@ func (as *AWSSSO) ListAccounts(input *sso.ListAccountsInput) (*sso.ListAccountsO
 				// sometimes our AccessToken is invalid so try a new one once?
 				// if we have to re-auth, hold everyone else up since that will reduce other failures
 				as.rolesLock.Lock()
-				log.Errorf("AccessToken Unauthorized Error; refreshing: %s", err.Error())
+				log.Error("AccessToken Unauthorized Error; refreshing", "error", err.Error())
 
 				if err = as.reauthenticate(); err != nil {
 					// fail hard now
@@ -247,11 +247,11 @@ func (as *AWSSSO) ListAccounts(input *sso.ListAccountsInput) (*sso.ListAccountsO
 				as.rolesLock.Unlock()
 			case errors.As(err, &tmr):
 				// try again
-				log.Warnf("Exceeded MaxRetry/MaxBackoff.  Consider tuning values.")
+				log.Warn("Exceeded MaxRetry/MaxBackoff.  Consider tuning values.")
 				time.Sleep(time.Duration(MAX_BACKOFF_SECONDS) * time.Second)
 
 			default:
-				log.WithError(err).Error("Unexpected error")
+				log.Error("Unexpected error", "error", err.Error())
 			}
 		}
 	}
@@ -274,22 +274,22 @@ func (as *AWSSSO) ListAccountRoles(input *sso.ListAccountRolesInput) (*sso.ListA
 				// sometimes our AccessToken is invalid so try a new one once?
 				// if we have to re-auth, hold everyone else up since that will reduce other failures
 				as.rolesLock.Lock()
-				log.Errorf("AccessToken Unauthorized Error; refreshing: %s", err.Error())
+				log.Error("AccessToken Unauthorized Error; refreshing", "error", err.Error())
 
 				if err = as.reauthenticate(); err != nil {
 					// fail hard now
-					log.WithError(err).Fatalf("Unexpected auth failure")
+					panic(fmt.Sprintf("Unexpected auth failure: %s", err.Error()))
 				}
 				input.AccessToken = aws.String(as.Token.AccessToken)
 				as.rolesLock.Unlock()
 
 			case errors.As(err, &tmr):
 				// try again
-				log.Warnf("Exceeded MaxRetry/MaxBackoff.  Consider tuning values.")
+				log.Warn("Exceeded MaxRetry/MaxBackoff.  Consider tuning values.")
 				time.Sleep(time.Duration(MAX_BACKOFF_SECONDS) * time.Second)
 
 			default:
-				log.WithError(err).Error("Unexpected error")
+				log.Error("Unexpected error", "error", err.Error())
 			}
 		}
 	}
@@ -336,10 +336,10 @@ func (ai AccountInfo) GetHeader(fieldName string) (string, error) {
 func (ai AccountInfo) GetAccountId64() int64 {
 	i64, err := strconv.ParseInt(ai.AccountId, 10, 64)
 	if err != nil {
-		log.WithError(err).Panicf("Invalid AWS AccountID from AWS SSO: %s", ai.AccountId)
+		panic(fmt.Sprintf("Invalid AWS AccountID from AWS SSO: %s", ai.AccountId))
 	}
 	if i64 < 0 {
-		log.WithError(err).Panicf("AWS AccountID must be >= 0: %s", ai.AccountId)
+		panic(fmt.Sprintf("AWS AccountID must be >= 0: %s", ai.AccountId))
 	}
 	return i64
 }
@@ -401,12 +401,12 @@ func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.Role
 	// is the role defined in the config file?
 	configRole, err := as.SSOConfig.GetRole(accountId, role)
 	if err != nil {
-		log.Debugf("SSOConfig.GetRole(): %s", err.Error())
+		log.Debug("SSOConfig.GetRole()", "error", err.Error())
 	}
 
 	// If not in config OR config does not require doing a Via
 	if err != nil || configRole.Via == "" {
-		log.Debugf("Getting %s:%s directly", aId, role)
+		log.Debug("Getting role directly", "accountID", aId, "role", role)
 		// This is the actual role creds requested through AWS SSO
 		input := sso.GetRoleCredentialsInput{
 			AccessToken: aws.String(as.Token.AccessToken),
@@ -434,7 +434,7 @@ func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.Role
 	roleChainMap[configRole.ARN] = true
 	for k := range roleChainMap {
 		if k == configRole.Via {
-			log.Fatalf("Detected role chain loop!  Getting %s via %s", configRole.ARN, configRole.Via)
+			panic(fmt.Sprintf("Detected role chain loop!  Getting %s via %s", configRole.ARN, configRole.Via))
 		}
 		roleChainMap[k] = true
 	}
@@ -442,7 +442,7 @@ func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.Role
 	// Need to recursively call sts:AssumeRole in order to retrieve the STS creds for
 	// the requested role
 	// role has a Via
-	log.Debugf("Getting %s:%s via %s", aId, role, configRole.Via)
+	log.Debug("Calling AssumeRole", "role", fmt.Sprintf("%s:%s", aId, role), "via", configRole.Via)
 	viaAccountId, viaRole, err := utils.ParseRoleARN(configRole.Via)
 	if err != nil {
 		return storage.RoleCredentials{}, fmt.Errorf("Invalid Via %s: %s", configRole.Via, err.Error())
@@ -489,7 +489,7 @@ func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.Role
 	if err != nil {
 		return storage.RoleCredentials{}, err
 	}
-	log.Debugf("%s", spew.Sdump(output))
+	log.Debug("stsSession.AssumeRole", "output", spew.Sdump(output))
 	ret := storage.RoleCredentials{
 		AccountId:       accountId,
 		RoleName:        role,

@@ -43,6 +43,6 @@ func withLogging(handler http.Handler) http.Handler {
 		requestStart := time.Now()
 		w2 := &loggingMiddlewareResponseWriter{w, http.StatusOK}
 		handler.ServeHTTP(w2, r)
-		log.Infof("http: %s: %d %s %s (%s)", r.RemoteAddr, w2.Code, r.Method, r.URL, time.Since(requestStart))
+		log.Info("http", "remote", r.RemoteAddr, "code", w2.Code, "method", r.Method, "url", r.URL, "time", time.Since(requestStart))
 	})
 }

@@ -50,13 +50,13 @@ func flushSts(ctx *RunContext, awssso *sso.AWSSSO) {
 	for _, role := range cache.Roles.GetAllRoles() {
 		if !role.IsExpired() {
 			if err := ctx.Store.DeleteRoleCredentials(role.Arn); err != nil {
-				log.WithError(err).Errorf("Unable to delete STS token for %s", role.Arn)
+				log.Error("Unable to delete STS token", "arn", role.Arn)
 			}
 		}
 	}
 	if err := ctx.Settings.Cache.MarkRolesExpired(); err != nil {
-		log.Errorf(err.Error())
+		log.Error("failed to mark roles expired", "error", err.Error())
 	} else {
-		log.Infof("Deleted cached AWS STS credentials for %s", awssso.StoreKey())
+		log.Info("Deleted cached AWS STS credentials", "sso", awssso.StoreKey())
 	}
 }

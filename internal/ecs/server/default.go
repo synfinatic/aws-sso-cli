@@ -30,7 +30,7 @@ type DefaultHandler struct {
 
 func (p DefaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.URL.String() != "/" {
-		log.Errorf("Invalid %s request: %s", r.Method, r.URL.String())
+		log.Error("Invalid request", "method", r.Method, "url", r.URL.String())
 		ecs.Unavailable(w)
 		return
 	}
@@ -43,13 +43,13 @@ func (p DefaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case http.MethodDelete:
 		p.Delete(w, r)
 	default:
-		log.Errorf("Invalid %s request: %s", r.Method, r.URL.String())
+		log.Error("Invalid request", "method", r.Method, "url", r.URL.String())
 		ecs.Invalid(w)
 	}
 }
 
 func (p DefaultHandler) Get(w http.ResponseWriter, r *http.Request) {
-	log.Debugf("fetching default creds")
+	log.Debug("fetching default creds")
 	ecs.WriteCreds(w, p.ecs.DefaultCreds.Creds)
 }
 

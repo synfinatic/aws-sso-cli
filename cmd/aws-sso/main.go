@@ -157,7 +157,7 @@ func main() {
 	if runCtx.Auth == AUTH_NO_CONFIG {
 		// side-step the rest of the setup...
 		if err = runCtx.Kctx.Run(&runCtx); err != nil {
-			log.Fatalf("%s", err.Error())
+			log.Fatal(err.Error())
 		}
 	}
 
@@ -165,22 +165,22 @@ func main() {
 	runCtx.Cli.ConfigFile = utils.GetHomePath(runCtx.Cli.ConfigFile)
 
 	if _, err := os.Stat(cli.ConfigFile); errors.Is(err, os.ErrNotExist) {
-		log.Warnf("No config file found!  Will now prompt you for a basic config...")
+		log.Warn("No config file found!  Will now prompt you for a basic config...")
 		if err = setupWizard(&runCtx, false, false, runCtx.Cli.Setup.Wizard.Advanced); err != nil {
-			log.Fatalf("%s", err.Error())
+			log.Fatal(err.Error())
 		}
 		if runCtx.Kctx.Command() == "setup wizard" {
 			// don't run the wizard again, we're done.
 			return
 		}
 	} else if err != nil {
-		log.WithError(err).Fatalf("Unable to open config file: %s", cli.ConfigFile)
+		log.Fatal("Unable to open config file", "file", cli.ConfigFile, "error", err.Error())
 	}
 
 	cacheFile := config.InsecureCacheFile(true)
 
 	if runCtx.Settings, err = sso.LoadSettings(runCtx.Cli.ConfigFile, cacheFile, DEFAULT_CONFIG, override); err != nil {
-		log.Fatalf("%s", err.Error())
+		log.Fatal(err.Error())
 	}
 
 	switch runCtx.Auth {
@@ -188,7 +188,7 @@ func main() {
 		// make sure we have authenticated via AWS SSO and init SecureStore
 		loadSecureStore(&runCtx)
 		if !checkAuth(&runCtx) {
-			log.Fatalf("Must run `aws-sso login` before running `aws-sso %s`", runCtx.Kctx.Command())
+			log.Fatal(fmt.Sprintf("Must run `aws-sso login` before running `aws-sso %s`", runCtx.Kctx.Command()))
 		}
 
 	case AUTH_SKIP:
@@ -196,7 +196,7 @@ func main() {
 		c := &runCtx
 		s, err := c.Settings.GetSelectedSSO(c.Cli.SSO)
 		if err != nil {
-			log.Fatalf("%s", err.Error())
+			log.Fatal(err.Error())
 		}
 
 		loadSecureStore(c)
@@ -207,7 +207,7 @@ func main() {
 
 	err = runCtx.Kctx.Run(&runCtx)
 	if err != nil {
-		log.Fatalf("%s", err.Error())
+		log.Fatal(err.Error())
 	}
 }
 
@@ -222,17 +222,17 @@ func loadSecureStore(ctx *RunContext) {
 		}
 		ctx.Store, err = storage.OpenJsonStore(sfile)
 		if err != nil {
-			log.WithError(err).Fatalf("Unable to open JsonStore %s", sfile)
+			log.Fatal("Unable to open JsonStore", "file", sfile, "error", err.Error())
 		}
-		log.Warnf("Using insecure json file for SecureStore: %s", sfile)
+		log.Warn("Using insecure json file for SecureStore", "file", sfile)
 	default:
 		cfg, err := storage.NewKeyringConfig(ctx.Settings.SecureStore, config.ConfigDir(true))
 		if err != nil {
-			log.WithError(err).Fatalf("Unable to create SecureStore")
+			log.Fatal("Unable to create SecureStore", "error", err.Error())
 		}
 		ctx.Store, err = storage.OpenKeyring(cfg)
 		if err != nil {
-			log.WithError(err).Fatalf("Unable to open SecureStore %s", ctx.Settings.SecureStore)
+			log.Fatal("Unable to open SecureStore", "file", ctx.Settings.SecureStore, "error", err.Error())
 		}
 	}
 }
@@ -340,41 +340,41 @@ func GetRoleCredentials(ctx *RunContext, awssso *sso.AWSSSO, refreshSTS bool, ac
 
 	// First look for our creds in the secure store, if we're not forcing a refresh
 	arn := utils.MakeRoleARN(accountid, role)
-	log.Debugf("Getting role credentials for %s", arn)
+	log.Debug("Getting role credentials", "arn", arn)
 	if !refreshSTS {
 		if roleFlat, err := ctx.Settings.Cache.GetRole(arn); err == nil {
 			if !roleFlat.IsExpired() {
 				if err := ctx.Store.GetRoleCredentials(arn, &creds); err == nil {
 					if !creds.Expired() {
-						log.Debugf("Retrieved role credentials from the SecureStore")
+						log.Debug("Retrieved role credentials from the SecureStore")
 						return &creds
 					}
 				}
 			}
 		}
 	} else {
-		log.Infof("Forcing STS refresh for %s", arn)
+		log.Info("Forcing STS refresh", "arn", arn)
 	}
 
-	log.Debugf("Fetching STS token from AWS SSO")
+	log.Debug("Fetching STS token from AWS SSO")
 
 	// If we didn't use our secure store ask AWS SSO
 	var err error
 	creds, err = awssso.GetRoleCredentials(accountid, role)
 	if err != nil {
-		log.WithError(err).Fatalf("Unable to get role credentials for %s", arn)
+		log.Fatal("Unable to get role credentials", "arn", arn, "error", err.Error())
 	}
 
-	log.Debugf("Retrieved role credentials from AWS SSO")
+	log.Debug("Retrieved role credentials from AWS SSO")
 
 	// Cache our creds
 	if err := ctx.Store.SaveRoleCredentials(arn, creds); err != nil {
-		log.WithError(err).Warnf("Unable to cache role credentials in secure store")
+		log.Warn("Unable to cache role credentials in secure store", "error", err.Error())
 	}
 
 	// Update the cache
 	if err := ctx.Settings.Cache.SetRoleExpires(arn, creds.ExpireEpoch()); err != nil {
-		log.WithError(err).Warnf("Unable to update cache")
+		log.Warn("Unable to update cache", "error", err.Error())
 	}
 	return &creds
 }

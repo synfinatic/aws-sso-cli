@@ -28,14 +28,14 @@ import (
 
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
-	"github.com/synfinatic/aws-sso-cli/internal/logger"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
+	"github.com/synfinatic/flexlog"
 )
 
-var log *logger.Logger
+var log flexlog.FlexLogger
 
 func init() {
-	log = logger.GetLogger()
+	log = flexlog.GetLogger()
 }
 
 type EcsServer struct {
@@ -100,7 +100,7 @@ func (e *EcsServer) DeleteSlottedCreds(profile string) error {
 
 // getCreds fetches the named profile from the cache.
 func (e *EcsServer) GetSlottedCreds(profile string) (*ecs.ECSClientRequest, error) {
-	log.Debugf("fetching creds for profile: %s", profile)
+	log.Debug("fetching creds", "profile", profile)
 	c, ok := e.slottedCreds[profile]
 	if !ok {
 		return c, fmt.Errorf("%s is not found", profile)
@@ -124,7 +124,7 @@ func (e *EcsServer) ListSlottedCreds() []ecs.ListProfilesResponse {
 
 	for _, cr := range e.slottedCreds {
 		if cr.Creds.Expired() {
-			log.Errorf("Skipping expired creds for %s", cr.ProfileName)
+			log.Error("Skipping expired creds", "profile", cr.ProfileName)
 			continue
 		}
 

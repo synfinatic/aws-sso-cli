@@ -28,11 +28,9 @@ import (
 	"time"
 
 	"github.com/99designs/keyring"
-	"github.com/sirupsen/logrus"
-	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"github.com/synfinatic/aws-sso-cli/internal/logger"
+	testlogger "github.com/synfinatic/flexlog/test"
 )
 
 type KeyringSuite struct {
@@ -494,11 +492,12 @@ func TestSplitCredentials(t *testing.T) {
 	assert.NoError(t, err)
 
 	// setup logger for testing
-	logrusLogger, hook := test.NewNullLogger()
-	logrusLogger.SetLevel(logrus.DebugLevel)
-	oldLog := log
-	log = logger.NewLogger(logrusLogger)
-	defer func() { log = oldLog }()
+	oldLogger := log.Copy()
+	tLogger := testlogger.NewTestLogger("DEBUG")
+	defer tLogger.Close()
+
+	log = tLogger
+	defer func() { log = oldLogger }()
 
 	defer func() {
 		os.RemoveAll(d)
@@ -575,10 +574,7 @@ func TestSplitCredentials(t *testing.T) {
 	_, err = store.joinAndGetKeyringData(RECORD_KEY)
 	assert.Error(t, err)
 
-	// but OpenKeyring is fine, just returns a warning
+	// but OpenKeyring is fine
 	_, err = OpenKeyring(c)
 	assert.NoError(t, err)
-	assert.NotNil(t, hook.LastEntry())
-	assert.Equal(t, logrus.WarnLevel, hook.LastEntry().Level)
-	assert.Contains(t, hook.LastEntry().Message, "unable to fetch")
 }

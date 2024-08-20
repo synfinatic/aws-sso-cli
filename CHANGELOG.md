@@ -25,6 +25,7 @@
  * `tags` command no longer supports the `--force-update` option
  * Change default log level from `warn` to `info`
  * Remove mention from docs that Firefox Multi-Account Containers plugin is supported #1021
+ * Switch from logrus to log/slog #1001
 
 ### New Features
 

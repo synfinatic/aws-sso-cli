@@ -39,7 +39,7 @@ func (p SlottedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case http.MethodDelete:
 		p.Delete(w, r)
 	default:
-		log.Errorf("Invalid request: %s", r.URL.String())
+		log.Error("Invalid request", "url", r.URL.String())
 		ecs.Invalid(w)
 	}
 }

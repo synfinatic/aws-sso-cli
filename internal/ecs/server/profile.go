@@ -34,14 +34,14 @@ func (p ProfileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		p.Get(w, r)
 
 	default:
-		log.Errorf("Invalid request: %s", r.URL.String())
+		log.Error("Invalid request", "url", r.URL.String())
 		ecs.Invalid(w)
 	}
 }
 
 func (p ProfileHandler) Get(w http.ResponseWriter, r *http.Request) {
 	// get the details of the default profile
-	log.Debugf("fetching default profile")
+	log.Debug("fetching default profile")
 	if p.ecs.DefaultCreds.ProfileName == "" {
 		ecs.Unavailable(w)
 		return

@@ -52,7 +52,7 @@ func (e ExecCmd) AfterApply(runCtx *RunContext) error {
 func (cc *ExecCmd) Run(ctx *RunContext) error {
 	err := checkAwsEnvironment()
 	if err != nil {
-		log.WithError(err).Fatalf("Unable to continue")
+		log.Fatal("Unable to continue", "error", err.Error())
 	}
 
 	if runtime.GOOS == "windows" && ctx.Cli.Exec.Cmd == "" {
@@ -78,7 +78,7 @@ func execCmd(ctx *RunContext, accountid int64, role string) error {
 
 	ctx.Settings.Cache.AddHistory(utils.MakeRoleARN(accountid, role))
 	if err := ctx.Settings.Cache.Save(false); err != nil {
-		log.WithError(err).Warnf("Unable to update cache")
+		log.Warn("Unable to update cache", "error", err.Error())
 	}
 
 	// ready our command and connect everything up
@@ -91,7 +91,7 @@ func execCmd(ctx *RunContext, accountid int64, role string) error {
 	// add the variables we need for AWS to the executor without polluting our
 	// own process
 	for k, v := range execShellEnvs(ctx, accountid, role, region) {
-		log.Debugf("Setting %s = %s", k, v)
+		log.Debug("Setting", "variable", k, "value", v)
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
 	// just do it!
@@ -128,11 +128,11 @@ func execShellEnvs(ctx *RunContext, accountid int64, role, region string) map[st
 	var roleInfo *sso.AWSRoleFlat
 	if roleInfo, err = cache.Roles.GetRole(accountid, role); err != nil {
 		// this error should never happen
-		log.Errorf("Unable to find role in cache.  Unable to set AWS_SSO_PROFILE")
+		log.Error("Unable to find role in cache.  Unable to set AWS_SSO_PROFILE")
 	} else {
 		shellVars["AWS_SSO_PROFILE"], err = roleInfo.ProfileName(ctx.Settings)
 		if err != nil {
-			log.Errorf("Unable to generate AWS_SSO_PROFILE: %s", err.Error())
+			log.Error("Unable to generate AWS_SSO_PROFILE", "error", err.Error())
 		}
 
 		// and any EnvVarTags

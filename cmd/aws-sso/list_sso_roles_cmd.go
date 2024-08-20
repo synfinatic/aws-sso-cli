@@ -44,9 +44,9 @@ func (cc *ListSSORolesCmd) Run(ctx *RunContext) error {
 	tr := []gotable.TableStruct{}
 
 	for _, account := range accounts {
-		log.Debugf("Fetching roles for %s | %s (%s)...", account.AccountName, account.AccountId, account.EmailAddress)
+		log.Debug("Fetching roles for", "accountName", account.AccountName, "accountID", account.AccountId, "email", account.EmailAddress)
 		roles, err := AwsSSO.GetRoles(account)
-		log.Debugf("AWS returned %d roles", len(roles))
+		log.Debug("AWS returned roles", "count", len(roles))
 		if err != nil {
 			return nil
 		}

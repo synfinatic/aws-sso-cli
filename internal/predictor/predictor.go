@@ -25,15 +25,15 @@ import (
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/goccy/go-yaml"
 	"github.com/posener/complete"
-	"github.com/synfinatic/aws-sso-cli/internal/logger"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
+	"github.com/synfinatic/flexlog"
 )
 
-var log *logger.Logger
+var log flexlog.FlexLogger
 
 func init() {
-	log = logger.GetLogger()
+	log = flexlog.GetLogger()
 }
 
 type Predictor struct {
@@ -51,6 +51,7 @@ func NewPredictor(cacheFile, configFile string) *Predictor {
 	// select our SSO from a CLI flag or env var, else use our default
 	override := sso.OverrideSettings{
 		DefaultSSO: getSSOValue(),
+		LogLevel:   "warn",
 	}
 
 	p := Predictor{
@@ -97,7 +98,7 @@ func (p *Predictor) newPredictor(s *sso.Settings, c *sso.Cache) *Predictor {
 			uniqueRoles[roleName] = true
 			profile, err := rFlat.ProfileName(s)
 			if err != nil {
-				log.Warnf(err.Error())
+				log.Warn("unable to find Profile for ARN", "arn", rFlat.Arn, "error", err.Error())
 				continue
 			}
 			p.profiles = append(p.profiles, profile)
@@ -165,7 +166,7 @@ func (p *Predictor) SsoComplete() complete.Predictor {
 				ssos = append(ssos, sso)
 			}
 		} else {
-			log.Panicf("error: %s", err.Error())
+			log.Fatal("unable to process file", "file", p.configFile, "error", err.Error())
 		}
 	}
 	return complete.PredictSet(ssos...)

@@ -211,8 +211,7 @@ func (r *Roles) GetRoleByProfile(profileName string, s *Settings) (*AWSRoleFlat,
 			flat, _ := r.GetRole(aId, roleName)
 			pName, err := flat.ProfileName(s)
 			if err != nil {
-				log.WithError(err).Warnf(
-					"unable to generate Profile for %s", utils.MakeRoleARN(aId, roleName))
+				log.Warn("unable to generate Profile", "arn", utils.MakeRoleARN(aId, roleName), "error", err.Error())
 			}
 			if pName == profileName {
 				return flat, nil
@@ -228,17 +227,17 @@ func (r *Roles) GetRoleChain(accountId int64, roleName string) []*AWSRoleFlat {
 
 	f, err := r.GetRole(accountId, roleName)
 	if err != nil {
-		log.WithError(err).Fatalf("unable to get role: %s", utils.MakeRoleARN(accountId, roleName))
+		log.Fatal("unable to fetch role", "arn", utils.MakeRoleARN(accountId, roleName), "error", err.Error())
 	}
 	ret = append(ret, f)
 	for f.Via != "" {
 		aId, rName, err := utils.ParseRoleARN(f.Via)
 		if err != nil {
-			log.WithError(err).Fatalf("unable to parse '%s'", f.Via)
+			log.Fatal("unable to parse", "via", f.Via, "error", err.Error())
 		}
 		f, err = r.GetRole(aId, rName)
 		if err != nil {
-			log.WithError(err).Fatalf("unable to get role: %s", utils.MakeRoleARN(aId, rName))
+			log.Fatal("unable to get role", "role", utils.MakeRoleARN(aId, rName), "error", err.Error())
 		}
 		ret = append([]*AWSRoleFlat{f}, ret...) // prepend
 	}
@@ -383,8 +382,8 @@ func (r *AWSRoleFlat) ProfileName(s *Settings) (string, error) {
 	}
 
 	buf := new(bytes.Buffer)
-	log.Tracef("RoleInfo: %s", spew.Sdump(r))
-	log.Tracef("Template: %s", spew.Sdump(templ))
+	log.Trace("RoleInfo", "dump", spew.Sdump(r))
+	log.Trace("Template", "dump", spew.Sdump(templ))
 	if err := templ.Execute(buf, r); err != nil {
 		return "", fmt.Errorf("unable to generate ProfileName: %s", err.Error())
 	}
