@@ -520,6 +520,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#setup-ecs" class="md-nav__link">
+    <span class="md-ellipsis">
+      setup ecs
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#setup-profiles" class="md-nav__link">
     <span class="md-ellipsis">
       setup profiles
@@ -1265,6 +1274,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#setup-ecs" class="md-nav__link">
+    <span class="md-ellipsis">
+      setup ecs
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#setup-profiles" class="md-nav__link">
     <span class="md-ellipsis">
       setup profiles
@@ -1604,16 +1622,15 @@ options. Must restart your shell for this to take effect.</p>
 <p>For more information about this feature, please read <a href="../quickstart/#enabling-auto-completion-in-your-shell">the quickstart</a>.</p>
 <p>Flags:</p>
 <ul>
+<li><code>--source</code> -- Print out the completions for sourcing into the current shell</li>
 <li><code>--install</code> -- Install the new v1.9+ shell completions scripts</li>
 <li><code>--uninstall</code> -- Uninstall the new v1.9+ shell completions scripts</li>
-<li><code>--uninstall-pre-19</code> -- Uninstall the legacy pre-v1.9 scripts</li>
 <li><code>--shell &lt;shell&gt;</code> -- Override the detected shell</li>
 <li><code>--shell-script &lt;file&gt;</code> -- Override the default shell script file to modify</li>
 </ul>
-<p><strong>Note:</strong> You should uninstall the older pre-v1.9 completions before installing
-the new version.  Once the new version is installed, <code>--uninstall-pre-19</code> will
-refuse to run so you will have to either manually edit the file or run
-<code>--uninstall</code>, then <code>--uninstall-pre-19</code> and finally <code>--install</code> again.</p>
+<hr />
+<h3 id="setup-ecs">setup ecs</h3>
+<p>See the <a href="../ecs-commands/#setup-ecs">setup ecs</a> commands in the ECS Server command documentation.</p>
 <hr />
 <h3 id="setup-profiles">setup profiles</h3>
 <p>Modifies the <code>~/.aws/config</code> file to contain a <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-using-profiles">named profile</a>

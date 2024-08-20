@@ -341,15 +341,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#upgrading-from-before-v190" class="md-nav__link">
-    <span class="md-ellipsis">
-      Upgrading from before v1.9.0
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#upgrading-from-after-190" class="md-nav__link">
     <span class="md-ellipsis">
       Upgrading from after 1.9.0
@@ -1131,15 +1122,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#upgrading-from-before-v190" class="md-nav__link">
-    <span class="md-ellipsis">
-      Upgrading from before v1.9.0
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#upgrading-from-after-190" class="md-nav__link">
     <span class="md-ellipsis">
       Upgrading from after 1.9.0
@@ -1303,7 +1285,7 @@
 </ol>
 </li>
 <li>Option 4: Build from source:<ol>
-<li>Install <a href="https://golang.org">GoLang</a> v1.17+ and GNU Make</li>
+<li>Install <a href="https://golang.org">GoLang</a> v1.22+ and GNU Make</li>
 <li>Clone this repo</li>
 <li>Run <code>make</code> (or <code>gmake</code> for GNU Make)</li>
 <li>Your binary will be created in the <code>dist</code> directory</li>
@@ -1311,7 +1293,7 @@
 </ol>
 </li>
 <li>Option 5: <code>go install</code>:<ol>
-<li>Install <a href="https://golang.org">GoLang</a> v1.19+ and GNU Make</li>
+<li>Install <a href="https://golang.org">GoLang</a> v1.22+ and GNU Make</li>
 <li><code>go install github.com/synfinatic/aws-sso-cli/cmd/aws-sso@latest</code></li>
 </ol>
 </li>
@@ -1332,8 +1314,8 @@ This wizard will automatically run the first time you run <code>aws-sso</code>.<
 <p>For more information about configuring <code>aws-sso</code> read the
 <a href="../config/">configuration guide</a>.</p>
 <p>You can re-run through the configuration wizard at any time by running
-<code>aws-sso config</code>.  By default, this only does a very basic setup; for a more
-advanced setup, use <code>aws-sso config --advanced</code>.</p>
+<code>aws-sso setup wizard</code>.  By default, this only does a very basic setup; for a more
+advanced setup, use <code>aws-sso setup wizard --advanced</code>.</p>
 <h2 id="enabling-auto-completion-in-your-shell">Enabling auto-completion in your shell</h2>
 <p>As of v1.9.0, <code>aws-sso</code> enhanced it's shell integration and auto-complete
 functionality.  The result is an improved <a href="../commands/#shell-helpers">user experience</a> but requires a change that is not 100% backwards
@@ -1343,38 +1325,20 @@ shell for those changes to take effect.</p>
 <h3 id="first-time-aws-sso-users">First time aws-sso users</h3>
 <p>Guided setup should of prompted you to install auto-completions, but
 you can always re-run it for a different shell:</p>
-<p><code>aws-sso completions -I</code></p>
+<p><code>aws-sso setup completions -I</code></p>
 <p>or if you wish to uninstall them:</p>
-<p><code>aws-sso completions -U</code></p>
-<hr />
-<h3 id="upgrading-from-before-v190">Upgrading from before v1.9.0</h3>
-<p>First, there is no longer an <code>install-completions</code> command as of v1.9.0,
-that functionality (and more) has been moved to <code>completions</code>.</p>
-<p>You should <em>first</em> uninstall the old completions (sorry) and then install
-the new versions.  This manual uninstall/re-install is a one time thing,
-but necessary.</p>
-<ol>
-<li><code>aws-sso completions --uninstall-pre-19</code></li>
-<li><code>aws-sso completions -I</code></li>
-</ol>
-<p>Users of older versions will note that starting in v1.9.0, running
-<code>completions -I</code> or <code>completions -U</code> will present you a diff of file changes
-for you to accept.</p>
-<p>Also, unlike with older versions, only your current shell is modified when
-you run <code>completions -I</code> or <code>completions -U</code>, but
-<code>completions --uninstall-pre-19</code> uses the original code/library and will
-modify your <code>bash</code>, <code>zsh</code> and <code>fish</code> init scripts.</p>
+<p><code>aws-sso setup completions -U</code></p>
 <hr />
 <h3 id="upgrading-from-after-190">Upgrading from after 1.9.0</h3>
 <p>Upgrading from versions 1.9.0 or better is just like installing for
 first time users:</p>
-<p><code>aws-sso completions -I</code></p>
+<p><code>aws-sso setup completions -I</code></p>
 <p>Any changes will be presented to you in diff format and you will be given
 the option to accept or reject the changes.</p>
 <hr />
 <h3 id="more-information">More information</h3>
 <p>More information on auto-completion can be found in the documentation
-for the <a href="../commands/#completions">completions command</a>.</p>
+for the <a href="../commands/#setup-completions">setup completions</a> command.</p>
 <h2 id="use-aws-sso-on-the-cli-for-aws-api-calls">Use <code>aws-sso</code> on the CLI for AWS API calls</h2>
 <p>There are three preferred ways of using <code>aws-sso</code> to make AWS API calls:</p>
 <ol>
@@ -1432,7 +1396,7 @@ necessary AWS STS environment variables set to access AWS.</p>
 <p>If you have existing tooling using <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html">named profiles</a>
 and the <code>$AWS_PROFILE</code> environment variable, AWS SSO CLI can support that as well.</p>
 <h4 id="configuration">Configuration</h4>
-<p>Run: <code>aws-sso config-profiles</code></p>
+<p>Run: <code>aws-sso setup profiles</code></p>
 <p>This will add the following lines (example) to your <code>~/.aws/config</code> file:</p>
 <pre><code class="language-ini"># BEGIN_AWS_SSO
 

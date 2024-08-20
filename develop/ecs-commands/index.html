@@ -502,6 +502,16 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#setup-ecs" class="md-nav__link">
+    <span class="md-ellipsis">
+      setup ecs
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="setup ecs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#setup-ecs-auth" class="md-nav__link">
     <span class="md-ellipsis">
       setup ecs auth
@@ -516,6 +526,11 @@
       setup ecs ssl
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -998,6 +1013,16 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#setup-ecs" class="md-nav__link">
+    <span class="md-ellipsis">
+      setup ecs
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="setup ecs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#setup-ecs-auth" class="md-nav__link">
     <span class="md-ellipsis">
       setup ecs auth
@@ -1012,6 +1037,11 @@
       setup ecs ssl
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -1104,7 +1134,8 @@
 <h1 id="ecs-commands">ECS Commands</h1>
 <p>For information about the ECS Server functionality, see the <a href="../ecs-server/">ecs-server</a> page.</p>
 <h2 id="commands">Commands</h2>
-<h3 id="setup-ecs-auth">setup ecs auth</h3>
+<h3 id="setup-ecs">setup ecs</h3>
+<h4 id="setup-ecs-auth">setup ecs auth</h4>
 <p>Configures the HTTP Authentication BearerToken.  Once set, all future client
 requests to the ECS Server will need to provide the correct credentials.<br />
 <code>aws-sso</code> utilizing the same SecureStore as the ECS Server will automatically
@@ -1116,7 +1147,7 @@ AWS SDK will require <a href="https://docs.aws.amazon.com/sdkref/latest/guide/fe
 <li><code>--delete</code> -- Delete the bearer token and disable authentication.</li>
 </ul>
 <hr />
-<h3 id="setup-ecs-ssl">setup ecs ssl</h3>
+<h4 id="setup-ecs-ssl">setup ecs ssl</h4>
 <p>Configures the SSL Certificate and Private Key to enable SSL/TLS.  Saves the
  SSL certificate and private key to the SecureStore.</p>
 <p><strong>Note:</strong> At this time, this feature is not recommended due to a bug
