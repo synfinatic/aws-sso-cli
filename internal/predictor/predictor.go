@@ -25,6 +25,7 @@ import (
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/goccy/go-yaml"
 	"github.com/posener/complete"
+	"github.com/synfinatic/aws-sso-cli/internal/logger"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/flexlog"
@@ -33,7 +34,7 @@ import (
 var log flexlog.FlexLogger
 
 func init() {
-	log = flexlog.GetLogger()
+	log = logger.GetLogger()
 }
 
 type Predictor struct {
