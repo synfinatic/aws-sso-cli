@@ -103,7 +103,7 @@ tags: cmd/*/*.go internal/*/*.go internal/*/*/*.go ## Create tags file for vim, 
 
 .build-release: windows windows32 linux linux-arm64 darwin darwin-arm64
 
-.validate-release: ALL release-check
+.validate-release: ALL
 	@TAG=$$(./$(DIST_DIR)$(PROJECT_NAME) version 2>/dev/null | grep '(v$(PROJECT_VERSION))'); \
 		if test -z "$$TAG"; then \
 		echo "Build tag from does not match PROJECT_VERSION=v$(PROJECT_VERSION) in Makefile:" ; \
