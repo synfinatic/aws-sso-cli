@@ -18,21 +18,18 @@ package main
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import (
-	"bytes"
 	"fmt"
 	"os"
 
 	"github.com/synfinatic/aws-sso-cli/internal/helper"
-	"github.com/willabides/kongplete"
 )
 
 type CompleteCmd struct {
-	Source         bool   `kong:"help='Print out completions for sourcing in the active shell',xor='action'"`
-	Install        bool   `kong:"short='I',help='Install shell completions',xor='action'"`
-	Uninstall      bool   `kong:"short='U',help='Uninstall shell completions',xor='action'"`
-	UninstallPre19 bool   `kong:"help='Uninstall pre-v1.9 shell completion integration',xor='action',xor='shell,script'"`
-	Shell          string `kong:"help='Override detected shell',xor='shell'"`
-	ShellScript    string `kong:"help='Override file to (un)install shell completions',xor='script'"`
+	Source      bool   `kong:"help='Print out completions for sourcing in the active shell',xor='action'"`
+	Install     bool   `kong:"short='I',help='Install shell completions',xor='action'"`
+	Uninstall   bool   `kong:"short='U',help='Uninstall shell completions',xor='action'"`
+	Shell       string `kong:"help='Override detected shell'"`
+	ShellScript string `kong:"help='Override file to (un)install shell completions'"`
 }
 
 // AfterApply determines if SSO auth token is required
@@ -45,28 +42,13 @@ func (cc *CompleteCmd) Run(ctx *RunContext) error {
 	var err error
 
 	if ctx.Cli.Setup.Completions.Source {
-		err = helper.NewSourceHelper(os.Executable, os.Stdout).
-			Generate(ctx.Cli.Setup.Completions.Shell)
+		return helper.NewSourceHelper(os.Executable, os.Stdout).Generate(ctx.Cli.Setup.Completions.Shell)
 	} else if ctx.Cli.Setup.Completions.Install {
 		// install the current auto-complete helper
 		err = helper.InstallHelper(ctx.Cli.Setup.Completions.Shell, ctx.Cli.Setup.Completions.ShellScript)
 	} else if ctx.Cli.Setup.Completions.Uninstall {
 		// uninstall the current auto-complete helper
 		err = helper.UninstallHelper(ctx.Cli.Setup.Completions.Shell, ctx.Cli.Setup.Completions.ShellScript)
-	} else if ctx.Cli.Setup.Completions.UninstallPre19 {
-		// make sure we haven't installed our new completions first...
-		if files := hasV19Installed(); len(files) == 0 {
-			for _, f := range files {
-				fmt.Printf("%s has the newer shell completions\n", f)
-			}
-			return fmt.Errorf("unable to automatically uninstall pre-1.9 shell completions")
-		}
-
-		// Uninstall the old kongplete auto-complete helper
-		kp := &kongplete.InstallCompletions{
-			Uninstall: true,
-		}
-		err = kp.Run(ctx.Kctx)
 	} else {
 		err = fmt.Errorf("please specify a valid flag")
 	}
@@ -75,22 +57,4 @@ func (cc *CompleteCmd) Run(ctx *RunContext) error {
 		log.Info("please restart your shell for the changes to take effect")
 	}
 	return err
-}
-
-// hasV19Installed returns the paths to any shell script we manage
-// that has the old < v1.9 completions installed or an empty list
-// if none exist.
-func hasV19Installed() []string {
-	ret := []string{}
-	for _, f := range helper.ConfigFiles() {
-		b, err := os.ReadFile(f)
-		if err != nil {
-			continue
-		}
-		if bytes.Contains(b, []byte("# BEGIN_AWS_SSO_CLI\n")) {
-			ret = append(ret, f)
-		}
-	}
-
-	return ret
 }

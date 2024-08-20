@@ -278,16 +278,17 @@ quickstart.md#enabling-auto-completion-in-your-shell).
 
 Flags:
 
+ * `--source` -- Print out the completions for sourcing into the current shell
  * `--install` -- Install the new v1.9+ shell completions scripts
  * `--uninstall` -- Uninstall the new v1.9+ shell completions scripts
- * `--uninstall-pre-19` -- Uninstall the legacy pre-v1.9 scripts
  * `--shell <shell>` -- Override the detected shell
  * `--shell-script <file>` -- Override the default shell script file to modify
 
-**Note:** You should uninstall the older pre-v1.9 completions before installing
-the new version.  Once the new version is installed, `--uninstall-pre-19` will
-refuse to run so you will have to either manually edit the file or run
-`--uninstall`, then `--uninstall-pre-19` and finally `--install` again.
+---
+
+### setup ecs
+
+See the [setup ecs](ecs-commands.md#setup-ecs) commands in the ECS Server command documentation.
 
 ---
 

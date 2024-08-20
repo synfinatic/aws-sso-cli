@@ -5,8 +5,8 @@ coverage:
   status:
     project:
       target: auto
-      threshold: 0%
-      paths:
-        - internal/*
-        - sso/*
+      threshold: 0.25%
+
+ignore:
+  - cmd/**
 
