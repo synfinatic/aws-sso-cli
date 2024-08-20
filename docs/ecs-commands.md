@@ -4,7 +4,9 @@ For information about the ECS Server functionality, see the [ecs-server](ecs-ser
 
 ## Commands
 
-### setup ecs auth
+### setup ecs
+
+#### setup ecs auth
 
 Configures the HTTP Authentication BearerToken.  Once set, all future client
 requests to the ECS Server will need to provide the correct credentials.  
@@ -20,7 +22,7 @@ Flags:
 
 ---
 
-### setup ecs ssl
+#### setup ecs ssl
 
  Configures the SSL Certificate and Private Key to enable SSL/TLS.  Saves the
  SSL certificate and private key to the SecureStore.
