@@ -1,0 +1,1567 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="Aaron Turner">
+      
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../demos/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.32">
+    
+    
+      
+        <title>Quickstart - AWS SSO CLI</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.3cba04c6.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../css/asciinema-player.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#aws-sso-cli-quick-start-installation-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="AWS SSO CLI" class="md-header__button md-logo" aria-label="AWS SSO CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            AWS SSO CLI
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Quickstart
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/synfinatic/aws-sso-cli/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="AWS SSO CLI" class="md-nav__button md-logo" aria-label="AWS SSO CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    AWS SSO CLI
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/synfinatic/aws-sso-cli/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Quickstart
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Quickstart
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#binaries-and-code-signatures" class="md-nav__link">
+    <span class="md-ellipsis">
+      Binaries and Code Signatures
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#guided-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Guided Configuration
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enabling-auto-completion-in-your-shell" class="md-nav__link">
+    <span class="md-ellipsis">
+      Enabling auto-completion in your shell
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Enabling auto-completion in your shell">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#first-time-aws-sso-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      First time aws-sso users
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upgrading-from-before-v190" class="md-nav__link">
+    <span class="md-ellipsis">
+      Upgrading from before v1.9.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upgrading-from-after-190" class="md-nav__link">
+    <span class="md-ellipsis">
+      Upgrading from after 1.9.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#more-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      More information
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-aws-sso-on-the-cli-for-aws-api-calls" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use aws-sso on the CLI for AWS API calls
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Use aws-sso on the CLI for AWS API calls">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-sso-profile-helper-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      aws-sso-profile helper script
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="aws-sso-profile helper script">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-the-exec-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using the exec command
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using the exec command">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-the-aws_profile-variable" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using the $AWS_PROFILE variable
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using the $AWS_PROFILE variable">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#usage_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aws-console-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      AWS Console Access
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../demos/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Demos
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    User Guide
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            User Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Commands & Usage
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../FAQ/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Frequently Asked Questions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    ECS Server/Remote Access
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            ECS Server/Remote Access
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecs-server/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ECS Server Mode
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecs-commands/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ECS Server Commands
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../remote-ssh/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Remote Access to IAM Roles
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecs-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ECS Server API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    About
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            About
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../license/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    License
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../aws-vault/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Compared to aws-vault
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Security
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            Security
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Reporting Security Vulnerabilities
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    GPG Signing Keys
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            GPG Signing Keys
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code-sign-key.asc/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Release Signing Key
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commit-sign-key.asc/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Commit Signing Key
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Developer Notes
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            Developer Notes
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Release New Version
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecs-threats/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ECS Server Threat Model
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#binaries-and-code-signatures" class="md-nav__link">
+    <span class="md-ellipsis">
+      Binaries and Code Signatures
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#guided-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Guided Configuration
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enabling-auto-completion-in-your-shell" class="md-nav__link">
+    <span class="md-ellipsis">
+      Enabling auto-completion in your shell
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Enabling auto-completion in your shell">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#first-time-aws-sso-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      First time aws-sso users
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upgrading-from-before-v190" class="md-nav__link">
+    <span class="md-ellipsis">
+      Upgrading from before v1.9.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upgrading-from-after-190" class="md-nav__link">
+    <span class="md-ellipsis">
+      Upgrading from after 1.9.0
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#more-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      More information
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-aws-sso-on-the-cli-for-aws-api-calls" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use aws-sso on the CLI for AWS API calls
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Use aws-sso on the CLI for AWS API calls">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-sso-profile-helper-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      aws-sso-profile helper script
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="aws-sso-profile helper script">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-the-exec-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using the exec command
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using the exec command">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-the-aws_profile-variable" class="md-nav__link">
+    <span class="md-ellipsis">
+      Using the $AWS_PROFILE variable
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using the $AWS_PROFILE variable">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#usage_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Usage
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aws-console-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      AWS Console Access
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="aws-sso-cli-quick-start-installation-guide">AWS SSO CLI Quick Start &amp; Installation Guide</h1>
+<h2 id="installation">Installation</h2>
+<ul>
+<li>Option 1: <a href="https://github.com/synfinatic/aws-sso-cli/releases">Download binary</a><ol>
+<li>Copy to appropriate location and <code>chmod 755</code></li>
+</ol>
+</li>
+<li>Option 2: <a href="https://github.com/synfinatic/aws-sso-cli/releases">Download RPM or DEB package</a><ol>
+<li>Use your package manager to install (Linux only)</li>
+</ol>
+</li>
+<li>Option 3: Build &amp; Install via <a href="https://brew.sh">Homebrew</a><ol>
+<li>Run <code>brew install aws-sso-cli</code>
+    Note: You no longer need to install the hombrew tap as <code>aws-sso-cli</code> is
+    now part of <a href="https://github.com/Homebrew/homebrew-core/blob/master/Formula/a/aws-sso-cli.rb">homebrew-core</a>.</li>
+</ol>
+</li>
+<li>Option 4: Build from source:<ol>
+<li>Install <a href="https://golang.org">GoLang</a> v1.17+ and GNU Make</li>
+<li>Clone this repo</li>
+<li>Run <code>make</code> (or <code>gmake</code> for GNU Make)</li>
+<li>Your binary will be created in the <code>dist</code> directory</li>
+<li>Run <code>make install</code> to install in /usr/local/bin</li>
+</ol>
+</li>
+<li>Option 5: <code>go install</code>:<ol>
+<li>Install <a href="https://golang.org">GoLang</a> v1.19+ and GNU Make</li>
+<li><code>go install github.com/synfinatic/aws-sso-cli/cmd/aws-sso@latest</code></li>
+</ol>
+</li>
+</ul>
+<p>Note: macOS binaries must be build on macOS to enable Keychain support.</p>
+<h3 id="binaries-and-code-signatures">Binaries and Code Signatures</h3>
+<p>The <a href="https://github.com/synfinatic/aws-sso-cli/releases">release binaries and packages</a> are not signed with keys
+trusted by Apple or Microsoft and may generate warnings on macOS and Windows.</p>
+<p>Packages and binaries are however automatically built and signed via
+<a href="https://github.com/synfinatic/aws-sso-cli/blob/main/.github/workflows/build-release.yml">Github Action</a>
+ with my <a href="../code-sign-key.asc/">PGP code signing key</a>.  Note that this is a
+<em>different</em> PGP key from the one I use to <a href="../commit-sign-key.asc/">sign my commits</a>.</p>
+<p>Users who are paranoid (think SolarWinds) are strongly encouraged to build
+binaries themselves.</p>
+<h2 id="guided-configuration">Guided Configuration</h2>
+<p>AWS SSO CLI includes a simple setup wizard to aid in a basic configuration.
+This wizard will automatically run the first time you run <code>aws-sso</code>.</p>
+<p>For more information about configuring <code>aws-sso</code> read the
+<a href="../config/">configuration guide</a>.</p>
+<p>You can re-run through the configuration wizard at any time by running
+<code>aws-sso config</code>.  By default, this only does a very basic setup; for a more
+advanced setup, use <code>aws-sso config --advanced</code>.</p>
+<h2 id="enabling-auto-completion-in-your-shell">Enabling auto-completion in your shell</h2>
+<p>As of v1.9.0, <code>aws-sso</code> enhanced it's shell integration and auto-complete
+functionality.  The result is an improved <a href="../commands/#shell-helpers">user experience</a> but requires a change that is not 100% backwards
+compatible.  Please follow the instructions below that match your sitation.</p>
+<p>As always, any time you modify your shell init scripts, you must restart your
+shell for those changes to take effect.</p>
+<h3 id="first-time-aws-sso-users">First time aws-sso users</h3>
+<p>Guided setup should of prompted you to install auto-completions, but
+you can always re-run it for a different shell:</p>
+<p><code>aws-sso completions -I</code></p>
+<p>or if you wish to uninstall them:</p>
+<p><code>aws-sso completions -U</code></p>
+<hr />
+<h3 id="upgrading-from-before-v190">Upgrading from before v1.9.0</h3>
+<p>First, there is no longer an <code>install-completions</code> command as of v1.9.0,
+that functionality (and more) has been moved to <code>completions</code>.</p>
+<p>You should <em>first</em> uninstall the old completions (sorry) and then install
+the new versions.  This manual uninstall/re-install is a one time thing,
+but necessary.</p>
+<ol>
+<li><code>aws-sso completions --uninstall-pre-19</code></li>
+<li><code>aws-sso completions -I</code></li>
+</ol>
+<p>Users of older versions will note that starting in v1.9.0, running
+<code>completions -I</code> or <code>completions -U</code> will present you a diff of file changes
+for you to accept.</p>
+<p>Also, unlike with older versions, only your current shell is modified when
+you run <code>completions -I</code> or <code>completions -U</code>, but
+<code>completions --uninstall-pre-19</code> uses the original code/library and will
+modify your <code>bash</code>, <code>zsh</code> and <code>fish</code> init scripts.</p>
+<hr />
+<h3 id="upgrading-from-after-190">Upgrading from after 1.9.0</h3>
+<p>Upgrading from versions 1.9.0 or better is just like installing for
+first time users:</p>
+<p><code>aws-sso completions -I</code></p>
+<p>Any changes will be presented to you in diff format and you will be given
+the option to accept or reject the changes.</p>
+<hr />
+<h3 id="more-information">More information</h3>
+<p>More information on auto-completion can be found in the documentation
+for the <a href="../commands/#completions">completions command</a>.</p>
+<h2 id="use-aws-sso-on-the-cli-for-aws-api-calls">Use <code>aws-sso</code> on the CLI for AWS API calls</h2>
+<p>There are three preferred ways of using <code>aws-sso</code> to make AWS API calls:</p>
+<ol>
+<li>Use the <code>aws-sso-profile</code> helper script for selecting profiles by name with auto-complete</li>
+<li>Use the <a href="../commands/#exec">exec</a> command for the interactive search</li>
+<li>Use the <code>$AWS_PROFILE</code> variable</li>
+</ol>
+<h3 id="aws-sso-profile-helper-script"><code>aws-sso-profile</code> helper script</h3>
+<p>The helper script method allows you to run a command to assume an IAM role
+into your current shell.  This method has the advantage of supporting
+auto-complete of AWS Profile names and not requiring forking a new shell
+which can be confusing.</p>
+<p>Full documentation for auto-completion <a href="../commands/#shell-helpers">is available here</a>.</p>
+<p><strong>Note:</strong> Use of this feature requires
+<a href="#enabling-auto-completion-in-your-shell">enabling auto-completion</a> as described above.</p>
+<h4 id="usage">Usage</h4>
+<p>The above defines two new commands, the first of which (<code>aws-sso-profile</code>)
+allows you to easily assume a role in your current shell with auto-complete
+generated AWS Profile names as defined by the <a href="../config/#profileformat">ProfileFormat</a> config variable.</p>
+<p>The latter (<code>aws-sso-clear</code>), clears all the environment variables
+installed by <code>aws-sso-profile</code>.</p>
+<p>If you wish to pass additional arguments to the helper script, you can set
+the <code>$AWS_SSO_HELPER_ARGS</code> variable.</p>
+<p>Pros:</p>
+<ul>
+<li>Auto-complete makes it easy to use</li>
+<li>Doesn't fork a new shell</li>
+</ul>
+<p>Cons:</p>
+<ul>
+<li>More complicated one-time setup</li>
+</ul>
+<hr />
+<h3 id="using-the-exec-command">Using the <code>exec</code> command</h3>
+<p>Use the <a href="../commands/#exec">exec</a> command to create a new shell with the
+necessary AWS STS environment variables set to access AWS.</p>
+<h4 id="usage_1">Usage</h4>
+<p>Just run: <code>aws-sso exec</code> to create a new interactive sub-shell or
+<code>aws-sso exec &lt;command&gt;</code> to run a command.</p>
+<p>Pros:</p>
+<ul>
+<li>No shell configuration required</li>
+<li>Allows picking a role via CLI arguments or via the interactive search feature</li>
+<li>Unlike with the config/<code>$AWS_PROFILE</code> integration, it supports opening URLs
+    in your browser, printing or copying to your clipboard</li>
+<li>Allows you to quickly access any role in any account without remembering the
+    exact <code>$AWS_PROFILE</code> name</li>
+</ul>
+<p>Cons:</p>
+<ul>
+<li>Can be confusing when you start nesting shells inside of each other</li>
+</ul>
+<hr />
+<h3 id="using-the-aws_profile-variable">Using the <code>$AWS_PROFILE</code> variable</h3>
+<p>If you have existing tooling using <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html">named profiles</a>
+and the <code>$AWS_PROFILE</code> environment variable, AWS SSO CLI can support that as well.</p>
+<h4 id="configuration">Configuration</h4>
+<p>Run: <code>aws-sso config-profiles</code></p>
+<p>This will add the following lines (example) to your <code>~/.aws/config</code> file:</p>
+<pre><code class="language-ini"># BEGIN_AWS_SSO
+
+[profile Name1]
+credential_process = /usr/bin/aws-sso -u &lt;open&gt; process --sso &lt;name&gt; --arn &lt;arn1&gt;
+
+[profile Name2]
+credential_process = /usr/bin/aws-sso -u &lt;open&gt; process --sso &lt;name&gt; --arn &lt;arn2&gt;
+
+# END_AWS_SSO
+</code></pre>
+<p>For more information about this feature, see the following sections of the config
+docs:</p>
+<ul>
+<li><a href="../config/#profileformat">ProfileFormat</a> and <a href="../config/#profile">Profile</a></li>
+<li><a href="../config/#autoconfigcheck-configurlaction">AutoConfigCheck / ConfigUrlAction</a></li>
+<li><a href="../config/#configvariables">ConfigVariables</a></li>
+</ul>
+<h4 id="usage_2">Usage</h4>
+<p>Once your <code>~/.aws/config</code> file has been modified as described above, you can
+access any AWS SSO role the same way you would access a traditional role defined
+via AWS API keys: set the <code>$AWS_PROFILE</code> environment variable to the name of
+the profile.</p>
+<p>The only difference is that your API keys are managed via AWS SSO and always
+safely stored encrypted on disk!</p>
+<pre><code class="language-bash">export AWS_PROFILE=&lt;name&gt;
+</code></pre>
+<p>or for a single command:</p>
+<pre><code class="language-bash">AWS_PROFILE=&lt;name&gt; aws sts get-caller-identity
+</code></pre>
+<p>Note that every time the <code>aws</code> tool or your code makes a request for the API
+credentials, it is calling <code>aws-sso</code>.  The first time it does this for a role,
+<code>aws-sso</code> will talk to AWS STS to get some credentials and then cache the result.
+This may (or may not) require human inteaction to authenticate via your SSO
+provider.  Future calls will then use the cached STS credentials until they
+expire or are <a href="../commands/#flush">flushed</a>.</p>
+<p>Pros:</p>
+<ul>
+<li>Don't need to learn any new commands once you have it setup</li>
+<li>Is a more consistent user experience when switching from static API keys</li>
+</ul>
+<p>Cons:</p>
+<ul>
+<li>Does not support printing URLs to the console for the user to paste into a browser</li>
+<li><code>aws-sso</code> must sometimes open a browser to execute a command which can be confusing</li>
+<li>Must remember the name of every named profile</li>
+</ul>
+<h2 id="aws-console-access">AWS Console Access</h2>
+<p>One of the major benefits of using AWS SSO is having consistent permissions
+in the AWS Console as well as via the CLI/API.  Unforunately, using the AWS
+Console with multiple accounts and roles can be frustrating because you
+can only be logged into a single role at any given time.</p>
+<p>AWS SSO CLI solves this problem when you use <a href="https://getfirefox.com">Firefox</a>
+with <a href="https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/">Firefox Open URL in Container</a> v1.0.3 plugin.
+This causes each role to have it's own isolated container so you can have
+multiple AWS Console sessions active at a time.</p>
+<p>Using Firefox containers requires a special configuration in your <code>~/.aws-sso/config.yaml</code>
+<a href="../config/#open-url-in-firefox-container">as described here</a>.</p>
+<p>Regardless if you are using Firefox containers or not, using <code>aws-sso</code> to login is straight
+forward:</p>
+<ol>
+<li>If you have existing AWS API credentials loaded in your shell, typing
+        <code>aws-sso console</code> will generate a URL to log you into the same role.</li>
+<li>Choosing a role can be done via the same CLI options as <code>exec</code></li>
+<li>If no CLI options are provided <em>AND</em> you don't have AWS API credentials
+        loaded, the tags based search feature will start.</li>
+<li>If you have existing AWS API credentials in your shell and you want to login
+        to a different role via the tag based search feture, use the <code>-P</code> /
+        <code>--prompt</code> flag.</li>
+</ol>
+<p>Demo of how this works:
+<img alt="FirefoxContainers Demo" src="https://user-images.githubusercontent.com/1075352/166165880-24f7c9af-a037-4e48-aa2d-342f2efe5ad7.gif" /></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright 2021-2024 Aaron Turner
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.471ce7a9.min.js"></script>
+      
+        <script src="../js/asciinema-player.min.js"></script>
+      
+    
+  </body>
+</html>
