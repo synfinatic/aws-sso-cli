@@ -98,6 +98,8 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 		} else if runtime.GOOS == "windows" {
 			// powershell Invoke-Expression https://github.com/synfinatic/aws-sso-cli/issues/188
 			fmt.Printf("$Env:%s = \"%s\"\r\n", k, v)
+		} else if os.Getenv("XONSH_VERSION") != "" {
+			fmt.Printf("$%s = '%s'\n", k, v)
 		} else {
 			return fmt.Errorf("%s", "invalid or unsupported shell.  Please file a bug!")
 		}
@@ -139,6 +141,9 @@ func unsetEnvVars(ctx *RunContext) error {
 		} else if runtime.GOOS == "windows" {
 			// PowerShell
 			fmt.Printf("$Env:%s = \"\"\r\n", e)
+		} else if os.Getenv("XONSH_VERSION") != "" {
+			// xonsh behaves like python
+			fmt.Printf("del $%s\n", e)
 		} else {
 			return fmt.Errorf("invalid or unsupported shell.  Please file a bug!")
 		}
@@ -160,5 +165,6 @@ func isBashLike() bool {
 			return true
 		}
 	}
+
 	return false
 }

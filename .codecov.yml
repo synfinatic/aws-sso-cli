@@ -9,4 +9,4 @@ coverage:
 
 ignore:
   - "cmd/**/*"
-
+  - "cmd"

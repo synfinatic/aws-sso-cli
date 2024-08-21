@@ -55,9 +55,14 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 		log.Fatal("Unable to continue", "error", err.Error())
 	}
 
-	if runtime.GOOS == "windows" && ctx.Cli.Exec.Cmd == "" {
-		// Windows doesn't set $SHELL, so default to CommandPrompt
-		ctx.Cli.Exec.Cmd = "cmd.exe"
+	if ctx.Cli.Exec.Cmd == "" {
+		if runtime.GOOS == "windows" {
+			// Windows doesn't set $SHELL, so default to CommandPrompt
+			ctx.Cli.Exec.Cmd = "cmd.exe"
+		} else if os.Getenv("XONSH_VERSION") != "" {
+			// Xonsh doesn't set $SHELL, so default to xonsh
+			ctx.Cli.Exec.Cmd = "xonsh"
+		}
 	}
 
 	sci := NewSelectCliArgs(ctx.Cli.Exec.Arn, ctx.Cli.Exec.AccountId, ctx.Cli.Exec.Role, ctx.Cli.Exec.Profile)
