@@ -109,6 +109,14 @@ you can write the variable to a file:
 
 `aws-sso eval <args> >~/.devcontainer/devcontainer.env`
 
+Shells supported by `eval`:
+
+ * bash
+ * fish
+ * zonsh
+ * zsh
+ * Windows PowerShell
+
 Flags:
 
  * `--arn <arn>`, `-a` -- ARN of role to assume
