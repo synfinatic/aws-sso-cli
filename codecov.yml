@@ -4,8 +4,9 @@ coverage:
   range: 80..100
   status:
     project:
-      target: auto
-      threshold: 0.25%
+      default:
+        target: auto
+        threshold: 0.25%
 
 ignore:
   - "cmd/**/*"
