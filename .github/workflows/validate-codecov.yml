@@ -1,0 +1,25 @@
+name: Validate codecov.yml
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - codecov.yml
+      - '.github/**'
+
+jobs:
+  validate-codecov:
+    name: Validate codecov.yaml
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install curl
+        run: sudo apt-get install -y curl
+
+      - name: Check codecov.yml
+        run: cat codecov.yml | curl --data-binary @- https://codecov.io/validate
