@@ -305,14 +305,6 @@ func (s *Settings) Save(configFile string, overwrite bool) error {
 // configure our settings using the overrides
 func (s *Settings) setOverrides(override OverrideSettings) {
 	// Setup Logging
-	if override.LogLines {
-		s.LogLines = true
-	}
-
-	if s.LogLines {
-		log.SetReportCaller(true)
-	}
-
 	if override.LogLevel != "" {
 		s.LogLevel = override.LogLevel
 	}
@@ -321,6 +313,11 @@ func (s *Settings) setOverrides(override OverrideSettings) {
 	if err != nil {
 		log.Fatal("Invalid log level", "level", s.LogLevel, "error", err.Error())
 	}
+
+	if override.LogLines {
+		s.LogLines = true
+	}
+	log.SetReportCaller(s.LogLines)
 
 	// Other overrides from CLI
 	if override.Browser != "" {

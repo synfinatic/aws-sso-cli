@@ -9,7 +9,7 @@ import (
 )
 
 var logger flexlog.FlexLogger
-var CreateLogger flexlog.NewLoggerFunc
+var CreateLogger flexlog.NewLoggerFunc = flexlog.NewConsole
 
 // initialize the default logger to log to stderr and log at the warn level
 func init() {
@@ -18,7 +18,7 @@ func init() {
 	addSource := false
 	level := slog.LevelWarn
 
-	logger = flexlog.NewLogger(flexlog.NewConsole, w, addSource, level, color)
+	logger = flexlog.NewLogger(CreateLogger, w, addSource, level, color)
 
 	slog.SetDefault(logger.GetLogger())
 }
@@ -45,7 +45,7 @@ func SwitchLogger(name string) {
 	var ok bool
 	CreateLogger, ok = loggers[name]
 	if !ok {
-		logger.Fatal("Invalid logger", "name", name)
+		logger.Fatal("invalid logger", "name", name)
 	}
 
 	// switch the logger
