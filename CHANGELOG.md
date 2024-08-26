@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Bugs
+
+ * Fix running the ECS server outside of docker #104a
+
 ## [v2.0.0-beta3] - 2024-08-19
 
 ### Bugs
