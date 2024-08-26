@@ -39,7 +39,11 @@ type EcsServerCmd struct {
 
 // AfterApply determines if SSO auth token is required
 func (e EcsServerCmd) AfterApply(runCtx *RunContext) error {
-	runCtx.Auth = AUTH_NO_CONFIG
+	if e.Docker {
+		runCtx.Auth = AUTH_NO_CONFIG
+	} else {
+		runCtx.Auth = AUTH_SKIP
+	}
 	return nil
 }
 
