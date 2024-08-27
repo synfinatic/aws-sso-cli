@@ -18,7 +18,7 @@ require (
 	github.com/posener/complete v1.2.3
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/stretchr/testify v1.9.0
-	github.com/synfinatic/flexlog v0.0.3
+	github.com/synfinatic/flexlog v0.0.5
 	github.com/synfinatic/gotable v0.0.3
 	github.com/willabides/kongplete v0.2.0
 	golang.org/x/crypto v0.25.0 // indirect
