@@ -10,26 +10,145 @@ on:
       - '**.go'
       - go.mod
       - go.sum
+  schedule:
+    - cron: '42 17 * * 5'
+
+permissions:
+  contents: read
+  # Optional: allow read access to pull request. Use with `only-new-issues` option.
+  # pull-requests: read
+
+env:
+  GO_VERSION: '1.22.5'
+  GOLANGCI_LINT_VERSION: 'v1.60.3'
+
 
 jobs:
-
   build:
-    name: Build
+    name: build-tests
     runs-on: ubuntu-latest
     steps:
-
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: ${{ vars.GO_VERSION }}
+        go-version: ${{ env.GO_VERSION }}
         cache: false
       id: go
-
     - name: Check out code into the Go module directory
       uses: actions/checkout@v4
-
     - name: Tests
       run: make .build-tests
-
     - name: Upload to codecov
       uses: codecov/codecov-action@v4
+
+  govulncheck:
+    name: govulncheck
+    runs-on: ubuntu-latest
+    steps:
+    - name: govulncheck
+      uses: golang/govulncheck-action@v1
+      with:
+        go-version-input: '${{ env.GO_VERSION }}'
+        go-package: ./...
+
+  golangci:
+    name: golanci-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '${{ env.GO_VERSION }}'
+      - uses: actions/checkout@v4
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
+          version: '${{ env.GOLANGCI_LINT_VERSION }}'
+
+          # Optional: working directory, useful for monorepos
+          # working-directory: somedir
+
+          # Optional: golangci-lint command line arguments.
+          # args: --issues-exit-code=0
+
+          # Optional: show only new issues if it's a pull request. The default value is `false`.
+          # only-new-issues: true
+
+          # Optional: if set to true then the all caching functionality will be complete disabled,
+          #           takes precedence over all other caching options.
+          # skip-cache: true
+
+          # Optional: if set to true then the action don't cache or restore ~/go/pkg.
+          # skip-pkg-cache: true
+
+          # Optional: if set to true then the action don't cache or restore ~/.cache/go-build.
+          # skip-build-cache: true
+  codeql:
+    name: CodeQL Analyze
+    # Runner size impacts CodeQL analysis time. To learn more, please see:
+    #   - https://gh.io/recommended-hardware-resources-for-running-codeql
+    #   - https://gh.io/supported-runners-and-hardware-resources
+    #   - https://gh.io/using-larger-runners
+    # Consider using larger runners for possible analysis time improvements.
+    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
+    timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'go' ]
+        # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python', 'ruby', 'swift' ]
+        # Use only 'java' to analyze code written in Java, Kotlin or both
+        # Use only 'javascript' to analyze code written in JavaScript, TypeScript or both
+        # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '${{ env.GO_VERSION }}'
+
+
+    # Autobuild attempts to build any compiled languages (C/C++, C#, Go, Java, or Swift).
+    # If this step fails, then you should remove it and run the build manually (see below)
+    #    - name: Autobuild
+    #  uses: github/codeql-action/autobuild@v2
+
+    # ℹ️ Command-line programs to run using the OS shell.
+    # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
+
+    #   If the Autobuild fails above, remove it and uncomment the following three lines.
+    # Initializes the CodeQL tools for scanning.
+#    - name: Initialize CodeQL
+#      uses: github/codeql-action/init@v3
+#      with:
+#        languages: ${{ matrix.language }}
+#        # If you wish to specify custom queries, you can do so here or in a config file.
+#        # By default, queries listed here will override any specified in a config file.
+#        # Prefix the list here with "+" to use these queries and those in the config file.
+#
+#        # For more details on CodeQL's query packs, refer to: https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
+#        # queries: security-extended,security-and-quality
+
+    - name: Generate Coverage Report
+      run: |
+        make unittest
+    #     echo "Run, Build Application using script"
+    #     ./location_of_script_within_repo/buildscript.sh
+
+    - name: Perform CodeQL Analysis
+      uses: codecov/codecov-action@v4
+      with:
+        env_vars: OS
+        files: ./coverage.out
+        fail_ci_if_error: true
+        flags: unittests
+        token: '${{ secrets.CODECOV_TOKEN }}'
+        verbose: false
