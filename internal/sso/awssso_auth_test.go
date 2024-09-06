@@ -223,7 +223,7 @@ func TestAuthenticate(t *testing.T) {
 					UserCode:                aws.String("user-code"),
 					VerificationUri:         aws.String("verification-uri"),
 					VerificationUriComplete: aws.String("verification-uri-complete"),
-					ExpiresIn:               int32(expires),
+					ExpiresIn:               int32(expires), // #nosec
 					Interval:                5,
 				},
 				Error: nil,
@@ -231,7 +231,7 @@ func TestAuthenticate(t *testing.T) {
 			{
 				CreateToken: &ssooidc.CreateTokenOutput{
 					AccessToken:  aws.String("access-token"),
-					ExpiresIn:    int32(expires),
+					ExpiresIn:    int32(expires), // #nosec
 					IdToken:      aws.String("id-token"),
 					RefreshToken: aws.String("refresh-token"),
 					TokenType:    aws.String("token-type"),
@@ -247,7 +247,7 @@ func TestAuthenticate(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, as.ValidAuthToken())
 	assert.Equal(t, "access-token", as.Token.AccessToken)
-	assert.Equal(t, int32(expires), as.Token.ExpiresIn)
+	assert.Equal(t, int32(expires), as.Token.ExpiresIn) // #nosec
 	assert.Equal(t, "id-token", as.Token.IdToken)
 	assert.Equal(t, "refresh-token", as.Token.RefreshToken)
 	assert.Equal(t, "token-type", as.Token.TokenType)
@@ -255,7 +255,7 @@ func TestAuthenticate(t *testing.T) {
 	// We should now have a valid auth token
 	assert.True(t, as.ValidAuthToken())
 	assert.Equal(t, "access-token", as.Token.AccessToken)
-	assert.Equal(t, int32(expires), as.Token.ExpiresIn)
+	assert.Equal(t, int32(expires), as.Token.ExpiresIn) // #nosec
 	assert.Equal(t, "id-token", as.Token.IdToken)
 	assert.Equal(t, "refresh-token", as.Token.RefreshToken)
 	assert.Equal(t, "token-type", as.Token.TokenType)
@@ -381,7 +381,7 @@ func TestAuthenticateFailure(t *testing.T) {
 					UserCode:                aws.String("user-code"),
 					VerificationUri:         aws.String("verification-uri"),
 					VerificationUriComplete: aws.String("verification-uri-complete"),
-					ExpiresIn:               int32(expires),
+					ExpiresIn:               int32(expires), // #nosec
 					Interval:                5,
 				},
 				Error: nil,
@@ -408,7 +408,7 @@ func TestAuthenticateFailure(t *testing.T) {
 					UserCode:                aws.String("user-code"),
 					VerificationUri:         aws.String(""),
 					VerificationUriComplete: aws.String("verification-uri-complete"),
-					ExpiresIn:               int32(expires),
+					ExpiresIn:               int32(expires), // #nosec
 					Interval:                5,
 				},
 				Error: nil,
@@ -431,7 +431,7 @@ func TestAuthenticateFailure(t *testing.T) {
 					UserCode:                aws.String("user-code"),
 					VerificationUri:         aws.String("verification-uri"),
 					VerificationUriComplete: aws.String("verification-uri-complete"),
-					ExpiresIn:               int32(expires),
+					ExpiresIn:               int32(expires), // #nosec
 					Interval:                5,
 				},
 				Error: nil,
@@ -454,7 +454,7 @@ func TestAuthenticateFailure(t *testing.T) {
 					UserCode:                aws.String("user-code"),
 					VerificationUri:         aws.String("verification-uri"),
 					VerificationUriComplete: aws.String("verification-uri-complete"),
-					ExpiresIn:               int32(expires),
+					ExpiresIn:               int32(expires), // #nosec
 					Interval:                5,
 				},
 				Error: nil,
@@ -561,7 +561,7 @@ func TestReauthenticate(t *testing.T) {
 					UserCode:                aws.String("user-code"),
 					VerificationUri:         aws.String("verification-uri"),
 					VerificationUriComplete: aws.String("verification-uri-complete"),
-					ExpiresIn:               int32(expires),
+					ExpiresIn:               int32(expires), // #nosec
 					Interval:                5,
 				},
 				Error: nil,
