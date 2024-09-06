@@ -491,7 +491,7 @@ func promptConsoleDuration(defaultValue int32) int32 {
 	val = strings.TrimSpace(val)
 
 	x, _ := strconv.ParseInt(val, 10, 32)
-	return int32(x)
+	return int32(x) // #nosec
 }
 
 func promptHistoryLimit(defaultValue int64) int64 {

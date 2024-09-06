@@ -147,7 +147,7 @@ func fileKeyringPassword(prompt string) (string, error) {
 	}
 
 	fmt.Fprintf(os.Stderr, "%s: ", prompt)
-	b, err := term.ReadPassword(int(os.Stdin.Fd()))
+	b, err := term.ReadPassword(int(os.Stdin.Fd())) // #nosec
 	if err != nil {
 		return "", err
 	}

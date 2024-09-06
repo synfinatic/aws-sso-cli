@@ -3,8 +3,20 @@
 ## Supported Versions
 
 The only version I support is the latest version of `aws-sso`.  Should a new
-major version be released which is incompatible with v1.x, then this policy
+major version be released which is incompatible with v2.x, then this policy
 will be updated at that time.
+
+Note: with the v2.x release, v1.x is no longer supported.
+
+## Code signing
+
+All commits by me are signed by my [commit signing GPG key](commit-sign-key.asc.md).
+
+## Binary signatures
+
+All releases have a corresponding detactched GPG signature using my [code signing GPG key](code-sign-key.asc.md).
+
+## Reporting a Vulnerability
 
 ## Reporting a Vulnerability
 
