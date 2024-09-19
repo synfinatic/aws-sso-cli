@@ -101,7 +101,7 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 	return printRoles(ctx, fields, ctx.Cli.List.CSV, prefixSearch, ctx.Cli.List.Sort, ctx.Cli.List.Reverse)
 }
 
-// DefaultCmd has no args, and just prints the default fields and exists because
+// DefaultCmd has no args, and just prints the default fields and exits because
 // as of Kong 0.2.18 you can't have a default command which takes args
 type DefaultCmd struct{}
 
