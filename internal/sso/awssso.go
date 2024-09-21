@@ -239,9 +239,9 @@ func (as *AWSSSO) ListAccounts(input *sso.ListAccountsInput) (*sso.ListAccountsO
 				as.rolesLock.Lock()
 				log.Error("AccessToken Unauthorized Error; refreshing", "error", err.Error())
 
-				if err = as.reauthenticate(); err != nil {
+				if err2 := as.reauthenticate(); err2 != nil {
 					// fail hard now
-					return output, err
+					return output, err2
 				}
 				input.AccessToken = aws.String(as.Token.AccessToken)
 				as.rolesLock.Unlock()
