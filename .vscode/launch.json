@@ -5,6 +5,23 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Run Wizard",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/aws-sso/",
+            "args": ["setup", "wizard", "--config=foo.yaml", "--hostname=synfinatic", "--region=us-east-2", "--profile-format=Friendly"]
+        },
+        {
+            "name": "List Profiles",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/aws-sso/",
+            "args": ["list", "--config=${workspaceFolder}/config.yaml"]
+        },
+
+        {
             "name": "Run ECS Server",
             "type": "go",
             "request": "launch",
