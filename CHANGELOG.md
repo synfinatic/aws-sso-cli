@@ -1,10 +1,22 @@
 # AWS SSO CLI Changelog
 
-## [Unreleased]
+## [v2.0.0] - 2024-XX-XX
 
 ### Bugs
 
- * Fix running the ECS server outside of docker #104a
+ * Fix running the ECS server outside of docker #104
+ * Fix crash while fetching AWS account list
+ * Fix `console` command failing due to lack of authentication
+ * Fix `--lines` argument
+
+### New Features
+
+ * Add basic xonsh shell support
+
+### Changes
+
+ * Bump various 3rd party libraries
+ * Improve github actions for builds
 
 ## [v2.0.0-beta3] - 2024-08-19
 
