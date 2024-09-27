@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.34">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.38">
     
     
       
@@ -26,7 +26,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.35f28582.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.8c3ca2c6.min.css">
       
       
 
@@ -421,6 +421,15 @@
   <a href="#when-will-my-credentials-expire" class="md-nav__link">
     <span class="md-ellipsis">
       When will my credentials expire?
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#can-aws-sso-auto-refresh-my-iam-role-credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      Can aws-sso auto-refresh my IAM role credentials?
     </span>
   </a>
   
@@ -1262,6 +1271,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#can-aws-sso-auto-refresh-my-iam-role-credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      Can aws-sso auto-refresh my IAM role credentials?
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#why-cant-aws-sso-find-my-new-role" class="md-nav__link">
     <span class="md-ellipsis">
       Why can't aws-sso find my new role?
@@ -1616,6 +1634,16 @@
 <h3 id="when-will-my-credentials-expire">When will my credentials expire?</h3>
 <p>Your credentials will expire based on how long your administrator allows. To
 see how long your credentials have until they expire, see the <a href="../commands/#list">list command</a>.</p>
+<h3 id="can-aws-sso-auto-refresh-my-iam-role-credentials">Can aws-sso auto-refresh my IAM role credentials?</h3>
+<p>If your AWS administrator <a href="https://docs.aws.amazon.com/singlesignon/latest/userguide/howtosessionduration.html">configured the IAM role session timeout</a> to a short
+duration (default is 1hr), then <code>aws-sso</code> will need to reguarly fetch new IAM credentials
+when they expire.  Sadly, there is no good way to automatically update your shell environment
+variables with the new values every time they expire.</p>
+<p>However, if you use <a href="../commands/#setup-profiles">aws-sso setup profiles</a> and then set your
+<code>AWS_PROFILE</code> environment variable to the name of the profile you'd like to use, then <code>aws-sso</code>
+can auto-refresh your credentials in the background for as long as your <a href="https://docs.aws.amazon.com/singlesignon/latest/userguide/configure-user-session.html">AWS Identity Center
+session</a>
+is valid (default is 8hrs).</p>
 <h3 id="why-cant-aws-sso-find-my-new-role">Why can't aws-sso find my new role?</h3>
 <p>Most likely, this is because the aws-sso <a href="../config/#CacheRefresh">cache</a> is out of
 date.  You can force a refresh of the cache by running <a href="../commands/#cache">aws-sso cache</a>.</p>
@@ -1985,10 +2013,10 @@ is local to me and could put your money to better work than I would.</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.07f07601.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.56dfad97.min.js"></script>
+      <script src="../assets/javascripts/bundle.d6f25eb3.min.js"></script>
       
         <script src="../js/asciinema-player.min.js"></script>
       
