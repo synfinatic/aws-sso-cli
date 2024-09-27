@@ -7,6 +7,20 @@
 Your credentials will expire based on how long your administrator allows. To
 see how long your credentials have until they expire, see the [list command](commands.md#list).
 
+### Can aws-sso auto-refresh my IAM role credentials?
+
+If your AWS administrator [configured the IAM role session timeout](
+https://docs.aws.amazon.com/singlesignon/latest/userguide/howtosessionduration.html) to a short
+duration (default is 1hr), then `aws-sso` will need to reguarly fetch new IAM credentials
+when they expire.  Sadly, there is no good way to automatically update your shell environment
+variables with the new values every time they expire.
+
+However, if you use [aws-sso setup profiles](commands.md#setup-profiles) and then set your
+`AWS_PROFILE` environment variable to the name of the profile you'd like to use, then `aws-sso`
+can auto-refresh your credentials in the background for as long as your [AWS Identity Center
+session](https://docs.aws.amazon.com/singlesignon/latest/userguide/configure-user-session.html)
+is valid (default is 8hrs).
+
 ### Why can't aws-sso find my new role?
 
 Most likely, this is because the aws-sso [cache](config.md#CacheRefresh) is out of
