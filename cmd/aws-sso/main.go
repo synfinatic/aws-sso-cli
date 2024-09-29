@@ -88,6 +88,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"PromptColors.SuggestionBGColor":            "Cyan",
 	"PromptColors.SuggestionTextColor":          "White",
 	"AutoConfigCheck":                           false,
+	"AutoLogin":                                 false,
 	"CacheRefresh":                              168, // 7 days in hours
 	"ConfigProfilesUrlAction":                   "open",
 	"ConsoleDuration":                           60,
@@ -188,7 +189,11 @@ func main() {
 		// make sure we have authenticated via AWS SSO and init SecureStore
 		loadSecureStore(&runCtx)
 		if !checkAuth(&runCtx) {
-			log.Fatal(fmt.Sprintf("Must run `aws-sso login` before running `aws-sso %s`", runCtx.Kctx.Command()))
+			if !runCtx.Settings.AutoLogin {
+				log.Fatal(fmt.Sprintf("Must run `aws-sso login` before running `aws-sso %s`", runCtx.Kctx.Command()))
+			}
+			// perform our login automatically
+			doAuth(&runCtx)
 		}
 
 	case AUTH_SKIP:

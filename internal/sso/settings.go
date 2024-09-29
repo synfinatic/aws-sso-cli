@@ -46,6 +46,7 @@ type Settings struct {
 	cacheFile                 string                   // name of cache file; always passed in via CLI args
 	Cache                     *Cache                   `yaml:"-"` // our cache data
 	SSO                       map[string]*SSOConfig    `koanf:"SSOConfig" yaml:"SSOConfig,omitempty"`
+	AutoLogin                 bool                     `koanf:"AutoLogin" yaml:"AutoLogin,omitempty"`
 	DefaultSSO                string                   `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`   // specify default SSO by key
 	SecureStore               string                   `koanf:"SecureStore" yaml:"SecureStore,omitempty"` // json or keyring
 	DefaultRegion             string                   `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
