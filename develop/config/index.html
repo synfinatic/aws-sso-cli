@@ -767,6 +767,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#autologin" class="md-nav__link">
+    <span class="md-ellipsis">
+      AutoLogin
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#loglevel-loglines" class="md-nav__link">
     <span class="md-ellipsis">
       LogLevel / LogLines
@@ -1731,6 +1740,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#autologin" class="md-nav__link">
+    <span class="md-ellipsis">
+      AutoLogin
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#loglevel-loglines" class="md-nav__link">
     <span class="md-ellipsis">
       LogLevel / LogLines
@@ -1826,7 +1844,8 @@ Afterwords, you can edit the file and adjust the settings as desired or run
 DefaultRegion: &lt;AWS_DEFAULT_REGION&gt;
 DefaultSSO: &lt;name of AWS SSO&gt;
 CacheRefresh: &lt;hours&gt;
-AutoConfigCheck: [False|True]
+AutoConfigCheck: [false|true]
+AutoLogin: [false|true]
 Threads: &lt;integer&gt;
 MaxRetry: &lt;integer&gt;
 MaxBackoff: &lt;integer&gt;
@@ -2209,7 +2228,7 @@ based on the time.  Default is 1440 minutes (24 hours).</p>
 <li><code>Via</code> -- Role Chain Via</li>
 </ul>
 <h4 id="autoconfigcheck">AutoConfigCheck</h4>
-<p>When set to <code>True</code>, when your AWS SSO roles are automatically refreshed (see
+<p>When set to <code>true</code>, when your AWS SSO roles are automatically refreshed (see
 <a href="#cacherefresh">CacheRefresh</a>) <code>aws-sso</code> will also check to see if any changes
 are warranted in your <code>~/.aws/config</code>.</p>
 <p><strong>Note:</strong> This option can be disabled temporarily on the command line by passing
@@ -2217,6 +2236,10 @@ the <code>--no-config-check</code> flag.</p>
 <p><strong>Note:</strong> If you are using a non-default path for your <code>~/.aws/config</code> file, then
 you must be sure to set the <code>AWS_CONFIG_FILE</code> environment variable to the correct
 path or disable this configuration option.</p>
+<h4 id="autologin">AutoLogin</h4>
+<p>When set to <code>true</code>, <code>aws-sso</code> will behave like v1.x and automatically attempt to
+login with your SSO provider to AWS Identity Center when your session has expired.
+When set to <code>false</code> (the default) you must first run <a href="../commands/#login">aws-sso login</a>.</p>
 <h4 id="loglevel-loglines">LogLevel / LogLines</h4>
 <p>By default, the <code>LogLevel</code> is 'info'.  You can override it here or via
 <code>--log-level</code> with one of the following values:</p>

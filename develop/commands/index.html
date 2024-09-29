@@ -1610,7 +1610,10 @@ case-sensitive manner.</p>
 <hr />
 <h3 id="login">login</h3>
 <p>Login via AWS IAM Identity Center (AWS SSO) and retrieve a security token
-used to fetch IAM Role credentials.</p>
+used to fetch IAM Role credentials.  As of <code>aws-sso</code> v2.x this is required
+<em>unless</em> you enable <a href="../config/#autologin">AutoLogin</a>.</p>
+<p>When you login, <code>aws-sso</code> will attempt to refresh your cache of IAM Roles
+per the <a href="../config/#cacherefresh">CacheRefresh</a> setting.</p>
 <p>Flags:</p>
 <ul>
 <li><code>--no-config-check</code> -- Disable automatic updating of <code>~/.aws/config</code></li>
