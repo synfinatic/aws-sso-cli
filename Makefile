@@ -1,4 +1,4 @@
-PROJECT_VERSION        := 2.0.0
+PROJECT_VERSION        := 2.0.0-beta4
 DOCKER_REPO            := synfinatic
 PROJECT_NAME           := aws-sso
 DOCKER_PROJECT_NAME    := aws-sso-cli-ecs-server

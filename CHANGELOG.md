@@ -1,6 +1,6 @@
 # AWS SSO CLI Changelog
 
-## [v2.0.0] - 2024-XX-XX
+## [v2.0.0-beta4] - 2024-XX-XX
 
 ### Bugs
 
@@ -12,6 +12,7 @@
 ### New Features
 
  * Add basic xonsh shell support
+ * Add AutoLogin config option
 
 ### Changes
 

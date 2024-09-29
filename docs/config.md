@@ -46,7 +46,8 @@ SSOConfig:
 DefaultRegion: <AWS_DEFAULT_REGION>
 DefaultSSO: <name of AWS SSO>
 CacheRefresh: <hours>
-AutoConfigCheck: [False|True]
+AutoConfigCheck: [false|true]
+AutoLogin: [false|true]
 Threads: <integer>
 MaxRetry: <integer>
 MaxBackoff: <integer>
@@ -538,7 +539,7 @@ Specify which fields to display via the `list` command.  Valid options are:
 
 #### AutoConfigCheck
 
-When set to `True`, when your AWS SSO roles are automatically refreshed (see
+When set to `true`, when your AWS SSO roles are automatically refreshed (see
 [CacheRefresh](#cacherefresh)) `aws-sso` will also check to see if any changes
 are warranted in your `~/.aws/config`.
 
@@ -548,6 +549,12 @@ the `--no-config-check` flag.
 **Note:** If you are using a non-default path for your `~/.aws/config` file, then
 you must be sure to set the `AWS_CONFIG_FILE` environment variable to the correct
 path or disable this configuration option.
+
+#### AutoLogin
+
+When set to `true`, `aws-sso` will behave like v1.x and automatically attempt to
+login with your SSO provider to AWS Identity Center when your session has expired.
+When set to `false` (the default) you must first run [aws-sso login](commands.md#login).
 
 #### LogLevel / LogLines
 

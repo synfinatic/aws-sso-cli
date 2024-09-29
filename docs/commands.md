@@ -257,7 +257,11 @@ case-sensitive manner.
 ### login
 
 Login via AWS IAM Identity Center (AWS SSO) and retrieve a security token
-used to fetch IAM Role credentials.
+used to fetch IAM Role credentials.  As of `aws-sso` v2.x this is required
+_unless_ you enable [AutoLogin](config.md#autologin).
+
+When you login, `aws-sso` will attempt to refresh your cache of IAM Roles
+per the [CacheRefresh](config.md#cacherefresh) setting.
 
 Flags:
 
