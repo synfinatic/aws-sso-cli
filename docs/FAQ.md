@@ -35,6 +35,16 @@ have to wait a few minutes.
 
 You can see what the AWS ListAccountRoles API is returning via `aws-sso cache -L debug`
 
+### Why does aws-sso say I need to login now?
+
+As of v2.x, `aws-sso` now expects you to explicitly login via the `login` command as training
+users to expect to be auto-prompted via the browser made it more likely an attacker could
+successfully phish their credentials.  By requiring logging in to be explictly initiated by
+the user, it becomes easier to identify when browser prompts are legitimately for `aws-sso`.
+
+Users wishing to utilize the previous auto-login mechanisim can use then [AutoLogin](config.md#autologin)
+configuration option.
+
 --
 
 ## Advanced Features
