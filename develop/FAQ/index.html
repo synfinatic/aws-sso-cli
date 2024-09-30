@@ -444,6 +444,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#why-does-aws-sso-say-i-need-to-login-now" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why does aws-sso say I need to login now?
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1288,6 +1297,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#why-does-aws-sso-say-i-need-to-login-now" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why does aws-sso say I need to login now?
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1654,6 +1672,13 @@ tends to show up in the IAM Identity Center web console
 API call.  Unfortunately, this seems to be a limitation with AWS and you just
 have to wait a few minutes.</p>
 <p>You can see what the AWS ListAccountRoles API is returning via <code>aws-sso cache -L debug</code></p>
+<h3 id="why-does-aws-sso-say-i-need-to-login-now">Why does aws-sso say I need to login now?</h3>
+<p>As of v2.x, <code>aws-sso</code> now expects you to explicitly login via the <code>login</code> command as training
+users to expect to be auto-prompted via the browser made it more likely an attacker could
+successfully phish their credentials.  By requiring logging in to be explictly initiated by
+the user, it becomes easier to identify when browser prompts are legitimately for <code>aws-sso</code>.</p>
+<p>Users wishing to utilize the previous auto-login mechanisim can use then <a href="../config/#autologin">AutoLogin</a>
+configuration option.</p>
 <p>--</p>
 <h2 id="advanced-features">Advanced Features</h2>
 <h3 id="does-aws-sso-cli-support-role-chaining">Does AWS SSO CLI support role chaining?</h3>
