@@ -1679,7 +1679,7 @@ successfully phish their credentials.  By requiring logging in to be explictly i
 the user, it becomes easier to identify when browser prompts are legitimately for <code>aws-sso</code>.</p>
 <p>Users wishing to utilize the previous auto-login mechanisim can use then <a href="../config/#autologin">AutoLogin</a>
 configuration option.</p>
-<p>--</p>
+<hr />
 <h2 id="advanced-features">Advanced Features</h2>
 <h3 id="does-aws-sso-cli-support-role-chaining">Does AWS SSO CLI support role chaining?</h3>
 <p>Yes.  You can use <code>aws-sso</code> to assume roles in other AWS accounts or
@@ -1767,7 +1767,7 @@ annoying if you're dealing with many remote hosts.</p>
 <p>The alternative is to run the <a href="../ecs-server/">ECS Server</a> locally and then
 use <a href="../remote-ssh/">ssh port forwarding</a> to make all the IAM credentials stored
 in the ECS Server which can then be available to any remote host you login to.</p>
-<p>--</p>
+<hr />
 <h2 id="security">Security</h2>
 <h3 id="how-do-i-delete-all-secrets-from-the-macos-keychain">How do I delete all secrets from the macOS keychain?</h3>
 <ol>
@@ -1820,7 +1820,7 @@ these binaries are not signed and will generate a warning that the binary
 has changed.</p>
 <p>If you prefer the old way of building locally from source to avoid the warning
 you should use <code>brew install -s aws-sso-cli</code> or <code>brew upgrade -s aws-sso-cli</code>.</p>
-<p>--</p>
+<hr />
 <h2 id="profiles-and-tags">Profiles and Tags</h2>
 <h3 id="accountalias-vs-accountname">AccountAlias vs AccountName</h3>
 <p>Due to poor decisions on my part, this is ugly.  Sorry about that.  With that
@@ -1920,7 +1920,7 @@ the <code>Account</code> and <code>Role</code> levels.  These tags make it easie
 roles in larger scale deployments with lots of AWS Accounts. AWS SSO CLI adds
 a number of tags by default for each role and a full list of tags can be viewed
 by using the <a href="../commands/#tags">tags</a> command.</p>
-<p>--</p>
+<hr />
 <h2 id="errors-and-their-meaning">Errors and their meaning</h2>
 <h3 id="error-invalid-grant-provided">Error: Invalid grant provided</h3>
 <p>If you get this error from AWS:</p>
@@ -1961,7 +1961,7 @@ the cache by setting <code>CacheRefresh</code> to <code>0</code>.</p>
 <p>The version of the Docker Go SDK used by <code>aws-sso</code> is higher than the version supported
 by your Docker daemon.  Run <code>export DOCKER_API_VERSION=1.45</code> (set the version
 appropriate based on the error message) to fix.</p>
-<p>--</p>
+<hr />
 <h2 id="misc">Misc</h2>
 <h3 id="what-is-the-story-with-homebrew-support">What is the story with Homebrew support?</h3>
 <p>Initially, <code>aws-sso-cli</code> was distributed as an <a href="https://github.com/synfinatic/homebrew-aws-sso-cli">independant tap</a> but as of
