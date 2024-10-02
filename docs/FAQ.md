@@ -45,7 +45,7 @@ the user, it becomes easier to identify when browser prompts are legitimately fo
 Users wishing to utilize the previous auto-login mechanisim can use then [AutoLogin](config.md#autologin)
 configuration option.
 
---
+---
 
 ## Advanced Features
 
@@ -171,7 +171,7 @@ The alternative is to run the [ECS Server](ecs-server.md) locally and then
 use [ssh port forwarding](remote-ssh.md) to make all the IAM credentials stored
 in the ECS Server which can then be available to any remote host you login to.
 
---
+---
 
 ## Security
 
@@ -245,7 +245,7 @@ has changed.
 If you prefer the old way of building locally from source to avoid the warning
 you should use `brew install -s aws-sso-cli` or `brew upgrade -s aws-sso-cli`.
 
---
+---
 
 ## Profiles and Tags
 
@@ -368,7 +368,7 @@ roles in larger scale deployments with lots of AWS Accounts. AWS SSO CLI adds
 a number of tags by default for each role and a full list of tags can be viewed
 by using the [tags](commands.md#tags) command.
 
---
+---
 
 ## Errors and their meaning
 
@@ -434,7 +434,7 @@ The version of the Docker Go SDK used by `aws-sso` is higher than the version su
 by your Docker daemon.  Run `export DOCKER_API_VERSION=1.45` (set the version
 appropriate based on the error message) to fix.
 
---
+---
 
 ## Misc
 
