@@ -1,5 +1,11 @@
 # AWS SSO CLI Changelog
 
+## [v2.0.0] - XXXX-XX-XX
+
+### Bugs
+
+ * `aws-sso-profile` helper generates error about `--no-config-check` flag
+
 ## [v2.0.0-beta4] - 2024-09-29
 
 ### Bugs
