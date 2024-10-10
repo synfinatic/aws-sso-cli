@@ -9,7 +9,7 @@ complete -f -c aws-sso -a "(__complete_aws-sso)"
 
 function aws-sso-profile
   set --local _args (string split -- ' ' $AWS_SSO_HELPER_ARGS)
-  set -q AWS_SSO_HELPER_ARGS; or set --local _args -L error --no-config-check
+  set -q AWS_SSO_HELPER_ARGS; or set --local _args -L error
   if [ -n "$AWS_PROFILE" ]
       echo "Unable to assume a role while AWS_PROFILE is set"
       return 1
@@ -28,7 +28,7 @@ end
 
 function __aws_sso_profile_complete
   set --local _args (string split -- ' ' $AWS_SSO_HELPER_ARGS)
-  set -q AWS_SSO_HELPER_ARGS; or set --local _args -L error --no-config-check
+  set -q AWS_SSO_HELPER_ARGS; or set --local _args -L error
   set -l cur (commandline -t)
 
   set -l cmd "{{ .Executable }} list $_args --csv -P Profile=$cur Profile"
