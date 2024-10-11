@@ -79,7 +79,7 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 
 // Executes Cmd+Args in the context of the AWS Role creds
 func execCmd(ctx *RunContext, accountid int64, role string) error {
-	region := ctx.Settings.GetDefaultRegion(ctx.Cli.Exec.AccountId, ctx.Cli.Exec.Role, ctx.Cli.Exec.NoRegion)
+	region := ctx.Settings.GetDefaultRegion(accountid, role, ctx.Cli.Exec.NoRegion)
 
 	ctx.Settings.Cache.AddHistory(utils.MakeRoleARN(accountid, role))
 	if err := ctx.Settings.Cache.Save(false); err != nil {
