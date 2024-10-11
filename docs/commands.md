@@ -457,7 +457,7 @@ override this by first exporting `AWS_SSO` to the value you want to use.
 
 If you want to pass specific args to `aws-sso-profile` you can use the
 `$AWS_SSO_HELPER_ARGS` environment variable.  If nothing is set, then
-`--level error --no-config-check` is used.
+`--level error` is used.
 
 Currently the following shells are supported:
 
