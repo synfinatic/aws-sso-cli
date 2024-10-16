@@ -552,9 +552,18 @@ path or disable this configuration option.
 
 #### AutoLogin
 
-When set to `true`, `aws-sso` will behave like v1.x and automatically attempt to
+When set to `true`, `aws-sso` will behave mostly like v1.x and automatically attempt to
 login with your SSO provider to AWS Identity Center when your session has expired.
 When set to `false` (the default) you must first run [aws-sso login](commands.md#login).
+
+**Note:** This feature exists soley beacuse people don't like change.  Enabling this
+really isn't ideal from a security standpoint since it makes it more likely that
+an attempted phish attack will be successful.  Users should expect the login page to load
+in their browser if and only if they have manually initiated the login process.
+
+**Note:** that v2.x does not support the common [--no-config-check](
+https://synfinatic.github.io/aws-sso-cli/v1.17.0/commands/#common-flags) flag that was
+present in 1.x.
 
 #### LogLevel / LogLines
 
