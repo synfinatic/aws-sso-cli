@@ -158,7 +158,7 @@ const (
 func (as *AWSSSO) registerClient(force bool) error {
 	log.Trace("registerClient()")
 	if !force {
-		log.Trace("Checking cache for RegisterClientData")
+		log.Trace("Checking cache for RegisterClientData", "storeKey", as.StoreKey())
 		err := as.store.GetRegisterClientData(as.StoreKey(), &as.ClientData)
 		if err == nil && !as.ClientData.Expired() {
 			log.Debug("Using RegisterClient cache", "storeKey", as.StoreKey())
@@ -166,7 +166,6 @@ func (as *AWSSSO) registerClient(force bool) error {
 		}
 	}
 
-	log.Trace("Registering new client with AWS SSO")
 	input := ssooidc.RegisterClientInput{
 		ClientName: aws.String(as.ClientName),
 		ClientType: aws.String(as.ClientType),
@@ -174,10 +173,12 @@ func (as *AWSSSO) registerClient(force bool) error {
 		GrantTypes: []string{"refresh_token"},
 		Scopes:     nil,
 	}
+	log.Trace("Registering new client with AWS SSO", "ClientName", as.ClientName, "ClientType", as.ClientType)
 	resp, err := as.ssooidc.RegisterClient(context.TODO(), &input)
 	if err != nil {
 		return fmt.Errorf("registerClient: %s", err.Error())
 	}
+	log.Trace("Registered new client with AWS SSO", "ClientId", aws.ToString(resp.ClientId), "ClientSecretExpiresAt", resp.ClientSecretExpiresAt)
 
 	as.ClientData = storage.RegisterClientData{
 		AuthorizationEndpoint: aws.ToString(resp.AuthorizationEndpoint), // not used?
@@ -187,10 +188,12 @@ func (as *AWSSSO) registerClient(force bool) error {
 		ClientSecretExpiresAt: resp.ClientSecretExpiresAt,
 		TokenEndpoint:         aws.ToString(resp.TokenEndpoint), // not used?
 	}
+	log.Trace("SaveRegisterClientData start", "storeKey", as.StoreKey())
 	err = as.store.SaveRegisterClientData(as.StoreKey(), as.ClientData)
 	if err != nil {
 		log.Error("unable to save RegisterClientData", "storeKey", as.StoreKey(), "error", err.Error())
 	}
+	log.Trace("SaveRegisterClientData complete", "storeKey", as.StoreKey())
 	return nil
 }
 
