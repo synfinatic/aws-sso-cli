@@ -11,7 +11,7 @@ require (
 	github.com/atotto/clipboard v0.1.4
 	github.com/c-bata/go-prompt v0.2.5 // 0.2.6 is broken
 	github.com/davecgh/go-spew v1.1.1
-	github.com/goccy/go-yaml v1.12.0
+	github.com/goccy/go-yaml v1.13.4
 	github.com/hexops/gotextdiff v1.0.3
 	github.com/knadh/koanf v1.5.0
 	github.com/manifoldco/promptui v0.9.0
@@ -21,13 +21,13 @@ require (
 	github.com/synfinatic/flexlog v0.0.5
 	github.com/synfinatic/gotable v0.0.3
 	github.com/willabides/kongplete v0.2.0
-	golang.org/x/crypto v0.27.0 // indirect
+	golang.org/x/crypto v0.28.0 // indirect
 )
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.30.5
 	github.com/riywo/loginshell v0.0.0-20200815045211-7d26008be1ab
-	golang.org/x/term v0.24.0
+	golang.org/x/term v0.25.0
 )
 
 require (
@@ -36,7 +36,7 @@ require (
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
-	github.com/fatih/color v1.17.0 // indirect
+	github.com/fatih/color v1.18.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -58,8 +58,7 @@ require (
 	github.com/spf13/cast v1.7.0 // indirect
 
 	// see: https://github.com/sirupsen/logrus/issues/1275
-	golang.org/x/sys v0.25.0 // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	golang.org/x/sys v0.26.0 // indirect
 
 	// see: https://github.com/go-yaml/yaml/issues/666
 	// imported via testify, but they haven't yet merged the PR
@@ -76,7 +75,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.30.1
 	github.com/docker/docker v27.2.1+incompatible
 	github.com/docker/go-connections v0.5.0
-	golang.org/x/net v0.29.0
+	golang.org/x/net v0.30.0
 )
 
 require (
