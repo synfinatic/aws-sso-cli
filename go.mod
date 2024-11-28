@@ -21,13 +21,13 @@ require (
 	github.com/synfinatic/flexlog v0.0.5
 	github.com/synfinatic/gotable v0.0.3
 	github.com/willabides/kongplete v0.2.0
-	golang.org/x/crypto v0.27.0 // indirect
+	golang.org/x/crypto v0.29.0 // indirect
 )
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.30.5
 	github.com/riywo/loginshell v0.0.0-20200815045211-7d26008be1ab
-	golang.org/x/term v0.24.0
+	golang.org/x/term v0.26.0
 )
 
 require (
@@ -58,7 +58,7 @@ require (
 	github.com/spf13/cast v1.7.0 // indirect
 
 	// see: https://github.com/sirupsen/logrus/issues/1275
-	golang.org/x/sys v0.25.0 // indirect
+	golang.org/x/sys v0.27.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 
 	// see: https://github.com/go-yaml/yaml/issues/666
@@ -76,7 +76,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.30.1
 	github.com/docker/docker v27.2.1+incompatible
 	github.com/docker/go-connections v0.5.0
-	golang.org/x/net v0.29.0
+	golang.org/x/net v0.31.0
 )
 
 require (
