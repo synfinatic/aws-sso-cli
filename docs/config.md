@@ -592,6 +592,10 @@ advanced debugging.
  * `json` - Cleartext JSON file (very insecure and not recommended).  Location
     can be overridden with `JsonStore`
 
+**Note:** The `file` option supports passing in the password via the `AWS_SSO_FILE_PASSWORD` environment variable.
+
+**Note:** The `pass` option supports passing in the password via the [gpg-agent](https://www.gnupg.org/documentation/manuals/gnupg24/gpg-agent.1.html).
+
 #### EnvVarTags
 
 List of tag keys that should be set as a shell environment variable when
