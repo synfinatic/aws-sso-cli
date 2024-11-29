@@ -2270,6 +2270,8 @@ advanced debugging.</p>
 <li><code>json</code> - Cleartext JSON file (very insecure and not recommended).  Location
     can be overridden with <code>JsonStore</code></li>
 </ul>
+<p><strong>Note:</strong> The <code>file</code> option supports passing in the password via the <code>AWS_SSO_FILE_PASSWORD</code> environment variable.</p>
+<p><strong>Note:</strong> The <code>pass</code> option supports passing in the password via the <a href="https://www.gnupg.org/documentation/manuals/gnupg24/gpg-agent.1.html">gpg-agent</a>.</p>
 <h4 id="envvartags">EnvVarTags</h4>
 <p>List of tag keys that should be set as a shell environment variable when
 using the <code>eval</code> or <code>exec</code> commands.</p>
