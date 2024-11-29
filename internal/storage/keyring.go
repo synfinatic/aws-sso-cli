@@ -28,6 +28,8 @@ import (
 
 	"github.com/99designs/keyring"
 	// "github.com/davecgh/go-spew/spew"
+	"github.com/danjacques/gofslock/fslock"
+
 	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"golang.org/x/term"
 )
@@ -171,7 +173,13 @@ func OpenKeyring(cfg *keyring.Config) (*KeyringStore, error) {
 		cache:   NewStorageData(),
 	}
 
-	if err = kr.getStorageData(&kr.cache); err != nil {
+	err = fslock.WithSharedBlocking(FlockFile(true), FlockBlocker,
+		func() error {
+			return kr.getStorageData(&kr.cache)
+		},
+	)
+	FlockBlockerReset()
+	if err != nil {
 		return nil, err
 	}
 
@@ -193,10 +201,22 @@ func (kr *KeyringStore) getStorageData(s *StorageData) error {
 
 	switch keyringGOOS {
 	case "windows":
-		data, err = kr.joinAndGetKeyringData(RECORD_KEY)
+		err = fslock.WithSharedBlocking(FlockFile(true), FlockBlocker,
+			func() error {
+				data, err = kr.joinAndGetKeyringData(RECORD_KEY)
+				return err
+			},
+		)
+
 	default:
-		data, err = kr.getKeyringData(RECORD_KEY)
+		err = fslock.WithSharedBlocking(FlockFile(true), FlockBlocker,
+			func() error {
+				data, err = kr.getKeyringData(RECORD_KEY)
+				return err
+			},
+		)
 	}
+	FlockBlockerReset()
 
 	if err != nil {
 		log.Warn("unable to load keyring data", "error", err.Error())
@@ -225,7 +245,14 @@ func (kr *KeyringStore) joinAndGetKeyringData(key string) ([]byte, error) {
 	var err error
 	var chunk []byte
 
-	if chunk, err = kr.getKeyringData(fmt.Sprintf("%s_%d", key, 0)); err != nil {
+	err = fslock.WithSharedBlocking(FlockFile(true), FlockBlocker,
+		func() error {
+			chunk, err = kr.getKeyringData(fmt.Sprintf("%s_%d", key, 0))
+			return err
+		},
+	)
+	FlockBlockerReset()
+	if err != nil {
 		return nil, err
 	}
 
@@ -238,7 +265,13 @@ func (kr *KeyringStore) joinAndGetKeyringData(key string) ([]byte, error) {
 
 	for i := 1; readBytes < totalBytes; i++ {
 		k := fmt.Sprintf("%s_%d", key, i)
-		if chunk, err = kr.getKeyringData(k); err != nil {
+		err = fslock.WithSharedBlocking(FlockFile(true), FlockBlocker,
+			func() error {
+				chunk, err = kr.getKeyringData(k)
+				return err
+			},
+		)
+		if err != nil {
 			return nil, fmt.Errorf("unable to fetch %s: %s", k, err.Error())
 		}
 		data = append(data, chunk...)
@@ -259,10 +292,19 @@ func (kr *KeyringStore) saveStorageData() error {
 
 	switch keyringGOOS {
 	case "windows":
-		err = kr.splitAndSetStorageData(jdata, RECORD_KEY, KEYRING_ID)
+		err = fslock.WithBlocking(FlockFile(true), FlockBlocker,
+			func() error {
+				return kr.splitAndSetStorageData(jdata, RECORD_KEY, KEYRING_ID)
+			},
+		)
 	default:
-		err = kr.setStorageData(jdata, RECORD_KEY, KEYRING_ID)
+		err = fslock.WithBlocking(FlockFile(true), FlockBlocker,
+			func() error {
+				return kr.setStorageData(jdata, RECORD_KEY, KEYRING_ID)
+			},
+		)
 	}
+	FlockBlockerReset()
 	return err
 }
 
