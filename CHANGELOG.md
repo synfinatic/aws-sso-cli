@@ -4,8 +4,9 @@
 
 ### Bugs
 
- * `aws-sso-profile` helper generates error about `--no-config-check` flag 
+ * `aws-sso-profile` helper generates error about `--no-config-check` flag
  * Honor `DefaultRegion` in config.yaml when using interactive prompt #1075
+ * Lock SecureStore across multiple `aws-sso` executions #1084
 
 ## [v2.0.0-beta4] - 2024-09-29
 

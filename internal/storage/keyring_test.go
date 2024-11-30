@@ -41,6 +41,9 @@ type KeyringSuite struct {
 func TestKeyringSuite(t *testing.T) {
 	d, err := os.MkdirTemp("", "test-keyring")
 	assert.NoError(t, err)
+	// need to set this here as we're not using the normal location during tests
+	flockFile = path.Join(d, "storage.lock")
+
 	defer func() {
 		os.RemoveAll(d)
 		os.Unsetenv(ENV_SSO_FILE_PASSWORD)
@@ -256,6 +259,7 @@ func (suite *KeyringSuite) TestJoinAndGetKeyringData() {
 func TestGetStorageData(t *testing.T) {
 	d, err := os.MkdirTemp("", "test-keyring")
 	assert.NoError(t, err)
+	flockFile = path.Join(d, "storage.lock")
 	defer os.RemoveAll(d)
 
 	os.Setenv(ENV_SSO_FILE_PASSWORD, "justapassword")
@@ -285,6 +289,7 @@ func (m *mockKeyringAPI) Remove(key string) error {
 func TestKeyringErrors(t *testing.T) {
 	d, err := os.MkdirTemp("", "test-keyring")
 	assert.NoError(t, err)
+	flockFile = path.Join(d, "storage.lock")
 	defer os.RemoveAll(d)
 
 	os.Setenv(ENV_SSO_FILE_PASSWORD, "justapassword")
@@ -417,14 +422,15 @@ func getPasswordErrorDifferentFunc(p string) (string, error) {
 func TestNewKeyringConfig(t *testing.T) {
 	d, err := os.MkdirTemp("", "test-keyring")
 	assert.NoError(t, err)
-
-	err = os.WriteFile(path.Join(d, "aws-sso-cli-records"), []byte("INVALID DATA"), 0600)
-	assert.NoError(t, err)
+	flockFile = path.Join(d, "storage.lock")
 
 	defer func() {
 		getPasswordFunc = fileKeyringPassword
 		os.RemoveAll(d)
 	}()
+
+	err = os.WriteFile(path.Join(d, "aws-sso-cli-records"), []byte("INVALID DATA"), 0600)
+	assert.NoError(t, err)
 
 	getPasswordFunc = getPasswordErrorFunc
 	_, err = NewKeyringConfig("file", d)
@@ -448,6 +454,7 @@ func TestNewKeyringConfig(t *testing.T) {
 func TestKeyringSuiteFails(t *testing.T) {
 	d, err := os.MkdirTemp("", "test-keyring")
 	assert.NoError(t, err)
+	flockFile = path.Join(d, "storage.lock")
 	err = os.MkdirAll(path.Join(d, "secure"), 0755)
 	assert.NoError(t, err)
 
@@ -490,6 +497,7 @@ func TestKeyringSuiteFails(t *testing.T) {
 func TestSplitCredentials(t *testing.T) {
 	d, err := os.MkdirTemp("", "test-keyring")
 	assert.NoError(t, err)
+	flockFile = path.Join(d, "storage.lock")
 
 	// setup logger for testing
 	oldLogger := log.Copy()
