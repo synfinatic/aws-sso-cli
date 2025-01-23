@@ -2,7 +2,7 @@ package main
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2024 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2025 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -66,7 +66,7 @@ type RunContext struct {
 
 const (
 	DEFAULT_STORE   = "file"
-	COPYRIGHT_YEAR  = "2021-2024"
+	COPYRIGHT_YEAR  = "2021-2025"
 	DEFAULT_THREADS = 5
 )
 
