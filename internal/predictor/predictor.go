@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	// "github.com/davecgh/go-spew/spew"
-	"github.com/goccy/go-yaml"
+
 	"github.com/posener/complete"
 	"github.com/synfinatic/aws-sso-cli/internal/logger"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
@@ -38,11 +38,12 @@ func init() {
 }
 
 type Predictor struct {
-	configFile string
-	accountids []string
-	arns       []string
-	roles      []string
-	profiles   []string
+	configFile   string
+	accountids   []string
+	arns         []string
+	roles        []string
+	profiles     []string
+	ssoInstances []string
 }
 
 // NewPredictor loads our cache file (if exists) and loads the values
@@ -81,6 +82,9 @@ func (p *Predictor) newPredictor(s *sso.Settings, c *sso.Cache) *Predictor {
 	// read our CLI to filter based on account and/or role
 	filterAccount := getAccountIdFlag()
 	filterRole := getRoleFlag()
+	for instanceName := range s.SSO {
+		p.ssoInstances = append(p.ssoInstances, instanceName)
+	}
 
 	for aid := range cache.Roles.Accounts {
 		if filterAccount > 0 && filterAccount != aid {
@@ -158,19 +162,7 @@ func (p *Predictor) RegionComplete() complete.Predictor {
 
 // SsoComplete returns a list of the valid AWS SSO Instances
 func (p *Predictor) SsoComplete() complete.Predictor {
-	ssos := []string{}
-	s := sso.Settings{}
-
-	if config, err := os.ReadFile(p.configFile); err == nil {
-		if err = yaml.Unmarshal(config, &s); err == nil {
-			for sso := range s.SSO {
-				ssos = append(ssos, sso)
-			}
-		} else {
-			log.Fatal("unable to process file", "file", p.configFile, "error", err.Error())
-		}
-	}
-	return complete.PredictSet(ssos...)
+	return complete.PredictSet(p.ssoInstances...)
 }
 
 // ProfileComplete returns a list of all the valid AWS_PROFILE values
