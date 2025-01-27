@@ -87,7 +87,7 @@ jobs:
     #     ./location_of_script_within_repo/buildscript.sh
 
     - name: Perform CodeQL Analysis
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       with:
         env_vars: OS
         files: ./coverage.out
