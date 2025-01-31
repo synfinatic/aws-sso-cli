@@ -25,7 +25,7 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.34.0
+	github.com/aws/aws-sdk-go-v2 v1.35.0
 	github.com/riywo/loginshell v0.0.0-20200815045211-7d26008be1ab
 	golang.org/x/term v0.28.0
 )
