@@ -56,7 +56,7 @@ jobs:
     - name: Install Go
       uses: actions/setup-go@v5
       with:
-        go-version: '${{ vars._GO_VERSION }}'
+        go-version: '${{ vars.GO_VERSION }}'
 
 
     # Autobuild attempts to build any compiled languages (C/C++, C#, Go, Java, or Swift).
