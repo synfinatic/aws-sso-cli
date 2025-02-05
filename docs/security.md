@@ -10,11 +10,11 @@ Note: with the v2.x release, v1.x is no longer supported.
 
 ## Code signing
 
-All commits by me are signed by my [commit signing GPG key](/docs/commit-sign-key.asc.md).
+All commits by me are signed by my [commit signing GPG key](commit-sign-key.asc.md).
 
 ## Binary signatures
 
-All releases have a corresponding detactched GPG signature using my [code signing GPG key](/docs/code-sign-key.asc.md).
+All releases have a corresponding detactched GPG signature using my [code signing GPG key](code-sign-key.asc.md).
 
 ## Reporting a Vulnerability
 
@@ -25,7 +25,7 @@ https://github.com/synfinatic/aws-sso-cli/issues/new?assignees=&labels=security&
 If you believe the public visibility of the information of the bug would
 place other `aws-sso` users at risk, then you may email me at:
 `synfinatic@gmail.com`.  GPG encrypting your email in those situations is
-encouraged and you should use [this GPG Key](/docs/commit-sign-key.asc.md).
+encouraged and you should use [this GPG Key](commit-sign-key.asc.md).
 
 ## Security Model
 
