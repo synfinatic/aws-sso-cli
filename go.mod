@@ -21,7 +21,7 @@ require (
 	github.com/synfinatic/flexlog v0.0.5
 	github.com/synfinatic/gotable v0.0.3
 	github.com/willabides/kongplete v0.2.0
-	golang.org/x/crypto v0.32.0 // indirect
+	golang.org/x/crypto v0.33.0 // indirect
 )
 
 require (
@@ -77,7 +77,7 @@ require (
 	github.com/docker/docker v27.2.1+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/jpillora/backoff v1.0.0
-	golang.org/x/net v0.34.0
+	golang.org/x/net v0.35.0
 )
 
 require (
