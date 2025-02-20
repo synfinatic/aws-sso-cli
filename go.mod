@@ -74,7 +74,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.26.2
 	github.com/aws/aws-sdk-go-v2/service/sts v1.30.1
 	github.com/danjacques/gofslock v0.0.0-20240212154529-d899e02bfe22
-	github.com/docker/docker v27.2.1+incompatible
+	github.com/docker/docker v28.0.0+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/jpillora/backoff v1.0.0
 	golang.org/x/net v0.34.0
