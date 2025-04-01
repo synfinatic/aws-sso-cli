@@ -2,12 +2,12 @@ module github.com/synfinatic/aws-sso-cli
 
 go 1.23.0
 
-toolchain go1.23.6
+toolchain go1.24.1
 
 require (
 	github.com/99designs/keyring v1.2.2
 	github.com/Masterminds/sprig/v3 v3.3.0
-	github.com/alecthomas/kong v1.7.0
+	github.com/alecthomas/kong v1.10.0
 	github.com/atotto/clipboard v0.1.4
 	github.com/c-bata/go-prompt v0.2.5 // 0.2.6 is broken
 	github.com/davecgh/go-spew v1.1.1
