@@ -65,7 +65,7 @@ func yesNoPos(val bool) int {
 }
 
 func defaultSelect(options []selectOptions, value string) int {
-	var i int = 0
+	var i = 0
 	for _, v := range options {
 		if v.Value == value {
 			return i
@@ -158,7 +158,7 @@ func promptStartUrl(defaultValue string) string {
 	for !validFQDN {
 		// Get the hostname of the AWS SSO start URL
 		label := fmt.Sprintf("SSO Start URL Hostname (XXXXXXX%s)", START_FQDN_SUFFIX)
-		regexpFQDNSuffix := strings.Replace(START_FQDN_SUFFIX, ".", "\\.", -1)
+		regexpFQDNSuffix := strings.ReplaceAll(START_FQDN_SUFFIX, ".", "\\.")
 		prompt := promptui.Prompt{
 			Label: label,
 			Validate: func(input string) error {
@@ -231,7 +231,7 @@ func promptAwsSsoRegion(defaultValue string) string {
 }
 
 func promptDefaultRegion(defaultValue string) string {
-	var i int = -1
+	var i = -1
 	var err error
 
 	fmt.Printf("\n")
@@ -303,7 +303,7 @@ func promptUseFirefox(defaultValue []string) []string {
 }
 
 func promptUrlAction(defaultValue url.Action) url.Action {
-	var i int = -1
+	var i = -1
 	var err error
 
 	fmt.Printf("\n")
@@ -372,7 +372,7 @@ func promptUrlAction(defaultValue url.Action) url.Action {
 
 func promptUrlExecCommand(defaultValue []string) []string {
 	var val []string
-	var err error = fmt.Errorf("force one loop")
+	var err = fmt.Errorf("force one loop")
 	var line, command string
 
 	fmt.Printf("\n")
@@ -433,7 +433,7 @@ func promptUrlExecCommand(defaultValue []string) []string {
 
 func promptDefaultBrowser(defaultValue string) string {
 	var val string
-	var err error = fmt.Errorf("force loop once")
+	var err = fmt.Errorf("force loop once")
 
 	fmt.Printf("\n")
 
@@ -548,7 +548,7 @@ func promptHistoryMinutes(defaultValue int64) int64 {
 }
 
 func promptLogLevel(defaultValue string) string {
-	var i int = -1
+	var i = -1
 	var err error
 
 	fmt.Printf("\n")
@@ -589,7 +589,7 @@ func index(s []string, v string) int {
 }
 
 func promptAutoConfigCheck(flag bool) bool {
-	var i int = -1
+	var i = -1
 	var err error
 
 	fmt.Printf("\n")
@@ -613,7 +613,7 @@ func promptAutoConfigCheck(flag bool) bool {
 }
 
 func promptFullTextSearch(flag bool) bool {
-	var i int = -1
+	var i = -1
 	var err error
 
 	fmt.Printf("\n")
@@ -638,7 +638,7 @@ func promptFullTextSearch(flag bool) bool {
 
 func promptProfileFormat(value string) string {
 	var err error
-	var i int = -1
+	var i = -1
 
 	items := []selectOptions{
 		{
@@ -720,7 +720,7 @@ func promptCacheRefresh(defaultValue int64) int64 {
 func promptConfigProfilesUrlAction(
 	defaultValue url.ConfigProfilesAction, urlAction url.Action) url.ConfigProfilesAction {
 	var err error
-	var i int = -1
+	var i = -1
 
 	fmt.Printf("\n")
 
