@@ -59,7 +59,7 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 	// refreshing?
 	if ctx.Cli.Eval.Refresh {
 		if ctx.Cli.Eval.EnvArn == "" {
-			return fmt.Errorf("%s", "Unable to determine current IAM role")
+			return fmt.Errorf("unable to determine current IAM role")
 		}
 		accountid, role, err = utils.ParseRoleARN(ctx.Cli.Eval.EnvArn)
 		if err != nil {
@@ -84,7 +84,7 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 		role = ctx.Cli.Eval.Role
 		accountid = ctx.Cli.Eval.AccountId
 	} else {
-		return fmt.Errorf("%s", "Please specify --refresh, --clear, --arn, or --account and --role")
+		return fmt.Errorf("please specify --refresh, --clear, --arn, or --account and --role")
 	}
 	region := ctx.Settings.GetDefaultRegion(accountid, role, ctx.Cli.Eval.NoRegion)
 
@@ -101,7 +101,7 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 		} else if os.Getenv("XONSH_VERSION") != "" {
 			fmt.Printf("$%s = '%s'\n", k, v)
 		} else {
-			return fmt.Errorf("%s", "invalid or unsupported shell.  Please file a bug!")
+			return fmt.Errorf("invalid or unsupported shell.  Please file a bug")
 		}
 	}
 	return nil
@@ -145,7 +145,7 @@ func unsetEnvVars(ctx *RunContext) error {
 			// xonsh behaves like python
 			fmt.Printf("del $%s\n", e)
 		} else {
-			return fmt.Errorf("invalid or unsupported shell.  Please file a bug!")
+			return fmt.Errorf("invalid or unsupported shell.  Please file a bug")
 		}
 	}
 	return nil

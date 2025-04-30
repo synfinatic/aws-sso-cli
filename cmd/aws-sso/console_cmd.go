@@ -72,7 +72,7 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 	}
 
 	if ctx.Settings.ConsoleDuration > 0 && (ctx.Settings.ConsoleDuration < 15 || ctx.Settings.ConsoleDuration > 720) {
-		return fmt.Errorf("Invalid --duration %d.  Must be between 15 and 720", ctx.Settings.ConsoleDuration)
+		return fmt.Errorf("invalid --duration %d.  Must be between 15 and 720", ctx.Settings.ConsoleDuration)
 	}
 
 	// do we force interactive prompt?
@@ -101,7 +101,7 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 		if err == nil {
 			return consoleViaSDK(ctx)
 		}
-		return fmt.Errorf("AWS_PROFILE=%s was not found in our cache.", ctx.Cli.Console.AwsProfile)
+		return fmt.Errorf("AWS_PROFILE=%s was not found in our cache", ctx.Cli.Console.AwsProfile)
 	}
 
 	// fall back to interactive prompting...
@@ -143,12 +143,12 @@ func consoleViaEnvVars(ctx *RunContext) error {
 	input := sts.GetCallerIdentityInput{}
 	output, err := stsHandle.GetCallerIdentity(context.TODO(), &input)
 	if err != nil {
-		return fmt.Errorf("Unable to call sts get-caller-identity: %s", err.Error())
+		return fmt.Errorf("unable to call sts get-caller-identity: %s", err.Error())
 	}
 
 	accountid, role, err := utils.ParseRoleARN(aws.ToString(output.Arn))
 	if err != nil {
-		return fmt.Errorf("Unable to parse ARN: %s", aws.ToString(output.Arn))
+		return fmt.Errorf("unable to parse ARN: %s", aws.ToString(output.Arn))
 	}
 
 	// now we know who we are, get our configured default region
@@ -267,7 +267,7 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials,
 		// sanitize error and remove sensitive URL from normal output
 		r := regexp.MustCompile(`Get "[^"]+": `)
 		e := r.ReplaceAllString(err.Error(), "")
-		return fmt.Errorf("Unable to login to AWS: %s", e)
+		return fmt.Errorf("unable to login to AWS: %s", e)
 	}
 
 	defer resp.Body.Close()
@@ -280,7 +280,7 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials,
 	err = json.Unmarshal(body, &loginResponse)
 	if err != nil {
 		log.Trace("LoginResponse", "body", body)
-		return fmt.Errorf("Error parsing Login response: %s", err.Error())
+		return fmt.Errorf("error parsing Login response: %s", err.Error())
 	}
 
 	sso, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)

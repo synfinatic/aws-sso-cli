@@ -83,11 +83,11 @@ type AWSSSO struct {
 }
 
 func NewAWSSSO(s *SSOConfig, store *storage.SecureStorage) *AWSSSO {
-	var maxRetry int = MAX_RETRY_ATTEMPTS
+	var maxRetry = MAX_RETRY_ATTEMPTS
 	if s.MaxRetry > 0 {
 		maxRetry = s.MaxRetry
 	}
-	var maxBackoff int = MAX_BACKOFF_SECONDS
+	var maxBackoff = MAX_BACKOFF_SECONDS
 	if s.MaxBackoff > 0 {
 		maxBackoff = s.MaxBackoff
 	}
@@ -224,7 +224,7 @@ func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 }
 
 func (as *AWSSSO) ListAccounts(input *sso.ListAccountsInput) (*sso.ListAccountsOutput, error) {
-	var err error = errors.New("foo")
+	var err = errors.New("foo")
 	var output *sso.ListAccountsOutput
 
 	for cnt := 0; err != nil && cnt <= MAX_RETRY_ATTEMPTS; cnt++ {
@@ -260,7 +260,7 @@ func (as *AWSSSO) ListAccounts(input *sso.ListAccountsInput) (*sso.ListAccountsO
 
 // ListAccountRoles is a wrapper around sso.ListAccountRoles which does our retry logic
 func (as *AWSSSO) ListAccountRoles(input *sso.ListAccountRolesInput) (*sso.ListAccountRolesOutput, error) {
-	var err error = errors.New("foo")
+	var err = errors.New("foo")
 	var output *sso.ListAccountRolesOutput
 
 	for cnt := 0; err != nil && cnt <= MAX_RETRY_ATTEMPTS; cnt++ {
@@ -445,7 +445,7 @@ func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.Role
 	log.Debug("Calling AssumeRole", "role", fmt.Sprintf("%s:%s", aId, role), "via", configRole.Via)
 	viaAccountId, viaRole, err := utils.ParseRoleARN(configRole.Via)
 	if err != nil {
-		return storage.RoleCredentials{}, fmt.Errorf("Invalid Via %s: %s", configRole.Via, err.Error())
+		return storage.RoleCredentials{}, fmt.Errorf("invalid Via %s: %s", configRole.Via, err.Error())
 	}
 
 	// recurse

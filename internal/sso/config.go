@@ -161,7 +161,7 @@ func (s *SSOConfig) GetRole(accountId int64, role string) (*SSORole, error) {
 			return r, nil
 		}
 	}
-	return &SSORole{}, fmt.Errorf("Unable to find %s:%s", id, role)
+	return &SSORole{}, fmt.Errorf("unable to find %s:%s", id, role)
 }
 
 // GetConfigHash generates a SHA256 to be used to see if there are
