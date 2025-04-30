@@ -34,10 +34,10 @@ type ECSClientRequest struct {
 
 func (cr *ECSClientRequest) Validate() error {
 	if cr.ProfileName == "" {
-		return fmt.Errorf("Missing ProfileName")
+		return fmt.Errorf("missing ProfileName")
 	}
 	if cr.Creds == nil {
-		return fmt.Errorf("Missing Creds block")
+		return fmt.Errorf("missing Creds block")
 	}
 	return cr.Creds.Validate()
 }

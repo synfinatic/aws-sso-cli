@@ -299,7 +299,7 @@ func (r *Roles) checkProfiles(s *Settings) error {
 			}
 
 			if arn, duplicate := profileUniqueCheck[pname]; duplicate {
-				return fmt.Errorf("Duplicate profile name '%s' for:\n- %s\n- %s", pname, arn, role.Arn)
+				return fmt.Errorf("duplicate profile name '%s' for:\n- %s\n- %s", pname, arn, role.Arn)
 			} else {
 				profileUniqueCheck[pname] = arn
 			}
@@ -523,7 +523,7 @@ func (r *AWSRoleFlat) GetSortableField(fieldName string) (FlatField, error) {
 	switch fieldName {
 	case "Tags":
 		// Tags is a valid field, but we can't sort by it
-		return ret, fmt.Errorf("Unable to sort by `Tags`")
+		return ret, fmt.Errorf("unable to sort by `Tags`")
 	}
 
 	v := reflect.ValueOf(r)
@@ -531,7 +531,7 @@ func (r *AWSRoleFlat) GetSortableField(fieldName string) (FlatField, error) {
 
 	// Make sure the fieldName exists in our struct
 	if !f.IsValid() {
-		return ret, fmt.Errorf("Invalid field name: %s", fieldName)
+		return ret, fmt.Errorf("invalid field name: %s", fieldName)
 	}
 
 	switch fieldName {
