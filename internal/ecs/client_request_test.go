@@ -85,7 +85,7 @@ func TestReadClientRequest(t *testing.T) {
 	body, _ = json.Marshal(msg)
 	r = httptest.NewRequest(http.MethodPut, fmt.Sprintf("%s/Foobar", DEFAULT_ROUTE), bytes.NewReader(body))
 	_, err = ReadClientRequest(r)
-	assert.ErrorContains(t, err, "Missing")
+	assert.ErrorContains(t, err, "missing")
 
 	body = []byte{'{', '[', ','}
 	r = httptest.NewRequest(http.MethodPut, fmt.Sprintf("%s/Foobar", DEFAULT_ROUTE), bytes.NewReader(body))

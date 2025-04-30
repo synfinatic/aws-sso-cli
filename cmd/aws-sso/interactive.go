@@ -49,7 +49,8 @@ func (ctx *RunContext) PromptExec(exec CompleterExec) error {
 	}
 
 	sso.Refresh(ctx.Settings)
-	fmt.Printf("Please use `exit` or `Ctrl-D` to quit.\n")
+	fmt.Println("Use <Up/Down Arrow> to highlight key/value and then <Space> to select.")
+	fmt.Println("Type `exit` or `Ctrl-D` to abort.")
 
 	c := NewTagsCompleter(ctx, sso, exec)
 	opts := ctx.Settings.DefaultOptions(c.ExitChecker)

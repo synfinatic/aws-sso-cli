@@ -1,29 +1,46 @@
+version: "2"
 linters:
   enable:
     - asciicheck
-    - ineffassign
-    - gocyclo
     - dupl
-      # - funlen
-    - gofmt
+    - gocyclo
     - gosec
     - misspell
     - revive
     - whitespace
-      # - unparam
-
-linters-settings:
-  revive:
+  settings:
+    revive:
+      rules:
+        - name: var-naming
+          arguments:
+            - - ID
+              - URL
+              - JSON
+              - URI
+            - - ""
+          severity: warning
+          disabled: false
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
     rules:
-      - name: var-naming
-        severity: warning
-        disabled: false
-        arguments:
-          - ["ID", "URL", "JSON", "URI"] # AllowList
-          - [""] # DenyList
-
-issues:
-  exclude-rules:
-    - linters:
-        - revive
-      text: ALL_CAPS
+      - linters:
+          - revive
+        text: ALL_CAPS
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
