@@ -154,7 +154,7 @@ func checkAwsEnvironment() error {
 	checkVars := []string{"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_PROFILE"}
 	for _, envVar := range checkVars {
 		if _, ok := os.LookupEnv(envVar); ok {
-			return fmt.Errorf("Conflicting environment variable '%s' is set", envVar)
+			return fmt.Errorf("conflicting environment variable '%s' is set", envVar)
 		}
 	}
 	return nil

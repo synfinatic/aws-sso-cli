@@ -98,7 +98,7 @@ func (jc *JsonStore) GetRegisterClientData(key string, client *RegisterClientDat
 	var ok bool
 	*client, ok = jc.RegisterClient[key]
 	if !ok {
-		return fmt.Errorf("No RegisterClientData for %s", key)
+		return fmt.Errorf("no RegisterClientData for %s", key)
 	}
 	return nil
 }
@@ -120,7 +120,7 @@ func (jc *JsonStore) GetCreateTokenResponse(key string, token *CreateTokenRespon
 	var ok bool
 	*token, ok = jc.CreateTokenResponse[key]
 	if !ok {
-		return fmt.Errorf("No CreateTokenResponse for %s", key)
+		return fmt.Errorf("no CreateTokenResponse for %s", key)
 	}
 	return nil
 }
@@ -142,7 +142,7 @@ func (jc *JsonStore) GetRoleCredentials(arn string, token *RoleCredentials) erro
 	var ok bool
 	*token, ok = jc.RoleCredentials[arn]
 	if !ok {
-		return fmt.Errorf("No RoleCredentials for ARN: %s", arn)
+		return fmt.Errorf("no RoleCredentials for ARN: %s", arn)
 	}
 	return nil
 }
@@ -164,7 +164,7 @@ func (jc *JsonStore) GetStaticCredentials(arn string, creds *StaticCredentials) 
 	var ok bool
 	*creds, ok = jc.StaticCredentials[arn]
 	if !ok {
-		return fmt.Errorf("No StaticCredentials for ARN: %s", arn)
+		return fmt.Errorf("no StaticCredentials for ARN: %s", arn)
 	}
 	return nil
 }
@@ -173,7 +173,7 @@ func (jc *JsonStore) GetStaticCredentials(arn string, creds *StaticCredentials) 
 func (jc *JsonStore) DeleteStaticCredentials(arn string) error {
 	if _, ok := jc.StaticCredentials[arn]; !ok {
 		// return error if key doesn't exist
-		return fmt.Errorf("No StaticCredentials for ARN: %s", arn)
+		return fmt.Errorf("no StaticCredentials for ARN: %s", arn)
 	}
 
 	delete(jc.StaticCredentials, arn)

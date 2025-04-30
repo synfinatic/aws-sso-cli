@@ -54,8 +54,8 @@ type ECSClient struct {
 }
 
 func NewECSClient(server, authToken, certChain string) *ECSClient {
-	var client *http.Client = &http.Client{}
-	var proto string = "http"
+	var client = &http.Client{}
+	var proto = "http"
 	var err error
 
 	if certChain != "" {
