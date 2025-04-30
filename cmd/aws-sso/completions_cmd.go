@@ -34,7 +34,8 @@ type CompleteCmd struct {
 
 // AfterApply determines if SSO auth token is required
 func (c CompleteCmd) AfterApply(runCtx *RunContext) error {
-	runCtx.Auth = AUTH_SKIP
+	// completions doesn't require any config
+	runCtx.Auth = AUTH_NO_CONFIG
 	return nil
 }
 
@@ -42,7 +43,7 @@ func (cc *CompleteCmd) Run(ctx *RunContext) error {
 	var err error
 
 	if ctx.Cli.Setup.Completions.Source {
-		return helper.NewSourceHelper(os.Executable, os.Stdout).Generate(ctx.Cli.Setup.Completions.Shell)
+		err = helper.NewSourceHelper(os.Executable, os.Stdout).Generate(ctx.Cli.Setup.Completions.Shell)
 	} else if ctx.Cli.Setup.Completions.Install {
 		// install the current auto-complete helper
 		err = helper.InstallHelper(ctx.Cli.Setup.Completions.Shell, ctx.Cli.Setup.Completions.ShellScript)

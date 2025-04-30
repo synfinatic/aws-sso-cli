@@ -7,6 +7,7 @@
  * `aws-sso-profile` helper generates error about `--no-config-check` flag
  * Honor `DefaultRegion` in config.yaml when using interactive prompt #1075
  * Lock SecureStore across multiple `aws-sso` executions #1084
+ * `setup completions` and most `ecs` commands no longer require a valid config #1180
 
 ## [v2.0.0-beta4] - 2024-09-29
 
