@@ -155,11 +155,13 @@ func main() {
 
 	override := parseArgs(&runCtx)
 
-	if runCtx.Auth == AUTH_NO_CONFIG {
+	if runCtx.Auth == AUTH_NO_CONFIG ||
+		runCtx.Kctx.Command() == "setup completions" {
 		// side-step the rest of the setup...
 		if err = runCtx.Kctx.Run(&runCtx); err != nil {
 			log.Fatal(err.Error())
 		}
+		return
 	}
 
 	// Load the config file
