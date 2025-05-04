@@ -161,7 +161,7 @@ func main() {
 		if err = runCtx.Kctx.Run(&runCtx); err != nil {
 			log.Fatal(err.Error())
 		}
-		return
+		return // don't do anything else
 	}
 
 	// Load the config file
