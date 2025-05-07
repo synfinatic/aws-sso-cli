@@ -194,11 +194,23 @@ func AccountIdToString(a int64) (string, error) {
 
 // AccountIdToInt64 returns an int64 version of AWS AccountID in base10
 func AccountIdToInt64(a string) (int64, error) {
-	x, err := strconv.ParseInt(a, 10, 64)
-	if err != nil {
-		return 0, err
+	var x int64
+	var err error
+
+	if strings.Contains(a, "e+") {
+		// AWS AccountID is in scientific notation
+		f, err := strconv.ParseFloat(a, 64)
+		if err != nil {
+			return 0, fmt.Errorf("invalid AWS AccountId: %s", a)
+		}
+		x = int64(f)
+	} else {
+		x, err = strconv.ParseInt(a, 10, 64)
+		if err != nil {
+			return 0, err
+		}
 	}
-	if x < 0 {
+	if x < 0 || x > MAX_AWS_ACCOUNTID {
 		return 0, fmt.Errorf("invalid AWS AccountId: %s", a)
 	}
 	return x, nil

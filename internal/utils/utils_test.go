@@ -199,6 +199,17 @@ func (suite *UtilsTestSuite) TestAccountToInt64() {
 
 	_, err = AccountIdToInt64("-1")
 	assert.Error(t, err)
+
+	a, err = AccountIdToInt64("7.2668187369e+10")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(72668187369), a)
+
+	a, err = AccountIdToInt64("1e+1")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(10), a)
+
+	_, err = AccountIdToInt64("10e+s4")
+	assert.Error(t, err)
 }
 
 func (suite *UtilsTestSuite) TestParseTimeString() {
