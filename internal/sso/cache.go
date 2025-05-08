@@ -499,7 +499,7 @@ func fetchSSORole(id int, as *AWSSSO, aInfo <-chan AccountInfo, rInfo chan<- []R
 // and using our SSOCache
 func processSSORoles(roles []RoleInfo, cache *SSOCache, r *Roles) {
 	for _, role := range roles {
-		log.Debug("Processing %s:%s", role.AccountId, role.RoleName)
+		log.Debug(fmt.Sprintf("Processing %s:%s", role.AccountId, role.RoleName))
 		accountId := role.GetAccountId64()
 
 		if _, ok := r.Accounts[accountId]; !ok {
