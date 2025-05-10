@@ -82,7 +82,7 @@ type AWSSSO struct {
 	authenticateLock sync.RWMutex                // lock for reauthenticate()
 }
 
-func NewAWSSSO(s *SSOConfig, store *storage.SecureStorage) *AWSSSO {
+func NewAWSSSO(s *SSOConfig, store storage.SecureStorage) *AWSSSO {
 	var maxRetry = MAX_RETRY_ATTEMPTS
 	if s.MaxRetry > 0 {
 		maxRetry = s.MaxRetry
@@ -112,7 +112,7 @@ func NewAWSSSO(s *SSOConfig, store *storage.SecureStorage) *AWSSSO {
 		key:            s.key,
 		sso:            ssoSession,
 		ssooidc:        oidcSession,
-		store:          *store,
+		store:          store,
 		ClientName:     awsSSOClientName,
 		ClientType:     awsSSOClientType,
 		SsoRegion:      s.SSORegion,

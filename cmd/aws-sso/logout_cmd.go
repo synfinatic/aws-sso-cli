@@ -38,7 +38,7 @@ func (cc *LogoutCmd) Run(ctx *RunContext) error {
 	if err != nil {
 		return err
 	}
-	awssso := sso.NewAWSSSO(s, &ctx.Store)
+	awssso := sso.NewAWSSSO(s, ctx.Store)
 
 	flushSts(ctx, awssso)
 	return awssso.Logout() // invalidate our AccessToken

@@ -102,7 +102,7 @@ func TestNewAWSSSO(t *testing.T) {
 		MaxBackoff: 1,
 	}
 
-	s := NewAWSSSO(&c, &jstore)
+	s := NewAWSSSO(&c, jstore)
 
 	assert.NotNil(t, s)
 	assert.Equal(t, jstore, s.store)

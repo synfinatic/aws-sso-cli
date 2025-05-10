@@ -43,8 +43,8 @@ type JsonStore struct {
 }
 
 // OpenJsonStore opens our insecure JSON storage backend
-func OpenJsonStore(filename string) (*JsonStore, error) {
-	cache := JsonStore{
+func OpenJsonStore(filename string) (SecureStorage, error) {
+	jstore := JsonStore{
 		filename:            filename,
 		RegisterClient:      map[string]RegisterClientData{},
 		StartDeviceAuth:     map[string]StartDeviceAuthData{},
@@ -58,16 +58,16 @@ func OpenJsonStore(filename string) (*JsonStore, error) {
 
 	cacheBytes, err := os.ReadFile(filename)
 	if errors.Is(err, fs.ErrNotExist) {
-		return &cache, nil
+		return &jstore, nil
 	} else if err != nil {
-		return &cache, fmt.Errorf("unable to open %s: %s", filename, err.Error())
+		return &jstore, fmt.Errorf("unable to open %s: %s", filename, err.Error())
 	}
 
 	if len(cacheBytes) > 0 {
-		err = json.Unmarshal(cacheBytes, &cache)
+		err = json.Unmarshal(cacheBytes, &jstore)
 	}
 
-	return &cache, err
+	return &jstore, err
 }
 
 // save writes the JSON store file, creating the directory if necessary

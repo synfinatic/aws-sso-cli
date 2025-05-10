@@ -49,7 +49,7 @@ func checkAuth(ctx *RunContext) bool {
 			log.Fatal("unable to select SSO", "sso", ctx.Cli.SSO, err.Error())
 		}
 
-		AwsSSO = sso.NewAWSSSO(s, &ctx.Store)
+		AwsSSO = sso.NewAWSSSO(s, ctx.Store)
 	}
 
 	return AwsSSO.ValidAuthToken()
