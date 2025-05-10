@@ -435,6 +435,18 @@ func (r *AWSRoleFlat) GetEnvVarTags(s *Settings) map[string]string {
 	return ret
 }
 
+// AwsRole converts the AWSRoleFlat to an AWSRole
+func (r *AWSRoleFlat) AwsRole() *AWSRole {
+	return &AWSRole{
+		Arn:           r.Arn,
+		DefaultRegion: r.DefaultRegion,
+		Expires:       r.ExpiresEpoch,
+		Profile:       r.Profile,
+		Tags:          r.Tags,
+		Via:           r.Via,
+	}
+}
+
 // HasPrefix determines if the given field starts with the value
 // Tags, Expires and ExpiresEpoch are invalid
 func (r *AWSRoleFlat) HasPrefix(field, prefix string) (bool, error) {

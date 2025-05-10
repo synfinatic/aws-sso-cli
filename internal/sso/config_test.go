@@ -94,10 +94,20 @@ func TestRefresh(t *testing.T) {
 		settings: settings,
 		Accounts: map[string]*SSOAccount{
 			"123456789012": nil,
+			"023456789012": {
+				Roles: map[string]*SSORole{
+					"FooBar0": nil,
+				},
+			},
+			"33456789012": {
+				Roles: map[string]*SSORole{
+					"FooBar3": nil,
+				},
+			},
 		},
 	}
 	c.Refresh(settings) // no crash
-	assert.Equal(t, *(c.Accounts["123456789012"]), SSOAccount{config: c})
+	assert.Equal(t, SSOAccount{config: c}, *(c.Accounts["123456789012"]))
 
 	assert.Equal(t, c.AuthUrlAction, url.Open)
 	assert.Equal(t, c.MaxBackoff, 60)
@@ -112,4 +122,37 @@ func TestRefresh(t *testing.T) {
 		ARN:     "arn:aws:iam::123456789012:role/FooBar",
 		account: c.Accounts["123456789012"],
 	})
+
+	// test that the refresh function doesn't remove accounts, but does
+	// standardize with leading zeros
+	assert.Contains(t, c.Accounts, "123456789012")
+	assert.Contains(t, c.Accounts, "023456789012")
+	assert.Contains(t, c.Accounts, "033456789012")
+}
+
+func TestGetRole(t *testing.T) {
+	c := &SSOConfig{
+		Accounts: map[string]*SSOAccount{
+			"123456789012": {
+				Roles: map[string]*SSORole{},
+			},
+			"023456789012": {
+				Roles: map[string]*SSORole{
+					"FooBar0": {},
+				},
+			},
+			"33456789012": {
+				Roles: map[string]*SSORole{
+					"FooBar3": {},
+				},
+			},
+		},
+	}
+
+	_, err := c.GetRole(123456789012, "FooBar0")
+	assert.Error(t, err)
+
+	r, err := c.GetRole(23456789012, "FooBar0")
+	assert.NoError(t, err)
+	assert.NotNil(t, r)
 }

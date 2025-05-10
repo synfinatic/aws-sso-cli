@@ -401,7 +401,7 @@ func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.Role
 	// is the role defined in the config file?
 	configRole, err := as.SSOConfig.GetRole(accountId, role)
 	if err != nil {
-		log.Debug("SSOConfig.GetRole()", "error", err.Error())
+		log.Debug("SSOConfig.GetRole()", "error", err.Error(), "config", as.SSOConfig)
 	}
 
 	// If not in config OR config does not require doing a Via

@@ -184,7 +184,7 @@ func TimeRemain(expires int64, space bool) (string, error) {
 	return s, nil
 }
 
-// AccountIdToString returns a string version of AWS AccountID
+// AccountIdToString returns a string version of AWS AccountID with leading zeroes
 func AccountIdToString(a int64) (string, error) {
 	if a < 0 || a > MAX_AWS_ACCOUNTID {
 		return "", fmt.Errorf("invalid AWS AccountId: %d", a)
