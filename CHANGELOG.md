@@ -1,6 +1,6 @@
 # AWS SSO CLI Changelog
 
-## [v2.0.0] - XXXX-XX-XX
+## [v2.0.0] - 2025-05-10
 
 ### Bugs
 
