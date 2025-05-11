@@ -341,6 +341,30 @@ func TestRoleFlatExpiresIn(t *testing.T) {
 	assert.Equal(t, "4m", x)
 }
 
+func TestRoleFlatAwsRole(t *testing.T) {
+	f := &AWSRoleFlat{
+		Arn:           "arn:aws:iam::123456789012:role/foobar",
+		DefaultRegion: "us-east-1",
+		ExpiresEpoch:  923452345,
+		Profile:       "foobar",
+		Tags: map[string]string{
+			"Foo": "bar",
+		},
+		Via: "arn:aws:iam::123456789012:role/foobarSource",
+	}
+	x := f.AwsRole()
+	assert.Equal(t, AWSRole{
+		Arn:           "arn:aws:iam::123456789012:role/foobar",
+		DefaultRegion: "us-east-1",
+		Expires:       923452345,
+		Profile:       "foobar",
+		Tags: map[string]string{
+			"Foo": "bar",
+		},
+		Via: "arn:aws:iam::123456789012:role/foobarSource",
+	}, *x)
+}
+
 // profile functions
 func TestEmptyString(t *testing.T) {
 	assert.True(t, emptyString(""))

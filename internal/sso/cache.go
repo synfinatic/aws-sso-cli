@@ -336,6 +336,7 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads 
 		newRoleArns = append(newRoleArns, role.Arn)
 	}
 
+	// do we have any new or deleted roles?
 	added, deleted := 0, 0
 	for _, arn := range newRoleArns {
 		if !slices.Contains(oldRoleArns, arn) {
@@ -345,6 +346,39 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads 
 	for _, arn := range oldRoleArns {
 		if !slices.Contains(newRoleArns, arn) {
 			deleted++
+		}
+	}
+
+	// restore any configured roles that are not in AWS SSO
+	for aId, account := range config.Accounts {
+		accountId, err := utils.AccountIdToInt64(aId)
+		if err != nil {
+			return 0, 0, fmt.Errorf("unable to parse accountId from config.yaml %s: %s", aId, err.Error())
+		}
+		// if aId is scientific notation, convert to int64 string
+		aId, _ := utils.AccountIdToString(accountId)
+		for rName, role := range account.Roles {
+			if role.Via != "" {
+				log.Info("restoring via role", "role", rName, "account", accountId)
+				if _, ok := cache.Roles.Accounts[accountId]; !ok {
+					c.SSO[ssoName].Roles.Accounts[accountId] = &AWSAccount{}
+				}
+				if role.Tags == nil {
+					role.Tags = map[string]string{
+						"AccountAlias": c.SSO[ssoName].Roles.Accounts[accountId].Alias,
+						"AccountID":    aId,
+						"Email":        c.SSO[ssoName].Roles.Accounts[accountId].EmailAddress,
+						"Role":         rName,
+					}
+				}
+				c.SSO[ssoName].Roles.Accounts[accountId].Roles[rName] = &AWSRole{
+					Arn:           role.ARN, // utils.MakeRoleARN(accountId, rName),
+					DefaultRegion: role.DefaultRegion,
+					Profile:       role.Profile,
+					Tags:          role.Tags,
+					Via:           role.Via,
+				}
+			}
 		}
 	}
 

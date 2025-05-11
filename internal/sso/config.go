@@ -76,18 +76,32 @@ func (c *SSOConfig) Refresh(s *Settings) {
 	}
 
 	for accountId, a := range c.Accounts {
+		// normalize the accountId to a string representation of an integer
+		aId, err := utils.AccountIdToInt64(accountId)
+		if err != nil {
+			log.Fatal("Unable to parse accountId", "accountId", accountId, "error", err.Error())
+		}
+		id, _ := utils.AccountIdToString(aId)
+		if id != accountId {
+			log.Debug("Updating accountId", "old", accountId, "new", id)
+			c.Accounts[id] = a
+			delete(c.Accounts, accountId)
+		}
+
 		if a == nil {
-			c.Accounts[accountId] = &SSOAccount{}
-			a = c.Accounts[accountId]
+			c.Accounts[id] = &SSOAccount{}
+			a = c.Accounts[id]
 		}
 		a.SetParentConfig(c)
 		for roleName, r := range a.Roles {
 			if r == nil {
-				c.Accounts[accountId].Roles[roleName] = &SSORole{}
+				c.Accounts[id].Roles[roleName] = &SSORole{}
 				r = a.Roles[roleName]
+			} else {
+				log.Debug("Refreshing role", "accountId", id, "roleName", roleName)
 			}
 			r.SetParentAccount(a)
-			r.ARN = utils.MakeRoleARNs(accountId, roleName)
+			r.ARN = utils.MakeRoleARNs(id, roleName)
 		}
 	}
 	c.settings = s

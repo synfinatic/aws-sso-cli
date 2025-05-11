@@ -279,7 +279,7 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials,
 	loginResponse := LoginResponse{}
 	err = json.Unmarshal(body, &loginResponse)
 	if err != nil {
-		log.Trace("LoginResponse", "body", body)
+		log.Debug("LoginResponse", "body", string(body))
 		return fmt.Errorf("error parsing Login response: %s", err.Error())
 	}
 

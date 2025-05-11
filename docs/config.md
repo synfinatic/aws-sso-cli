@@ -205,6 +205,35 @@ roles in AWS accounts that are not included in your organization's AWS SSO
 scope or roles that were not defined via an [AWS SSO Permission Set](
 https://docs.aws.amazon.com/singlesignon/latest/userguide/permissionsetsconcept.html).
 
+The value of the `Via` must be that of an ARN.  If the initial role is a role managed
+via AWS Identity Center, use the standard IAM Role ARN format of: `arn:aws:iam::<acccountid>:role/<rolename>`
+and NOT the actual IAM Role that Identity Center creates which is of the format:
+`arn:aws:iam::<accountid>:/role/aws-reserved/sso.amazonaws.com/<sso-region>/AWSReservedSSO_<rolename>_<random>`
+
+Note: `aws-sso` does not manage, create or configure the necessasry IAM permissions on
+either role to grant permissions to successfully perform the `sts:AssumeRole` action.
+For this functionality to work, you must configure the IAM permissions to allow this
+operation to be successful.
+
+Example:
+
+```yaml
+SSOConfig:
+  Default:
+    Accounts:
+      072668187369:
+        Roles:
+          AssumeRoleAdmin:
+            Via: "arn:aws:iam::647310151462:role/sandbox-05-assumeroleadmin"
+```
+
+Will allow a user to assume the non-AWS Identity Center role
+`aws:iam::072668187369:roles/AssumeRoleAdmin` via the AWS Identity Center managed
+role `arn:aws:iam::647310151462:role/sandbox-05-assumeroleadmin`.
+
+Note: The [aws-sso console](https://github.com/synfinatic/aws-sso-cli/issues/1205) command
+is not supported for roles accessed using the `Via` feature.
+
 ##### SourceIdentity
 
 An [optional string](
