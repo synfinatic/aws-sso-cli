@@ -37,7 +37,7 @@ func TestNewFile(t *testing.T) {
 
 	assert.Error(t, s.GetRegisterClientData("foobar", &RegisterClientData{}))
 
-	err = s.save()
+	err = s.(*JsonStore).save()
 	assert.Nil(t, err)
 }
 
@@ -53,7 +53,7 @@ func TestBadFilePerms(t *testing.T) {
 
 type JsonStoreTestSuite struct {
 	suite.Suite
-	json     *JsonStore
+	json     SecureStorage
 	jsonFile string
 }
 

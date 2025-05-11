@@ -206,7 +206,7 @@ func main() {
 		}
 
 		loadSecureStore(c)
-		AwsSSO = sso.NewAWSSSO(s, &c.Store)
+		AwsSSO = sso.NewAWSSSO(s, c.Store)
 	case AUTH_UNKNOWN:
 		log.Fatal("Internal error: AUTH_UNKNOWN, please open a bug report")
 	}

@@ -35,7 +35,7 @@ import (
 
 type KeyringSuite struct {
 	suite.Suite
-	store *KeyringStore
+	store SecureStorage
 }
 
 func TestKeyringSuite(t *testing.T) {
@@ -224,16 +224,17 @@ func (suite *KeyringSuite) TestEcsSslKeyPair() { // nolint: dupl
 
 func (suite *KeyringSuite) TestErrorReadKeyring() {
 	t := suite.T()
+	ks := suite.store.(*KeyringStore)
 	// Read non existent key
-	_, err := suite.store.joinAndGetKeyringData("XXXXX")
+	_, err := ks.joinAndGetKeyringData("XXXXX")
 	assert.Error(t, err)
 	// Read Wrong Data
-	_ = suite.store.setStorageData([]byte{0}, "XXXXX_0", KEYRING_ID)
-	_, err = suite.store.joinAndGetKeyringData("XXXXX")
+	_ = ks.setStorageData([]byte{0}, "XXXXX_0", KEYRING_ID)
+	_, err = ks.joinAndGetKeyringData("XXXXX")
 	assert.Error(t, err)
 
-	_ = suite.store.setStorageData([]byte{0, 0, 0, 0, 0, 0, 0, 1, 2, 3}, "XXXXX_0", KEYRING_ID)
-	_, err = suite.store.joinAndGetKeyringData("XXXXX")
+	_ = ks.setStorageData([]byte{0, 0, 0, 0, 0, 0, 0, 1, 2, 3}, "XXXXX_0", KEYRING_ID)
+	_, err = ks.joinAndGetKeyringData("XXXXX")
 	assert.Error(t, err)
 }
 
@@ -248,10 +249,12 @@ func (suite *KeyringSuite) TestJoinAndGetKeyringData() {
 		secretData[i] = 'A'
 	}
 
-	err := suite.store.splitAndSetStorageData(secretData, secretKey, secretLabel)
+	ks := suite.store.(*KeyringStore)
+
+	err := ks.splitAndSetStorageData(secretData, secretKey, secretLabel)
 	assert.NoError(t, err)
 
-	ret, err := suite.store.joinAndGetKeyringData(secretKey)
+	ret, err := ks.joinAndGetKeyringData(secretKey)
 	assert.NoError(t, err)
 	assert.Equal(t, secretData, ret)
 }
@@ -342,8 +345,9 @@ func TestKeyringErrors(t *testing.T) {
 func (suite *KeyringSuite) TestCreateKeys() {
 	t := suite.T()
 
-	assert.Equal(t, "token-response:mykey", suite.store.CreateTokenResponseKey("mykey"))
-	assert.Equal(t, "client-data:mykey", suite.store.RegisterClientKey("mykey"))
+	ks := suite.store.(*KeyringStore)
+	assert.Equal(t, "token-response:mykey", ks.CreateTokenResponseKey("mykey"))
+	assert.Equal(t, "client-data:mykey", ks.RegisterClientKey("mykey"))
 }
 
 func (suite *KeyringSuite) TestStaticCredentials() {
@@ -577,9 +581,12 @@ func TestSplitCredentials(t *testing.T) {
 	// Replace a chunk with wrong data
 	err = store.SaveRoleCredentials("bar", largeRC)
 	assert.NoError(t, err)
-	err = store.setStorageData([]byte("hello friend"), fmt.Sprintf("%s_%d", RECORD_KEY, 1), KEYRING_ID)
+
+	ks := store.(*KeyringStore)
+
+	err = ks.setStorageData([]byte("hello friend"), fmt.Sprintf("%s_%d", RECORD_KEY, 1), KEYRING_ID)
 	assert.NoError(t, err)
-	_, err = store.joinAndGetKeyringData(RECORD_KEY)
+	_, err = ks.joinAndGetKeyringData(RECORD_KEY)
 	assert.Error(t, err)
 
 	// but OpenKeyring is fine

@@ -614,6 +614,45 @@ func (suite *CacheTestSuite) TestAddConfigRoles() {
 	assert.NoError(t, err)
 }
 
+/*
+func (suite *CacheTestSuite) TestCacheRefresh() {
+	t := suite.T()
+
+	settings := &Settings{
+		SSO: map[string]*SSOConfig{
+			"Default": {
+				SSORegion:     "us-east-1",
+				DefaultRegion: "us-east-1",
+			},
+		},
+		HistoryLimit:   1,
+		HistoryMinutes: 90,
+		DefaultSSO:     "Default",
+		cacheFile:      suite.cacheFile,
+		ProfileFormat:  "{{ .AccountIdPad }}:{{ .RoleName }}",
+	}
+	settings.SSO["Default"].settings = settings
+
+	storeFile, err := os.CreateTemp("", "*")
+	assert.NoError(t, err)
+	storeFile.Close()
+	defer os.Remove(storeFile.Name())
+
+	jstore, err := storage.OpenJsonStore(storeFile.Name())
+	assert.NoError(t, err)
+
+	sso := NewAWSSSO(suite.settings.SSO["Default"], &jstore)
+
+	// Ensure the SecureStorage interface is implemented correctly
+	added, deleted, err := suite.cache.Refresh(sso, settings.SSO["Default"], "Default", 1)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), suite.cache.ConfigCreatedAt)
+	assert.Equal(t, int64(1), suite.cache.Version)
+	assert.Equal(t, 1, added)
+	assert.Equal(t, 0, deleted)
+}
+*/
+
 func TestOpenCacheFailure(t *testing.T) {
 	s := &Settings{}
 	c, err := OpenCache("/dev/null", s)
