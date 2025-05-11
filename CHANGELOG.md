@@ -803,7 +803,9 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.0.0-beta3...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.0.0...main
+[v2.0.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.0.0
+[v2.0.0-beta4]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.0.0-beta4
 [v2.0.0-beta3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.0.0-beta3
 [v2.0.0-beta2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.0.0-beta2
 [v1.17.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v1.17.0
