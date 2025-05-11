@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.12">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.13">
     
     
       
@@ -26,7 +26,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.2afb09e1.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.342714a4.min.css">
       
       
 
@@ -2031,6 +2031,28 @@ specific to that role and override any account level tags.</p>
 order to switch to the specified role.  This allows you to define and assume
 roles in AWS accounts that are not included in your organization's AWS SSO
 scope or roles that were not defined via an <a href="https://docs.aws.amazon.com/singlesignon/latest/userguide/permissionsetsconcept.html">AWS SSO Permission Set</a>.</p>
+<p>The value of the <code>Via</code> must be that of an ARN.  If the initial role is a role managed
+via AWS Identity Center, use the standard IAM Role ARN format of: <code>arn:aws:iam::&lt;acccountid&gt;:role/&lt;rolename&gt;</code>
+and NOT the actual IAM Role that Identity Center creates which is of the format:
+<code>arn:aws:iam::&lt;accountid&gt;:/role/aws-reserved/sso.amazonaws.com/&lt;sso-region&gt;/AWSReservedSSO_&lt;rolename&gt;_&lt;random&gt;</code></p>
+<p>Note: <code>aws-sso</code> does not manage, create or configure the necessasry IAM permissions on
+either role to grant permissions to successfully perform the <code>sts:AssumeRole</code> action.
+For this functionality to work, you must configure the IAM permissions to allow this
+operation to be successful.</p>
+<p>Example:</p>
+<pre><code class="language-yaml">SSOConfig:
+  Default:
+    Accounts:
+      072668187369:
+        Roles:
+          AssumeRoleAdmin:
+            Via: &quot;arn:aws:iam::647310151462:role/sandbox-05-assumeroleadmin&quot;
+</code></pre>
+<p>Will allow a user to assume the non-AWS Identity Center role
+<code>aws:iam::072668187369:roles/AssumeRoleAdmin</code> via the AWS Identity Center managed
+role <code>arn:aws:iam::647310151462:role/sandbox-05-assumeroleadmin</code>.</p>
+<p>Note: The <a href="https://github.com/synfinatic/aws-sso-cli/issues/1205">aws-sso console</a> command
+is not supported for roles accessed using the <code>Via</code> feature.</p>
 <h5 id="sourceidentity">SourceIdentity</h5>
 <p>An <a href="https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html#API_AssumeRole_RequestParameters">optional string</a>
 which must not start with <code>aws:</code> that your administrator may require you to set
@@ -2389,10 +2411,10 @@ controlled by <code>aws-sso</code> so any existing value will be overwritten.</p
     
     
       
-      <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.f8cc74c7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.c8b220af.min.js"></script>
+      <script src="../assets/javascripts/bundle.13a4f30d.min.js"></script>
       
         <script src="../js/asciinema-player.min.js"></script>
       
