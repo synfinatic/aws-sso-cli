@@ -56,6 +56,23 @@ type Cache struct {
 	refreshed       bool                 // track if we have run Refresh() since this is expensive
 }
 
+func (c *Cache) GetSSOByName(name string) *SSOCache {
+	if v, ok := c.SSO[name]; ok {
+		return v
+	}
+	// else, init a new one
+	c.SSO[name] = &SSOCache{
+		name:       c.ssoName,
+		LastUpdate: 0,
+		History:    []string{},
+		Roles: &Roles{
+			Accounts: map[int64]*AWSAccount{},
+			ssoName:  c.ssoName,
+		},
+	}
+	return c.SSO[name]
+}
+
 func OpenCache(f string, s *Settings) (*Cache, error) {
 	cache := Cache{
 		settings:        s,

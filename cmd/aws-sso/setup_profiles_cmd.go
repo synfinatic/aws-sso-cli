@@ -19,6 +19,8 @@ package main
  */
 
 import (
+	"fmt"
+
 	"github.com/synfinatic/aws-sso-cli/internal/awsconfig"
 )
 
@@ -40,22 +42,31 @@ type SetupProfilesCmd struct {
 
 // AfterApply determines if SSO auth token is required
 func (s SetupProfilesCmd) AfterApply(runCtx *RunContext) error {
-	runCtx.Auth = AUTH_SKIP
+	runCtx.Auth = AUTH_REQUIRED
 	return nil
 }
 
 func (cc *SetupProfilesCmd) Run(ctx *RunContext) error {
-	var err error
+	s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
+	if err != nil {
+		log.Fatal("unable to select SSO instance", "sso", ctx.Cli.SSO, "error", err.Error())
+	}
 
-	// always refresh our cache
-	c := &CacheCmd{}
-	if err = c.Run(ctx); err != nil {
-		return err
+	ssoName, err := ctx.Settings.GetSelectedSSOName(ctx.Cli.SSO)
+	if err != nil {
+		log.Fatal("unable to select SSO instance", "sso", ctx.Cli.SSO, "error", err.Error())
+	}
+
+	if err = ctx.Settings.Cache.Expired(s); err != nil {
+		c := &CacheCmd{}
+		if err = c.Run(ctx); err != nil {
+			return fmt.Errorf("unable to refresh role cache: %s", err.Error())
+		}
 	}
 
 	if ctx.Cli.Setup.Profiles.Print {
-		return awsconfig.PrintAwsConfig(ctx.Settings)
+		return awsconfig.PrintAwsConfig(ssoName, ctx.Settings)
 	}
-	return awsconfig.UpdateAwsConfig(ctx.Settings, ctx.Cli.Setup.Profiles.AwsConfig,
+	return awsconfig.UpdateAwsConfig(ssoName, ctx.Settings, ctx.Cli.Setup.Profiles.AwsConfig,
 		ctx.Cli.Setup.Profiles.Diff, ctx.Cli.Setup.Profiles.Force)
 }

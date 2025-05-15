@@ -456,6 +456,46 @@ func (s *Settings) GetAllProfiles() (*ProfileMap, error) {
 	return &profiles, nil
 }
 
+// GetAllProfiles returns a map of the ProfileConfig for each SSOConfig.
+// takes the binary path to `open` URL with if set
+func (s *Settings) GetSSOProfiles(ssoName string) (*ProfileMap, error) {
+	profiles := ProfileMap{}
+	var err error
+
+	binaryPath := s.ConfigProfilesBinaryPath
+	if binaryPath == "" {
+		if binaryPath, err = getExecutable(); err != nil {
+			return &profiles, err
+		}
+	}
+
+	// Find all the roles across all of the SSO instances
+	//	for ssoName, sso := range s.Cache.SSO {
+	sso := s.Cache.GetSSOByName(ssoName)
+	for _, role := range sso.Roles.GetAllRoles() {
+		profile, err := role.ProfileName(s)
+		if err != nil {
+			return &profiles, err
+		}
+
+		if _, ok := profiles[ssoName]; !ok {
+			profiles[ssoName] = map[string]ProfileConfig{}
+		}
+
+		profiles[ssoName][role.Arn] = ProfileConfig{
+			Arn:             role.Arn,
+			BinaryPath:      binaryPath,
+			ConfigVariables: s.ConfigVariables,
+			DefaultRegion:   role.DefaultRegion,
+			Profile:         profile,
+			Sso:             ssoName,
+		}
+	}
+	// }
+
+	return &profiles, nil
+}
+
 // UniqueCheck verifies that all of the profiles are unique
 func (p *ProfileMap) UniqueCheck(s *Settings) error {
 	profileUniqueCheck := map[string][]string{} // ProfileName() => Arn

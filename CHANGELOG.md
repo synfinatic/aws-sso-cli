@@ -1,5 +1,16 @@
 # AWS SSO CLI Changelog
 
+## [Unreleased] - 2025-XX-XX
+
+### Bugs
+
+ * Fix forced re-auth with `aws-sso setup profiles` #1210
+
+### Changes
+
+ * `aws-sso setup profiles` Now uses your existing cache if not expired and refreshes only if necessary
+ * `aws-sso setup profiles` Now requires users to be logged in
+
 ## [v2.0.0] - 2025-05-10
 
 ### Bugs

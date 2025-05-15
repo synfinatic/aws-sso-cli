@@ -48,8 +48,8 @@ func AwsConfigFile(cfile string) string {
 var stdout = os.Stdout
 
 // PrintAwsConfig just prints what our new AWS config file block would look like
-func PrintAwsConfig(s *sso.Settings) error {
-	profiles, err := getProfileMap(s)
+func PrintAwsConfig(ssoName string, s *sso.Settings) error {
+	profiles, err := getProfileMap(ssoName, s)
 	if err != nil {
 		return err
 	}
@@ -64,8 +64,8 @@ func PrintAwsConfig(s *sso.Settings) error {
 
 // UpdateAwsConfig updates our AWS config file, optionally presenting a diff for
 // review or possibly making the change without prompting
-func UpdateAwsConfig(s *sso.Settings, cfile string, diff, force bool) error {
-	profiles, err := getProfileMap(s)
+func UpdateAwsConfig(ssoName string, s *sso.Settings, cfile string, diff, force bool) error {
+	profiles, err := getProfileMap(ssoName, s)
 	if err != nil {
 		return err
 	}
@@ -81,8 +81,8 @@ func UpdateAwsConfig(s *sso.Settings, cfile string, diff, force bool) error {
 }
 
 // getProfileMap returns our validated sso.ProfileMap
-func getProfileMap(s *sso.Settings) (*sso.ProfileMap, error) {
-	profiles, err := s.GetAllProfiles()
+func getProfileMap(ssoName string, s *sso.Settings) (*sso.ProfileMap, error) {
+	profiles, err := s.GetSSOProfiles(ssoName)
 	if err != nil {
 		return profiles, err
 	}

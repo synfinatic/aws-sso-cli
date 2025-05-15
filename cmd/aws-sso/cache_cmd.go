@@ -63,7 +63,7 @@ func (cc *CacheCmd) Run(ctx *RunContext) error {
 		// should we update our config??
 		if !ctx.Cli.Cache.NoConfigCheck && ctx.Settings.AutoConfigCheck {
 			if ctx.Settings.ConfigProfilesUrlAction != url.ConfigProfilesUndef {
-				err := awsconfig.UpdateAwsConfig(ctx.Settings, "", true, false)
+				err := awsconfig.UpdateAwsConfig(ssoName, ctx.Settings, "", true, false)
 				if err != nil {
 					log.Error("Unable to auto-update aws config file", "error", err.Error())
 				}
