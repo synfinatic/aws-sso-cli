@@ -27,7 +27,8 @@ import (
 
 const (
 	OLD_CONFIG_DIR      = "~/.aws-sso"
-	CONFIG_FILE         = "%s/config.yaml"
+	CONFIG_FILE_YAML    = "%s/config.yaml"
+	CONFIG_FILE_YML     = "%s/config.yml"
 	JSON_STORE_FILE     = "%s/store.json"
 	INSECURE_CACHE_FILE = "%s/cache.json"
 )
@@ -59,9 +60,22 @@ func ConfigDir(expand bool) string {
 	return path
 }
 
-// ConfigFile returns the path to the config file
+// ConfigFile returns the path to the config file, prioritizing .yaml, then .yml
 func ConfigFile(expand bool) string {
-	return fmt.Sprintf(CONFIG_FILE, ConfigDir(expand))
+	dir := ConfigDir(expand)
+	yamlPath := fmt.Sprintf(CONFIG_FILE_YAML, dir)
+	ymlPath := fmt.Sprintf(CONFIG_FILE_YML, dir)
+
+	// Check for existence of .yaml file first
+	if _, err := os.Stat(yamlPath); err == nil {
+		return yamlPath
+	}
+	// If not, check for existence of .yml file
+	if _, err := os.Stat(ymlPath); err == nil {
+		return ymlPath
+	}
+	// If neither exist, default to .yaml path
+	return yamlPath
 }
 
 // JsonStoreFile returns the path to the JSON store file
