@@ -16,7 +16,7 @@ setting `$AWS_SSO_CONFIG` in your shell or via the `--config` flag.
 The first time you run `aws-sso` and it detects there is no configuration file,
 it will prompt you for a number of questions to give you a basic configuration.
 Afterwords, you can edit the file and adjust the settings as desired or run
-[aws-sso config](commands.md#config).
+[aws-sso setup config](commands.md#config).
 
 ```yaml
 SSOConfig:
