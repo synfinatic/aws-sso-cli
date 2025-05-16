@@ -1721,13 +1721,14 @@ by the <a href="../config/#configvariables">ConfigVariables</a> setting in the
 <em>automatically refresh</em>.  This means, if you do not have a valid AWS SSO token,
 you will be prompted to authentiate via your SSO provider and subsequent
 requests to obtain new IAM STS credentials will automatically happen as needed.</p>
-<p><strong>Note:</strong> You should run this command any time your list of AWS roles changes
-in order to update the <code>~/.aws/config</code> file or enable <a href="../config/#autoconfigcheck">AutoConfigCheck</a>.</p>
+<p><strong>Note:</strong> You should run this command <em>after</em> <a href="#cache">aws-sso cache</a> any time 
+your list of AWS roles changes in order to update the <code>~/.aws/config</code> file 
+or enable <a href="../config/#autoconfigcheck">AutoConfigCheck</a>.</p>
 <p><strong>Note:</strong> It is important that you do <em>NOT</em> remove the <code># BEGIN_AWS_SSO_CLI</code> and
 <code># END_AWS_SSO_CLI</code> lines from your config file!  These markers are used to track
 which profiles are managed by AWS SSO CLI.</p>
-<p><strong>Note:</strong> This command does not honor the <code>--sso</code> option as it operates on all
-of the configured AWS SSO instances in the <code>~/.aws-sso/config.yaml</code> file.</p>
+<p><strong>Note:</strong> This command does not auto-refresh the list of cached roles, so if they
+have recently changed you should run <code>aws-sso cache</code> first.</p>
 <hr />
 <h3 id="setup-wizard">setup wizard</h3>
 <p>Allows you to run through the configuration wizard and update your AWS SSO CLI
