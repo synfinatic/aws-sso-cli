@@ -345,6 +345,17 @@ func (suite *SettingsTestSuite) TestSetOverrides() {
 	assert.Equal(t, 10, s.Threads)
 }
 
+func (suite *SettingsTestSuite) TestGetSSOProfiles() {
+	t := suite.T()
+
+	profiles, err := suite.settings.GetSSOProfiles("Default")
+	assert.NoError(t, err)
+	assert.NotNil(t, profiles)
+	assert.Equal(t, 1, len(*profiles))
+	assert.Contains(t, *profiles, "Default")
+	assert.NotContains(t, *profiles, "Another")
+}
+
 func TestCreatedAt(t *testing.T) {
 	s := Settings{
 		configFile: "/dev/null/invalid",

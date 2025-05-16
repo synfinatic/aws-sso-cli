@@ -67,11 +67,17 @@ func TestGetProfileMap(t *testing.T) {
 		},
 	}
 
-	profiles, err := getProfileMap(s)
-	p := *profiles
+	profiles, err := getProfileMap("Default", s)
 	assert.NoError(t, err)
+	p := *profiles
 	assert.Equal(t, 1, len(p))
 	assert.Equal(t, 2, len(p["Default"]))
+
+	// Check when the SSO name is not available we should get an empty map
+	profiles, err = getProfileMap("NotAvailable", s)
+	assert.NoError(t, err)
+	p = *profiles
+	assert.Equal(t, 0, len(p))
 
 	// now fail
 	s.Cache.SSO["Other"] = &sso.SSOCache{
@@ -89,7 +95,7 @@ func TestGetProfileMap(t *testing.T) {
 			},
 		},
 	}
-	_, err = getProfileMap(s)
+	_, err = getProfileMap("Default", s)
 	assert.Error(t, err)
 }
 
@@ -125,7 +131,7 @@ func TestPrintAwsConfig(t *testing.T) {
 	fname := stdout.Name()
 	defer os.Remove(fname)
 
-	err = PrintAwsConfig(s)
+	err = PrintAwsConfig("Default", s)
 	assert.NoError(t, err)
 
 	_, err = stdout.Seek(0, 0)
@@ -158,7 +164,7 @@ func TestPrintAwsConfig(t *testing.T) {
 		},
 	}
 
-	err = PrintAwsConfig(s)
+	err = PrintAwsConfig("Default", s)
 	assert.Error(t, err)
 }
 
@@ -194,7 +200,7 @@ func TestUpdateAwsConfig(t *testing.T) {
 	defer os.Remove(fname)
 	cfile.Close()
 
-	err = UpdateAwsConfig(s, fname, false, true)
+	err = UpdateAwsConfig("Default", s, fname, false, true)
 	assert.NoError(t, err)
 
 	cfile, err = os.Open(fname)
@@ -226,6 +232,6 @@ func TestUpdateAwsConfig(t *testing.T) {
 		},
 	}
 
-	err = UpdateAwsConfig(s, fname, false, true)
+	err = UpdateAwsConfig("Default", s, fname, false, true)
 	assert.Error(t, err)
 }

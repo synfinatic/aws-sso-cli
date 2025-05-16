@@ -592,6 +592,38 @@ func (suite *CacheTestSuite) TestPruneSSO() {
 	assert.NotContains(t, c.SSO, "Invalid")
 }
 
+func (suite *CacheTestSuite) TestGetSSOByName() {
+	t := suite.T()
+
+	c := &Cache{
+		SSO: map[string]*SSOCache{
+			"Primary": {
+				name: "Primary",
+			},
+			"Secondary": {
+				name: "NotSecondary",
+			},
+			"Invalid": {},
+		},
+	}
+
+	cache := c.GetSSOByName("Primary")
+	assert.NotNil(t, cache)
+	assert.Equal(t, "Primary", cache.name)
+
+	cache = c.GetSSOByName("Secondary")
+	assert.NotNil(t, cache)
+	assert.Equal(t, "NotSecondary", cache.name)
+
+	cache = c.GetSSOByName("Invalid")
+	assert.NotNil(t, cache)
+	assert.Empty(t, cache.name)
+
+	cache = c.GetSSOByName("Missing")
+	assert.NotNil(t, cache)
+	assert.Empty(t, cache.name)
+}
+
 func (suite *CacheTestSuite) TestAddConfigRoles() {
 	t := suite.T()
 

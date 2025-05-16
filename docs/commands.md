@@ -334,16 +334,16 @@ _automatically refresh_.  This means, if you do not have a valid AWS SSO token,
 you will be prompted to authentiate via your SSO provider and subsequent
 requests to obtain new IAM STS credentials will automatically happen as needed.
 
-**Note:** You should run this command any time your list of AWS roles changes
-in order to update the `~/.aws/config` file or enable [AutoConfigCheck](
-config.md#autoconfigcheck).
+**Note:** You should run this command _after_ [aws-sso cache](#cache) any time 
+your list of AWS roles changes in order to update the `~/.aws/config` file 
+or enable [AutoConfigCheck](config.md#autoconfigcheck).
 
 **Note:** It is important that you do _NOT_ remove the `# BEGIN_AWS_SSO_CLI` and
 `# END_AWS_SSO_CLI` lines from your config file!  These markers are used to track
 which profiles are managed by AWS SSO CLI.
 
-**Note:** This command does not honor the `--sso` option as it operates on all
-of the configured AWS SSO instances in the `~/.aws-sso/config.yaml` file.
+**Note:** This command does not auto-refresh the list of cached roles, so if they
+have recently changed you should run `aws-sso cache` first.
 
 ---
 
