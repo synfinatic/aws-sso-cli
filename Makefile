@@ -1,4 +1,4 @@
-PROJECT_VERSION        := 2.0.0
+PROJECT_VERSION        := 2.0.1
 DOCKER_REPO            := synfinatic
 PROJECT_NAME           := aws-sso
 DOCKER_PROJECT_NAME    := aws-sso-cli-ecs-server
@@ -70,10 +70,9 @@ install: $(DIST_DIR)$(PROJECT_NAME)  ## install binary in $INSTALL_PREFIX
 uninstall:  ## Uninstall binary from $INSTALL_PREFIX
 	rm $(INSTALL_PREFIX)/bin/$(PROJECT_NAME)
 
-release-brew: ## Create a PR against homebrew to bump the version
-	@echo "we are in the auto-bump list:  https://github.com/Homebrew/homebrew-core/blob/master/.github/autobump.txt"
-#	VERSION=$(PROJECT_VERSION) ./scripts/release-check.sh
-#	brew update && brew bump-formula-pr --version $(PROJECT_VERSION) aws-sso-cli
+release-check:  ## Check if we are good to release
+	@echo "Checking for v$(PROJECT_VERSION)..."
+	@VERSION=$(PROJECT_VERSION) ./scripts/release-check.sh
 
 release-tag: ## Tag our current HEAD as v$(PROJECT_VERSION)
 	git tag -sa v$(PROJECT_VERSION) -m 'release $(PROJECT_VERSION)'
