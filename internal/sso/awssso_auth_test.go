@@ -31,6 +31,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
+	"github.com/synfinatic/aws-sso-cli/internal/url"
 )
 
 // mock ssooidc
@@ -238,6 +239,74 @@ func TestAuthenticate(t *testing.T) {
 				},
 				Error: nil,
 			},
+
+			// UrlAction = invalid
+			{
+				RegisterClient: &ssooidc.RegisterClientOutput{
+					AuthorizationEndpoint: nil,
+					ClientId:              aws.String("this-is-my-client-id"),
+					ClientSecret:          aws.String("this-is-my-client-secret"),
+					ClientIdIssuedAt:      time.Now().Unix(),
+					ClientSecretExpiresAt: int64(expires),
+					TokenEndpoint:         nil,
+				},
+				Error: nil,
+			},
+			{
+				StartDeviceAuthorization: &ssooidc.StartDeviceAuthorizationOutput{
+					DeviceCode:              aws.String("device-code"),
+					UserCode:                aws.String("user-code"),
+					VerificationUri:         aws.String("verification-uri"),
+					VerificationUriComplete: aws.String("verification-uri-complete"),
+					ExpiresIn:               int32(expires), // #nosec
+					Interval:                5,
+				},
+				Error: nil,
+			},
+			{
+				CreateToken: &ssooidc.CreateTokenOutput{
+					AccessToken:  aws.String("access-token"),
+					ExpiresIn:    int32(expires), // #nosec
+					IdToken:      aws.String("id-token"),
+					RefreshToken: aws.String("refresh-token"),
+					TokenType:    aws.String("token-type"),
+				},
+				Error: nil,
+			},
+
+			// UrlAction = exec
+			{
+				RegisterClient: &ssooidc.RegisterClientOutput{
+					AuthorizationEndpoint: nil,
+					ClientId:              aws.String("this-is-my-client-id"),
+					ClientSecret:          aws.String("this-is-my-client-secret"),
+					ClientIdIssuedAt:      time.Now().Unix(),
+					ClientSecretExpiresAt: int64(expires),
+					TokenEndpoint:         nil,
+				},
+				Error: nil,
+			},
+			{
+				StartDeviceAuthorization: &ssooidc.StartDeviceAuthorizationOutput{
+					DeviceCode:              aws.String("device-code"),
+					UserCode:                aws.String("user-code"),
+					VerificationUri:         aws.String("verification-uri"),
+					VerificationUriComplete: aws.String("verification-uri-complete"),
+					ExpiresIn:               int32(expires), // #nosec
+					Interval:                5,
+				},
+				Error: nil,
+			},
+			{
+				CreateToken: &ssooidc.CreateTokenOutput{
+					AccessToken:  aws.String("access-token"),
+					ExpiresIn:    int32(expires), // #nosec
+					IdToken:      aws.String("id-token"),
+					RefreshToken: aws.String("refresh-token"),
+					TokenType:    aws.String("token-type"),
+				},
+				Error: nil,
+			},
 		},
 	}
 
@@ -259,6 +328,26 @@ func TestAuthenticate(t *testing.T) {
 	assert.Equal(t, "id-token", as.Token.IdToken)
 	assert.Equal(t, "refresh-token", as.Token.RefreshToken)
 	assert.Equal(t, "token-type", as.Token.TokenType)
+
+	// verify CLI override
+	as.SSOConfig.AuthUrlAction = "invalid"
+	err = as.Authenticate("print", "fake-browser")
+	assert.NoError(t, err)
+
+	// verify no override of CLI when not set
+	as.SSOConfig.AuthUrlAction = url.Print
+	err = as.Authenticate(url.Undef, "fake-browser")
+	assert.NoError(t, err)
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("code did not panic as expected: %v", r)
+		}
+	}()
+
+	// we can't exec with bad config
+	as.SSOConfig.AuthUrlAction = url.Exec
+	_ = as.Authenticate(url.Undef, "fake-browser")
 }
 
 func TestValidAuthToken(t *testing.T) {
@@ -475,10 +564,6 @@ func TestAuthenticateFailure(t *testing.T) {
 	assert.Contains(t, err.Error(), "no valid verification url")
 
 	err = as.Authenticate("invalid", "fake-browser")
-	assert.Contains(t, err.Error(), "unsupported Open action")
-
-	as.SSOConfig.AuthUrlAction = "invalid"
-	err = as.Authenticate("print", "fake-browser")
 	assert.Contains(t, err.Error(), "unsupported Open action")
 }
 
