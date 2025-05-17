@@ -1459,10 +1459,10 @@ and the <code>$AWS_PROFILE</code> environment variable, AWS SSO CLI can support 
 <pre><code class="language-ini"># BEGIN_AWS_SSO
 
 [profile Name1]
-credential_process = /usr/bin/aws-sso -u &lt;open&gt; process --sso &lt;name&gt; --arn &lt;arn1&gt;
+credential_process = /usr/bin/aws-sso process --sso &lt;name&gt; --arn &lt;arn1&gt;
 
 [profile Name2]
-credential_process = /usr/bin/aws-sso -u &lt;open&gt; process --sso &lt;name&gt; --arn &lt;arn2&gt;
+credential_process = /usr/bin/aws-sso process --sso &lt;name&gt; --arn &lt;arn2&gt;
 
 # END_AWS_SSO
 </code></pre>
