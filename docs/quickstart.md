@@ -176,10 +176,10 @@ This will add the following lines (example) to your `~/.aws/config` file:
 # BEGIN_AWS_SSO
 
 [profile Name1]
-credential_process = /usr/bin/aws-sso -u <open> process --sso <name> --arn <arn1>
+credential_process = /usr/bin/aws-sso process --sso <name> --arn <arn1>
 
 [profile Name2]
-credential_process = /usr/bin/aws-sso -u <open> process --sso <name> --arn <arn2>
+credential_process = /usr/bin/aws-sso process --sso <name> --arn <arn2>
 
 # END_AWS_SSO
 ```

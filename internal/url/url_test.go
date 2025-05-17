@@ -324,3 +324,12 @@ func TestGetConfigProfilesAction(t *testing.T) {
 	action = Print
 	assert.Equal(t, ConfigProfilesOpen, action.GetConfigProfilesAction())
 }
+
+func TestExecWithUrl(t *testing.T) {
+	t.Parallel()
+	err := execWithUrl([]string{"invalid", "%s"}, "foo")
+	assert.Error(t, err)
+
+	err = execWithUrl([]string{"echo", "%s"}, "foo")
+	assert.NoError(t, err)
+}

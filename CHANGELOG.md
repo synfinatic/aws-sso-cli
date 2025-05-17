@@ -1,5 +1,11 @@
 # AWS SSO CLI Changelog
 
+[Unreleased] - 2025-XX-XX
+
+### Bugs
+
+ * Fix ignoring `--url-action` when passed in on CLI
+
 ## [v2.0.1] - 2025-05-16
 
 ### Bugs

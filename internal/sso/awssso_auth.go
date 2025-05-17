@@ -72,8 +72,11 @@ func (as *AWSSSO) ValidAuthToken() bool {
 func (as *AWSSSO) Authenticate(urlAction url.Action, browser string) error {
 	log.Trace("Authenticate", "urlAction", urlAction, "browser", browser)
 	// cache urlAction and browser for subsequent calls if necessary
-	if urlAction != "" {
+	// if action is still undefined, use the default action which is defined inside NewHandleUrl()
+	if urlAction != url.Undef {
 		as.urlAction = urlAction
+	} else if as.SSOConfig.AuthUrlAction != url.Undef {
+		as.urlAction = as.SSOConfig.AuthUrlAction
 	}
 
 	if browser != "" {
@@ -120,13 +123,7 @@ func (as *AWSSSO) reauthenticate() error {
 		return fmt.Errorf("unable to get device auth info from AWS SSO: %s", err.Error())
 	}
 
-	action := as.urlAction
-	if as.SSOConfig.AuthUrlAction != url.Undef {
-		// specific action for authentication?
-		action = as.SSOConfig.AuthUrlAction
-	}
-
-	urlOpener := url.NewHandleUrl(action, auth.VerificationUriComplete, as.browser, as.urlExecCommand)
+	urlOpener := url.NewHandleUrl(as.urlAction, auth.VerificationUriComplete, as.browser, as.urlExecCommand)
 	urlOpener.ContainerSettings(as.StoreKey(), DEFAULT_AUTH_COLOR, DEFAULT_AUTH_ICON)
 
 	if err = urlOpener.Open(); err != nil {
