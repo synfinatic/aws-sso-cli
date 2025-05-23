@@ -5,6 +5,7 @@
 ### Bugs
 
  * Fix ignoring `--url-action` when passed in on CLI
+ * `aws-sso list` should never force authentication #1219
 
 ## [v2.0.1] - 2025-05-16
 

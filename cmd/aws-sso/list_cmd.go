@@ -81,10 +81,7 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 		return err
 	}
 	if err = ctx.Settings.Cache.Expired(s); err != nil {
-		c := &CacheCmd{}
-		if err = c.Run(ctx); err != nil {
-			log.Error("Unable to refresh local cache", "error", err.Error())
-		}
+		log.Warn("Cache has expired.  Results may be out of date.")
 	}
 
 	fields := ctx.Settings.ListFields
