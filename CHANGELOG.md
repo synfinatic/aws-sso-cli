@@ -39,6 +39,10 @@
 
 * Add aws-sso exec --overwrite-env flag to allow overriding AWS_ env variables #1095
 
+### New Features
+
+* Add aws-sso exec --overwrite-env flag to allow overriding AWS_ env variables #1095
+
 ## [v2.2.4] - 2026-05-21
 
 ### Bugs
