@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD033 -->
 # Using aws-sso on remote hosts with SSH
 
 This is intended to show how to use your `aws-sso` credentials on a remote/bastion

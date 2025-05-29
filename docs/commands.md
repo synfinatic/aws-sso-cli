@@ -2,12 +2,12 @@
 
 ## Common Flags
 
- * `--help`, `-h` -- Builtin and context sensitive help
- * `--browser <path>`, `-b` -- Override default browser to open AWS SSO URL (`$AWS_SSO_BROWSER`)
- * `--config <file>` -- Specify alternative config file (`$AWS_SSO_CONFIG`)
- * `--level <level>`, `-L` -- Change default log level: [error|warn|info|debug|trace]
- * `--lines` -- Print file number with logs
- * `--sso <name>`, `-S` -- Specify non-default AWS SSO instance to use (`$AWS_SSO`)
+* `--help`, `-h` -- Builtin and context sensitive help
+* `--browser <path>`, `-b` -- Override default browser to open AWS SSO URL (`$AWS_SSO_BROWSER`)
+* `--config <file>` -- Specify alternative config file (`$AWS_SSO_CONFIG`)
+* `--level <level>`, `-L` -- Change default log level: [error|warn|info|debug|trace]
+* `--lines` -- Print file number with logs
+* `--sso <name>`, `-S` -- Specify non-default AWS SSO instance to use (`$AWS_SSO`)
 
 ## Commands
 
@@ -22,8 +22,8 @@ modified.
 
 Flags:
 
- * `--no-config-check` -- Disable automatic updating of `~/.aws/config`
- * `--threads <int>` -- Number of threads to use with AWS (default: 5)
+* `--no-config-check` -- Disable automatic updating of `~/.aws/config`
+* `--threads <int>` -- Number of threads to use with AWS (default: 5)
 
 ---
 
@@ -39,15 +39,15 @@ config.md#open-url-in-firefox-container) configuration option.
 
 Flags:
 
- * `--duration <minutes>`, `-d` -- AWS Session duration in minutes (default 60)
- * `--prompt`, `-P` -- Force interactive prompt to select role
- * `--region <region>`, `-r` -- Specify the `$AWS_DEFAULT_REGION` to use
- * `--arn <arn>`, `-a` -- ARN of role to assume (`$AWS_SSO_ROLE_ARN`)
- * `--account <account>`, `-A` -- AWS AccountID of role to assume (`$AWS_SSO_ACCOUNT_ID`)
- * `--role <role>`, `-R` -- Name of AWS Role to assume (requires `--account`) (`$AWS_SSO_ROLE_NAME`)
- * `--profile <profile>`, `-p` -- Name of AWS Profile to assume
- * `--url-action`, `-u` -- How to handle URLs for your SSO provider
- * `--sts-refresh` -- Force refresh of STS Token Credentials
+* `--duration <minutes>`, `-d` -- AWS Session duration in minutes (default 60)
+* `--prompt`, `-P` -- Force interactive prompt to select role
+* `--region <region>`, `-r` -- Specify the `$AWS_DEFAULT_REGION` to use
+* `--arn <arn>`, `-a` -- ARN of role to assume (`$AWS_SSO_ROLE_ARN`)
+* `--account <account>`, `-A` -- AWS AccountID of role to assume (`$AWS_SSO_ACCOUNT_ID`)
+* `--role <role>`, `-R` -- Name of AWS Role to assume (requires `--account`) (`$AWS_SSO_ROLE_NAME`)
+* `--profile <profile>`, `-p` -- Name of AWS Profile to assume
+* `--url-action`, `-u` -- How to handle URLs for your SSO provider
+* `--sts-refresh` -- Force refresh of STS Token Credentials
 
 The generated URL is good for 15 minutes after it is created.
 
@@ -56,13 +56,13 @@ what to do with the resulting URL from the `console` command.
 
 Priority is given to:
 
- * `--prompt`
- * `--profile`
- * `--arn` (`$AWS_SSO_ROLE_ARN`)
- * `--account` (`$AWS_SSO_ACCOUNT_ID`) and `--role` (`$AWS_SSO_ROLE_NAME`)
- * `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN` environment variables
- * `AWS_PROFILE` environment variable (works with both SSO and static profiles)
- * Prompt user interactively
+* `--prompt`
+* `--profile`
+* `--arn` (`$AWS_SSO_ROLE_ARN`)
+* `--account` (`$AWS_SSO_ACCOUNT_ID`) and `--role` (`$AWS_SSO_ROLE_NAME`)
+* `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN` environment variables
+* `AWS_PROFILE` environment variable (works with both SSO and static profiles)
+* Prompt user interactively
 
 ---
 
@@ -78,10 +78,10 @@ passing in IAM credentials via [environment variables](https://docs.aws.amazon.c
 
 Flags:
 
- * `--file <path>`, `-f` -- Specify the file to generate.  Default is to print to STDOUT ($AWS_SHARED_CREDENTIALS_FILE).
- * `--append`, `-a` -- Append to the file instead of overwriting it.
- * `--profile <profile>,...`, `-p` -- One or more profiles to include in the output.
- * `--sts-refresh` -- Force refresh of STS Token Credentials
+* `--file <path>`, `-f` -- Specify the file to generate.  Default is to print to STDOUT ($AWS_SHARED_CREDENTIALS_FILE).
+* `--append`, `-a` -- Append to the file instead of overwriting it.
+* `--profile <profile>,...`, `-p` -- One or more profiles to include in the output.
+* `--sts-refresh` -- Force refresh of STS Token Credentials
 
 **Note:** This command honors the same [$AWS_SHARED_CREDENTIALS_FILE](https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-envvars.html)
 that is supported by the AWS SDK to load credentials.  Since these credentials are temporary, it is
@@ -111,28 +111,28 @@ you can write the variable to a file:
 
 Shells supported by `eval`:
 
- * bash
- * fish
- * zonsh
- * zsh
- * Windows PowerShell
+* bash
+* fish
+* zonsh
+* zsh
+* Windows PowerShell
 
 Flags:
 
- * `--arn <arn>`, `-a` -- ARN of role to assume
- * `--account <account>`, `-A` -- AWS AccountID of role to assume (requires `--role`)
- * `--role <role>`, `-R` -- Name of AWS Role to assume (requires `--account`)
- * `--profile <profile>`, `-p` -- Name of AWS Profile to assume
- * `--clear`, `-c` -- Generate "unset XXXX" commands to clear the environment
- * `--no-region` -- Do not set the [AWS_DEFAULT_REGION](config.md#DefaultRegion) from config.yaml
- * `--refresh` -- Refresh current IAM credentials
+* `--arn <arn>`, `-a` -- ARN of role to assume
+* `--account <account>`, `-A` -- AWS AccountID of role to assume (requires `--role`)
+* `--role <role>`, `-R` -- Name of AWS Role to assume (requires `--account`)
+* `--profile <profile>`, `-p` -- Name of AWS Profile to assume
+* `--clear`, `-c` -- Generate "unset XXXX" commands to clear the environment
+* `--no-region` -- Do not set the [AWS_DEFAULT_REGION](config.md#defaultregion) from config.yaml
+* `--refresh` -- Refresh current IAM credentials
 
 Priority is given to:
 
- * `--refresh` (Uses `$AWS_SSO_ROLE_ARN`)
- * `--profile`
- * `--arn`
- * `--account` and `--role`
+* `--refresh` (Uses `$AWS_SSO_ROLE_ARN`)
+* `--profile`
+* `--arn`
+* `--account` and `--role`
 
 **Note:** The `eval` command only honors the `$AWS_SSO_ROLE_ARN` in the context
 of the `--refresh` flag.  The `$AWS_SSO_ROLE_NAME` and `$AWS_SSO_ACCOUNT_ID`
@@ -166,24 +166,26 @@ commands.
 
 Flags:
 
- * `--arn <arn>`, `-a` -- ARN of role to assume (`$AWS_SSO_ROLE_ARN`)
- * `--account <account>`, `-A` -- AWS AccountID of role to assume (`$AWS_SSO_ACCOUNT_ID`)
- * `--env`, `-e` -- Use existing ENV vars generated by AWS SSO to generate a URL
- * `--role <role>`, `-R` -- Name of AWS Role to assume (`$AWS_SSO_ROLE_NAME`)
- * `--profile <profile>`, `-p` -- Name of AWS Profile to assume
- * `--no-region` -- Do not set the [AWS_DEFAULT_REGION](config.md#DefaultRegion) from config.yaml
- * `--sts-refresh` -- Force refresh of STS Token Credentials
+* `--arn <arn>`, `-a` -- ARN of role to assume (`$AWS_SSO_ROLE_ARN`)
+* `--account <account>`, `-A` -- AWS AccountID of role to assume (`$AWS_SSO_ACCOUNT_ID`)
+* `--env`, `-e` -- Use existing ENV vars generated by AWS SSO to generate a URL
+* `--role <role>`, `-R` -- Name of AWS Role to assume (`$AWS_SSO_ROLE_NAME`)
+* `--profile <profile>`, `-p` -- Name of AWS Profile to assume
+* `--no-region` -- Do not set the [AWS_DEFAULT_REGION](config.md#defaultregion) from config.yaml
+* `--sts-refresh` -- Force refresh of STS Token Credentials
+* `--ignore-env`, `-i` -- Force execution even if AWS_* environment variables are set
 
 Arguments: `[<command>] [<args> ...]`
 
 Priority is given to:
 
- * `--profile`
- * `--arn` (`$AWS_SSO_ROLE_ARN`)
- * `--account` (`$AWS_SSO_ACCOUNT_ID`) and `--role` (`$AWS_SSO_ROLE_NAME`)
- * Prompt user interactively
+* `--profile`
+* `--arn` (`$AWS_SSO_ROLE_ARN`)
+* `--account` (`$AWS_SSO_ACCOUNT_ID`) and `--role` (`$AWS_SSO_ROLE_NAME`)
+* Prompt user interactively
 
-You can not run `exec` inside of another `exec` shell.
+You can not run `exec` inside of another `exec` shell or when the `$AWS_*` environment
+variables are set unless you pass in `--ignore-env`.
 
 See [Environment Variables](#environment-variables) for more information about
 what varibles are set.
@@ -198,24 +200,23 @@ with profiles defined in `~/.aws/config`.
 
 Flags:
 
- * `--arn <arn>`, `-a` -- ARN of role to assume
- * `--account <account>`, `-A` -- AWS AccountID of role to assume
- * `--role <role>`, `-R` -- Name of AWS Role to assume (requires `--account`)
- * `--profile <profile>`, `-p` -- Name of AWS Profile to assume
- * `--sts-refresh` -- Force refresh of STS Token Credentials
+* `--arn <arn>`, `-a` -- ARN of role to assume
+* `--account <account>`, `-A` -- AWS AccountID of role to assume
+* `--role <role>`, `-R` -- Name of AWS Role to assume (requires `--account`)
+* `--profile <profile>`, `-p` -- Name of AWS Profile to assume
+* `--sts-refresh` -- Force refresh of STS Token Credentials
 
 Priority is given to:
 
- * `--profile`
- * `--arn`
- * `--account` and `--role`
+* `--profile`
+* `--arn`
+* `--account` and `--role`
 
 **Note:** The `process` command does not honor the `$AWS_SSO_ROLE_ARN`,
 `$AWS_SSO_ACCOUNT_ID`, or `$AWS_SSO_ROLE_NAME` environment variables.
 
 **Note:** Due to a limitation of the AWS tooling, setting `--url-action print`
-will cause an error because of a limitation of the AWS tooling which prevents
-it from working.
+will cause an error.
 
 ---
 
@@ -227,12 +228,12 @@ which fields are printed by specifying the field names as arguments.
 
 Flags:
 
- * `--list-fields`, `-f` -- List the available fields to print
- * `--prefix <FieldName>=<Prefix>`, `-P` -- Filter results by the given field
+* `--list-fields`, `-f` -- List the available fields to print
+* `--prefix <FieldName>=<Prefix>`, `-P` -- Filter results by the given field
     value & prefix value
- * `--csv` -- Generate results in CSV format
- * `--sort <FieldName>`, `-s` -- Sort results by the provided field name
- * `--reverse` -- Reverse the sort order
+* `--csv` -- Generate results in CSV format
+* `--sort <FieldName>`, `-s` -- Sort results by the provided field name
+* `--reverse` -- Reverse the sort order
 
 Arguments: `[<field> ...]`
 
@@ -242,10 +243,10 @@ defaults and/or the specified [ListFields](config.md#ListFields) in the
 
 Default fields:
 
- * `AccountIdPad`
- * `AccountAlias`
- * `RoleName`
- * `Expires`
+* `AccountIdPad`
+* `AccountAlias`
+* `RoleName`
+* `Expires`
 
 **Note:** Sorting for `AccountIdPad` and `Expires` is done via their respective
 `AccountId` and `ExpiresEpoch` integer values.  Expired entries are considered
@@ -265,10 +266,10 @@ per the [CacheRefresh](config.md#cacherefresh) setting.
 
 Flags:
 
- * `--no-config-check` -- Disable automatic updating of `~/.aws/config`
- * `--url-action`, `-u` -- How to handle URLs for your SSO provider
- * `--sts-refresh` -- Force refresh of STS Token Credentials
- * `--threads <int>` -- Number of threads to use with AWS (default: 5)
+* `--no-config-check` -- Disable automatic updating of `~/.aws/config`
+* `--url-action`, `-u` -- How to handle URLs for your SSO provider
+* `--sts-refresh` -- Force refresh of STS Token Credentials
+* `--threads <int>` -- Number of threads to use with AWS (default: 5)
 
 ---
 
@@ -290,11 +291,11 @@ quickstart.md#enabling-auto-completion-in-your-shell).
 
 Flags:
 
- * `--source` -- Print out the completions for sourcing into the current shell
- * `--install` -- Install the new v1.9+ shell completions scripts
- * `--uninstall` -- Uninstall the new v1.9+ shell completions scripts
- * `--shell <shell>` -- Override the detected shell
- * `--shell-script <file>` -- Override the default shell script file to modify
+* `--source` -- Print out the completions for sourcing into the current shell
+* `--install` -- Install the new v1.9+ shell completions scripts
+* `--uninstall` -- Uninstall the new v1.9+ shell completions scripts
+* `--shell <shell>` -- Override the detected shell
+* `--shell-script <file>` -- Override the default shell script file to modify
 
 ---
 
@@ -312,10 +313,10 @@ for every role accessible via AWS SSO CLI.
 
 Flags:
 
- * `--diff` -- Print a diff of changes to the config file instead of modifying it
- * `--print` -- Print profile entries instead of modifying config file
- * `--force` -- Write a new config file without prompting
- * `--aws-config` -- Override path to `~/.aws/config` file
+* `--diff` -- Print a diff of changes to the config file instead of modifying it
+* `--print` -- Print profile entries instead of modifying config file
+* `--force` -- Write a new config file without prompting
+* `--aws-config` -- Override path to `~/.aws/config` file
 
 By default, each profile is named according to the [ProfileFormat](
 config.md#profileformat) config option or overridden by the user defined
@@ -334,8 +335,8 @@ _automatically refresh_.  This means, if you do not have a valid AWS SSO token,
 you will be prompted to authentiate via your SSO provider and subsequent
 requests to obtain new IAM STS credentials will automatically happen as needed.
 
-**Note:** You should run this command _after_ [aws-sso cache](#cache) any time 
-your list of AWS roles changes in order to update the `~/.aws/config` file 
+**Note:** You should run this command _after_ [aws-sso cache](#cache) any time
+your list of AWS roles changes in order to update the `~/.aws/config` file
 or enable [AutoConfigCheck](config.md#autoconfigcheck).
 
 **Note:** It is important that you do _NOT_ remove the `# BEGIN_AWS_SSO_CLI` and
@@ -357,7 +358,7 @@ you've upgraded from a previous version!
 
 Flags:
 
- * `--advanced` -- Prompts for many more config options
+* `--advanced` -- Prompts for many more config options
 
 ---
 
@@ -367,17 +368,17 @@ Tags dumps a list of AWS SSO roles with the available metadata tags.
 
 Flags:
 
- * `--account <account>` -- Filter results by AccountId
- * `--role <role>` -- Filter results by Role Name
+* `--account <account>` -- Filter results by AccountId
+* `--role <role>` -- Filter results by Role Name
 
 By default the following key/values are available as tags to your roles:
 
- * `AccountID` -- AWS Account ID
- * `Role` -- AWS Role Name
- * `Email` -- Email address of root account associated with the AWS Account
- * `AccountName` -- Account Name for any role defined in config (see below)
- * `AccountAlias` --- AWS Account Alias defined by account administrator
- * `History` -- Tag tracking if this role was recently used.  See `HistoryLimit`
+* `AccountID` -- AWS Account ID
+* `Role` -- AWS Role Name
+* `Email` -- Email address of root account associated with the AWS Account
+* `AccountName` -- Account Name for any role defined in config (see below)
+* `AccountAlias` --- AWS Account Alias defined by account administrator
+* `History` -- Tag tracking if this role was recently used.  See `HistoryLimit`
         in config.
 
 ---
@@ -396,17 +397,17 @@ in your shell via [eval](#eval) or [exec](#exec).
 
 The following environment variables are honored by `aws-sso`:
 
- * `AWS_CONFIG_FILE` -- Override default path to `~/.aws/config` file
- * `AWS_SSO_FILE_PASSWORD` -- Password to use with the `file` SecureStore.
- * `AWS_SSO_CONFIG` -- Specify an alternate path to the `aws-sso` config file.
- * `AWS_SSO_BROWSER` -- Override default browser for AWS SSO login.
- * `AWS_SSO` -- Override default AWS SSO instance to use.
- * `AWS_SSO_ROLE_NAME` -- Used for `--role`/`-R` with some commands.
- * `AWS_SSO_ACCOUNT_ID` -- Used for `--account`/`-A` with some commands.
- * `AWS_SSO_ROLE_ARN` -- Used for `--arn`/`-a` with some commands and with.
+* `AWS_CONFIG_FILE` -- Override default path to `~/.aws/config` file
+* `AWS_SSO_FILE_PASSWORD` -- Password to use with the `file` SecureStore.
+* `AWS_SSO_CONFIG` -- Specify an alternate path to the `aws-sso` config file.
+* `AWS_SSO_BROWSER` -- Override default browser for AWS SSO login.
+* `AWS_SSO` -- Override default AWS SSO instance to use.
+* `AWS_SSO_ROLE_NAME` -- Used for `--role`/`-R` with some commands.
+* `AWS_SSO_ACCOUNT_ID` -- Used for `--account`/`-A` with some commands.
+* `AWS_SSO_ROLE_ARN` -- Used for `--arn`/`-a` with some commands and with.
      `eval --refresh`.
- * `AWS_SSO_FIELD_SORT` -- Used by `list` command to select which field to sort by.
- * `AWS_SSO_FIELD_SORT_REVERSE` -- Used to reverse the `list` sort order.  Set to `1` to enable.
+* `AWS_SSO_FIELD_SORT` -- Used by `list` command to select which field to sort by.
+* `AWS_SSO_FIELD_SORT_REVERSE` -- Used to reverse the `list` sort order.  Set to `1` to enable.
 
 The `file` SecureStore will use the `AWS_SSO_FILE_PASSWORD` environment
 variable for the password if it is set. (Not recommended.)
@@ -422,23 +423,23 @@ The following [AWS environment variables](
 https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
 are automatically set by `aws-sso`:
 
- * `AWS_ACCESS_KEY_ID` -- Authentication identifier required by AWS
- * `AWS_SECRET_ACCESS_KEY` -- Authentication secret required by AWS
- * `AWS_SESSION_TOKEN` -- Authentication secret required by AWS
- * `AWS_DEFAULT_REGION` -- Region to use AWS with (will never override an
+* `AWS_ACCESS_KEY_ID` -- Authentication identifier required by AWS
+* `AWS_SECRET_ACCESS_KEY` -- Authentication secret required by AWS
+* `AWS_SESSION_TOKEN` -- Authentication secret required by AWS
+* `AWS_DEFAULT_REGION` -- Region to use AWS with (will never override an
     existing value)
 
 The following environment variables are specific to `aws-sso`:
 
- * `AWS_SSO_ACCOUNT_ID` -- The AccountID for your IAM role
- * `AWS_SSO_ROLE_NAME` -- The name of the IAM role
- * `AWS_SSO_ROLE_ARN` -- The full ARN of the IAM role
- * `AWS_SSO_SESSION_EXPIRATION`  -- The date and time when the IAM role
+* `AWS_SSO_ACCOUNT_ID` -- The AccountID for your IAM role
+* `AWS_SSO_ROLE_NAME` -- The name of the IAM role
+* `AWS_SSO_ROLE_ARN` -- The full ARN of the IAM role
+* `AWS_SSO_SESSION_EXPIRATION`  -- The date and time when the IAM role
     credentials will expire in [RFC3339 format](https://datatracker.ietf.org/doc/html/rfc3339)
- * `AWS_SSO_DEFAULT_REGION` -- Tracking variable for `AWS_DEFAULT_REGION`
- * `AWS_SSO_PROFILE` -- User customizable varible using the
+* `AWS_SSO_DEFAULT_REGION` -- Tracking variable for `AWS_DEFAULT_REGION`
+* `AWS_SSO_PROFILE` -- User customizable varible using the
     [ProfileFormat](config.md#profileformat) template
- * `AWS_SSO` -- AWS SSO instance name
+* `AWS_SSO` -- AWS SSO instance name
 
 **Note:** AWS SSO does _NOT_ set `$AWS_PROFILE` to avoid problems with the AWS tooling
 and SDK.
@@ -461,9 +462,9 @@ If you want to pass specific args to `aws-sso-profile` you can use the
 
 Currently the following shells are supported:
 
- * [bash](https://github.com/synfinatic/aws-sso-cli/blob/main/internal/helper/bash_profile.sh)
- * [zsh](https://github.com/synfinatic/aws-sso-cli/blob/main/internal/helper/zshrc.sh)
- * [fish](https://github.com/synfinatic/aws-sso-cli/blob/main/internal/helper/aws-sso.fish)
+* [bash](https://github.com/synfinatic/aws-sso-cli/blob/main/internal/helper/bash_profile.sh)
+* [zsh](https://github.com/synfinatic/aws-sso-cli/blob/main/internal/helper/zshrc.sh)
+* [fish](https://github.com/synfinatic/aws-sso-cli/blob/main/internal/helper/aws-sso.fish)
 
 **Note:** `zsh` completion requires you to have the following lines set
 before the AWS SSO completions:

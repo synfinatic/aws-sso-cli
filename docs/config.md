@@ -2,7 +2,7 @@
 
 By default, `aws-sso` will by default store all it's configuration and state files in
 `~/.config/aws-sso` for versions `>= 1.17.0` per the [XDG spec](
-https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html).  
+https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html).
 Previous versions of `aws-sso` used `~/.aws-sso`.  Users at their own descresion may move the
 files to the new location.  To keep files co-located in the same place, if the directory
 `~/.aws-sso` exists, then it will be used.
@@ -158,28 +158,30 @@ the account level will be applied to all roles in that account.
 
 Some special tags:
 
- * **Color** -- Used to specify the color of the [Firefox container](#authurlaction--browser--urlaction--urlexeccommand) label.  Valid values are:
-   * blue
-   * turquoise
-   * green
-   * yellow
-   * orange
-   * red
-   * pink
-   * purple
- * **Icon** -- Used to specify the icon of the [Firefox container](#authurlaction--browser--urlaction--urlexeccommand) label.  Valid values are:
-   * fingerprint
-   * briefcase
-   * dollar
-   * cart
-   * gift
-   * vacation
-   * food
-   * fruit
-   * pet
-   * tree
-   * chill
-   * circle
+* **Color** -- Used to specify the color of the [Firefox container](#authurlaction--browser--urlaction--urlexeccommand)
+    label.  Valid values are:
+  * blue
+  * turquoise
+  * green
+  * yellow
+  * orange
+  * red
+  * pink
+  * purple
+* **Icon** -- Used to specify the icon of the [Firefox container](#authurlaction--browser--urlaction--urlexeccommand)
+    label.  Valid values are:
+  * fingerprint
+  * briefcase
+  * dollar
+  * cart
+  * gift
+  * vacation
+  * food
+  * fruit
+  * pet
+  * tree
+  * chill
+  * circle
 
 #### Roles
 
@@ -286,18 +288,18 @@ Value must be > 0.
 `UrlAction` gives you control over how AWS SSO and AWS Console URLs are opened
 in a browser:
 
- * `clip` -- Copies the URL to your clipboard
- * `exec` -- Execute the command provided in `UrlExecCommand`
- * `granted-containers`  -- Generates a URL for the Firefox
+* `clip` -- Copies the URL to your clipboard
+* `exec` -- Execute the command provided in `UrlExecCommand`
+* `granted-containers`  -- Generates a URL for the Firefox
     [Granted Containers](https://addons.mozilla.org/en-US/firefox/addon/granted/) plugin and
     runs your `UrlExecCommand`
- * `open` -- Opens the URL in your default browser or the browser you specified
+* `open` -- Opens the URL in your default browser or the browser you specified
     via `--browser` or `Browser`
- * `open-url-in-container` -- Generates a URL for the Firefox [Open Url in Container](
+* `open-url-in-container` -- Generates a URL for the Firefox [Open Url in Container](
     https://addons.mozilla.org/en-US/firefox/addon/open-url-in-container/)
     plugin and runs your `UrlExecCommand`.
- * `print` -- Prints the URL with a message in your terminal to stderr
- * `printurl` -- Prints only the URL in your terminal to stderr
+* `print` -- Prints the URL with a message in your terminal to stderr
+* `printurl` -- Prints only the URL in your terminal to stderr
 
 If `Browser` is not set, then your default browser will be used and that
 browser needs to support JavaScript for the AWS SSO user interface.
@@ -411,32 +413,33 @@ tooling.
 
 The following variables are accessible from the `AWSRoleFlat` struct:
 
- * `Id` -- Unique integer defined by AWS SSO CLI for this role
- * `AccountId` -- AWS Account ID (int64! not zero padded)
- * `AccountIdPad` -- AWS Account ID (zero padded)
- * `AccountAlias` -- [AWS Account Name](FAQ.md#accountname-vs-accountalias) defined in AWS by the account owner
- * `AccountName` -- AWS Account Name defined in `~/.aws-sso/config.yaml`
- * `EmailAddress` -- Root account email address associated with the account in AWS
- * `ExpiresEpoch` -- When your API credentials expire (UNIX epoch)
- * `Expires` -- When your API credentials expire (string)
- * `Arn` -- AWS ARN for this role
- * `RoleName` -- The role name
- * `DefaultRegion` -- The manually configured default region for this role
- * `SSO` -- Name of the AWS SSO instance
- * `SSORegion` -- The AWS Region where AWS SSO is enabled in your account
- * `StartUrl` -- The AWS SSO start URL for your account
- * `Tags` -- Map of additional custom key/value pairs
- * `Via` -- Role AWS SSO CLI will assume before assuming this role
+* `Id` -- Unique integer defined by AWS SSO CLI for this role
+* `AccountId` -- AWS Account ID (int64! not zero padded)
+* `AccountIdPad` -- AWS Account ID (zero padded)
+* `AccountAlias` -- [AWS Account Name](FAQ.md#accountalias-vs-accountname) defined in AWS by the account owner
+* `AccountName` -- AWS Account Name defined in `~/.aws-sso/config.yaml`
+* `EmailAddress` -- Root account email address associated with the account in AWS
+* `ExpiresEpoch` -- When your API credentials expire (UNIX epoch)
+* `Expires` -- When your API credentials expire (string)
+* `Arn` -- AWS ARN for this role
+* `RoleName` -- The role name
+* `DefaultRegion` -- The manually configured default region for this role
+* `SSO` -- Name of the AWS SSO instance
+* `SSORegion` -- The AWS Region where AWS SSO is enabled in your account
+* `StartUrl` -- The AWS SSO start URL for your account
+* `Tags` -- Map of additional custom key/value pairs
+* `Via` -- Role AWS SSO CLI will assume before assuming this role
 
 By default, `ProfileFormat` is set to `{{ .AccountIdPad }}:{{ .RoleName }}`.
 
 AWS SSO CLI uses [sprig](http://masterminds.github.io/sprig/) for most of its
 functions, but a few custom functions are available:
 
- * `AccountIdStr(x)` -- Converts the `.AccountId` variable to a string.  Deprecated.  Use `.AccountIdPad` variable instead.
- * `EmptyString(x)` -- Returns true/false if the value `x` is an empty string
- * `FirstItem([]x)` -- Returns the first item in a list that is not an empty string
- * `StringsJoin(x, []y)` -- Joins the items in `y` with the string `x`
+* `AccountIdStr(x)` -- Converts the `.AccountId` variable to a string.  Deprecated.  Use `.AccountIdPad`
+    variable instead.
+* `EmptyString(x)` -- Returns true/false if the value `x` is an empty string
+* `FirstItem([]x)` -- Returns the first item in a list that is not an empty string
+* `StringsJoin(x, []y)` -- Joins the items in `y` with the string `x`
 
 **Note:** Unlike most values stored in the `config.yaml`,  you will need to
 single-quote (`'`) the value because because `ProfileFormat` values often start
@@ -453,8 +456,8 @@ commands.md#config-profiles) command.
 
 Some examples to consider:
 
- * `sts_regional_endpoints: regional`
- * `output: json`
+* `sts_regional_endpoints: regional`
+* `output: json`
 
 ### Interactive Role Selection
 
@@ -476,9 +479,9 @@ will be presented with a list of matching ARNs to select. The
 description to aid in role selection.  By default the following tags are
 searched (first match is used):
 
- * `AccountName`
- * `AccountAlias`
- * `Email`
+* `AccountName`
+* `AccountAlias`
+* `Email`
 
 Set `AccountPrimaryTag` to an empty list to disable this feature.
 
@@ -493,44 +496,44 @@ https://pkg.go.dev/github.com/c-bata/go-prompt#Option).
 
 Valid options:
 
- * `DescriptionBGColor`
- * `DescriptionTextColor`
- * `InputBGColor`
- * `InputTextColor`
- * `PrefixBackgroundColor`
- * `PrefixTextColor`
- * `PreviewSuggestionBGColor`
- * `PreviewSuggestionTextColor`
- * `ScrollbarBGColor`
- * `ScrollbarThumbColor`
- * `SelectedDescriptionBGColor`
- * `SelectedDescriptionTextColor`
- * `SelectedSuggestionBGColor`
- * `SelectedSuggestionTextColor`
- * `SuggestionBGColor`
- * `SuggestionTextColor`
+* `DescriptionBGColor`
+* `DescriptionTextColor`
+* `InputBGColor`
+* `InputTextColor`
+* `PrefixBackgroundColor`
+* `PrefixTextColor`
+* `PreviewSuggestionBGColor`
+* `PreviewSuggestionTextColor`
+* `ScrollbarBGColor`
+* `ScrollbarThumbColor`
+* `SelectedDescriptionBGColor`
+* `SelectedDescriptionTextColor`
+* `SelectedSuggestionBGColor`
+* `SelectedSuggestionTextColor`
+* `SuggestionBGColor`
+* `SuggestionTextColor`
 
 Valid low intensity colors:
 
- * `Black`
- * `DarkRed`
- * `DarkGreen`
- * `Brown`
- * `DarkBlue`
- * `Purple`
- * `Cyan`
- * `LightGrey`
+* `Black`
+* `DarkRed`
+* `DarkGreen`
+* `Brown`
+* `DarkBlue`
+* `Purple`
+* `Cyan`
+* `LightGrey`
 
 Valid high intensity colors:
 
- * `DarkGrey`
- * `Red`
- * `Green`
- * `Yellow`
- * `Blue`
- * `Fuchsia`
- * `Turquoise`
- * `White`
+* `DarkGrey`
+* `Red`
+* `Green`
+* `Yellow`
+* `Blue`
+* `Fuchsia`
+* `Turquoise`
+* `White`
 
 #### HistoryLimit
 
@@ -551,20 +554,20 @@ This option has no effect if `HistoryLimit` is set to 0.
 
 Specify which fields to display via the `list` command.  Valid options are:
 
- * `Id` -- Unique row identifier
- * `AccountAlias` -- [Account Name in AWS](FAQ.md#accountname-vs-accountalias) as defined by the account owner
- * `AccountId` -- AWS Account Id
- * `AccountIdPad` -- AWS Account Id with leading zeros if necessary
- * `AccountName` -- Account Name from config.yaml
- * `Arn` -- Role ARN
- * `DefaultRegion` -- Configured default region
- * `EmailAddress` -- Email address of root account associated with AWS Account
- * `ExpiresEpoch` -- Unix epoch time when cached STS creds expire
- * `Expires` -- Hours and minutes until cached STS creds expire
- * `Profile` -- Value used for `$AWS_SSO_PROFILE` and the profile name in `~/.aws/config`
- * `RoleName` -- Role name
- * `SSO` -- AWS SSO instance name
- * `Via` -- Role Chain Via
+* `Id` -- Unique row identifier
+* `AccountAlias` -- [Account Name in AWS](FAQ.md#accountalias-vs-accountname) as defined by the account owner
+* `AccountId` -- AWS Account Id
+* `AccountIdPad` -- AWS Account Id with leading zeros if necessary
+* `AccountName` -- Account Name from config.yaml
+* `Arn` -- Role ARN
+* `DefaultRegion` -- Configured default region
+* `EmailAddress` -- Email address of root account associated with AWS Account
+* `ExpiresEpoch` -- Unix epoch time when cached STS creds expire
+* `Expires` -- Hours and minutes until cached STS creds expire
+* `Profile` -- Value used for `$AWS_SSO_PROFILE` and the profile name in `~/.aws/config`
+* `RoleName` -- Role name
+* `SSO` -- AWS SSO instance name
+* `Via` -- Role Chain Via
 
 #### AutoConfigCheck
 
@@ -599,11 +602,11 @@ present in 1.x.
 By default, the `LogLevel` is 'info'.  You can override it here or via
 `--log-level` with one of the following values:
 
- * `error`
- * `warn`
- * `info`
- * `debug`
- * `trace`
+* `error`
+* `warn`
+* `info`
+* `debug`
+* `trace`
 
 `LogLines` includes the file name/line and module name with each log for
 advanced debugging.
@@ -612,13 +615,17 @@ advanced debugging.
 
 `SecureStore` supports the following backends:
 
- * `file` - Encrypted local files (OS agnostic and default on Linux)
- * `keychain` - macOS [Keychain](https://support.apple.com/guide/mac-help/use-keychains-to-store-passwords-mchlf375f392/mac) (default on macOS)
- * `kwallet` - [KDE Wallet](https://github.com/KDE/kwalletmanager)
- * `pass` - [pass](https://www.passwordstore.org) (uses GPG on backend)
- * `secret-service` - Freedesktop.org [Secret Service](https://specifications.freedesktop.org/secret-service/latest/re01.html)
- * `wincred` - Windows [Credential Manager](https://support.microsoft.com/en-us/windows/accessing-credential-manager-1b5c916a-6a16-889f-8581-fc16e8165ac0) (default on Windows)
- * `json` - Cleartext JSON file (very insecure and not recommended).  Location
+* `file` - Encrypted local files (OS agnostic and default on Linux)
+* `keychain` - macOS [Keychain](https://support.apple.com/guide/mac-help/use-keychains-to-store-passwords-mchlf375f392/mac)
+    (default on macOS)
+* `kwallet` - [KDE Wallet](https://github.com/KDE/kwalletmanager)
+* `pass` - [pass](https://www.passwordstore.org) (uses GPG on backend)
+* `secret-service` - Freedesktop.org [Secret Service](
+    https://specifications.freedesktop.org/secret-service-spec/latest/org.freedesktop.Secret.Service.html)
+* `wincred` - Windows [Credential Manager](
+    https://support.microsoft.com/en-us/windows/accessing-credential-manager-1b5c916a-6a16-889f-8581-fc16e8165ac0)
+    (default on Windows)
+* `json` - Cleartext JSON file (very insecure and not recommended).  Location
     can be overridden with `JsonStore`
 
 **Note:** The `file` option supports passing in the password via the `AWS_SSO_FILE_PASSWORD` environment variable.
