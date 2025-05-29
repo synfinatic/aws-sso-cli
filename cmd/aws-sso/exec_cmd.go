@@ -37,6 +37,7 @@ type ExecCmd struct {
 	Profile    string `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile'"`
 	NoRegion   bool   `kong:"short='n',help='Do not set AWS_DEFAULT_REGION from config.yaml'"`
 	STSRefresh bool   `kong:"help='Force refresh of STS Token Credentials'"`
+	IgnoreEnv  bool   `kong:"short='i',help='Force execution even if AWS_* environment variables are set'"`
 
 	// Exec Params
 	Cmd  string   `kong:"arg,optional,name='command',help='Command to execute',env='SHELL'"`
@@ -50,9 +51,11 @@ func (e ExecCmd) AfterApply(runCtx *RunContext) error {
 }
 
 func (cc *ExecCmd) Run(ctx *RunContext) error {
-	err := checkAwsEnvironment()
-	if err != nil {
-		log.Fatal("Unable to continue", "error", err.Error())
+	if !ctx.Cli.Exec.IgnoreEnv {
+		err := checkAwsEnvironment()
+		if err != nil {
+			log.Fatal("Unable to continue", "error", err.Error())
+		}
 	}
 
 	if ctx.Cli.Exec.Cmd == "" {
