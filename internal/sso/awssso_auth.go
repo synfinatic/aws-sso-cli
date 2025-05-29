@@ -73,11 +73,7 @@ func (as *AWSSSO) Authenticate(urlAction url.Action, browser string) error {
 	log.Trace("Authenticate", "urlAction", urlAction, "browser", browser)
 	// cache urlAction and browser for subsequent calls if necessary
 	// if action is still undefined, use the default action which is defined inside NewHandleUrl()
-	if urlAction != url.Undef {
-		as.urlAction = urlAction
-	} else if as.SSOConfig.AuthUrlAction != url.Undef {
-		as.urlAction = as.SSOConfig.AuthUrlAction
-	}
+	as.urlAction = urlAction
 
 	if browser != "" {
 		as.browser = browser

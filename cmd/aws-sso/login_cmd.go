@@ -63,12 +63,17 @@ func doAuth(ctx *RunContext) {
 		return
 	}
 
-	action, err := url.NewAction(ctx.Cli.Login.UrlAction)
-	if err != nil {
-		log.Fatal("Invalid --url-action", "action", ctx.Cli.Login.UrlAction)
-	}
-	if action == "" {
-		action = ctx.Settings.UrlAction
+	var err error
+	action := ctx.Settings.UrlAction // global default
+	if len(ctx.Cli.Login.UrlAction) > 0 {
+		// CLI override
+		action, err = url.NewAction(ctx.Cli.Login.UrlAction)
+		if err != nil {
+			log.Fatal("Invalid --url-action", "action", ctx.Cli.Login.UrlAction)
+		}
+	} else if AwsSSO.SSOConfig.AuthUrlAction != url.Undef {
+		// Auth specific override
+		action = AwsSSO.SSOConfig.AuthUrlAction
 	}
 	err = AwsSSO.Authenticate(action, ctx.Settings.Browser)
 	if err != nil {
