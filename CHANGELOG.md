@@ -3,6 +3,10 @@
 
 ## [Unreleased]
 
+### New Features
+
+* Add aws-sso exec --ignore-env flag to allow overriding AWS_ env variables #1095
+
 ### Bugs
 
 * Skip static roles from cache diff report #1349
