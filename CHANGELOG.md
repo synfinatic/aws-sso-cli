@@ -19,6 +19,10 @@
 * Add e2e integration tests for CLI commands
 * Security: Update to Go 1.26.4
 
+### New Features
+
+* Add aws-sso exec --overwrite-env flag to allow overriding AWS_ env variables #1095
+
 ## [v2.2.4] - 2026-05-21
 
 ### Bugs
@@ -97,10 +101,6 @@
 ### Bugs
 
 * Fix regression for `aws-sso login` no longer honoring `AuthUrlAction` #1230
-
-### Changes
-
-* `aws-sso exec` now supports `--ignore-env` for nested executions #1095
 
 ## [v2.0.2] - 2025-05-28
 
