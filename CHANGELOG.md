@@ -1,7 +1,11 @@
 <!-- markdownlint-disable MD024 -->
 # AWS SSO CLI Changelog
 
-## [Unreleased] - 2025-XX-XX
+## [v2.0.3] - 2025-05-29
+
+### Bugs
+
+* Fix regression for `aws-sso login` no longer honoring `AuthUrlAction` #1230
 
 ### Changes
 
@@ -829,7 +833,9 @@
 
 Initial release
 
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.0.2...main
+<!-- markdownlint-disable-next-line MD053 -->
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.0.3...main
+[v2.0.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.0.3
 [v2.0.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.0.2
 [v2.0.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.0.1
 [v2.0.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.0.0

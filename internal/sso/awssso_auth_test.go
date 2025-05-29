@@ -335,8 +335,7 @@ func TestAuthenticate(t *testing.T) {
 	assert.NoError(t, err)
 
 	// verify no override of CLI when not set
-	as.SSOConfig.AuthUrlAction = url.Print
-	err = as.Authenticate(url.Undef, "fake-browser")
+	err = as.Authenticate(url.Print, "fake-browser")
 	assert.NoError(t, err)
 
 	defer func() {
