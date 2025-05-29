@@ -147,6 +147,7 @@ aws-sso setup ecs auth --bearer-token '<token>`
 ```
 
 **Note:** Unlike the `$AWS_CONTAINER_AUTHORIZATION_TOKEN` variable, do not include the
+<!--  markdownlint-disable-next-line MD038 -->
 prefix `Bearer ` in the token value.
 
 **Important:** You must choose a strong secret value for your bearer token secret!  This is

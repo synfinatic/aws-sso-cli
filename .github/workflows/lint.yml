@@ -1,0 +1,24 @@
+# https://github.com/UmbrellaDocs/action-linkspector?tab=readme-ov-file
+name: Lint Docs
+on: [pull_request]
+jobs:
+  check-links:
+    name: Linkspector
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run linkspector
+        uses: umbrelladocs/action-linkspector@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          fail_on_error: true
+  markdown:
+      name: MarkdownLint
+      runs-on: ubuntu-22.04
+      steps:
+        - uses: actions/checkout@v4
+        - uses: DavidAnson/markdownlint-cli2-action@v20
+          with:
+            config: .markdownlint.yaml
+            globs: '**/*.md'

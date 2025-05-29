@@ -1,5 +1,4 @@
-GNU General Public License
-==========================
+# GNU General Public License
 
 _Version 3, 29 June 2007_  
 _Copyright © 2007 Free Software Foundation, Inc. &lt;<http://fsf.org/>&gt;_
@@ -539,6 +538,7 @@ law that most closely approximates an absolute waiver of all civil liability in
 connection with the Program, unless a warranty or assumption of liability accompanies
 a copy of the Program in return for a fee.
 
+<!-- markdownlint-disable-next-line MD036 -->
 _END OF TERMS AND CONDITIONS_
 
 ## How to Apply These Terms to Your New Programs
@@ -593,4 +593,3 @@ more useful to permit linking proprietary applications with the library. If this
 what you want to do, use the GNU Lesser General Public License instead of this
 License. But first, please read
 &lt;<http://www.gnu.org/philosophy/why-not-lgpl.html>&gt;.
-
