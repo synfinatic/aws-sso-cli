@@ -17,8 +17,8 @@ https://docs.aws.amazon.com/sdkref/latest/guide/feature-container-credentials.ht
 
 Flags:
 
- * `--bearer-token` -- Specify the bearer token secret.
- * `--delete` -- Delete the bearer token and disable authentication.
+* `--bearer-token` -- Specify the bearer token secret.
+* `--delete` -- Delete the bearer token and disable authentication.
 
 ---
 
@@ -32,10 +32,10 @@ Flags:
 
  Flags:
 
-  * `--delete` -- Disables SSL and deletes both the SSL certificate and private key from the Secure Store
-  * `--print` -- Prints the SSL certificate
-  * `--certificate` -- Path to SSL certificate file in PEM format
-  * `--private-key` -- Path to SSL private key in PEM format
+* `--delete` -- Disables SSL and deletes both the SSL certificate and private key from the Secure Store
+* `--print` -- Prints the SSL certificate
+* `--certificate` -- Path to SSL certificate file in PEM format
+* `--private-key` -- Path to SSL private key in PEM format
 
 ---
 
@@ -45,12 +45,12 @@ Starts the ECS Server in a Docker container.
 
 Flags:
 
-  * `--disable-auth` -- Disables HTTP Auth, even if a bearer token is available
-  * `--disable-ssl` -- Disables SSL/TLS, even if a certificate and private key are available.
-  * `--bind-ip` -- IP address to bind the service to.  (default 127.0.0.1)
-  * `--port` -- Port to listen on.  (default 4144)
-  * `--image` -- Docker image to use.  (default `synfinatic/aws-sso-cli-ecs-version`)
-  * `--version` -- Version of the docker image to use (default matches `aws-sso` binary version)
+* `--disable-auth` -- Disables HTTP Auth, even if a bearer token is available
+* `--disable-ssl` -- Disables SSL/TLS, even if a certificate and private key are available.
+* `--bind-ip` -- IP address to bind the service to.  (default 127.0.0.1)
+* `--port` -- Port to listen on.  (default 4144)
+* `--image` -- Docker image to use.  (default `synfinatic/aws-sso-cli-ecs-version`)
+* `--version` -- Version of the docker image to use (default matches `aws-sso` binary version)
 
 ---
 
@@ -66,7 +66,7 @@ List the AWS Profiles stored in the ECS Server.
 
 Flags:
 
- * `--server` -- host:port of the ECS Server (default `localhost:4144`)
+* `--server` -- host:port of the ECS Server (default `localhost:4144`)
 
 ---
 
@@ -76,12 +76,12 @@ Load the AWS IAM Role credentials into the ECS Server for clients to use.
 
 Flags:
 
- * `--arn <arn>`, `-a` -- ARN of role to assume (`$AWS_SSO_ROLE_ARN`)
- * `--account <account>`, `-A` -- AWS AccountID of role to assume (`$AWS_SSO_ACCOUNT_ID`)
- * `--role <role>`, `-R` -- Name of AWS Role to assume (requires `--account`) (`$AWS_SSO_ROLE_NAME`)
- * `--profile <profile>`, `-p` -- Name of AWS Profile to assume
- * `--server` -- host:port of the ECS Server (default `localhost:4144`)
- * `--slotted` -- Load the IAM credentials into a unique slot using the ProfileName as the key
+* `--arn <arn>`, `-a` -- ARN of role to assume (`$AWS_SSO_ROLE_ARN`)
+* `--account <account>`, `-A` -- AWS AccountID of role to assume (`$AWS_SSO_ACCOUNT_ID`)
+* `--role <role>`, `-R` -- Name of AWS Role to assume (requires `--account`) (`$AWS_SSO_ROLE_NAME`)
+* `--profile <profile>`, `-p` -- Name of AWS Profile to assume
+* `--server` -- host:port of the ECS Server (default `localhost:4144`)
+* `--slotted` -- Load the IAM credentials into a unique slot using the ProfileName as the key
 
 You can provide `--profile` or `--arn` or (`--account` and `--role`) to specify the IAM role to load.
 
@@ -96,7 +96,7 @@ Fetches the ProfileName of the role stored in the default slot of the ECS Server
 
 Flags:
 
- * `--slotted` -- Load the IAM credentials into a unique slot using the ProfileName as the key
+* `--slotted` -- Load the IAM credentials into a unique slot using the ProfileName as the key
 
 ---
 
@@ -106,8 +106,8 @@ Starts the ECS Server in the foreground.
 
 Flags:
 
- * `--disable-auth` -- Disables HTTP Authentication, even if a Bearer Token is available
- * `--disable-ssl` -- Disables SSL/TLS, even if a certificate and private key are available
+* `--disable-auth` -- Disables HTTP Authentication, even if a Bearer Token is available
+* `--disable-ssl` -- Disables SSL/TLS, even if a certificate and private key are available
 
 ---
 
@@ -117,8 +117,8 @@ Removes the AWS IAM Role credentials from the ECS Server and makes them unavaila
 
 Flags:
 
- * `--profile <profile>`, `-p` -- Slot of AWS Profile to unload
- * `--server` -- host:port of the ECS Server (default `localhost:4144`)
+* `--profile <profile>`, `-p` -- Slot of AWS Profile to unload
+* `--server` -- host:port of the ECS Server (default `localhost:4144`)
 
 By default, this will unload the IAM credentials for the default role.  Passing in
 `--profile <profile name>` will unload the credentials in the named slot.

@@ -1,3 +1,4 @@
+<!-- markdownlint-disable -->
 ```
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 Comment: GPGTools - http://gpgtools.org

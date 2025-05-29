@@ -18,8 +18,6 @@ All releases have a corresponding detactched GPG signature using my [code signin
 
 ## Reporting a Vulnerability
 
-## Reporting a Vulnerability
-
 Please open a [security ticket in GitHub](
 https://github.com/synfinatic/aws-sso-cli/issues/new?assignees=&labels=security&projects=&template=bug_report.md&title=).
 If you believe the public visibility of the information of the bug would

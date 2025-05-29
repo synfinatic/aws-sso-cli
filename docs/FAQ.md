@@ -74,15 +74,15 @@ And generate the necessary AWS SSO CLI profile entries via
 AWS SSO will leave the `$AWS_DEFAULT_REGION` environment variable alone
 unless the following are all true:
 
- * The `$AWS_DEFAULT_REGION` is not already defined in your shell
- * You have specified the region in the `config.yaml` via `DefaultRegion`
- * You have not set the `--no-region` flag on the CLI
- * If `$AWS_SSO_DEFAULT_REGION` is set, does it match `$AWS_DEFAULT_REGION?`
+* The `$AWS_DEFAULT_REGION` is not already defined in your shell
+* You have specified the region in the `config.yaml` via `DefaultRegion`
+* You have not set the `--no-region` flag on the CLI
+* If `$AWS_SSO_DEFAULT_REGION` is set, does it match `$AWS_DEFAULT_REGION?`
 
 If the above are true, then AWS SSO will define both:
 
- * `$AWS_DEFAULT_REGION`
- * `$AWS_SSO_DEFAULT_REGION`
+* `$AWS_DEFAULT_REGION`
+* `$AWS_SSO_DEFAULT_REGION`
 
 to the default region as defined by `config.yaml`.  If the user changes
 roles and the two variables are set to the same region, then AWS SSO will
@@ -288,12 +288,12 @@ AWS SSO CLI tries to make it easy to manage many roles across many accounts
 by giving users a lot of control over what the value of these variables are for
 each role.
 
- * You can use [ProfileFormat](config.md#profileformat) to create an
+* You can use [ProfileFormat](config.md#profileformat) to create an
     auto-generated profile name for each role based upon things like the
     AccountID, AccountName, RoleName, etc.
- * You can also use [Profile](config.md#profile) to define a profile name for
+* You can also use [Profile](config.md#profile) to define a profile name for
     any specific role.
- * You can also use both: `ProfileFormat` to set a default value and override
+* You can also use both: `ProfileFormat` to set a default value and override
     specific roles that you use more often via `Profile` with an easier to
     remember value.  The choice is yours, but remember that every unique Role
     ARN needs a unique value if you wish to use it to select a role to use
@@ -324,19 +324,21 @@ subject, please let me know!)
 
 Some example `ProfileFormat` values:
 
- * `'{{ FirstItem .AccountName .AccountAlias }}'` -- If there
+* `'{{ FirstItem .AccountName .AccountAlias }}'` -- If there
     is an Account Name set in the config.yaml print that, otherwise print the
     Account Name defined by the AWS account owner.
- * `'{{ .AccountIdPad }}'` -- Pad the AccountId with leading zeros if it is < 12 digits long
- * `'{{ .AccountId }}'` -- Print the AccountId as a regular number
- * `'{{ StringsJoin ":" .AccountAlias .RoleName }}'` -- Another
+* `'{{ .AccountIdPad }}'` -- Pad the AccountId with leading zeros if it is < 12 digits long
+* `'{{ .AccountId }}'` -- Print the AccountId as a regular number
+* `'{{ StringsJoin ":" .AccountAlias .RoleName }}'` -- Another
     way of writing `{{ .AccountAlias }}:{{ .RoleName }}`
- * `'{{ StringReplace " " "_" .AccountAlias }}'` -- Replace any spaces (` `) in the AccountAlias with an underscore (`_`).
- * `'{{ FirstItem .AccountName (nospace .AccountAlias) }}:{{ .RoleName }}'`
+<!--  markdownlint-disable-next-line MD038 -->
+* `'{{ StringReplace " " "_" .AccountAlias }}'` -- Replace any spaces (` `)
+    in the AccountAlias with an underscore (`_`).
+* `'{{ FirstItem .AccountName (nospace .AccountAlias) }}:{{ .RoleName }}'`
     -- Use the Account Name if set, otherwise use the Account Alias (without spaces via
     [nospace](http://masterminds.github.io/sprig/strings.html#nospace))
     and then append a colon, followed by the IAM Role Name.
- * `'{{ kebabcase .AccountAlias }}:{{ .RoleName }}'`
+* `'{{ kebabcase .AccountAlias }}:{{ .RoleName }}'`
     -- Reformat the AWS account alias like `AStringLikeThis` into `a-string-like-this` using
     the [kebabcase function](http://masterminds.github.io/sprig/strings.html#kebabcase).
 

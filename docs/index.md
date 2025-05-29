@@ -1,3 +1,4 @@
+<!-- markdownlint-disable-next-line MD041 -->
 ## About
 
 AWS SSO CLI is a secure replacement for using the [aws configure sso](
@@ -35,21 +36,20 @@ and many other quality of life improvements!
 
 ### Key Features
 
- * Enhanced security over stock AWS tooling
- * Auto-discover your AWS SSO roles and [manage](commands.md#config)
+* Enhanced security over stock AWS tooling
+* Auto-discover your AWS SSO roles and [manage](commands.md#setup-profiles)
      your `~/.aws/config` file
- * Support selecting an IAM role via `$AWS_PROFILE`, CLI (with auto-completion)
+* Support selecting an IAM role via `$AWS_PROFILE`, CLI (with auto-completion)
     or interactive search
- * Ability to select roles based on [user-defined](config.md#tags)
+* Ability to select roles based on [user-defined](config.md#tags)
     and auto-discovered tags
- * Support for [multiple active AWS Console sessions](quickstart.md#aws-console-access)
- * Guided setup to help you configure `aws-sso` the first time you run
- * Advanced configuration available to [adjust colors](config.md#PromptColors)
+* Support for [multiple active AWS Console sessions](quickstart.md#aws-console-access)
+* Guided setup to help you configure `aws-sso` the first time you run
+* Advanced configuration available to [adjust colors](config.md#promptcolors)
     and generate [named profiles via templates](config.md#ProfileFormat)
- * Easily see how much longer your STS credentials [are valid for](commands.md#time)
- * Written in GoLang, so only need to install a single binary (no dependencies)
- * Supports Linux, MacOS, and Windows
-
+* Easily see how much longer your STS credentials [are valid for](commands.md#time)
+* Written in GoLang, so only need to install a single binary (no dependencies)
+* Supports Linux, MacOS, and Windows
 
 ## Security
 
@@ -61,9 +61,9 @@ library which is also used by [aws-vault](https://github.com/99designs/aws-vault
 
 Credentials encrypted by `aws-sso` and not via the standard AWS CLI tool:
 
- * AWS SSO ClientID/ClientSecret -- `~/.aws/sso/cache/botocore-client-id-<region>.json`
- * AWS SSO AccessToken -- `~/.aws/sso/cache/<random>.json`
- * AWS Profile Access Credentials -- `~/.aws/cli/cache/<random>.json`
+* AWS SSO ClientID/ClientSecret -- `~/.aws/sso/cache/botocore-client-id-<region>.json`
+* AWS SSO AccessToken -- `~/.aws/sso/cache/<random>.json`
+* AWS Profile Access Credentials -- `~/.aws/cli/cache/<random>.json`
 
 As you can see, not only does the standard AWS CLI tool expose the temporary
 AWS access credentials to your IAM roles, but more importantly the SSO
@@ -72,8 +72,8 @@ been granted access!
 
 ### What is not encrypted?
 
- * Contents of user defined `~/.aws-sso/config.yaml`
- * Metadata associated with the AWS Roles fetched via AWS SSO in `~/.aws-sso/cache.json`
-    * Email address tied to the account (root user)
-    * AWS Account Alias
-    * AWS Role ARN
+* Contents of user defined `~/.aws-sso/config.yaml`
+* Metadata associated with the AWS Roles fetched via AWS SSO in `~/.aws-sso/cache.json`
+  * Email address tied to the account (root user)
+  * AWS Account Alias
+  * AWS Role ARN

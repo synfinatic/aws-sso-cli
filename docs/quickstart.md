@@ -1,23 +1,24 @@
+<!-- markdownlint-disable MD024 -->
 # AWS SSO CLI Quick Start & Installation Guide
 
 ## Installation
 
- * Option 1: [Download binary](https://github.com/synfinatic/aws-sso-cli/releases)
+* Option 1: [Download binary](https://github.com/synfinatic/aws-sso-cli/releases)
     1. Copy to appropriate location and `chmod 755`
- * Option 2: [Download RPM or DEB package](https://github.com/synfinatic/aws-sso-cli/releases)
+* Option 2: [Download RPM or DEB package](https://github.com/synfinatic/aws-sso-cli/releases)
     1. Use your package manager to install (Linux only)
- * Option 3: Build & Install via [Homebrew](https://brew.sh)
+* Option 3: Build & Install via [Homebrew](https://brew.sh)
     1. Run `brew install aws-sso-cli`
         Note: You no longer need to install the hombrew tap as `aws-sso-cli` is
         now part of [homebrew-core](
         https://github.com/Homebrew/homebrew-core/blob/master/Formula/a/aws-sso-cli.rb).
- * Option 4: Build from source:
+* Option 4: Build from source:
     1. Install [GoLang](https://golang.org) v1.22+ and GNU Make
     1. Clone this repo
     1. Run `make` (or `gmake` for GNU Make)
     1. Your binary will be created in the `dist` directory
     1. Run `make install` to install in /usr/local/bin
- * Option 5: `go install`:
+* Option 5: `go install`:
     1. Install [GoLang](https://golang.org) v1.22+ and GNU Make
     1. `go install github.com/synfinatic/aws-sso-cli/cmd/aws-sso@latest`
 
@@ -126,12 +127,12 @@ the `$AWS_SSO_HELPER_ARGS` variable.
 
 Pros:
 
- * Auto-complete makes it easy to use
- * Doesn't fork a new shell
+* Auto-complete makes it easy to use
+* Doesn't fork a new shell
 
 Cons:
 
- * More complicated one-time setup
+* More complicated one-time setup
 
 ---
 
@@ -147,16 +148,16 @@ Just run: `aws-sso exec` to create a new interactive sub-shell or
 
 Pros:
 
- * No shell configuration required
- * Allows picking a role via CLI arguments or via the interactive search feature
- * Unlike with the config/`$AWS_PROFILE` integration, it supports opening URLs
+* No shell configuration required
+* Allows picking a role via CLI arguments or via the interactive search feature
+* Unlike with the config/`$AWS_PROFILE` integration, it supports opening URLs
     in your browser, printing or copying to your clipboard
- * Allows you to quickly access any role in any account without remembering the
+* Allows you to quickly access any role in any account without remembering the
     exact `$AWS_PROFILE` name
 
 Cons:
 
- * Can be confusing when you start nesting shells inside of each other
+* Can be confusing when you start nesting shells inside of each other
 
 ---
 
@@ -187,9 +188,9 @@ credential_process = /usr/bin/aws-sso process --sso <name> --arn <arn2>
 For more information about this feature, see the following sections of the config
 docs:
 
- * [ProfileFormat](config.md#profileformat) and [Profile](config.md#profile)
- * [AutoConfigCheck / ConfigUrlAction](config.md#autoconfigcheck-configurlaction)
- * [ConfigVariables](config.md#configvariables)
+* [ProfileFormat](config.md#profileformat) and [Profile](config.md#profile)
+* [AutoConfigCheck / ConfigUrlAction](config.md#autoconfigcheck)
+* [ConfigVariables](config.md#configvariables)
 
 #### Usage
 
@@ -220,14 +221,14 @@ expire or are [flushed](commands.md#flush).
 
 Pros:
 
- * Don't need to learn any new commands once you have it setup
- * Is a more consistent user experience when switching from static API keys
+* Don't need to learn any new commands once you have it setup
+* Is a more consistent user experience when switching from static API keys
 
 Cons:
 
- * Does not support printing URLs to the console for the user to paste into a browser
- * `aws-sso` must sometimes open a browser to execute a command which can be confusing
- * Must remember the name of every named profile
+* Does not support printing URLs to the console for the user to paste into a browser
+* `aws-sso` must sometimes open a browser to execute a command which can be confusing
+* Must remember the name of every named profile
 
 ## AWS Console Access
 
