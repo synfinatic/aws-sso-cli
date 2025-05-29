@@ -1254,33 +1254,27 @@ which impliments this API on <code>localhost</code>.</p>
 <ul>
 <li>Given: A valid API key for a user has been configured</li>
 <li>When: The user runs <code>aws-sso setup ecs cert sign-csr</code></li>
-<li>Then: A new private key / certificate signing request will be generated locally<ul>
+<li>Then: A new private key / certificate signing request will be generated locally</li>
 <li>And: The private key will be stored in the SecureStore</li>
 <li>And: The CSR will be uploaded to the webservice, using the configured API key for authentication</li>
-</ul>
-</li>
 </ul>
 <hr />
 <p>Scenario: A user has requested a signed certificate from the web service</p>
 <ul>
 <li>Given: The user has run <code>aws-sso setup ecs cert sign-csr</code></li>
 <li>When: The service validates the API key is assigned to the FQDN in the CSR</li>
-<li>Then: The service asks Let's Encrypt to sign the CSR via ACME DNS-01<ul>
+<li>Then: The service asks Let's Encrypt to sign the CSR via ACME DNS-01</li>
 <li>And: Let's Encrypt signs the CSR</li>
 <li>And: Service returns the signed Certificate to the user.</li>
-</ul>
-</li>
 </ul>
 <hr />
 <p>Scenario: A user has their own CA they'd like to use to sign the certificate</p>
 <ul>
 <li>Given: The user does not wish to use the public web service to manage their certificate</li>
 <li>When: A user runs <code>aws-sso setup ecs cert export-csr</code></li>
-<li>Then: A new private key / certificate signing request will be generated locally<ul>
+<li>Then: A new private key / certificate signing request will be generated locally</li>
 <li>And: The private key will be stored in the SecureStore</li>
 <li>And: The CSR will be written to a file</li>
-</ul>
-</li>
 </ul>
 <hr />
 <p>Scenario: A user has signed the CSR with their own CA</p>
@@ -1294,48 +1288,38 @@ which impliments this API on <code>localhost</code>.</p>
 <ul>
 <li>Given: <code>aws-sso</code> has a valid private key and certificate configured</li>
 <li>When: The user runs the command <code>aws-sso ecs docker start</code></li>
-<li>Then: The ECS Server runs locally<ul>
+<li>Then: The ECS Server runs locally</li>
 <li>And: Uses the configured SSL private key/certificate</li>
 <li>And: Uses the configured Bearer Token</li>
-</ul>
-</li>
 </ul>
 <hr />
 <p>Scenario: A user wishes to use the ECS Server in SSL mode</p>
 <ul>
-<li>Given: The user is locally running the ECS Server in SSL Mode<ul>
+<li>Given: The user is locally running the ECS Server in SSL Mode</li>
 <li>And: The user has configured a Bearer Token for the AWS SDK</li>
 <li>And: The user has loaded one or more AWS API credentials via <code>aws-sso ecs load ...</code></li>
-</ul>
-</li>
 <li>When: The user has defined <code>AWS_CREDENTIALS_FULL_URI=https://&lt;fqdn&gt;:4144</code> in the current shell</li>
 <li>And: The AWS SDK attempts to connect to the ECS Server via <code>127.0.0.1:4144</code> to retrive the AWS API credentials</li>
-<li>Then: The connection to retrieve the AWS API credentials will be e2e encrypted<ul>
+<li>Then: The connection to retrieve the AWS API credentials will be e2e encrypted</li>
 <li>And: The AWS SDK will use SSL to verify the identity of the ECS Server</li>
 <li>And: The ECS Server will use the Bearer Token to verify the identiy of the AWS SDK</li>
 <li>And: The ECS Server will provide the requested API credentials</li>
 <li>And: The AWS SDK will use the provided AWS API credentials in its request</li>
-</ul>
-</li>
 </ul>
 <hr />
 <p>Scenario: A user wishes to use the AWS SDK on a remote host</p>
 <ul>
-<li>Given: The user is locally running the ECS Server in SSL Mode<ul>
+<li>Given: The user is locally running the ECS Server in SSL Mode</li>
 <li>And: The user has configured a Bearer Token for the AWS SDK</li>
 <li>And: The user has loaded one or more AWS API credentials via <code>aws-sso ecs load ...</code></li>
-</ul>
-</li>
 <li>When: The user runs <code>ssh -R 4144:localhost:4144 &lt;host&gt;</code></li>
 <li>And: The user has defined <code>AWS_CREDENTIALS_FULL_URI=https://&lt;fqdn&gt;:4144</code> in the remote shell</li>
 <li>And: The AWS SDK attempts to connect to the ECS Server via <code>127.0.0.1:4144</code> to retrive the AWS API credentials</li>
-<li>Then: The connection will be proxied by ssh to the users local system where the ECS Server is running<ul>
+<li>Then: The connection will be proxied by ssh to the users local system where the ECS Server is running</li>
 <li>And: The AWS SDK will use SSL to verify the identity of the ECS Server</li>
 <li>And: The ECS Server will use the Bearer Token to verify the identiy of the AWS SDK</li>
 <li>And: The ECS Server will provide the requested API credentials</li>
 <li>And: The AWS SDK will use the provided AWS API credentials in its request</li>
-</ul>
-</li>
 </ul>
 <hr />
 <h2 id="attacks">Attacks</h2>
@@ -1377,35 +1361,27 @@ traffic, they can obtain the Bearer Token or AWS API credentials.</li>
 <h3 id="attacker-can-posion-dns-or-etchosts">Attacker can posion DNS or /etc/hosts</h3>
 <ul>
 <li>Without SSL: Attacker can MITM the connection and get access to the Bearer Token
-    and AWS API credentials.<ul>
+    and AWS API credentials.</li>
 <li>Mitigate: aws-sso can inspect DNS to ensure IP address is correct</li>
-</ul>
-</li>
 <li>With SSL: Just a DoS because AWS SDK validates SSL cert before sending the Bearer Token</li>
 </ul>
 <h3 id="attacker-can-dos-the-certificate-signing-service">Attacker can DoS the certificate signing service</h3>
 <ul>
-<li>Attacker can prevent users from getting updated certificates when they expire.<ul>
+<li>Attacker can prevent users from getting updated certificates when they expire.</li>
 <li>Mitigations:<ul>
 <li>Consider configurable endpoints</li>
 <li>Use CloudFlare</li>
 </ul>
 </li>
 </ul>
-</li>
-</ul>
 <h3 id="attacker-can-exploit-the-certificate-signing-service">Attacker can exploit the certificate signing service</h3>
 <ul>
 <li>Attacker can issue their own certificate for hostname.aws-sso-cli.org</li>
-<li>Attacker can update DNS and point hostname.aws-sso-cli.org at a different IP than 127.0.0.1<ul>
+<li>Attacker can update DNS and point hostname.aws-sso-cli.org at a different IP than 127.0.0.1</li>
 <li>Mitigate: aws-sso client can validate DNS record is valid</li>
-</ul>
-</li>
 <li>Attacker can inject bad data and modify the database of users</li>
-<li>Attacker can steal API Key of users to sign CSRs<ul>
+<li>Attacker can steal API Key of users to sign CSRs</li>
 <li>Mitigate: use public key auth to mitigate</li>
-</ul>
-</li>
 <li>Lookup "click jacking" -- run Burp scanner</li>
 </ul>
 <h2 id="suggestions">Suggestions</h2>

@@ -1948,7 +1948,11 @@ subject, please let me know!)</p>
 <li><code>'{{ .AccountId }}'</code> -- Print the AccountId as a regular number</li>
 <li><code>'{{ StringsJoin ":" .AccountAlias .RoleName }}'</code> -- Another
     way of writing <code>{{ .AccountAlias }}:{{ .RoleName }}</code></li>
-<li><code>'{{ StringReplace " " "_" .AccountAlias }}'</code> -- Replace any spaces (<code></code>) in the AccountAlias with an underscore (<code>_</code>).</li>
+</ul>
+<!--  markdownlint-disable-next-line MD038 -->
+<ul>
+<li><code>'{{ StringReplace " " "_" .AccountAlias }}'</code> -- Replace any spaces (<code></code>)
+    in the AccountAlias with an underscore (<code>_</code>).</li>
 <li><code>'{{ FirstItem .AccountName (nospace .AccountAlias) }}:{{ .RoleName }}'</code>
     -- Use the Account Name if set, otherwise use the Account Alias (without spaces via
     <a href="http://masterminds.github.io/sprig/strings.html#nospace">nospace</a>)

@@ -1091,6 +1091,7 @@
 
   <h1>Home</h1>
 
+<!-- markdownlint-disable-next-line MD041 -->
 <h2 id="about">About</h2>
 <p>AWS SSO CLI is a secure replacement for using the <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html">aws configure sso</a>
 wizard with a focus on security and ease of use for organizations with
@@ -1118,7 +1119,7 @@ and many other quality of life improvements!</p>
 <h3 id="key-features">Key Features</h3>
 <ul>
 <li>Enhanced security over stock AWS tooling</li>
-<li>Auto-discover your AWS SSO roles and <a href="commands/#config">manage</a>
+<li>Auto-discover your AWS SSO roles and <a href="commands/#setup-profiles">manage</a>
      your <code>~/.aws/config</code> file</li>
 <li>Support selecting an IAM role via <code>$AWS_PROFILE</code>, CLI (with auto-completion)
     or interactive search</li>
@@ -1126,7 +1127,7 @@ and many other quality of life improvements!</p>
     and auto-discovered tags</li>
 <li>Support for <a href="quickstart/#aws-console-access">multiple active AWS Console sessions</a></li>
 <li>Guided setup to help you configure <code>aws-sso</code> the first time you run</li>
-<li>Advanced configuration available to <a href="config/#PromptColors">adjust colors</a>
+<li>Advanced configuration available to <a href="config/#promptcolors">adjust colors</a>
     and generate <a href="config/#ProfileFormat">named profiles via templates</a></li>
 <li>Easily see how much longer your STS credentials <a href="commands/#time">are valid for</a></li>
 <li>Written in GoLang, so only need to install a single binary (no dependencies)</li>
@@ -1151,12 +1152,10 @@ been granted access!</p>
 <h3 id="what-is-not-encrypted">What is not encrypted?</h3>
 <ul>
 <li>Contents of user defined <code>~/.aws-sso/config.yaml</code></li>
-<li>Metadata associated with the AWS Roles fetched via AWS SSO in <code>~/.aws-sso/cache.json</code><ul>
+<li>Metadata associated with the AWS Roles fetched via AWS SSO in <code>~/.aws-sso/cache.json</code></li>
 <li>Email address tied to the account (root user)</li>
 <li>AWS Account Alias</li>
 <li>AWS Role ARN</li>
-</ul>
-</li>
 </ul>
 
 

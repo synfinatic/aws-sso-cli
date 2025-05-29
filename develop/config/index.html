@@ -1863,7 +1863,7 @@
 
 <h1 id="configuration">Configuration</h1>
 <p>By default, <code>aws-sso</code> will by default store all it's configuration and state files in
-<code>~/.config/aws-sso</code> for versions <code>&gt;= 1.17.0</code> per the <a href="https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html">XDG spec</a>.<br />
+<code>~/.config/aws-sso</code> for versions <code>&gt;= 1.17.0</code> per the <a href="https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html">XDG spec</a>.
 Previous versions of <code>aws-sso</code> used <code>~/.aws-sso</code>.  Users at their own descresion may move the
 files to the new location.  To keep files co-located in the same place, if the directory
 <code>~/.aws-sso</code> exists, then it will be used.</p>
@@ -1995,7 +1995,8 @@ in AWS.  For more information, <a href="../FAQ/#accountname-vs-accountalias">rea
 the account level will be applied to all roles in that account.</p>
 <p>Some special tags:</p>
 <ul>
-<li><strong>Color</strong> -- Used to specify the color of the <a href="#authurlaction--browser--urlaction--urlexeccommand">Firefox container</a> label.  Valid values are:</li>
+<li><strong>Color</strong> -- Used to specify the color of the <a href="#authurlaction--browser--urlaction--urlexeccommand">Firefox container</a>
+    label.  Valid values are:</li>
 <li>blue</li>
 <li>turquoise</li>
 <li>green</li>
@@ -2004,7 +2005,8 @@ the account level will be applied to all roles in that account.</p>
 <li>red</li>
 <li>pink</li>
 <li>purple</li>
-<li><strong>Icon</strong> -- Used to specify the icon of the <a href="#authurlaction--browser--urlaction--urlexeccommand">Firefox container</a> label.  Valid values are:</li>
+<li><strong>Icon</strong> -- Used to specify the icon of the <a href="#authurlaction--browser--urlaction--urlexeccommand">Firefox container</a>
+    label.  Valid values are:</li>
 <li>fingerprint</li>
 <li>briefcase</li>
 <li>dollar</li>
@@ -2179,7 +2181,7 @@ tooling.</p>
 <li><code>Id</code> -- Unique integer defined by AWS SSO CLI for this role</li>
 <li><code>AccountId</code> -- AWS Account ID (int64! not zero padded)</li>
 <li><code>AccountIdPad</code> -- AWS Account ID (zero padded)</li>
-<li><code>AccountAlias</code> -- <a href="../FAQ/#accountname-vs-accountalias">AWS Account Name</a> defined in AWS by the account owner</li>
+<li><code>AccountAlias</code> -- <a href="../FAQ/#accountalias-vs-accountname">AWS Account Name</a> defined in AWS by the account owner</li>
 <li><code>AccountName</code> -- AWS Account Name defined in <code>~/.aws-sso/config.yaml</code></li>
 <li><code>EmailAddress</code> -- Root account email address associated with the account in AWS</li>
 <li><code>ExpiresEpoch</code> -- When your API credentials expire (UNIX epoch)</li>
@@ -2197,7 +2199,8 @@ tooling.</p>
 <p>AWS SSO CLI uses <a href="http://masterminds.github.io/sprig/">sprig</a> for most of its
 functions, but a few custom functions are available:</p>
 <ul>
-<li><code>AccountIdStr(x)</code> -- Converts the <code>.AccountId</code> variable to a string.  Deprecated.  Use <code>.AccountIdPad</code> variable instead.</li>
+<li><code>AccountIdStr(x)</code> -- Converts the <code>.AccountId</code> variable to a string.  Deprecated.  Use <code>.AccountIdPad</code>
+    variable instead.</li>
 <li><code>EmptyString(x)</code> -- Returns true/false if the value <code>x</code> is an empty string</li>
 <li><code>FirstItem([]x)</code> -- Returns the first item in a list that is not an empty string</li>
 <li><code>StringsJoin(x, []y)</code> -- Joins the items in <code>y</code> with the string <code>x</code></li>
@@ -2293,7 +2296,7 @@ based on the time.  Default is 1440 minutes (24 hours).</p>
 <p>Specify which fields to display via the <code>list</code> command.  Valid options are:</p>
 <ul>
 <li><code>Id</code> -- Unique row identifier</li>
-<li><code>AccountAlias</code> -- <a href="../FAQ/#accountname-vs-accountalias">Account Name in AWS</a> as defined by the account owner</li>
+<li><code>AccountAlias</code> -- <a href="../FAQ/#accountalias-vs-accountname">Account Name in AWS</a> as defined by the account owner</li>
 <li><code>AccountId</code> -- AWS Account Id</li>
 <li><code>AccountIdPad</code> -- AWS Account Id with leading zeros if necessary</li>
 <li><code>AccountName</code> -- Account Name from config.yaml</li>
@@ -2342,11 +2345,13 @@ advanced debugging.</p>
 <p><code>SecureStore</code> supports the following backends:</p>
 <ul>
 <li><code>file</code> - Encrypted local files (OS agnostic and default on Linux)</li>
-<li><code>keychain</code> - macOS <a href="https://support.apple.com/guide/mac-help/use-keychains-to-store-passwords-mchlf375f392/mac">Keychain</a> (default on macOS)</li>
+<li><code>keychain</code> - macOS <a href="https://support.apple.com/guide/mac-help/use-keychains-to-store-passwords-mchlf375f392/mac">Keychain</a>
+    (default on macOS)</li>
 <li><code>kwallet</code> - <a href="https://github.com/KDE/kwalletmanager">KDE Wallet</a></li>
 <li><code>pass</code> - <a href="https://www.passwordstore.org">pass</a> (uses GPG on backend)</li>
-<li><code>secret-service</code> - Freedesktop.org <a href="https://specifications.freedesktop.org/secret-service/latest/re01.html">Secret Service</a></li>
-<li><code>wincred</code> - Windows <a href="https://support.microsoft.com/en-us/windows/accessing-credential-manager-1b5c916a-6a16-889f-8581-fc16e8165ac0">Credential Manager</a> (default on Windows)</li>
+<li><code>secret-service</code> - Freedesktop.org <a href="https://specifications.freedesktop.org/secret-service-spec/latest/org.freedesktop.Secret.Service.html">Secret Service</a></li>
+<li><code>wincred</code> - Windows <a href="https://support.microsoft.com/en-us/windows/accessing-credential-manager-1b5c916a-6a16-889f-8581-fc16e8165ac0">Credential Manager</a>
+    (default on Windows)</li>
 <li><code>json</code> - Cleartext JSON file (very insecure and not recommended).  Location
     can be overridden with <code>JsonStore</code></li>
 </ul>

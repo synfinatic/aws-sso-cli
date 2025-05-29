@@ -1569,8 +1569,9 @@ as <a href="https://docs.aws.amazon.com/sdkref/latest/guide/feature-container-cr
 you can load it into the Secure Store via:</p>
 <pre><code class="language-bash">aws-sso setup ecs auth --bearer-token '&lt;token&gt;`
 </code></pre>
-<p><strong>Note:</strong> Unlike the <code>$AWS_CONTAINER_AUTHORIZATION_TOKEN</code> variable, do not include the
-prefix <code>Bearer</code> in the token value.</p>
+<p><strong>Note:</strong> Unlike the <code>$AWS_CONTAINER_AUTHORIZATION_TOKEN</code> variable, do not include the</p>
+<!--  markdownlint-disable-next-line MD038 -->
+<p>prefix <code>Bearer</code> in the token value.</p>
 <p><strong>Important:</strong> You must choose a strong secret value for your bearer token secret!  This is
 what prevents anyone else from using your IAM credentials without your permission.  Your bearer
 token should be long and random enough to prevent bruteforce attacks.</p>
