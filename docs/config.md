@@ -600,7 +600,7 @@ present in 1.x.
 #### LogLevel / LogLines
 
 By default, the `LogLevel` is 'info'.  You can override it here or via
-`--log-level` with one of the following values:
+`--level` with one of the following values:
 
 * `error`
 * `warn`
