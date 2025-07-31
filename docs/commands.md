@@ -151,7 +151,7 @@ what varibles are set.
 Getting Windows PowerShell to work requires a slightly different invocation than
 bash/zsh/etc:
 
-`aws-sso eval <args> | Out-String | Invoke-Expression`
+`aws-sso eval <args> | iex`
 
 But other than that, it works the same way.
 
