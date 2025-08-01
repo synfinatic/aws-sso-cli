@@ -144,7 +144,7 @@ func unsetEnvVars(ctx *RunContext) error {
 			fmt.Printf("unset %s\n", e)
 		} else if runtime.GOOS == "windows" {
 			// PowerShell
-			fmt.Printf("$Env:%s = \"\"\r\n", e)
+			fmt.Printf("$Env:%s = $null\r\n", e)
 		} else if os.Getenv("XONSH_VERSION") != "" {
 			// xonsh behaves like python
 			fmt.Printf("del $%s\n", e)
