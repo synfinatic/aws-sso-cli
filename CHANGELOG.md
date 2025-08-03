@@ -1,6 +1,13 @@
 <!-- markdownlint-disable MD024 -->
 # AWS SSO CLI Changelog
 
+## [Unreleased]
+
+### Bugs
+
+* Fix clearing ENV vars under Windows Powershell #1244
+* Fix docs around correct naming of `--level` flag #1240
+
 ## [v2.0.3] - 2025-05-29
 
 ### Bugs
