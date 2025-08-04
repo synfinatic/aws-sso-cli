@@ -83,7 +83,8 @@ type RoleCredentials struct { // Cache
 	AccessKeyId     string `json:"accessKeyId"`
 	SecretAccessKey string `json:"secretAccessKey"`
 	SessionToken    string `json:"sessionToken"`
-	Expiration      int64  `json:"expiration"` // not in seconds, but millisec
+	Expiration      int64  `json:"expiration"`   // not in seconds, but millisec
+	RoleChaining    bool   `json:"roleChaining"` // true if we used AssumeRole to get these creds
 }
 
 // RoleArn returns the ARN for the role

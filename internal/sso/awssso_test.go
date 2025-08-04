@@ -726,6 +726,7 @@ func TestGetRoleCredentials(t *testing.T) {
 	assert.Equal(t, int64(42), creds.Expiration)
 	assert.Equal(t, "secret-access-key", creds.SecretAccessKey)
 	assert.Equal(t, "session-token", creds.SessionToken)
+	assert.False(t, creds.RoleChaining)
 
 	_, err = as.GetRoleCredentials(int64(1111111), "FooBar")
 	assert.Error(t, err)

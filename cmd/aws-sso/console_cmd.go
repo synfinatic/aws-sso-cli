@@ -261,9 +261,10 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials,
 		},
 	}
 
-	resp, err := http.Get(signin.GetUrl())
+	signinUrl := signin.GetUrl(creds.RoleChaining)
+	resp, err := http.Get(signinUrl) // nolint: gosec
 	if err != nil {
-		log.Debug("http get", "url", signin.GetUrl(), "error", err.Error())
+		log.Debug("http get", "url", signinUrl, "error", err.Error())
 		// sanitize error and remove sensitive URL from normal output
 		r := regexp.MustCompile(`Get "[^"]+": `)
 		e := r.ReplaceAllString(err.Error(), "")
@@ -271,6 +272,12 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials,
 	}
 
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Debug("http get", "url", signinUrl, "status", resp.StatusCode, "chaining", creds.RoleChaining)
+		return fmt.Errorf("unable to login to AWS: %s", resp.Status)
+	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
@@ -336,7 +343,13 @@ type SigninTokenUrlParams struct {
 	Session         SessionUrlParams // URL encoded SessionUrlParams
 }
 
-func (stup *SigninTokenUrlParams) GetUrl() string {
+func (stup *SigninTokenUrlParams) GetUrl(roleChaining bool) string {
+	if roleChaining {
+		// when we used AssumeRole to do role chaining, we can't use the SessionDuration
+		return fmt.Sprintf("%s?Action=getSigninToken&Session=%s",
+			url.AWSFederatedUrl(stup.SsoRegion), stup.Session.Encode())
+	}
+
 	return fmt.Sprintf("%s?Action=getSigninToken&SessionDuration=%d&Session=%s",
 		url.AWSFederatedUrl(stup.SsoRegion), stup.SessionDuration, stup.Session.Encode())
 }

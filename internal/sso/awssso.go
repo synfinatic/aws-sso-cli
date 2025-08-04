@@ -473,7 +473,7 @@ func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.Role
 	previousRole := fmt.Sprintf("%s@%s", creds.RoleName, previousAccount)
 
 	input := sts.AssumeRoleInput{
-		//		DurationSeconds: aws.Int64(900),
+		// DurationSeconds: aws.Int32(900),
 		RoleArn:         aws.String(utils.MakeRoleARN(accountId, role)),
 		RoleSessionName: aws.String(previousRole),
 	}
@@ -497,6 +497,7 @@ func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.Role
 		SecretAccessKey: aws.ToString(output.Credentials.SecretAccessKey),
 		SessionToken:    aws.ToString(output.Credentials.SessionToken),
 		Expiration:      aws.ToTime(output.Credentials.Expiration).UnixMilli(),
+		RoleChaining:    true, // we used AssumeRole to get these creds
 	}
 	return ret, nil
 }

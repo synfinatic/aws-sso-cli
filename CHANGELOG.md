@@ -7,6 +7,7 @@
 
 * Fix clearing ENV vars under Windows Powershell #1244
 * Fix docs around correct naming of `--level` flag #1240
+* Fix console command for Via/AssumeRole roles #1205
 
 ## [v2.0.3] - 2025-05-29
 
