@@ -47,7 +47,7 @@ type ConsoleCmd struct {
 	Prompt     bool   `kong:"short='P',help='Force interactive prompt to select role'"`
 	Region     string `kong:"help='AWS Region',env='AWS_DEFAULT_REGION',predictor='region'"`
 	STSRefresh bool   `kong:"help='Force refresh of STS Token Credentials'"`
-	UrlAction  string `kong:"short='u',help='How to handle URLs [clip|exec|open|print|printurl|granted-containers|open-url-in-container|ansi-osc52] (default: open)'"`
+	UrlAction  string `kong:"short='u',help='How to handle URLs [clip|exec|open|print|printurl|granted-containers|open-url-in-container|ansi-osc52] (default: open)',predictor='urlAction'"`
 
 	Arn       string `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
 	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNT_ID',predictor='accountId'"`

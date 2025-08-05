@@ -30,6 +30,7 @@ import (
 )
 
 func TestNewPredictor(t *testing.T) {
+	t.Parallel()
 	p := NewPredictor("./testdata/cache.json", "./testdata/settings.yaml")
 	assert.NotNil(t, p)
 	assert.NotEmpty(t, p.accountids)
@@ -50,6 +51,7 @@ func TestNewPredictor(t *testing.T) {
 }
 
 func TestCompletions(t *testing.T) {
+	t.Parallel()
 	p := NewPredictor("./testdata/cache.json", "./testdata/settings.yaml")
 
 	args := complete.Args{}
@@ -81,9 +83,20 @@ func TestCompletions(t *testing.T) {
 	c = p.SsoComplete()
 	assert.NotNil(t, c)
 	assert.Equal(t, 3, len(c.Predict(args)))
+
+	c = p.UrlActionComplete()
+	assert.NotNil(t, c)
+	assert.Equal(t, 8, len(c.Predict(args)))
 }
 
 func TestSupportedListField(t *testing.T) {
+	t.Parallel()
 	assert.True(t, SupportedListField("AccountIdPad"))
 	assert.False(t, SupportedListField("Account"))
+}
+
+func TestKongpletePredictor(t *testing.T) {
+	t.Parallel()
+	p := NewPredictor("./testdata/cache.json", "./testdata/settings.yaml")
+	assert.NotNil(t, p.KongpletePredictor())
 }

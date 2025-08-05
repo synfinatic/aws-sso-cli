@@ -44,6 +44,7 @@ type Predictor struct {
 	roles        []string
 	profiles     []string
 	ssoInstances []string
+	urlAction    []string
 }
 
 // NewPredictor loads our cache file (if exists) and loads the values
@@ -71,6 +72,21 @@ func NewPredictor(cacheFile, configFile string) *Predictor {
 	}
 
 	return p.newPredictor(settings, c)
+}
+
+// KongpletePredictor returns a map of predictors for kongplete.Complete()
+func (p *Predictor) KongpletePredictor() map[string]complete.Predictor {
+	return map[string]complete.Predictor{
+		"allFiles":  complete.PredictFiles("*"),
+		"accountId": p.AccountComplete(),
+		"arn":       p.ArnComplete(),
+		"fieldList": p.FieldListComplete(),
+		"profile":   p.ProfileComplete(),
+		"region":    p.RegionComplete(),
+		"role":      p.RoleComplete(),
+		"sso":       p.SsoComplete(),
+		"urlAction": p.UrlActionComplete(),
+	}
 }
 
 // newPredictor returns a Predictor based on our settings & cache structs
@@ -119,6 +135,16 @@ func (p *Predictor) newPredictor(s *sso.Settings, c *sso.Cache) *Predictor {
 		p.roles = append(p.roles, k)
 	}
 
+	p.urlAction = []string{
+		"ansi-osc52",
+		"clip",
+		"exec",
+		"granted-containers",
+		"open",
+		"open-url-in-container",
+		"print",
+		"printurl",
+	}
 	return p
 }
 
@@ -181,6 +207,11 @@ func (p *Predictor) ProfileComplete() complete.Predictor {
 	}
 
 	return complete.PredictSet(profiles...)
+}
+
+// UrlActionComplete returns a list of all the valid URL Actions
+func (p *Predictor) UrlActionComplete() complete.Predictor {
+	return complete.PredictSet(p.urlAction...)
 }
 
 // getSSOValue scans our os.Args and returns our SSO if specified,

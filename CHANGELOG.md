@@ -5,7 +5,8 @@
 
 ### New Features
 
-* Add support for `ansi-osc52` copying of URLs into clipboard
+* Add support for `ansi-osc52` copying of URLs into clipboard #1070
+* `--url-action` now supports auto-complete
 
 ### Bugs
 
