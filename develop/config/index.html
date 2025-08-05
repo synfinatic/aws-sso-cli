@@ -1880,7 +1880,7 @@ Afterwords, you can edit the file and adjust the settings as desired or run
         SSORegion: &lt;AWS Region where AWS SSO is deployed&gt;
         StartUrl: &lt;URL for AWS SSO Portal&gt;
         DefaultRegion: &lt;AWS_DEFAULT_REGION&gt;
-        AuthUrlAction: [clip|exec|print|printurl|open|granted-containers|open-url-in-container]
+        AuthUrlAction: [clip|exec|print|printurl|open|granted-containers|open-url-in-container|ansi-osc52]
         Accounts:  # optional block for specifying tags &amp; overrides
             &lt;AccountId&gt;:
                 Name: &lt;Friendly Name of Account&gt;
@@ -1909,7 +1909,7 @@ MaxRetry: &lt;integer&gt;
 MaxBackoff: &lt;integer&gt;
 
 Browser: &lt;path to web browser&gt;
-UrlAction: [clip|exec|print|printurl|open|granted-containers|open-url-in-container]
+UrlAction: [clip|exec|print|printurl|open|granted-containers|open-url-in-container|ansi-osc52]
 ConfigProfilesBinaryPath: &lt;path to aws-sso binary&gt;
 UrlExecCommand:
     - &lt;command&gt;
@@ -2089,6 +2089,7 @@ Value must be &gt; 0.</p>
 <p><code>UrlAction</code> gives you control over how AWS SSO and AWS Console URLs are opened
 in a browser:</p>
 <ul>
+<li><code>ansi-osc52</code> -- Copies the URL to your clipboard via the <a href="https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Operating-System-Commands">ANSI OSC52 escape sequence</a></li>
 <li><code>clip</code> -- Copies the URL to your clipboard</li>
 <li><code>exec</code> -- Execute the command provided in <code>UrlExecCommand</code></li>
 <li><code>granted-containers</code>  -- Generates a URL for the Firefox
