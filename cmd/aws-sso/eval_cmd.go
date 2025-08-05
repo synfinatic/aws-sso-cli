@@ -24,7 +24,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
+	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 )
 
 type EvalCmd struct {
@@ -65,7 +65,7 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 		if ctx.Cli.Eval.EnvArn == "" {
 			return fmt.Errorf("unable to determine current IAM role")
 		}
-		accountid, role, err = utils.ParseRoleARN(ctx.Cli.Eval.EnvArn)
+		accountid, role, err = awsparse.ParseRoleARN(ctx.Cli.Eval.EnvArn)
 		if err != nil {
 			return err
 		}
@@ -79,7 +79,7 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 		role = rFlat.RoleName
 		accountid = rFlat.AccountId
 	} else if ctx.Cli.Eval.Arn != "" {
-		accountid, role, err = utils.ParseRoleARN(ctx.Cli.Eval.Arn)
+		accountid, role, err = awsparse.ParseRoleARN(ctx.Cli.Eval.Arn)
 		if err != nil {
 			return err
 		}

@@ -24,12 +24,13 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 
 	"github.com/atotto/clipboard"
 	"github.com/skratchdot/open-golang/open"
+	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
 	"github.com/synfinatic/aws-sso-cli/internal/logger"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/flexlog"
 	// default opener
 )
@@ -269,14 +270,14 @@ func selectElement(seed string, options []string) string {
 
 // formatContainerUrl rewrites a targetUrl with the given format and arguments
 func formatContainerUrl(format, targetUrl, name, color, icon string) string {
-	if !utils.StrListContains(color, FIREFOX_PLUGIN_COLORS) {
+	if !slices.Contains(FIREFOX_PLUGIN_COLORS, color) {
 		if color != "" {
 			log.Warn("Invalid Firefox Container color", "color", color)
 		}
 		color = selectElement(name, FIREFOX_PLUGIN_COLORS)
 	}
 
-	if !utils.StrListContains(icon, FIREFOX_PLUGIN_ICONS) {
+	if !slices.Contains(FIREFOX_PLUGIN_ICONS, icon) {
 		if icon != "" {
 			log.Warn("Invalid Firefox Container icon", "icon", icon)
 		}
@@ -338,7 +339,7 @@ func commandBuilder(command []string, url string) (string, []string, error) {
 	}
 
 	// if program is ~/something, expand it
-	program = utils.GetHomePath(program)
+	program = fileutils.GetHomePath(program)
 
 	return program, cmdList, nil
 }

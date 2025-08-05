@@ -1,4 +1,4 @@
-package utils
+package fileutils
 
 /*
  * AWS SSO CLI
@@ -262,14 +262,14 @@ func TestPrompter(t *testing.T) {
 	fe, err = NewFileEdit(template, "", vars)
 	assert.NoError(t, err)
 
-	oldP := prompt
-	defer func() { prompt = oldP }()
+	oldP := ask
+	defer func() { ask = oldP }()
 
 	tfile, err := os.CreateTemp("", "")
 	assert.NoError(t, err)
 	defer os.Remove(tfile.Name())
 	tfile.Close()
-	prompt = promptNo
+	ask = promptNo
 	changed, _, err := fe.UpdateConfig(false, false, tfile.Name())
 	assert.NoError(t, err)
 	assert.False(t, changed)
@@ -278,11 +278,11 @@ func TestPrompter(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, fBytes)
 
-	prompt = promptError
+	ask = promptError
 	_, _, err = fe.UpdateConfig(false, false, tfile.Name())
 	assert.Error(t, err)
 
-	prompt = promptYes
+	ask = promptYes
 	_, _, err = fe.UpdateConfig(false, false, tfile.Name())
 	assert.NoError(t, err)
 

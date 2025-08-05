@@ -21,8 +21,8 @@ package awsconfig
 import (
 	"os"
 
+	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
 const (
@@ -38,11 +38,11 @@ credential_process = {{ $profile.BinaryPath }} -S "{{ $profile.Sso }}" process -
 // AwsConfigFile determines the correct location for the AWS config file
 func AwsConfigFile(cfile string) string {
 	if cfile != "" {
-		return utils.GetHomePath(cfile)
+		return fileutils.GetHomePath(cfile)
 	} else if p, ok := os.LookupEnv("AWS_CONFIG_FILE"); ok {
-		return utils.GetHomePath(p)
+		return fileutils.GetHomePath(p)
 	}
-	return utils.GetHomePath(AWS_CONFIG_FILE)
+	return fileutils.GetHomePath(AWS_CONFIG_FILE)
 }
 
 var stdout = os.Stdout
@@ -54,7 +54,7 @@ func PrintAwsConfig(ssoName string, s *sso.Settings) error {
 		return err
 	}
 
-	f, err := utils.NewFileEdit(CONFIG_TEMPLATE, s.DefaultSSO, profiles)
+	f, err := fileutils.NewFileEdit(CONFIG_TEMPLATE, s.DefaultSSO, profiles)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func UpdateAwsConfig(ssoName string, s *sso.Settings, cfile string, diff, force 
 		return err
 	}
 
-	f, err := utils.NewFileEdit(CONFIG_TEMPLATE, s.DefaultSSO, profiles)
+	f, err := fileutils.NewFileEdit(CONFIG_TEMPLATE, s.DefaultSSO, profiles)
 	if err != nil {
 		return err
 	}

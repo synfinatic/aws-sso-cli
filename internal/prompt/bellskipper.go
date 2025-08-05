@@ -1,4 +1,4 @@
-package utils
+package prompt
 
 /*
  * AWS SSO CLI

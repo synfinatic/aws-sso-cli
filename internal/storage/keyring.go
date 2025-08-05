@@ -27,10 +27,10 @@ import (
 	"runtime"
 
 	"github.com/99designs/keyring"
+	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/danjacques/gofslock/fslock"
 
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"golang.org/x/term"
 )
 
@@ -114,7 +114,7 @@ func NewKeyringConfig(name, configDir string) (*keyring.Config, error) {
 	}
 	if name != "" {
 		c.AllowedBackends = []keyring.BackendType{keyring.BackendType(name)}
-		rolesFile := utils.GetHomePath(path.Join(securePath, RECORD_KEY))
+		rolesFile := fileutils.GetHomePath(path.Join(securePath, RECORD_KEY))
 
 		if name == "file" {
 			if _, err := os.Stat(rolesFile); os.IsNotExist(err) {

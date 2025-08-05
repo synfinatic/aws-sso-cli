@@ -36,9 +36,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/gotable"
 )
 
@@ -148,7 +148,7 @@ func (ri RoleInfo) GetHeader(fieldName string) (string, error) {
 
 func (ri RoleInfo) RoleArn() string {
 	a, _ := strconv.ParseInt(ri.AccountId, 10, 64)
-	return utils.MakeRoleARN(a, ri.RoleName)
+	return awsparse.MakeRoleARN(a, ri.RoleName)
 }
 
 func (ri RoleInfo) GetAccountId64() int64 {
@@ -311,7 +311,7 @@ func (as *AWSSSO) makeRoleInfo(account AccountInfo, i int, r ssotypes.RoleInfo) 
 	as.Roles[account.AccountId] = append(as.Roles[account.AccountId], RoleInfo{
 		Id:           i,
 		AccountId:    aws.ToString(r.AccountId),
-		Arn:          utils.MakeRoleARN(aId, aws.ToString(r.RoleName)),
+		Arn:          awsparse.MakeRoleARN(aId, aws.ToString(r.RoleName)),
 		RoleName:     aws.ToString(r.RoleName),
 		AccountName:  account.AccountName,
 		EmailAddress: account.EmailAddress,
@@ -393,7 +393,7 @@ var roleChainMap map[string]bool = map[string]bool{} // track our roles
 // GetRoleCredentials recursively does any sts:AssumeRole calls as necessary for role-chaining
 // through `Via` and returns the final set of RoleCredentials for the requested role
 func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.RoleCredentials, error) {
-	aId, err := utils.AccountIdToString(accountId)
+	aId, err := awsparse.AccountIdToString(accountId)
 	if err != nil {
 		return storage.RoleCredentials{}, err
 	}
@@ -443,7 +443,7 @@ func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.Role
 	// the requested role
 	// role has a Via
 	log.Debug("Calling AssumeRole", "role", fmt.Sprintf("%s:%s", aId, role), "via", configRole.Via)
-	viaAccountId, viaRole, err := utils.ParseRoleARN(configRole.Via)
+	viaAccountId, viaRole, err := awsparse.ParseRoleARN(configRole.Via)
 	if err != nil {
 		return storage.RoleCredentials{}, fmt.Errorf("invalid Via %s: %s", configRole.Via, err.Error())
 	}
@@ -469,12 +469,12 @@ func (as *AWSSSO) GetRoleCredentials(accountId int64, role string) (storage.Role
 	}
 	stsSession := sts.NewFromConfig(cfg)
 
-	previousAccount, _ := utils.AccountIdToString(creds.AccountId)
+	previousAccount, _ := awsparse.AccountIdToString(creds.AccountId)
 	previousRole := fmt.Sprintf("%s@%s", creds.RoleName, previousAccount)
 
 	input := sts.AssumeRoleInput{
 		// DurationSeconds: aws.Int32(900),
-		RoleArn:         aws.String(utils.MakeRoleARN(accountId, role)),
+		RoleArn:         aws.String(awsparse.MakeRoleARN(accountId, role)),
 		RoleSessionName: aws.String(previousRole),
 	}
 	if configRole.ExternalId != "" {

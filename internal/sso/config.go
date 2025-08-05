@@ -25,9 +25,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/tags"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
 type SSOConfig struct {
@@ -77,11 +77,11 @@ func (c *SSOConfig) Refresh(s *Settings) {
 
 	for accountId, a := range c.Accounts {
 		// normalize the accountId to a string representation of an integer
-		aId, err := utils.AccountIdToInt64(accountId)
+		aId, err := awsparse.AccountIdToInt64(accountId)
 		if err != nil {
 			log.Fatal("Unable to parse accountId", "accountId", accountId, "error", err.Error())
 		}
-		id, _ := utils.AccountIdToString(aId)
+		id, _ := awsparse.AccountIdToString(aId)
 		if id != accountId {
 			log.Debug("Updating accountId", "old", accountId, "new", id)
 			c.Accounts[id] = a
@@ -101,7 +101,7 @@ func (c *SSOConfig) Refresh(s *Settings) {
 				log.Debug("Refreshing role", "accountId", id, "roleName", roleName)
 			}
 			r.SetParentAccount(a)
-			r.ARN = utils.MakeRoleARNs(id, roleName)
+			r.ARN = awsparse.MakeRoleARNs(id, roleName)
 		}
 	}
 	c.settings = s
@@ -165,7 +165,7 @@ func (s *SSOConfig) GetRoleMatches(tags map[string]string) []*SSORole {
 
 // GetRole returns the matching role if it exists
 func (s *SSOConfig) GetRole(accountId int64, role string) (*SSORole, error) {
-	id, err := utils.AccountIdToString(accountId)
+	id, err := awsparse.AccountIdToString(accountId)
 	if err != nil {
 		return &SSORole{}, err
 	}
@@ -211,7 +211,7 @@ func (a *SSOAccount) GetAllTags(id int64) map[string]string {
 		"AccountName": accountName,
 	}
 	if id > 0 {
-		accountId, _ := utils.AccountIdToString(id)
+		accountId, _ := awsparse.AccountIdToString(id)
 		tags["AccountId"] = accountId
 	}
 	if a.DefaultRegion != "" {
@@ -261,7 +261,7 @@ func (r *SSORole) GetRoleName() string {
 
 // GetAccountId returns the accountId portion of the ARN or empty string on error
 func (r *SSORole) GetAccountId() string {
-	a, err := utils.AccountIdToString(r.GetAccountId64())
+	a, err := awsparse.AccountIdToString(r.GetAccountId64())
 	if err != nil {
 		log.Error("Unable to parse AccountId", "error", err.Error(), "accountID", r.GetAccountId64())
 		return ""
@@ -271,7 +271,7 @@ func (r *SSORole) GetAccountId() string {
 
 // GetAccountId64 returns the accountId portion of the ARN
 func (r *SSORole) GetAccountId64() int64 {
-	a, _, err := utils.ParseRoleARN(r.ARN)
+	a, _, err := awsparse.ParseRoleARN(r.ARN)
 	if err != nil {
 		log.Fatal("Unable to parse", "arn", r.ARN, "error", err.Error())
 	}

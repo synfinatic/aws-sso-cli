@@ -1,4 +1,4 @@
-package utils
+package fileutils
 
 /*
  * AWS SSO CLI
@@ -30,6 +30,7 @@ import (
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
 	"github.com/manifoldco/promptui"
+	"github.com/synfinatic/aws-sso-cli/internal/prompt"
 )
 
 const (
@@ -46,7 +47,7 @@ type FileEdit struct {
 	InputVars interface{}
 }
 
-var prompt = askUser
+var ask = askUser
 
 // GenerateSource returns the byte array of a template
 func GenerateSource(fileTemplate string, vars interface{}) ([]byte, error) {
@@ -121,7 +122,7 @@ func (f *FileEdit) UpdateConfig(printDiff, force bool, configFile string) (bool,
 	}
 
 	if !force {
-		approved, err := prompt(configFile, diff)
+		approved, err := ask(configFile, diff)
 		if err != nil {
 			return false, diff, err
 		}
@@ -212,7 +213,7 @@ func askUser(configFile, diff string) (bool, error) {
 		Label:        label,
 		Items:        []string{"No", "Yes"},
 		HideSelected: false,
-		Stdout:       &BellSkipper{},
+		Stdout:       &prompt.BellSkipper{},
 		Templates: &promptui.SelectTemplates{
 			Selected: fmt.Sprintf(`%s: {{ . | faint }}`, label),
 		},

@@ -23,8 +23,8 @@ import (
 	"fmt"
 
 	// log "github.com/sirupsen/logrus"
+	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
 type ProcessCmd struct {
@@ -58,7 +58,7 @@ func (cc *ProcessCmd) Run(ctx *RunContext) error {
 		role = rFlat.RoleName
 		account = rFlat.AccountId
 	} else if ctx.Cli.Process.Arn != "" {
-		account, role, err = utils.ParseRoleARN(ctx.Cli.Process.Arn)
+		account, role, err = awsparse.ParseRoleARN(ctx.Cli.Process.Arn)
 		if err != nil {
 			return err
 		}

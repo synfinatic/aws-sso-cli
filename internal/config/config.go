@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
+	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
 )
 
 const (
@@ -48,13 +48,13 @@ func ConfigDir(expand bool) string {
 
 	// check if the user has an old config directory which overrides
 	// the XDG_CONFIG_HOME
-	fi, err := os.Stat(utils.GetHomePath(OLD_CONFIG_DIR))
+	fi, err := os.Stat(fileutils.GetHomePath(OLD_CONFIG_DIR))
 	if err == nil && fi.IsDir() {
 		path = OLD_CONFIG_DIR
 	}
 
 	if expand {
-		path = utils.GetHomePath(path)
+		path = fileutils.GetHomePath(path)
 	}
 	return path
 }

@@ -30,8 +30,8 @@ import (
 
 	"github.com/manifoldco/promptui"
 	"github.com/synfinatic/aws-sso-cli/internal/predictor"
+	"github.com/synfinatic/aws-sso-cli/internal/prompt"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
 const (
@@ -114,7 +114,7 @@ func promptSsoInstance(defaultValue string) string {
 				return fmt.Errorf("SSO Name must be a valid string")
 			},
 			Default:   defaultValue,
-			Stdout:    &utils.BellSkipper{},
+			Stdout:    &prompt.BellSkipper{},
 			Pointer:   promptui.PipeCursor,
 			Templates: makePromptTemplate(label),
 		}
@@ -173,7 +173,7 @@ func promptStartUrl(defaultValue string) string {
 				return fmt.Errorf("invalid DNS hostname: %s", input)
 			},
 			Default:   defaultValue,
-			Stdout:    &utils.BellSkipper{},
+			Stdout:    &prompt.BellSkipper{},
 			Pointer:   promptui.PipeCursor,
 			Templates: makePromptTemplate(label),
 		}
@@ -220,7 +220,7 @@ func promptAwsSsoRegion(defaultValue string) string {
 		Items:        items,
 		HideSelected: false,
 		CursorPos:    defaultSelect(items, defaultValue),
-		Stdout:       &utils.BellSkipper{},
+		Stdout:       &prompt.BellSkipper{},
 		Templates:    makeSelectTemplate(label),
 	}
 	if i, _, err = sel.Run(); err != nil {
@@ -256,7 +256,7 @@ func promptDefaultRegion(defaultValue string) string {
 			Items:        items,
 			CursorPos:    defaultSelect(items, defaultValue),
 			HideSelected: false,
-			Stdout:       &utils.BellSkipper{},
+			Stdout:       &prompt.BellSkipper{},
 			Templates:    makeSelectTemplate(label),
 		}
 		if i, _, err = sel.Run(); err != nil {
@@ -284,7 +284,7 @@ func promptUseFirefox(defaultValue []string) []string {
 	for val == "" {
 		prompt := promptui.Prompt{
 			Label:     label,
-			Stdout:    &utils.BellSkipper{},
+			Stdout:    &prompt.BellSkipper{},
 			Default:   firefoxDefaultBrowserPath(val),
 			Pointer:   promptui.PipeCursor,
 			Validate:  validateBinary,
@@ -324,7 +324,7 @@ func promptUrlAction(defaultValue url.Action) url.Action {
 	}
 
 	// only valid on localhost
-	if !utils.IsRemoteHost() {
+	if !prompt.IsRemoteHost() {
 		items = append(items,
 			selectOptions{
 				Name:  "Copy to clipboard",
@@ -355,7 +355,7 @@ func promptUrlAction(defaultValue url.Action) url.Action {
 			Label:     label,
 			CursorPos: defaultSelect(items, dValue),
 			Items:     items,
-			Stdout:    &utils.BellSkipper{},
+			Stdout:    &prompt.BellSkipper{},
 			Templates: makeSelectTemplate(label),
 		}
 		if i, _, err = sel.Run(); err != nil {
@@ -388,7 +388,7 @@ func promptUrlExecCommand(defaultValue []string) []string {
 		prompt := promptui.Prompt{
 			Label:     label,
 			Default:   command,
-			Stdout:    &utils.BellSkipper{},
+			Stdout:    &prompt.BellSkipper{},
 			Validate:  validateBinary,
 			Pointer:   promptui.PipeCursor,
 			Templates: makePromptTemplate(label),
@@ -416,7 +416,7 @@ func promptUrlExecCommand(defaultValue []string) []string {
 		prompt := promptui.Prompt{
 			Label:     label,
 			Default:   arg,
-			Stdout:    &utils.BellSkipper{},
+			Stdout:    &prompt.BellSkipper{},
 			Pointer:   promptui.PipeCursor,
 			Templates: makePromptTemplate(label),
 		}
@@ -442,7 +442,7 @@ func promptDefaultBrowser(defaultValue string) string {
 		prompt := promptui.Prompt{
 			Label:     label,
 			Default:   defaultValue,
-			Stdout:    &utils.BellSkipper{},
+			Stdout:    &prompt.BellSkipper{},
 			Pointer:   promptui.PipeCursor,
 			Validate:  validateBinaryOrNone,
 			Templates: makePromptTemplate(label),
@@ -478,7 +478,7 @@ func promptConsoleDuration(defaultValue int32) int32 {
 				}
 				return nil
 			},
-			Stdout:    &utils.BellSkipper{},
+			Stdout:    &prompt.BellSkipper{},
 			Default:   fmt.Sprintf("%d", defaultValue),
 			Pointer:   promptui.PipeCursor,
 			Templates: makePromptTemplate(label),
@@ -505,7 +505,7 @@ func promptHistoryLimit(defaultValue int64) int64 {
 		prompt := promptui.Prompt{
 			Label:     label,
 			Validate:  validateInteger,
-			Stdout:    &utils.BellSkipper{},
+			Stdout:    &prompt.BellSkipper{},
 			Default:   fmt.Sprintf("%d", defaultValue),
 			Pointer:   promptui.PipeCursor,
 			Templates: makePromptTemplate(label),
@@ -532,7 +532,7 @@ func promptHistoryMinutes(defaultValue int64) int64 {
 			Label:     label,
 			Validate:  validateInteger,
 			Default:   fmt.Sprintf("%d", defaultValue),
-			Stdout:    &utils.BellSkipper{},
+			Stdout:    &prompt.BellSkipper{},
 			Pointer:   promptui.PipeCursor,
 			Templates: makePromptTemplate(label),
 		}
@@ -568,7 +568,7 @@ func promptLogLevel(defaultValue string) string {
 			Items:        items,
 			CursorPos:    index(VALID_LOG_LEVELS, defaultValue),
 			HideSelected: false,
-			Stdout:       &utils.BellSkipper{},
+			Stdout:       &prompt.BellSkipper{},
 			Templates:    makeSelectTemplate(label),
 		}
 		if i, _, err = sel.Run(); err != nil {
@@ -601,7 +601,7 @@ func promptAutoConfigCheck(flag bool) bool {
 			Items:        yesNoItems,
 			CursorPos:    yesNoPos(flag),
 			HideSelected: false,
-			Stdout:       &utils.BellSkipper{},
+			Stdout:       &prompt.BellSkipper{},
 			Templates:    makeSelectTemplate(label),
 		}
 		if i, _, err = sel.Run(); err != nil {
@@ -625,7 +625,7 @@ func promptFullTextSearch(flag bool) bool {
 			Items:        yesNoItems,
 			CursorPos:    yesNoPos(flag),
 			HideSelected: false,
-			Stdout:       &utils.BellSkipper{},
+			Stdout:       &prompt.BellSkipper{},
 			Templates:    makeSelectTemplate(label),
 		}
 		if i, _, err = sel.Run(); err != nil {
@@ -681,7 +681,7 @@ func promptProfileFormat(value string) string {
 			Items:        items,
 			CursorPos:    idx,
 			HideSelected: false,
-			Stdout:       &utils.BellSkipper{},
+			Stdout:       &prompt.BellSkipper{},
 			Templates:    makeSelectTemplate(label),
 		}
 		if i, _, err = sel.Run(); err != nil {
@@ -767,7 +767,7 @@ func promptConfigProfilesUrlAction(
 			Items:        items,
 			CursorPos:    defaultSelect(items, dValue),
 			HideSelected: false,
-			Stdout:       &utils.BellSkipper{},
+			Stdout:       &prompt.BellSkipper{},
 			Templates:    makeSelectTemplate(label),
 		}
 

@@ -25,9 +25,9 @@ import (
 	// "github.com/davecgh/go-spew/spew"
 
 	"github.com/posener/complete"
+	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/logger"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/flexlog"
 )
 
@@ -90,7 +90,7 @@ func (p *Predictor) newPredictor(s *sso.Settings, c *sso.Cache) *Predictor {
 		if filterAccount > 0 && filterAccount != aid {
 			continue
 		}
-		id, _ := utils.AccountIdToString(aid)
+		id, _ := awsparse.AccountIdToString(aid)
 
 		addedRole := false
 		for roleName, rFlat := range cache.Roles.GetAccountRoles(aid) {

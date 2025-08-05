@@ -25,8 +25,8 @@ import (
 	"io/fs"
 	"os"
 
+	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
 	// "github.com/davecgh/go-spew/spew"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
 // JsonStore implements SecureStorage insecurely
@@ -79,7 +79,7 @@ func (jc *JsonStore) save() error {
 		return err
 	}
 
-	err = utils.EnsureDirExists(jc.filename)
+	err = fileutils.EnsureDirExists(jc.filename)
 	if err != nil {
 		return err
 	}

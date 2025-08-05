@@ -21,7 +21,7 @@ package ecs
 import (
 	"reflect"
 
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
+	"github.com/synfinatic/aws-sso-cli/internal/time"
 	"github.com/synfinatic/gotable"
 )
 
@@ -34,7 +34,7 @@ type ListProfilesResponse struct {
 }
 
 func NewListProfileRepsonse(cr *ECSClientRequest) ListProfilesResponse {
-	exp, _ := utils.TimeRemain(cr.Creds.Expiration/1000, true)
+	exp, _ := time.TimeRemain(cr.Creds.Expiration/1000, true)
 	return ListProfilesResponse{
 		ProfileName:  cr.ProfileName,
 		AccountIdPad: cr.Creds.AccountIdStr(),

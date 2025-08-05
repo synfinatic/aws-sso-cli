@@ -25,8 +25,8 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/logger"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/flexlog"
 	"github.com/synfinatic/gotable"
 )
@@ -89,7 +89,7 @@ type RoleCredentials struct { // Cache
 
 // RoleArn returns the ARN for the role
 func (r *RoleCredentials) RoleArn() string {
-	return utils.MakeRoleARN(r.AccountId, r.RoleName)
+	return awsparse.MakeRoleARN(r.AccountId, r.RoleName)
 }
 
 // ExpireEpoch return seconds since unix epoch when we expire
@@ -110,7 +110,7 @@ func (r *RoleCredentials) ExpireString() string {
 
 // AccountIdStr returns our AccountId as a string
 func (r *RoleCredentials) AccountIdStr() string {
-	s, err := utils.AccountIdToString(r.AccountId)
+	s, err := awsparse.AccountIdToString(r.AccountId)
 	if err != nil {
 		log.Fatal("unable to parse accountId from AWS role credentials", "error", err.Error())
 	}
@@ -162,12 +162,12 @@ func (sc StaticCredentials) GetHeader(fieldName string) (string, error) {
 
 // RoleArn returns the ARN for the role
 func (sc *StaticCredentials) UserArn() string {
-	return utils.MakeUserARN(sc.AccountId, sc.UserName)
+	return awsparse.MakeUserARN(sc.AccountId, sc.UserName)
 }
 
 // AccountIdStr returns our AccountId as a string
 func (sc *StaticCredentials) AccountIdStr() string {
-	s, err := utils.AccountIdToString(sc.AccountId)
+	s, err := awsparse.AccountIdToString(sc.AccountId)
 	if err != nil {
 		log.Fatal("Invalid AccountId from AWS static credentials", "accountId", sc.AccountId)
 	}

@@ -24,8 +24,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
 func TestAwsConfigFile(t *testing.T) {
@@ -35,10 +35,10 @@ func TestAwsConfigFile(t *testing.T) {
 	assert.Equal(t, "/foo/bar", AwsConfigFile(""))
 
 	os.Unsetenv("AWS_CONFIG_FILE")
-	test := utils.GetHomePath("~/.foo.bar")
+	test := fileutils.GetHomePath("~/.foo.bar")
 	assert.Equal(t, test, AwsConfigFile("~/.foo.bar"))
 
-	assert.Equal(t, utils.GetHomePath("~/.aws/config"), AwsConfigFile(""))
+	assert.Equal(t, fileutils.GetHomePath("~/.aws/config"), AwsConfigFile(""))
 }
 
 func TestGetProfileMap(t *testing.T) {

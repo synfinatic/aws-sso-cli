@@ -29,8 +29,9 @@ import (
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/tags"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
+	tparse "github.com/synfinatic/aws-sso-cli/internal/time"
 	"github.com/synfinatic/gotable"
 )
 
@@ -134,7 +135,7 @@ func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) 
 	}
 
 	for thisRoleName, role := range account.Roles {
-		idStr, _ := utils.AccountIdToString(accountId)
+		idStr, _ := awsparse.AccountIdToString(accountId)
 		if thisRoleName == roleName {
 			flat := AWSRoleFlat{
 				AccountId:     accountId,
@@ -155,7 +156,7 @@ func (r *Roles) GetRole(accountId int64, roleName string) (*AWSRoleFlat, error) 
 			}
 
 			if !flat.IsExpired() {
-				if exp, err := utils.TimeRemain(flat.ExpiresEpoch, true); err == nil {
+				if exp, err := tparse.TimeRemain(flat.ExpiresEpoch, true); err == nil {
 					flat.Expires = exp
 				}
 			} else {
@@ -211,7 +212,7 @@ func (r *Roles) GetRoleByProfile(profileName string, s *Settings) (*AWSRoleFlat,
 			flat, _ := r.GetRole(aId, roleName)
 			pName, err := flat.ProfileName(s)
 			if err != nil {
-				log.Warn("unable to generate Profile", "arn", utils.MakeRoleARN(aId, roleName), "error", err.Error())
+				log.Warn("unable to generate Profile", "arn", awsparse.MakeRoleARN(aId, roleName), "error", err.Error())
 			}
 			if pName == profileName {
 				return flat, nil
@@ -227,17 +228,17 @@ func (r *Roles) GetRoleChain(accountId int64, roleName string) []*AWSRoleFlat {
 
 	f, err := r.GetRole(accountId, roleName)
 	if err != nil {
-		log.Fatal("unable to fetch role", "arn", utils.MakeRoleARN(accountId, roleName), "error", err.Error())
+		log.Fatal("unable to fetch role", "arn", awsparse.MakeRoleARN(accountId, roleName), "error", err.Error())
 	}
 	ret = append(ret, f)
 	for f.Via != "" {
-		aId, rName, err := utils.ParseRoleARN(f.Via)
+		aId, rName, err := awsparse.ParseRoleARN(f.Via)
 		if err != nil {
 			log.Fatal("unable to parse", "via", f.Via, "error", err.Error())
 		}
 		f, err = r.GetRole(aId, rName)
 		if err != nil {
-			log.Fatal("unable to get role", "role", utils.MakeRoleARN(aId, rName), "error", err.Error())
+			log.Fatal("unable to get role", "role", awsparse.MakeRoleARN(aId, rName), "error", err.Error())
 		}
 		ret = append([]*AWSRoleFlat{f}, ret...) // prepend
 	}
@@ -346,7 +347,7 @@ func (r *AWSRoleFlat) IsExpired() bool {
 
 // ExpiresIn returns how long until this role expires as a string
 func (r *AWSRoleFlat) ExpiresIn() (string, error) {
-	return utils.TimeRemain(r.ExpiresEpoch, false)
+	return tparse.TimeRemain(r.ExpiresEpoch, false)
 }
 
 // RoleProfile returns either the user-defined Profile value for the role from
@@ -405,7 +406,7 @@ func firstItem(items ...string) string {
 }
 
 func accountIdToStr(id int64) string {
-	i, _ := utils.AccountIdToString(id)
+	i, _ := awsparse.AccountIdToString(id)
 	return i
 }
 

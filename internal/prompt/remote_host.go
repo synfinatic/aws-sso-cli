@@ -1,4 +1,4 @@
-package main
+package prompt
 
 /*
  * AWS SSO CLI
@@ -19,34 +19,13 @@ package main
  */
 
 import (
-	"fmt"
 	"os"
-
-	"github.com/synfinatic/aws-sso-cli/internal/time"
 )
 
-type TimeCmd struct{}
-
-// AfterApply determines if SSO auth token is required
-func (t TimeCmd) AfterApply(runCtx *RunContext) error {
-	runCtx.Auth = AUTH_SKIP
-	return nil
-}
-
-func (cc *TimeCmd) Run(ctx *RunContext) error {
-	expires, isset := os.LookupEnv("AWS_SSO_SESSION_EXPIRATION")
-	if !isset {
-		return nil // no output if nothing is set
-	}
-
-	t, err := time.ParseTimeString(expires)
-	if err != nil {
-		return err
-	}
-	exp, err := time.TimeRemain(t, false)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("%s", exp)
-	return nil
+// IsRemoteHost returns if we are running on a remote host or not
+func IsRemoteHost() bool {
+	// right now we just look for the SSH_TTY env var which should be set
+	// anytime you ssh to a remote host
+	_, inSSHSession := os.LookupEnv("SSH_TTY")
+	return inSSHSession
 }

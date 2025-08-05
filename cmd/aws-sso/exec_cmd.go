@@ -25,8 +25,8 @@ import (
 	"os/exec"
 	"runtime"
 
+	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
 type ExecCmd struct {
@@ -81,7 +81,7 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 func execCmd(ctx *RunContext, accountid int64, role string) error {
 	region := ctx.Settings.GetDefaultRegion(accountid, role, ctx.Cli.Exec.NoRegion)
 
-	ctx.Settings.Cache.AddHistory(utils.MakeRoleARN(accountid, role))
+	ctx.Settings.Cache.AddHistory(awsparse.MakeRoleARN(accountid, role))
 	if err := ctx.Settings.Cache.Save(false); err != nil {
 		log.Warn("Unable to update cache", "error", err.Error())
 	}
@@ -116,7 +116,7 @@ func execShellEnvs(ctx *RunContext, accountid int64, role, region string) map[st
 		"AWS_SSO_ACCOUNT_ID":         creds.AccountIdStr(),
 		"AWS_SSO_ROLE_NAME":          creds.RoleName,
 		"AWS_SSO_SESSION_EXPIRATION": creds.ExpireString(),
-		"AWS_SSO_ROLE_ARN":           utils.MakeRoleARN(creds.AccountId, creds.RoleName),
+		"AWS_SSO_ROLE_ARN":           awsparse.MakeRoleARN(creds.AccountId, creds.RoleName),
 		"AWS_SSO":                    ssoName,
 	}
 

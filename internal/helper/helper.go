@@ -27,8 +27,8 @@ import (
 	"path"
 
 	"github.com/riywo/loginshell"
+	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
 	"github.com/synfinatic/aws-sso-cli/internal/logger"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/flexlog"
 )
 
@@ -67,7 +67,7 @@ func ConfigFiles() []string {
 	ret := []string{}
 
 	for _, v := range SHELL_SCRIPTS {
-		ret = append(ret, utils.GetHomePath(v.Path))
+		ret = append(ret, fileutils.GetHomePath(v.Path))
 	}
 	return ret
 }
@@ -90,7 +90,7 @@ func getScript(shell string) ([]byte, string, error) {
 		return bytes, "", fmt.Errorf("unsupported shell: %s", shell)
 	}
 
-	path := utils.GetHomePath(shellFile.Path)
+	path := fileutils.GetHomePath(shellFile.Path)
 	bytes, err = embedFiles.ReadFile(shellFile.Key)
 	if err != nil {
 		return bytes, "", err
@@ -171,7 +171,7 @@ func printConfig(template []byte, execPath string, output io.Writer) error {
 	}
 
 	// generate the source with the given args using the template
-	if fileContents, err = utils.GenerateSource(string(template), args); err != nil {
+	if fileContents, err = fileutils.GenerateSource(string(template), args); err != nil {
 		return err
 	}
 	if len(fileContents) == 0 {
@@ -189,7 +189,7 @@ func printConfig(template []byte, execPath string, output io.Writer) error {
 func installConfigFile(path string, contents []byte, force bool) error {
 	var err error
 	var exec string
-	var fe *utils.FileEdit
+	var fe *fileutils.FileEdit
 
 	if exec, err = os.Executable(); err != nil {
 		return err
@@ -199,7 +199,7 @@ func installConfigFile(path string, contents []byte, force bool) error {
 		"Executable": exec,
 	}
 
-	if fe, err = utils.NewFileEdit(string(contents), "", args); err != nil {
+	if fe, err = fileutils.NewFileEdit(string(contents), "", args); err != nil {
 		return err
 	}
 
@@ -214,9 +214,9 @@ func installConfigFile(path string, contents []byte, force bool) error {
 // uninstallConfigFile removes our blob from the given file
 func uninstallConfigFile(path string) error {
 	var err error
-	var fe *utils.FileEdit
+	var fe *fileutils.FileEdit
 
-	if fe, err = utils.NewFileEdit("", "", ""); err != nil {
+	if fe, err = fileutils.NewFileEdit("", "", ""); err != nil {
 		return nil
 	}
 
@@ -246,7 +246,7 @@ func detectShell() (string, error) {
 func getFishScript() string {
 	base := os.Getenv("XDG_CONFIG_HOME")
 	if base == "" {
-		base = utils.GetHomePath("~/.config")
+		base = fileutils.GetHomePath("~/.config")
 	}
 
 	return path.Join(base, "fish", "completions", "aws-sso.fish")
