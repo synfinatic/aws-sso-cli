@@ -26,7 +26,6 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kong"
-	"github.com/posener/complete"
 
 	// "github.com/davecgh/go-spew/spew"
 
@@ -289,18 +288,7 @@ func parseArgs(ctx *RunContext) sso.OverrideSettings {
 	p := predictor.NewPredictor(config.InsecureCacheFile(true), config.ConfigFile(true))
 
 	kongplete.Complete(parser,
-		kongplete.WithPredictors(
-			map[string]complete.Predictor{
-				"accountId": p.AccountComplete(),
-				"arn":       p.ArnComplete(),
-				"fieldList": p.FieldListComplete(),
-				"profile":   p.ProfileComplete(),
-				"region":    p.RegionComplete(),
-				"role":      p.RoleComplete(),
-				"sso":       p.SsoComplete(),
-				"allFiles":  complete.PredictFiles("*"),
-			},
-		),
+		kongplete.WithPredictors(p.KongpletePredictor()),
 	)
 
 	ctx.Kctx, err = parser.Parse(os.Args[1:])
