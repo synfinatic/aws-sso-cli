@@ -21,7 +21,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
+	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 )
 
 type SelectCliArgs struct {
@@ -73,7 +73,7 @@ func (a *SelectCliArgs) Update(ctx *RunContext) error {
 	}
 
 	if a.Arn != "" {
-		accountId, role, err := utils.ParseRoleARN(a.Arn)
+		accountId, role, err := awsparse.ParseRoleARN(a.Arn)
 		if err != nil {
 			return &InvalidArgsError{msg: "Invalid --arn %s", arg: a.Arn}
 		}

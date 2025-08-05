@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/alecthomas/kong"
@@ -29,11 +30,12 @@ import (
 
 	// "github.com/davecgh/go-spew/spew"
 
+	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/config"
+	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
 	"github.com/synfinatic/aws-sso-cli/internal/predictor"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/willabides/kongplete"
 )
 
@@ -110,7 +112,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 type LogLevelType string
 
 func (level LogLevelType) Validate() error {
-	if utils.StrListContains(string(level), VALID_LOG_LEVELS) || level == "" {
+	if slices.Contains(VALID_LOG_LEVELS, string(level)) || level == "" {
 		return nil
 	}
 	return fmt.Errorf("invalid value: %s.  Must be one of: %s", level, strings.Join(VALID_LOG_LEVELS, ", "))
@@ -164,7 +166,7 @@ func main() {
 	}
 
 	// Load the config file
-	runCtx.Cli.ConfigFile = utils.GetHomePath(runCtx.Cli.ConfigFile)
+	runCtx.Cli.ConfigFile = fileutils.GetHomePath(runCtx.Cli.ConfigFile)
 
 	if _, err := os.Stat(cli.ConfigFile); errors.Is(err, os.ErrNotExist) {
 		log.Warn("No config file found!  Will now prompt you for a basic config...")
@@ -224,7 +226,7 @@ func loadSecureStore(ctx *RunContext) {
 	case "json":
 		sfile := config.JsonStoreFile(true)
 		if ctx.Settings.JsonStore != "" {
-			sfile = utils.GetHomePath(ctx.Settings.JsonStore)
+			sfile = fileutils.GetHomePath(ctx.Settings.JsonStore)
 		}
 		ctx.Store, err = storage.OpenJsonStore(sfile)
 		if err != nil {
@@ -345,7 +347,7 @@ func GetRoleCredentials(ctx *RunContext, awssso *sso.AWSSSO, refreshSTS bool, ac
 	creds := storage.RoleCredentials{}
 
 	// First look for our creds in the secure store, if we're not forcing a refresh
-	arn := utils.MakeRoleARN(accountid, role)
+	arn := awsparse.MakeRoleARN(accountid, role)
 	log.Debug("Getting role credentials", "arn", arn)
 	if !refreshSTS {
 		if roleFlat, err := ctx.Settings.Cache.GetRole(arn); err == nil {

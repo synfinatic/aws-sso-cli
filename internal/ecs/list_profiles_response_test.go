@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
+	tparse "github.com/synfinatic/aws-sso-cli/internal/time"
 )
 
 func TestNewListProfileResponse(t *testing.T) {
@@ -47,7 +47,7 @@ func TestNewListProfileResponse(t *testing.T) {
 	assert.Equal(t, "000001234567", lpr.AccountIdPad)
 	assert.Equal(t, "TestingRole", lpr.RoleName)
 	assert.Equal(t, now.Unix(), lpr.Expiration)
-	remain, _ := utils.TimeRemain(now.Unix(), true)
+	remain, _ := tparse.TimeRemain(now.Unix(), true)
 	assert.Equal(t, remain, lpr.Expires)
 }
 

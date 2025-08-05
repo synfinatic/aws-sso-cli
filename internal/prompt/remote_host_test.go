@@ -1,4 +1,4 @@
-package utils
+package prompt
 
 /*
  * AWS SSO CLI
@@ -19,22 +19,25 @@ package utils
  */
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestBellSkipper(t *testing.T) {
-	b := BellSkipper{}
+type UtilsTestSuite struct {
+	suite.Suite
+}
 
-	bytes := []byte("this is my bellskipper buffer\n")
-	i, err := b.Write(bytes)
-	assert.NoError(t, err)
-	assert.Equal(t, len(bytes), i)
-	assert.NoError(t, b.Close())
+func TestUtilsSuite(t *testing.T) {
+	s := &UtilsTestSuite{}
+	suite.Run(t, s)
+}
+func TestIsRemoteHost(t *testing.T) {
+	os.Setenv("SSH_TTY", "FOOBAR")
+	assert.True(t, IsRemoteHost())
 
-	bytes = []byte{7}
-	i, err = b.Write(bytes)
-	assert.NoError(t, err)
-	assert.Equal(t, 0, i)
+	os.Unsetenv("SSH_TTY")
+	assert.False(t, IsRemoteHost())
 }

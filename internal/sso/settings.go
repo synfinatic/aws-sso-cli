@@ -33,8 +33,9 @@ import (
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/file"
+	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
+	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
 const (
@@ -85,7 +86,7 @@ func (s *Settings) GetDefaultRegion(id int64, roleName string, noRegion bool) st
 		return ""
 	}
 
-	accountId, err := utils.AccountIdToString(id)
+	accountId, err := awsparse.AccountIdToString(id)
 	if err != nil {
 		log.Fatal("Unable to GetDefaultRegion()", "error", err.Error())
 	}
@@ -293,9 +294,9 @@ func (s *Settings) Save(configFile string, overwrite bool) error {
 		return fmt.Errorf("refusing to write 0 bytes to config.yaml")
 	}
 
-	configDir := utils.GetHomePath(filepath.Dir(configFile))
+	configDir := fileutils.GetHomePath(filepath.Dir(configFile))
 	configFile = filepath.Join(configDir, filepath.Base(configFile))
-	if err = utils.EnsureDirExists(configFile); err != nil {
+	if err = fileutils.EnsureDirExists(configFile); err != nil {
 		return err
 	}
 

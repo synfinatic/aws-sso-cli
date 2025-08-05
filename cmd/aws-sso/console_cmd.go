@@ -36,9 +36,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 
 	// "github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
 type ConsoleCmd struct {
@@ -146,7 +146,7 @@ func consoleViaEnvVars(ctx *RunContext) error {
 		return fmt.Errorf("unable to call sts get-caller-identity: %s", err.Error())
 	}
 
-	accountid, role, err := utils.ParseRoleARN(aws.ToString(output.Arn))
+	accountid, role, err := awsparse.ParseRoleARN(aws.ToString(output.Arn))
 	if err != nil {
 		return fmt.Errorf("unable to parse ARN: %s", aws.ToString(output.Arn))
 	}
@@ -239,7 +239,7 @@ func openConsole(ctx *RunContext, accountid int64, role string) error {
 		duration = ctx.Cli.Console.Duration
 	}
 
-	ctx.Settings.Cache.AddHistory(utils.MakeRoleARN(accountid, role))
+	ctx.Settings.Cache.AddHistory(awsparse.MakeRoleARN(accountid, role))
 	if err := ctx.Settings.Cache.Save(false); err != nil {
 		log.Warn("Unable to update cache", "error", err.Error())
 	}
@@ -321,7 +321,7 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials,
 
 // containerParams generates the name, color, icon for the Firefox container plugin
 func containerParams(ctx *RunContext, accountId int64, role string) (string, string, string) {
-	rFlat, _ := ctx.Settings.Cache.GetRole(utils.MakeRoleARN(accountId, role))
+	rFlat, _ := ctx.Settings.Cache.GetRole(awsparse.MakeRoleARN(accountId, role))
 	profile, err := rFlat.ProfileName(ctx.Settings)
 	if err != nil && strings.Contains(profile, "&") {
 		profile = fmt.Sprintf("%d:%s", accountId, role)

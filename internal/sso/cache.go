@@ -29,8 +29,9 @@ import (
 	"time"
 
 	// "github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
+	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
 	"github.com/synfinatic/aws-sso-cli/internal/tags"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
 const (
@@ -159,7 +160,7 @@ func (c *Cache) Save(updateTime bool) error {
 	if err != nil {
 		return fmt.Errorf("unable to marshal json: %s", err.Error())
 	}
-	err = utils.EnsureDirExists(c.CacheFile())
+	err = fileutils.EnsureDirExists(c.CacheFile())
 	if err != nil {
 		return fmt.Errorf("unable to create directory for %s: %s", c.CacheFile(), err.Error())
 	}
@@ -189,7 +190,7 @@ func (c *Cache) AddHistory(item string) {
 	}
 
 	// Update our Tags for this new item
-	aId, roleName, _ := utils.ParseRoleARN(item)
+	aId, roleName, _ := awsparse.ParseRoleARN(item)
 	if a, ok := c.GetSSO().Roles.Accounts[aId]; ok {
 		if r, ok := a.Roles[roleName]; ok {
 			r.Tags["History"] = fmt.Sprintf("%s:%s,%d", a.Alias, roleName, time.Now().Unix())
@@ -210,7 +211,7 @@ func (c *Cache) AddHistory(item string) {
 
 		// remove any History tag for roles which don't exist in c.GetSSO().History
 		if !exists {
-			aId, roleName, _ := utils.ParseRoleARN(role.Arn)
+			aId, roleName, _ := awsparse.ParseRoleARN(role.Arn)
 			delete(c.GetSSO().Roles.Accounts[aId].Roles[roleName].Tags, "History")
 		}
 	}
@@ -239,7 +240,7 @@ func (c *Cache) deleteOldHistory() {
 
 	// iteratate over each ARN in our History list
 	for _, arn := range cache.History {
-		id, role, err := utils.ParseRoleARN(arn)
+		id, role, err := awsparse.ParseRoleARN(arn)
 		if err != nil {
 			log.Debug("Unable to parse History ARN", "arn", arn, "error", err.Error())
 			c.deleteHistoryItem(arn)
@@ -368,12 +369,12 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads 
 
 	// restore any configured roles that are not in AWS SSO
 	for aId, account := range config.Accounts {
-		accountId, err := utils.AccountIdToInt64(aId)
+		accountId, err := awsparse.AccountIdToInt64(aId)
 		if err != nil {
 			return 0, 0, fmt.Errorf("unable to parse accountId from config.yaml %s: %s", aId, err.Error())
 		}
 		// if aId is scientific notation, convert to int64 string
-		aId, _ := utils.AccountIdToString(accountId)
+		aId, _ := awsparse.AccountIdToString(accountId)
 		for rName, role := range account.Roles {
 			if role.Via != "" {
 				log.Info("restoring via role", "role", rName, "account", accountId)
@@ -389,7 +390,7 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads 
 					}
 				}
 				c.SSO[ssoName].Roles.Accounts[accountId].Roles[rName] = &AWSRole{
-					Arn:           role.ARN, // utils.MakeRoleARN(accountId, rName),
+					Arn:           role.ARN,
 					DefaultRegion: role.DefaultRegion,
 					Profile:       role.Profile,
 					Tags:          role.Tags,
@@ -495,7 +496,7 @@ func (c *Cache) GetRoleTagsSelect() *RoleTags {
 
 // GetRole returns the AWSRoleFlat for the given role ARN
 func (c *Cache) GetRole(arn string) (*AWSRoleFlat, error) {
-	accountId, roleName, err := utils.ParseRoleARN(arn)
+	accountId, roleName, err := awsparse.ParseRoleARN(arn)
 	if err != nil {
 		return &AWSRoleFlat{}, err
 	}
@@ -563,7 +564,7 @@ func processSSORoles(roles []RoleInfo, cache *SSOCache, r *Roles) {
 		}
 
 		r.Accounts[accountId].Roles[role.RoleName] = &AWSRole{
-			Arn: utils.MakeRoleARN(accountId, role.RoleName),
+			Arn: awsparse.MakeRoleARN(accountId, role.RoleName),
 			Tags: map[string]string{
 				"AccountID":    role.AccountId,
 				"AccountAlias": role.AccountName, // AWS SSO calls it `AccountName`
@@ -662,7 +663,7 @@ func (c *Cache) addConfigRoles(r *Roles, config *SSOConfig) error {
 	// The load all the Config file stuff.  Normally this is just adding markup, but
 	// for accounts &roles that are not in SSO, we may be creating them as well!
 	for accountId, account := range config.Accounts {
-		id, err := utils.AccountIdToInt64(accountId)
+		id, err := awsparse.AccountIdToInt64(accountId)
 		if err != nil {
 			return err
 		}
@@ -681,7 +682,7 @@ func (c *Cache) addConfigRoles(r *Roles, config *SSOConfig) error {
 
 		// set the AWS SSO tags for all the SSO roles
 		for roleName := range r.Accounts[id].Roles {
-			aId, _ := utils.AccountIdToString(id)
+			aId, _ := awsparse.AccountIdToString(id)
 			r.Accounts[id].Roles[roleName].Tags["AccountID"] = aId
 			r.Accounts[id].Roles[roleName].Tags["AccountAlias"] = r.Accounts[id].Alias
 			r.Accounts[id].Roles[roleName].Tags["Email"] = r.Accounts[id].EmailAddress
@@ -700,7 +701,7 @@ func (c *Cache) addConfigRoles(r *Roles, config *SSOConfig) error {
 				log.DebugContext(ctx, "config.yaml defines a role but you don't have access", "role", roleName)
 				continue
 			}
-			r.Accounts[id].Roles[roleName].Arn = utils.MakeRoleARN(id, roleName)
+			r.Accounts[id].Roles[roleName].Arn = awsparse.MakeRoleARN(id, roleName)
 			r.Accounts[id].Roles[roleName].Profile = role.Profile
 			r.Accounts[id].Roles[roleName].DefaultRegion = r.Accounts[id].DefaultRegion
 			r.Accounts[id].Roles[roleName].Via = role.Via

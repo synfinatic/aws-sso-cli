@@ -26,9 +26,10 @@ import (
 	"time"
 
 	"github.com/manifoldco/promptui"
+	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
+	"github.com/synfinatic/aws-sso-cli/internal/prompt"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
 	"github.com/synfinatic/aws-sso-cli/internal/url"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
 var ranSetup = false
@@ -123,7 +124,7 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 	s.ProfileFormat = promptProfileFormat(s.ProfileFormat)
 
 	// check if we are in a ssh session
-	if utils.IsRemoteHost() {
+	if prompt.IsRemoteHost() {
 		// users need to modify the default open action
 		promptOpen(s)
 	}
@@ -139,7 +140,7 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 		// full text search?
 		s.FullTextSearch = promptFullTextSearch(s.FullTextSearch)
 
-		if !utils.IsRemoteHost() {
+		if !prompt.IsRemoteHost() {
 			promptOpen(s)
 		}
 
@@ -169,7 +170,7 @@ func backupConfig(cfgFile string) error {
 			Items:        yesNoItems,
 			CursorPos:    yesNoPos(true),
 			HideSelected: false,
-			Stdout:       &utils.BellSkipper{},
+			Stdout:       &prompt.BellSkipper{},
 			Templates:    makeSelectTemplate(label),
 		}
 		if i, _, err = sel.Run(); err != nil {
@@ -178,7 +179,7 @@ func backupConfig(cfgFile string) error {
 
 		// user said yes
 		if yesNoItems[i].Value == "Yes" {
-			sourcePath := utils.GetHomePath(cfgFile)
+			sourcePath := fileutils.GetHomePath(cfgFile)
 			src, err := os.Open(sourcePath)
 			if err != nil {
 				return err
@@ -219,7 +220,7 @@ func backupConfig(cfgFile string) error {
 func promptOpen(s *sso.Settings) {
 	s.UrlAction = promptUrlAction(s.UrlAction)
 
-	if !utils.IsRemoteHost() {
+	if !prompt.IsRemoteHost() {
 		s.ConfigProfilesUrlAction = promptConfigProfilesUrlAction(s.ConfigProfilesUrlAction, s.UrlAction)
 	}
 

@@ -21,13 +21,14 @@ package main
 import (
 	"fmt"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 
 	"github.com/synfinatic/aws-sso-cli/internal/predictor"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
+	"github.com/synfinatic/aws-sso-cli/internal/time"
 	"github.com/synfinatic/gotable"
 )
 
@@ -71,7 +72,7 @@ func (cc *ListCmd) Run(ctx *RunContext) error {
 			validFields[i] = k
 			i++
 		}
-		if !utils.StrListContains(prefixSearch[0], validFields) {
+		if !slices.Contains(validFields, prefixSearch[0]) {
 			return fmt.Errorf("--prefix <FieldName> must be a valid field: %s", prefixSearch[0])
 		}
 	}
@@ -200,7 +201,7 @@ func printRoles(ctx *RunContext, fields []string, csv bool, prefixSearch []strin
 		if err := ctx.Store.GetCreateTokenResponse(AwsSSO.StoreKey(), &ctr); err != nil {
 			log.Debug("Unable to get SSO session expire time", "error", err.Error())
 		} else {
-			if exp, err := utils.TimeRemain(ctr.ExpiresAt, true); err != nil {
+			if exp, err := time.TimeRemain(ctr.ExpiresAt, true); err != nil {
 				log.Error("Unable to determine time remain", "expiresAt", ctr.ExpiresAt, "error", err.Error())
 			} else {
 				expires = fmt.Sprintf(" [Expires in: %s]", strings.TrimSpace(exp))

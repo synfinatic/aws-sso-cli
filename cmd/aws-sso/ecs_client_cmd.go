@@ -25,9 +25,9 @@ import (
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs/client"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
 	"github.com/synfinatic/gotable"
 )
 
@@ -110,7 +110,7 @@ func ecsLoadCmd(ctx *RunContext, accountId int64, role string) error {
 	}
 
 	// save history
-	ctx.Settings.Cache.AddHistory(utils.MakeRoleARN(rFlat.AccountId, rFlat.RoleName))
+	ctx.Settings.Cache.AddHistory(awsparse.MakeRoleARN(rFlat.AccountId, rFlat.RoleName))
 	if err := ctx.Settings.Cache.Save(false); err != nil {
 		log.Warn("Unable to update cache", "error", err.Error())
 	}

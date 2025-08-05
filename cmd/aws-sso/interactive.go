@@ -26,9 +26,9 @@ import (
 
 	"github.com/c-bata/go-prompt"
 	//	"github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
 	"github.com/synfinatic/aws-sso-cli/internal/tags"
-	"github.com/synfinatic/aws-sso-cli/internal/utils"
 )
 
 type CompleterExec = func(*RunContext, int64, string) error
@@ -146,7 +146,7 @@ func (tc *TagsCompleter) Executor(args string) {
 		roleArn = ssoRoles[0]
 	}
 
-	aId, rName, err := utils.ParseRoleARN(roleArn)
+	aId, rName, err := awsparse.ParseRoleARN(roleArn)
 	if err != nil {
 		log.Fatal("Unable to parse", "arn", roleArn, "error", err.Error())
 	}
