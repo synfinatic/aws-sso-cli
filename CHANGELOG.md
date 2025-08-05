@@ -3,6 +3,10 @@
 
 ## [Unreleased]
 
+### New Features
+
+* Add support for `ansi-osc52` copying of URLs into clipboard
+
 ### Bugs
 
 * Fix clearing ENV vars under Windows Powershell #1244

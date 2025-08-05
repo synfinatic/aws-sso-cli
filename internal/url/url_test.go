@@ -20,6 +20,7 @@ package url
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"net"
 	"net/url"
@@ -57,35 +58,61 @@ func testUrlOpenerWithError(url, browser string) error {
 	return fmt.Errorf("there was an error")
 }
 
-func TestHandleUrl(t *testing.T) {
-	t.Parallel()
+func TestHandleUrlOsc52(t *testing.T) {
 	noCommand := []string{}
-	assert.Panics(t, func() { NewHandleUrl(Exec, "foo", "browser", noCommand) })
-
-	// override the print method
 	printWriter = new(bytes.Buffer)
+	defer func() { printWriter = os.Stderr }()
+
+	h := NewHandleUrl(OSC52, "foo", "browser", noCommand)
+	assert.NotNil(t, h)
+	assert.NoError(t, h.Open())
+
+	b64value := base64.StdEncoding.EncodeToString([]byte("foo"))
+	oscValue := fmt.Sprintf("\x1b]52;c;%s\a", b64value)
+	assert.Equal(t, oscValue, printWriter.(*bytes.Buffer).String())
+
+	printWriter = os.Stdin
+	assert.Error(t, h.Open())
+}
+
+func TestHandlUrlPrint(t *testing.T) {
+	noCommand := []string{}
+	printWriter = new(bytes.Buffer)
+	printWriter = new(bytes.Buffer)
+	defer func() { printWriter = os.Stderr }()
+
 	h := NewHandleUrl(Print, "bar", "browser", noCommand)
 	assert.NotNil(t, h)
 	h.PreMsg = "pre"
 	h.PostMsg = "post"
 	assert.NoError(t, h.Open())
 	assert.Equal(t, "prebarpost", printWriter.(*bytes.Buffer).String())
+}
 
-	// new print method for printurl
+func TestHandleUrlPrintUrl(t *testing.T) {
+	noCommand := []string{}
 	printWriter = new(bytes.Buffer)
-	h = NewHandleUrl(PrintUrl, "bar", "browser", noCommand)
+	defer func() { printWriter = os.Stderr }()
+
+	h := NewHandleUrl(PrintUrl, "bar", "browser", noCommand)
 	h.PreMsg = "pre"
 	h.PostMsg = "post"
 	assert.NotNil(t, h)
 	assert.NoError(t, h.Open())
 	assert.Equal(t, "bar\n", printWriter.(*bytes.Buffer).String())
+}
+
+func TestHandleUrl(t *testing.T) {
+	t.Parallel()
+	noCommand := []string{}
+	assert.Panics(t, func() { NewHandleUrl(Exec, "foo", "browser", noCommand) })
 
 	// Clipboard tests
 	urlOpener = testUrlOpener
 	urlOpenerWith = testUrlOpenerWith
 	clipboardWriter = testClipboardWriter
 
-	h = NewHandleUrl(Clip, "url", "browser", noCommand)
+	h := NewHandleUrl(Clip, "url", "browser", noCommand)
 	assert.NotNil(t, h)
 	assert.NoError(t, h.Open())
 	assert.Equal(t, "url", checkValue)

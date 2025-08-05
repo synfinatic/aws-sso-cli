@@ -28,6 +28,7 @@ import (
 	"strings"
 
 	"github.com/atotto/clipboard"
+	"github.com/aymanbagabas/go-osc52/v2"
 	"github.com/skratchdot/open-golang/open"
 	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
 	"github.com/synfinatic/aws-sso-cli/internal/logger"
@@ -89,12 +90,13 @@ var clipboardWriter clipboardWriterFunc = clipboard.WriteAll
 type Action string
 
 const (
-	Undef            Action = ""         // undefined
-	Clip             Action = "clip"     // copy to clipboard
-	Print            Action = "print"    // print message & url to stderr
-	PrintUrl         Action = "printurl" // print only the  url to stderr
-	Exec             Action = "exec"     // Exec comand
-	Open             Action = "open"     // auto-open in default or specified browser
+	Undef            Action = ""           // undefined
+	Clip             Action = "clip"       // copy to clipboard
+	Print            Action = "print"      // print message & url to stderr
+	PrintUrl         Action = "printurl"   // print only the  url to stderr
+	Exec             Action = "exec"       // Exec comand
+	Open             Action = "open"       // auto-open in default or specified browser
+	OSC52            Action = "ansi-osc52" // copy to terminal via ANSI OSC52
 	GrantedContainer Action = "granted-containers"
 	OpenUrlContainer Action = "open-url-in-container"
 )
@@ -122,6 +124,7 @@ const (
 	ConfigProfilesOpen             ConfigProfilesAction = "open" // auto-open in default or specified browser
 	ConfigProfilesGrantedContainer ConfigProfilesAction = "granted-containers"
 	ConfigProfilesOpenUrlContainer ConfigProfilesAction = "open-url-in-container"
+	ConfigProfilesOpenAnsiOSC52    ConfigProfilesAction = "ansi-osc52" // copy to terminal via ANSI OSC52
 )
 
 func (u ConfigProfilesAction) IsContainer() bool {
@@ -136,6 +139,7 @@ func NewConfigProfilesAction(action string) (ConfigProfilesAction, error) {
 		"open":                  ConfigProfilesOpen,
 		"granted-containers":    ConfigProfilesGrantedContainer,
 		"open-url-in-container": ConfigProfilesOpenUrlContainer,
+		"ansi-osc52":            ConfigProfilesOpenAnsiOSC52,
 	}
 	ret, ok := actionMap[action]
 	if !ok {
@@ -147,6 +151,7 @@ func NewConfigProfilesAction(action string) (ConfigProfilesAction, error) {
 func NewAction(action string) (Action, error) {
 	var actionMap = map[string]Action{
 		"":                      Undef,
+		"ansi-osc52":            OSC52,
 		"clip":                  Clip,
 		"exec":                  Exec,
 		"open":                  Open,
@@ -227,6 +232,16 @@ func (h *HandleUrl) Open() error {
 	case OpenUrlContainer:
 		url := formatContainerUrl(FIREFOX_CONTAINER_FORMAT, h.Url, h.ContainerName, h.Color, h.Icon)
 		err = execWithUrl(h.ExecCmd, url)
+
+	case OSC52:
+		// ANSI OSC52 is a way to copy to the terminal, so we don't need
+		// to open a browser, just copy the URL to the terminal
+		_, err = osc52.New(h.Url).WriteTo(printWriter)
+		if err == nil {
+			log.Info("Please open URL copied to clipboard.\n")
+		} else {
+			err = fmt.Errorf("unable to copy URL to clipboard: %s", err.Error())
+		}
 
 	case Print:
 		fmt.Fprintf(printWriter, "%s%s%s", h.PreMsg, h.Url, h.PostMsg)

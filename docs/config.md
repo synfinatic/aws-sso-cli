@@ -24,7 +24,7 @@ SSOConfig:
         SSORegion: <AWS Region where AWS SSO is deployed>
         StartUrl: <URL for AWS SSO Portal>
         DefaultRegion: <AWS_DEFAULT_REGION>
-        AuthUrlAction: [clip|exec|print|printurl|open|granted-containers|open-url-in-container]
+        AuthUrlAction: [clip|exec|print|printurl|open|granted-containers|open-url-in-container|ansi-osc52]
         Accounts:  # optional block for specifying tags & overrides
             <AccountId>:
                 Name: <Friendly Name of Account>
@@ -53,7 +53,7 @@ MaxRetry: <integer>
 MaxBackoff: <integer>
 
 Browser: <path to web browser>
-UrlAction: [clip|exec|print|printurl|open|granted-containers|open-url-in-container]
+UrlAction: [clip|exec|print|printurl|open|granted-containers|open-url-in-container|ansi-osc52]
 ConfigProfilesBinaryPath: <path to aws-sso binary>
 UrlExecCommand:
     - <command>
@@ -288,6 +288,8 @@ Value must be > 0.
 `UrlAction` gives you control over how AWS SSO and AWS Console URLs are opened
 in a browser:
 
+* `ansi-osc52` -- Copies the URL to your clipboard via the [ANSI OSC52 escape sequence](
+    https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Operating-System-Commands)
 * `clip` -- Copies the URL to your clipboard
 * `exec` -- Execute the command provided in `UrlExecCommand`
 * `granted-containers`  -- Generates a URL for the Firefox
