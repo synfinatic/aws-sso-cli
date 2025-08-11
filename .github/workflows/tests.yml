@@ -35,7 +35,7 @@ jobs:
         cache: false
       id: go
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Tests
       run: make .build-tests
     - name: Upload to codecov
@@ -58,7 +58,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '${{ vars.GO_VERSION }}'
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:
