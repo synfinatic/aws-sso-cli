@@ -3,6 +3,8 @@
 
 ## [Unreleased]
 
+## [v2.1.0]
+
 ### New Features
 
 * Add support for `ansi-osc52` copying of URLs into clipboard #1070
@@ -13,6 +15,7 @@
 * Fix clearing ENV vars under Windows Powershell #1244
 * Fix docs around correct naming of `--level` flag #1240
 * Fix console command for Via/AssumeRole roles #1205
+* Update docker library to fix GO-2025-3829
 
 ## [v2.0.3] - 2025-05-29
 
@@ -847,7 +850,8 @@
 Initial release
 
 <!-- markdownlint-disable-next-line MD053 -->
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.0.3...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.1.0...main
+[v2.1.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.1.0
 [v2.0.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.0.3
 [v2.0.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.0.2
 [v2.0.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.0.1
