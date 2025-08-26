@@ -76,7 +76,7 @@ require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1
 	github.com/danjacques/gofslock v0.0.0-20240212154529-d899e02bfe22
 	github.com/docker/docker v28.1.1+incompatible
-	github.com/docker/go-connections v0.5.0
+	github.com/docker/go-connections v0.6.0
 	github.com/jpillora/backoff v1.0.0
 	golang.org/x/net v0.39.0
 )
@@ -84,7 +84,7 @@ require (
 require (
 	dario.cat/mergo v1.0.1 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
-	github.com/Microsoft/go-winio v0.4.14 // indirect
+	github.com/Microsoft/go-winio v0.4.21 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.9 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.13 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.13 // indirect
