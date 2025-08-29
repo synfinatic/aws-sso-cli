@@ -7,7 +7,7 @@
 
 * Add support for `ansi-osc52` copying of URLs into clipboard #1070
 * `--url-action` now supports auto-complete
-* `aws-sso-profile` shell helper now supports `-S`/`--sso` flag to specify SSO instance
+* `aws-sso-profile` shell helper now supports `-S`/`--sso` flag to specify SSO instance [#1264](https://github.com/synfinatic/aws-sso-cli/pull/1264)
 
 ### Bugs
 
