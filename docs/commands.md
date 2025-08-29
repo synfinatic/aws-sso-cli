@@ -497,8 +497,7 @@ aws-sso-profile --sso <sso-instance> <profile-name>
 ```
 
 The `-S` or `--sso` flag allows you to specify which SSO instance to use when you
-have multiple SSO configurations. This is particularly useful when working with
-multiple AWS organizations or when the profile name exists in multiple SSO instances.
+have multiple SSO configurations.
 
 This command will export the same [environment variables](#managed-variables)
 as the [eval](#eval) command.
