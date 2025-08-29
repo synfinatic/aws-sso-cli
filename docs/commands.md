@@ -485,6 +485,20 @@ This shell command enables you to assume an AWS SSO role by the profile name
 _in the current shell and with auto-complete functionality_.  Basically it is a
 wrapper around `eval $(aws-sso eval --profile XXXX)` but with auto-complete.
 
+**Usage:**
+
+```bash
+# Using the default SSO instance
+aws-sso-profile <profile-name>
+
+# Using a specific SSO instance (v2.1.0+)
+aws-sso-profile -S <sso-instance> <profile-name>
+aws-sso-profile --sso <sso-instance> <profile-name>
+```
+
+The `-S` or `--sso` flag allows you to specify which SSO instance to use when you
+have multiple SSO configurations.
+
 This command will export the same [environment variables](#managed-variables)
 as the [eval](#eval) command.
 
