@@ -1417,6 +1417,16 @@ which can be confusing.</p>
 <p>The above defines two new commands, the first of which (<code>aws-sso-profile</code>)
 allows you to easily assume a role in your current shell with auto-complete
 generated AWS Profile names as defined by the <a href="../config/#profileformat">ProfileFormat</a> config variable.</p>
+<pre><code class="language-bash"># Basic usage with the default SSO instance
+aws-sso-profile MyProfile
+
+# Using a specific SSO instance (v2.1.0+)
+aws-sso-profile -S Production MyProfile
+aws-sso-profile --sso Production MyProfile
+</code></pre>
+<p>The <code>-S</code> or <code>--sso</code> flag allows you to specify which SSO instance to use when you
+have multiple SSO configurations. This is particularly useful when working with
+multiple AWS organizations.</p>
 <p>The latter (<code>aws-sso-clear</code>), clears all the environment variables
 installed by <code>aws-sso-profile</code>.</p>
 <p>If you wish to pass additional arguments to the helper script, you can set
