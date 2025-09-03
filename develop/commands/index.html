@@ -414,6 +414,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#interactive-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Interactive Mode
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#commands" class="md-nav__link">
     <span class="md-ellipsis">
       Commands
@@ -1207,6 +1216,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#interactive-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Interactive Mode
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#commands" class="md-nav__link">
     <span class="md-ellipsis">
       Commands
@@ -1475,6 +1493,16 @@
 <li><code>--lines</code> -- Print file number with logs</li>
 <li><code>--sso &lt;name&gt;</code>, <code>-S</code> -- Specify non-default AWS SSO instance to use (<code>$AWS_SSO</code>)</li>
 </ul>
+<h2 id="interactive-mode">Interactive Mode</h2>
+<p>Most commands that allow you to select an IAM role (<a href="#exec">exec</a>, <a href="#console">console</a>, etc)
+support an interactive role selection interface if you do not provide the necessary options
+on the command line (<code>--account</code> and <code>--role</code> or <code>--profile</code>).  In this case you can use the
+up/down arrow keys to navigate and the <code>&lt;space&gt;</code> to select an item to narrow down your search.
+Ie: if you select <code>AccountID</code> from the first list, you will be provided a list of Accounts sorted
+by their AccountID to select from.  Pressing <code>&lt;space&gt;</code> again will select an account.</p>
+<p>You can then iterate in this manner to narrow the results via key/value pairs until you
+make a selection that narrows down the results to a single IAM Role and the interactive selection
+interface disappears.  At this point the <code>&lt;enter&gt;</code> key will execute the command.</p>
 <h2 id="commands">Commands</h2>
 <h3 id="cache">cache</h3>
 <p>AWS SSO CLI caches information about your AWS Accounts, Roles and Tags for

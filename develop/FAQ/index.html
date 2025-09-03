@@ -696,6 +696,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#error-invalid-selection-too-many-roles-match-selected-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      Error: Invalid selection: Too many roles match selected values
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#error-invalid-grant-provided" class="md-nav__link">
     <span class="md-ellipsis">
       Error: Invalid grant provided
@@ -1586,6 +1595,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#error-invalid-selection-too-many-roles-match-selected-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      Error: Invalid selection: Too many roles match selected values
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#error-invalid-grant-provided" class="md-nav__link">
     <span class="md-ellipsis">
       Error: Invalid grant provided
@@ -1984,6 +2002,12 @@ a number of tags by default for each role and a full list of tags can be viewed
 by using the <a href="../commands/#tags">tags</a> command.</p>
 <hr />
 <h2 id="errors-and-their-meaning">Errors and their meaning</h2>
+<h3 id="error-invalid-selection-too-many-roles-match-selected-values">Error: Invalid selection: Too many roles match selected values</h3>
+<p>Short version: You've pressed the <code>&lt;enter&gt;</code> key when you should of pressed <code>&lt;space&gt;</code>.</p>
+<p>Longer version: In interactive role selection mode (running <code>aws-sso</code> without specifing the role on the
+command line) you've pressed the <code>enter</code> key before you have narrowed down your selection to a single role.
+Use the <code>space</code> instead.</p>
+<p>For more information, see <a href="../commands/#interactive-mode">Interactive Mode</a>.</p>
 <h3 id="error-invalid-grant-provided">Error: Invalid grant provided</h3>
 <p>If you get this error from AWS:</p>
 <!-- https://github.com/synfinatic/aws-sso-cli/issues/166 -->
