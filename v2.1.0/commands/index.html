@@ -1,0 +1,1921 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="Aaron Turner">
+      
+      
+      
+        <link rel="prev" href="../config/">
+      
+      
+        <link rel="next" href="../FAQ/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+    
+    
+      
+        <title>Commands & Usage - AWS SSO CLI</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.7e37652d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../css/asciinema-player.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#aws-sso-commands" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="AWS SSO CLI" class="md-header__button md-logo" aria-label="AWS SSO CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            AWS SSO CLI
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Commands & Usage
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/synfinatic/aws-sso-cli/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="AWS SSO CLI" class="md-nav__button md-logo" aria-label="AWS SSO CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    AWS SSO CLI
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/synfinatic/aws-sso-cli/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quickstart
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../demos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Demos
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    User Guide
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            User Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Configuration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Commands & Usage
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Commands & Usage
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#common-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common Flags
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      Commands
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      cache
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#console" class="md-nav__link">
+    <span class="md-ellipsis">
+      console
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      credentials
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ecs" class="md-nav__link">
+    <span class="md-ellipsis">
+      ecs
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#eval" class="md-nav__link">
+    <span class="md-ellipsis">
+      eval
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="eval">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#windows-powershell" class="md-nav__link">
+    <span class="md-ellipsis">
+      Windows PowerShell
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exec" class="md-nav__link">
+    <span class="md-ellipsis">
+      exec
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#process" class="md-nav__link">
+    <span class="md-ellipsis">
+      process
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#list" class="md-nav__link">
+    <span class="md-ellipsis">
+      list
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#login" class="md-nav__link">
+    <span class="md-ellipsis">
+      login
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logout" class="md-nav__link">
+    <span class="md-ellipsis">
+      logout
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-completions" class="md-nav__link">
+    <span class="md-ellipsis">
+      setup completions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-ecs" class="md-nav__link">
+    <span class="md-ellipsis">
+      setup ecs
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      setup profiles
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-wizard" class="md-nav__link">
+    <span class="md-ellipsis">
+      setup wizard
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      tags
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#time" class="md-nav__link">
+    <span class="md-ellipsis">
+      time
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Environment Variables
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Environment Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#honored-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Honored Variables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#managed-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Managed Variables
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#shell-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Shell Helpers
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Shell Helpers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-sso-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      aws-sso-profile
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aws-sso-clear" class="md-nav__link">
+    <span class="md-ellipsis">
+      aws-sso-clear
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../FAQ/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Frequently Asked Questions
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    ECS Server/Remote Access
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            ECS Server/Remote Access
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecs-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    ECS Server Mode
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecs-commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    ECS Server Commands
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../remote-ssh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Remote Access to IAM Roles
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecs-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    ECS Server API
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    About
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            About
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../license/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    License
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../aws-vault/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Compared to aws-vault
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Security
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            Security
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Reporting Security Vulnerabilities
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    GPG Signing Keys
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            GPG Signing Keys
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code-sign-key.asc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Release Signing Key
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commit-sign-key.asc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Commit Signing Key
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Developer Notes
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            Developer Notes
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Release New Version
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecs-threats/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    ECS Server Threat Model
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#common-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common Flags
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      Commands
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      cache
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#console" class="md-nav__link">
+    <span class="md-ellipsis">
+      console
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      credentials
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ecs" class="md-nav__link">
+    <span class="md-ellipsis">
+      ecs
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#eval" class="md-nav__link">
+    <span class="md-ellipsis">
+      eval
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="eval">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#windows-powershell" class="md-nav__link">
+    <span class="md-ellipsis">
+      Windows PowerShell
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exec" class="md-nav__link">
+    <span class="md-ellipsis">
+      exec
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#process" class="md-nav__link">
+    <span class="md-ellipsis">
+      process
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#list" class="md-nav__link">
+    <span class="md-ellipsis">
+      list
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#login" class="md-nav__link">
+    <span class="md-ellipsis">
+      login
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logout" class="md-nav__link">
+    <span class="md-ellipsis">
+      logout
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-completions" class="md-nav__link">
+    <span class="md-ellipsis">
+      setup completions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-ecs" class="md-nav__link">
+    <span class="md-ellipsis">
+      setup ecs
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      setup profiles
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-wizard" class="md-nav__link">
+    <span class="md-ellipsis">
+      setup wizard
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      tags
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#time" class="md-nav__link">
+    <span class="md-ellipsis">
+      time
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Environment Variables
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Environment Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#honored-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Honored Variables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#managed-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Managed Variables
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#shell-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Shell Helpers
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Shell Helpers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-sso-profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      aws-sso-profile
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aws-sso-clear" class="md-nav__link">
+    <span class="md-ellipsis">
+      aws-sso-clear
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="aws-sso-commands">aws-sso Commands</h1>
+<h2 id="common-flags">Common Flags</h2>
+<ul>
+<li><code>--help</code>, <code>-h</code> -- Builtin and context sensitive help</li>
+<li><code>--browser &lt;path&gt;</code>, <code>-b</code> -- Override default browser to open AWS SSO URL (<code>$AWS_SSO_BROWSER</code>)</li>
+<li><code>--config &lt;file&gt;</code> -- Specify alternative config file (<code>$AWS_SSO_CONFIG</code>)</li>
+<li><code>--level &lt;level&gt;</code>, <code>-L</code> -- Change default log level: [error|warn|info|debug|trace]</li>
+<li><code>--lines</code> -- Print file number with logs</li>
+<li><code>--sso &lt;name&gt;</code>, <code>-S</code> -- Specify non-default AWS SSO instance to use (<code>$AWS_SSO</code>)</li>
+</ul>
+<h2 id="commands">Commands</h2>
+<h3 id="cache">cache</h3>
+<p>AWS SSO CLI caches information about your AWS Accounts, Roles and Tags for
+better perfomance.  By default it will refresh this information after 24
+hours, but you can force this data to be refreshed immediately.</p>
+<p>Cache data is also automatically updated anytime the <code>config.yaml</code> file is
+modified.</p>
+<p>Flags:</p>
+<ul>
+<li><code>--no-config-check</code> -- Disable automatic updating of <code>~/.aws/config</code></li>
+<li><code>--threads &lt;int&gt;</code> -- Number of threads to use with AWS (default: 5)</li>
+</ul>
+<hr />
+<h3 id="console">console</h3>
+<p>Console generates a URL which will grant you access to the AWS Console in your
+web browser.  The URL can be sent directly to the browser (default), printed
+in the terminal or copied into the Copy &amp; Paste buffer of your computer.</p>
+<p><strong>Note:</strong> Normally, you can only have a single active AWS Console session at
+a time, but multiple session are supported via the <a href="../config/#open-url-in-firefox-container">open-url-in-container</a> configuration option.</p>
+<p>Flags:</p>
+<ul>
+<li><code>--duration &lt;minutes&gt;</code>, <code>-d</code> -- AWS Session duration in minutes (default 60)</li>
+<li><code>--prompt</code>, <code>-P</code> -- Force interactive prompt to select role</li>
+<li><code>--region &lt;region&gt;</code>, <code>-r</code> -- Specify the <code>$AWS_DEFAULT_REGION</code> to use</li>
+<li><code>--arn &lt;arn&gt;</code>, <code>-a</code> -- ARN of role to assume (<code>$AWS_SSO_ROLE_ARN</code>)</li>
+<li><code>--account &lt;account&gt;</code>, <code>-A</code> -- AWS AccountID of role to assume (<code>$AWS_SSO_ACCOUNT_ID</code>)</li>
+<li><code>--role &lt;role&gt;</code>, <code>-R</code> -- Name of AWS Role to assume (requires <code>--account</code>) (<code>$AWS_SSO_ROLE_NAME</code>)</li>
+<li><code>--profile &lt;profile&gt;</code>, <code>-p</code> -- Name of AWS Profile to assume</li>
+<li><code>--url-action</code>, <code>-u</code> -- How to handle URLs for your SSO provider</li>
+<li><code>--sts-refresh</code> -- Force refresh of STS Token Credentials</li>
+</ul>
+<p>The generated URL is good for 15 minutes after it is created.</p>
+<p>The common flag <code>--url-action</code> is used both for AWS SSO authentication as well as
+what to do with the resulting URL from the <code>console</code> command.</p>
+<p>Priority is given to:</p>
+<ul>
+<li><code>--prompt</code></li>
+<li><code>--profile</code></li>
+<li><code>--arn</code> (<code>$AWS_SSO_ROLE_ARN</code>)</li>
+<li><code>--account</code> (<code>$AWS_SSO_ACCOUNT_ID</code>) and <code>--role</code> (<code>$AWS_SSO_ROLE_NAME</code>)</li>
+<li><code>AWS_ACCESS_KEY_ID</code>, <code>AWS_SECRET_ACCESS_KEY</code>, and <code>AWS_SESSION_TOKEN</code> environment variables</li>
+<li><code>AWS_PROFILE</code> environment variable (works with both SSO and static profiles)</li>
+<li>Prompt user interactively</li>
+</ul>
+<hr />
+<h3 id="credentials">credentials</h3>
+<p>Generate static credentials in the format for <a href="https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-files.html#cli-configure-files-format">~/.aws/credentials</a>.</p>
+<p>This command will expose your temporary AWS IAM credentials in clear text which can be a security issue,
+and is not recommended except for cases where going through the AWS Identity Center web-based authentication
+workflow is not possible.  The most common example of this would be integrating with Docker and needing
+multiple IAM Roles.  Most use cases are better served by using the <a href="#setup-profiles">setup-profiles</a> command or
+passing in IAM credentials via <a href="https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-envvars.html">environment variables</a>.</p>
+<p>Flags:</p>
+<ul>
+<li><code>--file &lt;path&gt;</code>, <code>-f</code> -- Specify the file to generate.  Default is to print to STDOUT ($AWS_SHARED_CREDENTIALS_FILE).</li>
+<li><code>--append</code>, <code>-a</code> -- Append to the file instead of overwriting it.</li>
+<li><code>--profile &lt;profile&gt;,...</code>, <code>-p</code> -- One or more profiles to include in the output.</li>
+<li><code>--sts-refresh</code> -- Force refresh of STS Token Credentials</li>
+</ul>
+<p><strong>Note:</strong> This command honors the same <a href="https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-envvars.html">$AWS_SHARED_CREDENTIALS_FILE</a>
+that is supported by the AWS SDK to load credentials.  Since these credentials are temporary, it is
+<em>strongly</em> discouraged that users set this to <code>~/.aws/credentials</code>, but use a temporary file instead.</p>
+<hr />
+<h3 id="ecs">ecs</h3>
+<p><a href="../ecs-commands/">ecs commands</a></p>
+<hr />
+<h3 id="eval">eval</h3>
+<p>Generate a series of <code>export VARIABLE=VALUE</code> lines suitable for sourcing into your
+shell.  Allows obtaining new AWS credentials without starting a new shell.  Can be
+used to refresh existing AWS credentials or by specifying the appropriate arguments.</p>
+<p>Suggested use (bash): <code>eval $(aws-sso eval &lt;args&gt;)</code></p>
+<p>or if you are using <a href="https://code.visualstudio.com/remote/advancedcontainers/environment-variables#_option-2-use-an-env-file">VSCode environment variables</a>
+you can write the variable to a file:</p>
+<p><code>aws-sso eval &lt;args&gt; &gt;~/.devcontainer/devcontainer.env</code></p>
+<p>Shells supported by <code>eval</code>:</p>
+<ul>
+<li>bash</li>
+<li>fish</li>
+<li>zonsh</li>
+<li>zsh</li>
+<li>Windows PowerShell</li>
+</ul>
+<p>Flags:</p>
+<ul>
+<li><code>--arn &lt;arn&gt;</code>, <code>-a</code> -- ARN of role to assume</li>
+<li><code>--account &lt;account&gt;</code>, <code>-A</code> -- AWS AccountID of role to assume (requires <code>--role</code>)</li>
+<li><code>--role &lt;role&gt;</code>, <code>-R</code> -- Name of AWS Role to assume (requires <code>--account</code>)</li>
+<li><code>--profile &lt;profile&gt;</code>, <code>-p</code> -- Name of AWS Profile to assume</li>
+<li><code>--clear</code>, <code>-c</code> -- Generate "unset XXXX" commands to clear the environment</li>
+<li><code>--no-region</code> -- Do not set the <a href="../config/#defaultregion">AWS_DEFAULT_REGION</a> from config.yaml</li>
+<li><code>--refresh</code> -- Refresh current IAM credentials</li>
+</ul>
+<p>Priority is given to:</p>
+<ul>
+<li><code>--refresh</code> (Uses <code>$AWS_SSO_ROLE_ARN</code>)</li>
+<li><code>--profile</code></li>
+<li><code>--arn</code></li>
+<li><code>--account</code> and <code>--role</code></li>
+</ul>
+<p><strong>Note:</strong> The <code>eval</code> command only honors the <code>$AWS_SSO_ROLE_ARN</code> in the context
+of the <code>--refresh</code> flag.  The <code>$AWS_SSO_ROLE_NAME</code> and <code>$AWS_SSO_ACCOUNT_ID</code>
+are always ignored.</p>
+<p><strong>Note:</strong> Using <code>--url-action=print</code> is supported, but you must be able to see the output
+of <em>STDERR</em> to see the URL to open.</p>
+<p><strong>Note:</strong> The <code>eval</code> command is not supported under Windows CommandPrompt or PowerShell.</p>
+<p>See <a href="#environment-variables">Environment Variables</a> for more information about
+what varibles are set.</p>
+<h4 id="windows-powershell">Windows PowerShell</h4>
+<p>Getting Windows PowerShell to work requires a slightly different invocation than
+bash/zsh/etc:</p>
+<p><code>aws-sso eval &lt;args&gt; | iex</code></p>
+<p>But other than that, it works the same way.</p>
+<hr />
+<h3 id="exec">exec</h3>
+<p>Exec allows you to execute a command with the necessary <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html">AWS environment variables</a>.  By default,
+if no command is specified, it will start a new interactive shell so you can run multiple
+commands.</p>
+<p>Flags:</p>
+<ul>
+<li><code>--arn &lt;arn&gt;</code>, <code>-a</code> -- ARN of role to assume (<code>$AWS_SSO_ROLE_ARN</code>)</li>
+<li><code>--account &lt;account&gt;</code>, <code>-A</code> -- AWS AccountID of role to assume (<code>$AWS_SSO_ACCOUNT_ID</code>)</li>
+<li><code>--env</code>, <code>-e</code> -- Use existing ENV vars generated by AWS SSO to generate a URL</li>
+<li><code>--role &lt;role&gt;</code>, <code>-R</code> -- Name of AWS Role to assume (<code>$AWS_SSO_ROLE_NAME</code>)</li>
+<li><code>--profile &lt;profile&gt;</code>, <code>-p</code> -- Name of AWS Profile to assume</li>
+<li><code>--no-region</code> -- Do not set the <a href="../config/#defaultregion">AWS_DEFAULT_REGION</a> from config.yaml</li>
+<li><code>--sts-refresh</code> -- Force refresh of STS Token Credentials</li>
+<li><code>--ignore-env</code>, <code>-i</code> -- Force execution even if AWS_* environment variables are set</li>
+</ul>
+<p>Arguments: <code>[&lt;command&gt;] [&lt;args&gt; ...]</code></p>
+<p>Priority is given to:</p>
+<ul>
+<li><code>--profile</code></li>
+<li><code>--arn</code> (<code>$AWS_SSO_ROLE_ARN</code>)</li>
+<li><code>--account</code> (<code>$AWS_SSO_ACCOUNT_ID</code>) and <code>--role</code> (<code>$AWS_SSO_ROLE_NAME</code>)</li>
+<li>Prompt user interactively</li>
+</ul>
+<p>You can not run <code>exec</code> inside of another <code>exec</code> shell or when the <code>$AWS_*</code> environment
+variables are set unless you pass in <code>--ignore-env</code>.</p>
+<p>See <a href="#environment-variables">Environment Variables</a> for more information about
+what varibles are set.</p>
+<hr />
+<h3 id="process">process</h3>
+<p>Process allows you to use AWS SSO as an <a href="https://docs.aws.amazon.com/cli/latest/topic/config-vars.html#sourcing-credentials-from-external-processes">external credentials provider</a>
+with profiles defined in <code>~/.aws/config</code>.</p>
+<p>Flags:</p>
+<ul>
+<li><code>--arn &lt;arn&gt;</code>, <code>-a</code> -- ARN of role to assume</li>
+<li><code>--account &lt;account&gt;</code>, <code>-A</code> -- AWS AccountID of role to assume</li>
+<li><code>--role &lt;role&gt;</code>, <code>-R</code> -- Name of AWS Role to assume (requires <code>--account</code>)</li>
+<li><code>--profile &lt;profile&gt;</code>, <code>-p</code> -- Name of AWS Profile to assume</li>
+<li><code>--sts-refresh</code> -- Force refresh of STS Token Credentials</li>
+</ul>
+<p>Priority is given to:</p>
+<ul>
+<li><code>--profile</code></li>
+<li><code>--arn</code></li>
+<li><code>--account</code> and <code>--role</code></li>
+</ul>
+<p><strong>Note:</strong> The <code>process</code> command does not honor the <code>$AWS_SSO_ROLE_ARN</code>,
+<code>$AWS_SSO_ACCOUNT_ID</code>, or <code>$AWS_SSO_ROLE_NAME</code> environment variables.</p>
+<p><strong>Note:</strong> Due to a limitation of the AWS tooling, setting <code>--url-action print</code>
+will cause an error.</p>
+<hr />
+<h3 id="list">list</h3>
+<p>List will list all of the AWS Roles you can assume with the metadata/tags
+available to be used for interactive selection with <code>exec</code>.  You can control
+which fields are printed by specifying the field names as arguments.</p>
+<p>Flags:</p>
+<ul>
+<li><code>--list-fields</code>, <code>-f</code> -- List the available fields to print</li>
+<li><code>--prefix &lt;FieldName&gt;=&lt;Prefix&gt;</code>, <code>-P</code> -- Filter results by the given field
+    value &amp; prefix value</li>
+<li><code>--csv</code> -- Generate results in CSV format</li>
+<li><code>--sort &lt;FieldName&gt;</code>, <code>-s</code> -- Sort results by the provided field name</li>
+<li><code>--reverse</code> -- Reverse the sort order</li>
+</ul>
+<p>Arguments: <code>[&lt;field&gt; ...]</code></p>
+<p>The arguments are a list of fields to display in the report.  Overrides the
+defaults and/or the specified <a href="../config/#ListFields">ListFields</a> in the
+<code>config.yaml</code>.</p>
+<p>Default fields:</p>
+<ul>
+<li><code>AccountIdPad</code></li>
+<li><code>AccountAlias</code></li>
+<li><code>RoleName</code></li>
+<li><code>Expires</code></li>
+</ul>
+<p><strong>Note:</strong> Sorting for <code>AccountIdPad</code> and <code>Expires</code> is done via their respective
+<code>AccountId</code> and <code>ExpiresEpoch</code> integer values.  Expired entries are considered
+to be very large.  All other fields are sorted alphabetically and in a
+case-sensitive manner.</p>
+<hr />
+<h3 id="login">login</h3>
+<p>Login via AWS IAM Identity Center (AWS SSO) and retrieve a security token
+used to fetch IAM Role credentials.  As of <code>aws-sso</code> v2.x this is required
+<em>unless</em> you enable <a href="../config/#autologin">AutoLogin</a>.</p>
+<p>When you login, <code>aws-sso</code> will attempt to refresh your cache of IAM Roles
+per the <a href="../config/#cacherefresh">CacheRefresh</a> setting.</p>
+<p>Flags:</p>
+<ul>
+<li><code>--no-config-check</code> -- Disable automatic updating of <code>~/.aws/config</code></li>
+<li><code>--url-action</code>, <code>-u</code> -- How to handle URLs for your SSO provider</li>
+<li><code>--sts-refresh</code> -- Force refresh of STS Token Credentials</li>
+<li><code>--threads &lt;int&gt;</code> -- Number of threads to use with AWS (default: 5)</li>
+</ul>
+<hr />
+<h3 id="logout">logout</h3>
+<p>Invalidates the AWS Identity Center AccessToken (used to fetch new IAM Credentials)
+for the selected SSO instance and removes all IAM Role Credentials cached in the <code>aws-sso</code> secure store.</p>
+<hr />
+<h3 id="setup-completions">setup completions</h3>
+<p>Configures your appropriate shell configuration file to add auto-complete
+and <a href="#shell-helpers">Shell Helpers</a> functionality for commands, flags and
+options. Must restart your shell for this to take effect.</p>
+<p>For more information about this feature, please read <a href="../quickstart/#enabling-auto-completion-in-your-shell">the quickstart</a>.</p>
+<p>Flags:</p>
+<ul>
+<li><code>--source</code> -- Print out the completions for sourcing into the current shell</li>
+<li><code>--install</code> -- Install the new v1.9+ shell completions scripts</li>
+<li><code>--uninstall</code> -- Uninstall the new v1.9+ shell completions scripts</li>
+<li><code>--shell &lt;shell&gt;</code> -- Override the detected shell</li>
+<li><code>--shell-script &lt;file&gt;</code> -- Override the default shell script file to modify</li>
+</ul>
+<hr />
+<h3 id="setup-ecs">setup ecs</h3>
+<p>See the <a href="../ecs-commands/#setup-ecs">setup ecs</a> commands in the ECS Server command documentation.</p>
+<hr />
+<h3 id="setup-profiles">setup profiles</h3>
+<p>Modifies the <code>~/.aws/config</code> file to contain a <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-using-profiles">named profile</a>
+for every role accessible via AWS SSO CLI.</p>
+<p>Flags:</p>
+<ul>
+<li><code>--diff</code> -- Print a diff of changes to the config file instead of modifying it</li>
+<li><code>--print</code> -- Print profile entries instead of modifying config file</li>
+<li><code>--force</code> -- Write a new config file without prompting</li>
+<li><code>--aws-config</code> -- Override path to <code>~/.aws/config</code> file</li>
+</ul>
+<p>By default, each profile is named according to the <a href="../config/#profileformat">ProfileFormat</a> config option or overridden by the user defined
+<a href="../config/#profile">Profile</a> option on a role by role basis.</p>
+<p>For each profile generated, it will specify a <a href="https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html">list of settings</a> as defined
+by the <a href="../config/#configvariables">ConfigVariables</a> setting in the
+<code>~/.aws-sso/config.yaml</code>.</p>
+<p>For more information on this feature, <a href="../quickstart/#using-the-aws_profile-variable">read the Quickstart Guide</a>.</p>
+<p>Unlike with other ways to use AWS SSO CLI, the AWS IAM STS credentials will
+<em>automatically refresh</em>.  This means, if you do not have a valid AWS SSO token,
+you will be prompted to authentiate via your SSO provider and subsequent
+requests to obtain new IAM STS credentials will automatically happen as needed.</p>
+<p><strong>Note:</strong> You should run this command <em>after</em> <a href="#cache">aws-sso cache</a> any time
+your list of AWS roles changes in order to update the <code>~/.aws/config</code> file
+or enable <a href="../config/#autoconfigcheck">AutoConfigCheck</a>.</p>
+<p><strong>Note:</strong> It is important that you do <em>NOT</em> remove the <code># BEGIN_AWS_SSO_CLI</code> and
+<code># END_AWS_SSO_CLI</code> lines from your config file!  These markers are used to track
+which profiles are managed by AWS SSO CLI.</p>
+<p><strong>Note:</strong> This command does not auto-refresh the list of cached roles, so if they
+have recently changed you should run <code>aws-sso cache</code> first.</p>
+<hr />
+<h3 id="setup-wizard">setup wizard</h3>
+<p>Allows you to run through the configuration wizard and update your AWS SSO CLI
+config file (<code>~/.aws-sso/config.yaml</code>).   By default, it only does a very basic
+configuration to get started with.  The <code>--advanced</code> flag prompts for more
+settings and is useful for taking advantage of some of the new settings if
+you've upgraded from a previous version!</p>
+<p>Flags:</p>
+<ul>
+<li><code>--advanced</code> -- Prompts for many more config options</li>
+</ul>
+<hr />
+<h3 id="tags">tags</h3>
+<p>Tags dumps a list of AWS SSO roles with the available metadata tags.</p>
+<p>Flags:</p>
+<ul>
+<li><code>--account &lt;account&gt;</code> -- Filter results by AccountId</li>
+<li><code>--role &lt;role&gt;</code> -- Filter results by Role Name</li>
+</ul>
+<p>By default the following key/values are available as tags to your roles:</p>
+<ul>
+<li><code>AccountID</code> -- AWS Account ID</li>
+<li><code>Role</code> -- AWS Role Name</li>
+<li><code>Email</code> -- Email address of root account associated with the AWS Account</li>
+<li><code>AccountName</code> -- Account Name for any role defined in config (see below)</li>
+<li><code>AccountAlias</code> --- AWS Account Alias defined by account administrator</li>
+<li><code>History</code> -- Tag tracking if this role was recently used.  See <code>HistoryLimit</code>
+        in config.</li>
+</ul>
+<hr />
+<h3 id="time">time</h3>
+<p>Print a string containing the number of hours and minutes that the current
+AWS Role's STS credentials are valid for in the format of <code>HHhMMm</code></p>
+<p><strong>Note:</strong> This command is only useful when you have STS credentials configured
+in your shell via <a href="#eval">eval</a> or <a href="#exec">exec</a>.</p>
+<h2 id="environment-variables">Environment Variables</h2>
+<h3 id="honored-variables">Honored Variables</h3>
+<p>The following environment variables are honored by <code>aws-sso</code>:</p>
+<ul>
+<li><code>AWS_CONFIG_FILE</code> -- Override default path to <code>~/.aws/config</code> file</li>
+<li><code>AWS_SSO_FILE_PASSWORD</code> -- Password to use with the <code>file</code> SecureStore.</li>
+<li><code>AWS_SSO_CONFIG</code> -- Specify an alternate path to the <code>aws-sso</code> config file.</li>
+<li><code>AWS_SSO_BROWSER</code> -- Override default browser for AWS SSO login.</li>
+<li><code>AWS_SSO</code> -- Override default AWS SSO instance to use.</li>
+<li><code>AWS_SSO_ROLE_NAME</code> -- Used for <code>--role</code>/<code>-R</code> with some commands.</li>
+<li><code>AWS_SSO_ACCOUNT_ID</code> -- Used for <code>--account</code>/<code>-A</code> with some commands.</li>
+<li><code>AWS_SSO_ROLE_ARN</code> -- Used for <code>--arn</code>/<code>-a</code> with some commands and with.
+     <code>eval --refresh</code>.</li>
+<li><code>AWS_SSO_FIELD_SORT</code> -- Used by <code>list</code> command to select which field to sort by.</li>
+<li><code>AWS_SSO_FIELD_SORT_REVERSE</code> -- Used to reverse the <code>list</code> sort order.  Set to <code>1</code> to enable.</li>
+</ul>
+<p>The <code>file</code> SecureStore will use the <code>AWS_SSO_FILE_PASSWORD</code> environment
+variable for the password if it is set. (Not recommended.)</p>
+<p>Additionally, <code>$AWS_PROFILE</code> is honored via the standard AWS tooling when using
+the <a href="#setup-profiles">setup-profiles</a> command to manage your <code>~/.aws/config</code> file.</p>
+<hr />
+<h3 id="managed-variables">Managed Variables</h3>
+<p>The following <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html">AWS environment variables</a>
+are automatically set by <code>aws-sso</code>:</p>
+<ul>
+<li><code>AWS_ACCESS_KEY_ID</code> -- Authentication identifier required by AWS</li>
+<li><code>AWS_SECRET_ACCESS_KEY</code> -- Authentication secret required by AWS</li>
+<li><code>AWS_SESSION_TOKEN</code> -- Authentication secret required by AWS</li>
+<li><code>AWS_DEFAULT_REGION</code> -- Region to use AWS with (will never override an
+    existing value)</li>
+</ul>
+<p>The following environment variables are specific to <code>aws-sso</code>:</p>
+<ul>
+<li><code>AWS_SSO_ACCOUNT_ID</code> -- The AccountID for your IAM role</li>
+<li><code>AWS_SSO_ROLE_NAME</code> -- The name of the IAM role</li>
+<li><code>AWS_SSO_ROLE_ARN</code> -- The full ARN of the IAM role</li>
+<li><code>AWS_SSO_SESSION_EXPIRATION</code>  -- The date and time when the IAM role
+    credentials will expire in <a href="https://datatracker.ietf.org/doc/html/rfc3339">RFC3339 format</a></li>
+<li><code>AWS_SSO_DEFAULT_REGION</code> -- Tracking variable for <code>AWS_DEFAULT_REGION</code></li>
+<li><code>AWS_SSO_PROFILE</code> -- User customizable varible using the
+    <a href="../config/#profileformat">ProfileFormat</a> template</li>
+<li><code>AWS_SSO</code> -- AWS SSO instance name</li>
+</ul>
+<p><strong>Note:</strong> AWS SSO does <em>NOT</em> set <code>$AWS_PROFILE</code> to avoid problems with the AWS tooling
+and SDK.</p>
+<h2 id="shell-helpers">Shell Helpers</h2>
+<p>These are optional helper functions installed in your shell as part of the
+<a href="#setup-completions">setup-completions</a> command.  To install these helper functions,
+please see the <a href="../quickstart/">quickstart</a> page.</p>
+<p><strong>Important:</strong> Unlike the commands above, these are standalone shell functions
+and you should <em>NOT</em> prefix them with <code>aws-sso</code>.</p>
+<p>By default, these commands uses your default AWS SSO instance, but you can
+override this by first exporting <code>AWS_SSO</code> to the value you want to use.</p>
+<p>If you want to pass specific args to <code>aws-sso-profile</code> you can use the
+<code>$AWS_SSO_HELPER_ARGS</code> environment variable.  If nothing is set, then
+<code>--level error</code> is used.</p>
+<p>Currently the following shells are supported:</p>
+<ul>
+<li><a href="https://github.com/synfinatic/aws-sso-cli/blob/main/internal/helper/bash_profile.sh">bash</a></li>
+<li><a href="https://github.com/synfinatic/aws-sso-cli/blob/main/internal/helper/zshrc.sh">zsh</a></li>
+<li><a href="https://github.com/synfinatic/aws-sso-cli/blob/main/internal/helper/aws-sso.fish">fish</a></li>
+</ul>
+<p><strong>Note:</strong> <code>zsh</code> completion requires you to have the following lines set
+before the AWS SSO completions:</p>
+<pre><code class="language-bash">autoload -Uz +X compinit &amp;&amp; compinit
+autoload -Uz +X bashcompinit &amp;&amp; bashcompinit
+</code></pre>
+<p><strong>Note:</strong> Please reach out if you can help with adding support for your
+favorite shell!</p>
+<hr />
+<h3 id="aws-sso-profile">aws-sso-profile</h3>
+<p>This shell command enables you to assume an AWS SSO role by the profile name
+<em>in the current shell and with auto-complete functionality</em>.  Basically it is a
+wrapper around <code>eval $(aws-sso eval --profile XXXX)</code> but with auto-complete.</p>
+<p><strong>Usage:</strong></p>
+<pre><code class="language-bash"># Using the default SSO instance
+aws-sso-profile &lt;profile-name&gt;
+
+# Using a specific SSO instance (v2.1.0+)
+aws-sso-profile -S &lt;sso-instance&gt; &lt;profile-name&gt;
+aws-sso-profile --sso &lt;sso-instance&gt; &lt;profile-name&gt;
+</code></pre>
+<p>The <code>-S</code> or <code>--sso</code> flag allows you to specify which SSO instance to use when you
+have multiple SSO configurations.</p>
+<p>This command will export the same <a href="#managed-variables">environment variables</a>
+as the <a href="#eval">eval</a> command.</p>
+<p><strong>Note:</strong> This command will overwrite existing environment variables, but will
+refuse to run if <code>AWS_PROFILE</code> is set.</p>
+<hr />
+<h3 id="aws-sso-clear">aws-sso-clear</h3>
+<p>Clears all the <a href="#managed-variables">managed environment variables</a> in your
+current shell set by <code>aws-sso-profile</code> or by running <code>eval $(aws-sso env ...)</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright 2021-2025 Aaron Turner
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.92b07e13.min.js"></script>
+      
+        <script src="../js/asciinema-player.min.js"></script>
+      
+    
+  </body>
+</html>
