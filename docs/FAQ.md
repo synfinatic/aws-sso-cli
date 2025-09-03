@@ -374,6 +374,16 @@ by using the [tags](commands.md#tags) command.
 
 ## Errors and their meaning
 
+### Error: Invalid selection: Too many roles match selected values
+
+Short version: You've pressed the `<enter>` key when you should of pressed `<space>`.
+
+Longer version: In interactive role selection mode (running `aws-sso` without specifing the role on the
+command line) you've pressed the `enter` key before you have narrowed down your selection to a single role.
+Use the `space` instead.
+
+For more information, see [Interactive Mode](commands.md#interactive-mode).
+
 ### Error: Invalid grant provided
 
 If you get this error from AWS:

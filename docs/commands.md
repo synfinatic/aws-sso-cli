@@ -9,6 +9,19 @@
 * `--lines` -- Print file number with logs
 * `--sso <name>`, `-S` -- Specify non-default AWS SSO instance to use (`$AWS_SSO`)
 
+## Interactive Mode
+
+Most commands that allow you to select an IAM role ([exec](#exec), [console](#console), etc)
+support an interactive role selection interface if you do not provide the necessary options
+on the command line (`--account` and `--role` or `--profile`).  In this case you can use the
+up/down arrow keys to navigate and the `<space>` to select an item to narrow down your search.
+Ie: if you select `AccountID` from the first list, you will be provided a list of Accounts sorted
+by their AccountID to select from.  Pressing `<space>` again will select an account.
+
+You can then iterate in this manner to narrow the results via key/value pairs until you
+make a selection that narrows down the results to a single IAM Role and the interactive selection
+interface disappears.  At this point the `<enter>` key will execute the command.
+
 ## Commands
 
 ### cache
