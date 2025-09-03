@@ -3,7 +3,7 @@
 
 ## [Unreleased]
 
-## [v2.1.0]
+## [v2.1.0] - 2025-09-03
 
 ### New Features
 
