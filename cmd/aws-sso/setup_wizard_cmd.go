@@ -101,7 +101,7 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 
 		s = &sso.Settings{
 			SSO:             map[string]*sso.SSOConfig{},
-			UrlAction:       "open",
+			UrlAction:       url.Open,
 			LogLevel:        "error",
 			DefaultRegion:   defaultRegion,
 			ConsoleDuration: 720,
@@ -123,10 +123,12 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 
 	s.ProfileFormat = promptProfileFormat(s.ProfileFormat)
 
-	// check if we are in a ssh session
-	if prompt.IsRemoteHost() {
+	// check if we are in a ssh session or WSL2
+	promptedOpen := false
+	if prompt.IsRemoteHost() || os.Getenv("WSL_DISTRO_NAME") != "" {
 		// users need to modify the default open action
 		promptOpen(s)
+		promptedOpen = true
 	}
 
 	if advanced {
@@ -140,7 +142,7 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 		// full text search?
 		s.FullTextSearch = promptFullTextSearch(s.FullTextSearch)
 
-		if !prompt.IsRemoteHost() {
+		if !promptedOpen {
 			promptOpen(s)
 		}
 
