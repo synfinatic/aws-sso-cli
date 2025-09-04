@@ -75,7 +75,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.30.1
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1
 	github.com/danjacques/gofslock v0.0.0-20240212154529-d899e02bfe22
-	github.com/docker/docker v28.1.1+incompatible
+	github.com/docker/docker v28.4.0+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/jpillora/backoff v1.0.0
 	golang.org/x/net v0.39.0
@@ -92,6 +92,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.15 // indirect
 	github.com/aws/smithy-go v1.22.2 // indirect
+	github.com/containerd/errdefs v1.0.0 // indirect
+	github.com/containerd/errdefs/pkg v0.3.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
@@ -99,7 +101,6 @@ require (
 	github.com/go-json-experiment/json v0.0.0-20240815174924-0599f16bf0e2 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/lmittmann/tint v1.0.5 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/sys/atomicwriter v0.1.0 // indirect
@@ -116,6 +117,6 @@ require (
 	go.opentelemetry.io/otel/sdk v1.28.0 // indirect
 	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240701130421-f6361c86f094 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect
 	gotest.tools/v3 v3.5.1 // indirect
 )
