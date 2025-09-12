@@ -11,7 +11,7 @@ jobs:
       pull-requests: write
     steps:
       # https://github.com/marketplace/actions/close-stale-issues
-      - uses: actions/stale@v9
+      - uses: actions/stale@v10
         with:
           any-of-issue-labels: waiting-for-customer
           stale-label: stale
