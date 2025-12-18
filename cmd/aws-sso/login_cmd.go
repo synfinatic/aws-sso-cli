@@ -97,7 +97,7 @@ func doAuth(ctx *RunContext) {
 		}
 
 		if added > 0 || deleted > 0 {
-			log.Info("Updated cache", "added", added, "deletd", deleted)
+			log.Info("Updated cache", "added", added, "deleted", deleted)
 		}
 
 		if err = ctx.Settings.Cache.Save(true); err != nil {
