@@ -1,8 +1,8 @@
 module github.com/synfinatic/aws-sso-cli
 
-go 1.23.0
+go 1.26.3
 
-toolchain go1.23.6
+// toolchain go1.23.6
 
 require (
 	github.com/99designs/keyring v1.2.2
