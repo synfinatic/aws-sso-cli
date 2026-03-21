@@ -301,19 +301,21 @@ func (suite *SettingsTestSuite) TestGetAllProfiles() {
 	assert.False(t, profiles.IsDuplicate("testing"))
 	assert.True(t, profiles.IsDuplicate("Log archive/AWSAdministratorAccess"))
 
+	// UniqueCheck detects duplicates in the ProfileMap itself
+	dupProfiles := ProfileMap{
+		"sso1": map[string]ProfileConfig{
+			"arn:aws:iam::111111111111:role/Admin": {Profile: "same-profile", Sso: "sso1"},
+		},
+		"sso2": map[string]ProfileConfig{
+			"arn:aws:iam::222222222222:role/Admin": {Profile: "same-profile", Sso: "sso2"},
+		},
+	}
+	assert.Error(t, dupProfiles.UniqueCheck(suite.settings))
+
 	oldFormat := suite.settings.ProfileFormat
-	// generates duplicates
-	suite.settings.ProfileFormat = "{{ .AccountId }}"
-	assert.Error(t, profiles.UniqueCheck(suite.settings))
-
-	// unable to generate a profile
-	suite.settings.ProfileFormat = "{{ .UniqueCheckFailure }}"
-	assert.Error(t, profiles.UniqueCheck(suite.settings))
-
 	suite.settings.ProfileFormat = "{{ .GetAllProfilesFailure }}"
 	_, err = suite.settings.GetAllProfiles()
 	assert.Error(t, err)
-
 	suite.settings.ProfileFormat = oldFormat
 }
 
