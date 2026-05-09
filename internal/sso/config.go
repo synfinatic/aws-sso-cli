@@ -26,7 +26,6 @@ import (
 	"strings"
 
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
-	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
 	"github.com/synfinatic/aws-sso-cli/internal/tags"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
@@ -40,8 +39,7 @@ type SSOConfig struct {
 	DefaultRegion string                 `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
 
 	// overrides for this SSO Instance
-	AuthUrlAction uri.Action        `koanf:"AuthUrlAction" yaml:"AuthUrlAction,omitempty"`
-	AuthWorkflow  oidc.AuthWorkflow `koanf:"AuthWorkflow" yaml:"AuthWorkflow,omitempty"`
+	AuthUrlAction uri.Action `koanf:"AuthUrlAction" yaml:"AuthUrlAction,omitempty"`
 
 	// passed to AWSSSO from our Settings
 	MaxBackoff int `koanf:"-" yaml:"-"`
@@ -76,8 +74,6 @@ func (c *SSOConfig) Refresh(s *Settings) {
 	if c.AuthUrlAction == uri.Undef {
 		c.AuthUrlAction = s.UrlAction
 	}
-
-	c.AuthWorkflow = c.AuthWorkflow.OrDefault()
 
 	for accountId, a := range c.Accounts {
 		// normalize the accountId to a string representation of an integer

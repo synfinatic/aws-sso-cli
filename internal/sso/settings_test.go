@@ -66,6 +66,7 @@ func (suite *SettingsTestSuite) TestLoadSettings() {
 	assert.Equal(t, TEST_SETTINGS_FILE, suite.settings.ConfigFile())
 
 	assert.Equal(t, "", suite.settings.ConfigUrlAction) // deprecated
+	assert.Equal(t, oidc.AuthWorkflowPKCE, suite.settings.AuthWorkflow)
 	// ensure we upgraded ConfigUrlAction to UrlAction
 	assert.Equal(t, uri.OpenUrlContainer, suite.settings.UrlAction)
 	// ensure we applied UrlAction to ConfigProfilesUrlAction
@@ -329,10 +330,10 @@ func (suite *SettingsTestSuite) TestValidate() {
 		}
 	}
 
-	oldWorkflow := suite.settings.SSO[ssoKey].AuthWorkflow
-	suite.settings.SSO[ssoKey].AuthWorkflow = oidc.AuthWorkflow("not-a-workflow")
+	oldWorkflow := suite.settings.AuthWorkflow
+	suite.settings.AuthWorkflow = oidc.AuthWorkflow("not-a-workflow")
 	assert.Error(t, suite.settings.Validate())
-	suite.settings.SSO[ssoKey].AuthWorkflow = oldWorkflow
+	suite.settings.AuthWorkflow = oldWorkflow
 	assert.NoError(t, suite.settings.Validate())
 
 	suite.settings.UrlAction = uri.Exec

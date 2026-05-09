@@ -5,12 +5,18 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"fmt"
+	"net"
+	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
+
+const pkceCallbackSuccessHTML = "<html><body><h1>Authentication complete</h1><p>You can close this window and return to aws-sso.</p></body></html>"
 
 func (c *AWSClient) StartPKCEAuthCodeFlow(in StartPKCEAuthCodeInput) (PKCEAuthCodeFlow, error) {
 	if in.AuthorizationEndpoint == "" {
@@ -55,7 +61,7 @@ func (c *AWSClient) StartPKCEAuthCodeFlow(in StartPKCEAuthCodeInput) (PKCEAuthCo
 	q.Set("code_challenge_method", PKCECodeChallengeMethodS256)
 	q.Set("state", state)
 	if len(in.Scopes) > 0 {
-		q.Set("scope", strings.Join(in.Scopes, " "))
+		q.Set("scopes", strings.Join(in.Scopes, " "))
 	}
 	u.RawQuery = q.Encode()
 
@@ -92,6 +98,83 @@ func (c *AWSClient) ExchangePKCEAuthCode(ctx context.Context, in ExchangePKCEAut
 	})
 }
 
+func (c *AWSClient) WaitForPKCECallback(ctx context.Context, in WaitForPKCECallbackInput) (PKCECallback, error) {
+	if in.RedirectURI == "" {
+		return PKCECallback{}, fmt.Errorf("redirect uri is required")
+	}
+	if in.ExpectedState == "" {
+		return PKCECallback{}, fmt.Errorf("expected state is required")
+	}
+
+	redirectURL, err := url.Parse(in.RedirectURI)
+	if err != nil {
+		return PKCECallback{}, fmt.Errorf("invalid redirect uri: %w", err)
+	}
+	if redirectURL.Scheme == "" || redirectURL.Host == "" {
+		return PKCECallback{}, fmt.Errorf("invalid redirect uri")
+	}
+
+	path := redirectURL.EscapedPath()
+	if path == "" {
+		path = "/"
+	}
+
+	listener, err := net.Listen("tcp", redirectURL.Host)
+	if err != nil {
+		return PKCECallback{}, fmt.Errorf("listen for pkce callback: %w", err)
+	}
+	defer listener.Close()
+
+	callbackCh := make(chan PKCECallback, 1)
+	errCh := make(chan error, 1)
+	mux := http.NewServeMux()
+	server := &http.Server{Handler: mux}
+
+	mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+		callback, callbackErr := parsePKCECallback(r.URL, in.ExpectedState)
+		if callbackErr != nil {
+			http.Error(w, callbackErr.Error(), http.StatusBadRequest)
+			select {
+			case errCh <- callbackErr:
+			default:
+			}
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = w.Write([]byte(pkceCallbackSuccessHTML))
+
+		select {
+		case callbackCh <- callback:
+		default:
+		}
+	})
+
+	go func() {
+		if serveErr := server.Serve(listener); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
+			select {
+			case errCh <- serveErr:
+			default:
+			}
+		}
+	}()
+
+	defer func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = server.Shutdown(shutdownCtx)
+	}()
+
+	select {
+	case callback := <-callbackCh:
+		return callback, nil
+	case err = <-errCh:
+		return PKCECallback{}, err
+	case <-ctx.Done():
+		return PKCECallback{}, ctx.Err()
+	}
+}
+
 func ValidatePKCEState(expected, got string) error {
 	if expected == "" {
 		return fmt.Errorf("expected state is empty")
@@ -103,6 +186,20 @@ func ValidatePKCEState(expected, got string) error {
 		return fmt.Errorf("state mismatch")
 	}
 	return nil
+}
+
+func parsePKCECallback(callbackURL *url.URL, expectedState string) (PKCECallback, error) {
+	state := callbackURL.Query().Get("state")
+	if err := ValidatePKCEState(expectedState, state); err != nil {
+		return PKCECallback{}, err
+	}
+
+	code := callbackURL.Query().Get("code")
+	if code == "" {
+		return PKCECallback{}, fmt.Errorf("missing authorization code")
+	}
+
+	return PKCECallback{Code: code}, nil
 }
 
 func randomURLSafeString(n int) (string, error) {

@@ -52,6 +52,7 @@ type Settings struct {
 	DefaultSSO                string                   `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`   // specify default SSO by key
 	SecureStore               string                   `koanf:"SecureStore" yaml:"SecureStore,omitempty"` // json or keyring
 	DefaultRegion             string                   `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
+	AuthWorkflow              oidc.AuthWorkflow        `koanf:"AuthWorkflow" yaml:"AuthWorkflow,omitempty"`
 	ConsoleDuration           int32                    `koanf:"ConsoleDuration" yaml:"ConsoleDuration,omitempty"`
 	JsonStore                 string                   `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
 	CacheRefresh              int64                    `koanf:"CacheRefresh" yaml:"CacheRefresh,omitempty"`
@@ -162,6 +163,7 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 	}
 
 	s.setOverrides(override)
+	s.AuthWorkflow = s.AuthWorkflow.OrDefault()
 
 	// set our SSO names
 	for k, v := range s.SSO {
@@ -222,10 +224,8 @@ func (s *Settings) Validate() error {
 		}
 	}
 
-	for key, cfg := range s.SSO {
-		if err := oidc.ValidateAuthWorkflow(cfg.AuthWorkflow); err != nil {
-			return fmt.Errorf("invalid SSOConfig.%s.AuthWorkflow: %w", key, err)
-		}
+	if err := oidc.ValidateAuthWorkflow(s.AuthWorkflow); err != nil {
+		return fmt.Errorf("invalid AuthWorkflow: %w", err)
 	}
 
 	return nil

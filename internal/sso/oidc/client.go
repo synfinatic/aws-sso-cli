@@ -45,12 +45,17 @@ func NewAWSWithAPI(api API) *AWSClient {
 }
 
 func (c *AWSClient) RegisterClient(ctx context.Context, in RegisterClientInput) (storage.RegisterClientData, error) {
-	out, err := c.api.RegisterClient(ctx, &ssooidc.RegisterClientInput{
-		ClientName: aws.String(in.ClientName),
-		ClientType: aws.String(in.ClientType),
-		GrantTypes: in.GrantTypes,
-		Scopes:     in.Scopes,
-	})
+	input := &ssooidc.RegisterClientInput{
+		ClientName:   aws.String(in.ClientName),
+		ClientType:   aws.String(in.ClientType),
+		GrantTypes:   in.GrantTypes,
+		RedirectUris: in.RedirectUris,
+		Scopes:       in.Scopes,
+	}
+	if in.IssuerUrl != "" {
+		input.IssuerUrl = aws.String(in.IssuerUrl)
+	}
+	out, err := c.api.RegisterClient(ctx, input)
 	if err != nil {
 		return storage.RegisterClientData{}, fmt.Errorf("registerClient: %w", err)
 	}

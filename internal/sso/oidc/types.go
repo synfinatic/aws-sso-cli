@@ -25,6 +25,7 @@ type Client interface {
 	CreateToken(context.Context, CreateTokenInput) (storage.CreateTokenResponse, error)
 	PollDeviceCodeToken(context.Context, PollDeviceCodeTokenInput) (storage.CreateTokenResponse, error)
 	StartPKCEAuthCodeFlow(StartPKCEAuthCodeInput) (PKCEAuthCodeFlow, error)
+	WaitForPKCECallback(context.Context, WaitForPKCECallbackInput) (PKCECallback, error)
 	ExchangePKCEAuthCode(context.Context, ExchangePKCEAuthCodeInput) (storage.CreateTokenResponse, error)
 }
 
@@ -55,7 +56,7 @@ func (w AuthWorkflow) Valid() bool {
 
 func (w AuthWorkflow) OrDefault() AuthWorkflow {
 	if w == "" {
-		return AuthWorkflowDeviceCode
+		return AuthWorkflowPKCE
 	}
 	return w
 }
@@ -69,10 +70,12 @@ func ValidateAuthWorkflow(w AuthWorkflow) error {
 }
 
 type RegisterClientInput struct {
-	ClientName string
-	ClientType string
-	GrantTypes []string
-	Scopes     []string
+	ClientName   string
+	ClientType   string
+	GrantTypes   []string
+	IssuerUrl    string
+	RedirectUris []string
+	Scopes       []string
 }
 
 type StartDeviceAuthorizationInput struct {
@@ -111,6 +114,15 @@ type PKCEAuthCodeFlow struct {
 	CodeVerifier        string
 	CodeChallenge       string
 	CodeChallengeMethod string
+}
+
+type WaitForPKCECallbackInput struct {
+	RedirectURI   string
+	ExpectedState string
+}
+
+type PKCECallback struct {
+	Code string
 }
 
 type ExchangePKCEAuthCodeInput struct {

@@ -19,10 +19,8 @@ package sso
  */
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -38,7 +36,6 @@ const (
 	DEFAULT_AUTH_COLOR = "blue"
 	DEFAULT_AUTH_ICON  = "fingerprint"
 	VERIFY_MSG         = "\n\tVerify this code in your browser: %s\n"
-	PKCE_MSG           = "\n\tComplete PKCE authorization in your browser and paste the redirected URL:\n"
 )
 
 // ValidAuthToken returns true if we have a valid AWS SSO authentication token
@@ -136,12 +133,17 @@ func (as *AWSSSO) registerClient(force bool) error {
 	}
 
 	log.Trace("Registering new client with AWS SSO", "ClientName", as.ClientName, "ClientType", as.ClientType)
-	resp, err := oidcClient.RegisterClient(context.TODO(), oidc.RegisterClientInput{
+	input := oidc.RegisterClientInput{
 		ClientName: as.ClientName,
 		ClientType: as.ClientType,
 		GrantTypes: as.authGrantTypes(),
-		Scopes:     nil,
-	})
+		IssuerUrl:  as.StartUrl,
+	}
+	if as.getAuthWorkflow() == oidc.AuthWorkflowPKCE {
+		input.Scopes = []string{"sso:account:access"}
+		input.RedirectUris = []string{as.pkceRedirectURIBase()}
+	}
+	resp, err := oidcClient.RegisterClient(context.TODO(), input)
 	if err != nil {
 		return err
 	}
@@ -243,10 +245,10 @@ func (as *AWSSSO) saveToken(token storage.CreateTokenResponse) error {
 }
 
 func (as *AWSSSO) getAuthWorkflow() oidc.AuthWorkflow {
-	if as.SSOConfig == nil {
-		return oidc.AuthWorkflowDeviceCode
+	if as.SSOConfig == nil || as.SSOConfig.settings == nil {
+		return oidc.AuthWorkflowPKCE
 	}
-	return as.SSOConfig.AuthWorkflow.OrDefault()
+	return as.SSOConfig.settings.AuthWorkflow.OrDefault()
 }
 
 func (as *AWSSSO) authGrantTypes() []string {
@@ -256,43 +258,23 @@ func (as *AWSSSO) authGrantTypes() []string {
 	return []string{"refresh_token"}
 }
 
+// pkceRedirectURIBase is used in RegisterClient (no port, no path per RFC 8252 §7.3)
+func (as *AWSSSO) pkceRedirectURIBase() string {
+	return "http://127.0.0.1"
+}
+
+// pkceRedirectURI is used in the authorize URL, loopback listener, and CreateToken
 func (as *AWSSSO) pkceRedirectURI() string {
-	return "http://127.0.0.1:8250/callback"
+	return "http://127.0.0.1:8250"
 }
 
-func (as *AWSSSO) readPKCECallbackURL() (string, error) {
-	reader := bufio.NewReader(os.Stdin)
-	line, err := reader.ReadString('\n')
-	if err != nil {
-		if len(strings.TrimSpace(line)) == 0 {
-			return "", err
-		}
+// pkceAuthorizationEndpoint returns the OIDC /authorize endpoint URL.
+// AWS does not return this from RegisterClient, so we construct it from the region.
+func (as *AWSSSO) pkceAuthorizationEndpoint() string {
+	if as.ClientData.AuthorizationEndpoint != "" {
+		return strings.TrimSuffix(as.ClientData.AuthorizationEndpoint, "/") + "/authorize"
 	}
-	line = strings.TrimSpace(line)
-	if line == "" {
-		return "", fmt.Errorf("empty callback url")
-	}
-	return line, nil
-}
-
-func (as *AWSSSO) parsePKCECode(callbackURL string, expectedState string) (string, error) {
-	u, err := url.Parse(callbackURL)
-	if err != nil {
-		return "", err
-	}
-
-	q := u.Query()
-	state := q.Get("state")
-	if err = oidc.ValidatePKCEState(expectedState, state); err != nil {
-		return "", err
-	}
-
-	code := q.Get("code")
-	if code == "" {
-		return "", fmt.Errorf("missing authorization code")
-	}
-
-	return code, nil
+	return fmt.Sprintf("https://oidc.%s.amazonaws.com/authorize", as.SsoRegion)
 }
 
 func (as *AWSSSO) reauthenticateDeviceCode() error {
@@ -335,16 +317,11 @@ func (as *AWSSSO) reauthenticateDeviceCode() error {
 func (as *AWSSSO) reauthenticatePKCE() error {
 	oidcClient := oidc.NewAWSWithAPI(as.ssooidc)
 
-	if as.ClientData.AuthorizationEndpoint == "" {
-		if err := as.registerClient(true); err != nil {
-			return fmt.Errorf("unable to register client with AWS SSO: %s", err.Error())
-		}
-	}
-
 	flow, err := oidcClient.StartPKCEAuthCodeFlow(oidc.StartPKCEAuthCodeInput{
-		AuthorizationEndpoint: as.ClientData.AuthorizationEndpoint,
+		AuthorizationEndpoint: as.pkceAuthorizationEndpoint(),
 		ClientID:              as.ClientData.ClientId,
 		RedirectURI:           as.pkceRedirectURI(),
+		Scopes:                []string{"sso:account:access"},
 	})
 	if err != nil {
 		return fmt.Errorf("unable to start pkce authorization with AWS SSO: %s", err.Error())
@@ -356,21 +333,18 @@ func (as *AWSSSO) reauthenticatePKCE() error {
 		return err
 	}
 
-	fmt.Fprint(os.Stderr, PKCE_MSG)
-	callback, err := as.readPKCECallbackURL()
+	callback, err := oidcClient.WaitForPKCECallback(context.TODO(), oidc.WaitForPKCECallbackInput{
+		RedirectURI:   as.pkceRedirectURI(),
+		ExpectedState: flow.State,
+	})
 	if err != nil {
-		return fmt.Errorf("unable to read pkce callback url: %s", err.Error())
-	}
-
-	code, err := as.parsePKCECode(callback, flow.State)
-	if err != nil {
-		return fmt.Errorf("unable to parse pkce callback url: %s", err.Error())
+		return fmt.Errorf("unable to receive pkce callback: %s", err.Error())
 	}
 
 	token, err := oidcClient.ExchangePKCEAuthCode(context.TODO(), oidc.ExchangePKCEAuthCodeInput{
 		ClientID:     as.ClientData.ClientId,
 		ClientSecret: as.ClientData.ClientSecret,
-		Code:         code,
+		Code:         callback.Code,
 		CodeVerifier: flow.CodeVerifier,
 		RedirectURI:  as.pkceRedirectURI(),
 	})

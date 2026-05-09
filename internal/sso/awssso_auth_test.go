@@ -107,31 +107,12 @@ func TestStoreKey(t *testing.T) {
 
 func TestAuthWorkflowSelection(t *testing.T) {
 	as := &AWSSSO{}
-	assert.Equal(t, oidc.AuthWorkflowDeviceCode, as.getAuthWorkflow())
-	assert.Equal(t, []string{"refresh_token"}, as.authGrantTypes())
-
-	as.SSOConfig = &SSOConfig{AuthWorkflow: oidc.AuthWorkflowPKCE}
 	assert.Equal(t, oidc.AuthWorkflowPKCE, as.getAuthWorkflow())
 	assert.Equal(t, []string{"refresh_token", oidc.GrantTypeAuthorizationCode}, as.authGrantTypes())
-}
 
-func TestParsePKCECode(t *testing.T) {
-	as := &AWSSSO{}
-
-	code, err := as.parsePKCECode("http://127.0.0.1:8250/callback?code=abc123&state=ok", "ok")
-	assert.NoError(t, err)
-	assert.Equal(t, "abc123", code)
-
-	_, err = as.parsePKCECode("not-a-url", "ok")
-	assert.Error(t, err)
-
-	_, err = as.parsePKCECode("http://127.0.0.1:8250/callback?code=abc123&state=nope", "ok")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "state mismatch")
-
-	_, err = as.parsePKCECode("http://127.0.0.1:8250/callback?state=ok", "ok")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "missing authorization code")
+	as.SSOConfig = &SSOConfig{settings: &Settings{AuthWorkflow: oidc.AuthWorkflowDeviceCode}}
+	assert.Equal(t, oidc.AuthWorkflowDeviceCode, as.getAuthWorkflow())
+	assert.Equal(t, []string{"refresh_token"}, as.authGrantTypes())
 }
 
 func TestAuthenticateSteps(t *testing.T) {
@@ -148,7 +129,7 @@ func TestAuthenticateSteps(t *testing.T) {
 		StartUrl:  "https://testing.awsapps.com/start",
 		store:     jstore,
 		SSOConfig: &SSOConfig{
-			settings: &Settings{},
+			settings: &Settings{AuthWorkflow: oidc.AuthWorkflowDeviceCode},
 		},
 	}
 
@@ -228,7 +209,7 @@ func TestAuthenticate(t *testing.T) {
 		StartUrl:  "https://testing.awsapps.com/start",
 		store:     jstore,
 		SSOConfig: &SSOConfig{
-			settings: &Settings{},
+			settings: &Settings{AuthWorkflow: oidc.AuthWorkflowDeviceCode},
 		},
 	}
 
@@ -393,7 +374,7 @@ func TestValidAuthToken(t *testing.T) {
 		StartUrl:  "https://testing.awsapps.com/start",
 		store:     jstore,
 		SSOConfig: &SSOConfig{
-			settings: &Settings{},
+			settings: &Settings{AuthWorkflow: oidc.AuthWorkflowDeviceCode},
 		},
 	}
 
@@ -436,7 +417,7 @@ func TestAuthenticateFailure(t *testing.T) {
 		StartUrl:  "https://testing.awsapps.com/start",
 		store:     jstore,
 		SSOConfig: &SSOConfig{
-			settings: &Settings{},
+			settings: &Settings{AuthWorkflow: oidc.AuthWorkflowDeviceCode},
 		},
 	}
 
@@ -613,7 +594,7 @@ func TestReauthenticate(t *testing.T) {
 		browser:        "no-such-browser",
 		urlExecCommand: []string{"/dev/null", "%s"},
 		SSOConfig: &SSOConfig{
-			settings: &Settings{},
+			settings: &Settings{AuthWorkflow: oidc.AuthWorkflowDeviceCode},
 		},
 	}
 
