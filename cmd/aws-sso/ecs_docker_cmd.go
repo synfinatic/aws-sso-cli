@@ -21,12 +21,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/netip"
 	"os"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/client"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/mount"
+	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	// "github.com/davecgh/go-spew/spew"
 )
@@ -83,6 +84,14 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 	}
 
 	image := fmt.Sprintf("%s:%s", ctx.Cli.Ecs.Docker.Start.Image, ctx.Cli.Ecs.Docker.Start.Version)
+	port, err := network.ParsePort("4144/tcp")
+	if err != nil {
+		return err
+	}
+	hostIP, err := netip.ParseAddr(ctx.Cli.Ecs.Docker.Start.BindIP)
+	if err != nil {
+		return err
+	}
 
 	config := &container.Config{
 		AttachStdout: true,
@@ -91,8 +100,8 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 			"AWS_SSO_ECS_PORT=4144",
 		},
 		Image: image,
-		ExposedPorts: nat.PortSet{
-			nat.Port("4144/tcp"): {},
+		ExposedPorts: network.PortSet{
+			port: {},
 		},
 		User: fmt.Sprintf("%d:%d", os.Getuid(), os.Getgid()),
 	}
@@ -100,16 +109,16 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 		config.Entrypoint = []string{"./aws-sso", "ecs", "run", "--level", string(ctx.Cli.LogLevel), "--docker"}
 	}
 
-	portBinding := nat.PortBinding{
-		HostIP:   ctx.Cli.Ecs.Docker.Start.BindIP,
+	portBinding := network.PortBinding{
+		HostIP:   hostIP,
 		HostPort: ctx.Cli.Ecs.Docker.Start.Port,
 	}
 
 	hostConfig := &container.HostConfig{
 		// AutoRemove:  true, // not valid for RestartPolicy
 		NetworkMode: "bridge",
-		PortBindings: nat.PortMap{
-			nat.Port("4144/tcp"): []nat.PortBinding{portBinding},
+		PortBindings: network.PortMap{
+			port: []network.PortBinding{portBinding},
 		},
 		RestartPolicy: container.RestartPolicy{
 			Name:              container.RestartPolicyOnFailure,
@@ -125,7 +134,11 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 		},
 	}
 
-	resp, err := cli.ContainerCreate(context.Background(), config, hostConfig, nil, nil, CONTAINER_NAME)
+	resp, err := cli.ContainerCreate(context.Background(), client.ContainerCreateOptions{
+		Config:     config,
+		HostConfig: hostConfig,
+		Name:       CONTAINER_NAME,
+	})
 	if err != nil {
 		return err
 	}
@@ -140,7 +153,7 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 		return err
 	}
 
-	if err = cli.ContainerStart(context.Background(), resp.ID, container.StartOptions{}); err != nil {
+	if _, err = cli.ContainerStart(context.Background(), resp.ID, client.ContainerStartOptions{}); err != nil {
 		os.Remove(ecs.SecurityFilePath(ecs.WRITE_ONLY)) // clean up on failure
 		return err
 	}
@@ -164,9 +177,10 @@ func (cc *EcsDockerStopCmd) Run(ctx *RunContext) error {
 		return err
 	}
 
-	if err = cli.ContainerStop(context.Background(), CONTAINER_NAME, container.StopOptions{}); err != nil {
+	if _, err = cli.ContainerStop(context.Background(), CONTAINER_NAME, client.ContainerStopOptions{}); err != nil {
 		return err
 	}
 
-	return cli.ContainerRemove(context.Background(), CONTAINER_NAME, container.RemoveOptions{})
+	_, err = cli.ContainerRemove(context.Background(), CONTAINER_NAME, client.ContainerRemoveOptions{})
+	return err
 }
