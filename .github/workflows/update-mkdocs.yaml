@@ -16,7 +16,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: actions/setup-python@v6
@@ -48,7 +48,7 @@ jobs:
 #     runs-on: ubuntu-latest
 #     steps:
 #       - name: Checkout main
-#         uses: actions/checkout@v5
+#         uses: actions/checkout@v6
 # 
 #       - name: Deploy docs
 #         uses: synfinatic/mkdocs-deploy-gh-pages@bump-mkdocs
