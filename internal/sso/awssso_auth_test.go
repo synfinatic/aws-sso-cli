@@ -31,7 +31,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
-	"github.com/synfinatic/aws-sso-cli/internal/url"
+	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
 
 // mock ssooidc
@@ -335,7 +335,7 @@ func TestAuthenticate(t *testing.T) {
 	assert.NoError(t, err)
 
 	// verify no override of CLI when not set
-	err = as.Authenticate(url.Print, "fake-browser")
+	err = as.Authenticate(uri.Print, "fake-browser")
 	assert.NoError(t, err)
 
 	defer func() {
@@ -345,8 +345,8 @@ func TestAuthenticate(t *testing.T) {
 	}()
 
 	// we can't exec with bad config
-	as.SSOConfig.AuthUrlAction = url.Exec
-	_ = as.Authenticate(url.Undef, "fake-browser")
+	as.SSOConfig.AuthUrlAction = uri.Exec
+	_ = as.Authenticate(uri.Undef, "fake-browser")
 }
 
 func TestValidAuthToken(t *testing.T) {

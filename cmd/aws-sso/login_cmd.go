@@ -20,7 +20,7 @@ package main
 
 import (
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
-	"github.com/synfinatic/aws-sso-cli/internal/url"
+	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
 
 type LoginCmd struct {
@@ -67,11 +67,11 @@ func doAuth(ctx *RunContext) {
 	action := ctx.Settings.UrlAction // global default
 	if len(ctx.Cli.Login.UrlAction) > 0 {
 		// CLI override
-		action, err = url.NewAction(ctx.Cli.Login.UrlAction)
+		action, err = uri.NewAction(ctx.Cli.Login.UrlAction)
 		if err != nil {
 			log.Fatal("Invalid --url-action", "action", ctx.Cli.Login.UrlAction)
 		}
-	} else if AwsSSO.SSOConfig.AuthUrlAction != url.Undef {
+	} else if AwsSSO.SSOConfig.AuthUrlAction != uri.Undef {
 		// Auth specific override
 		action = AwsSSO.SSOConfig.AuthUrlAction
 	}

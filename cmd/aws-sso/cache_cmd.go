@@ -22,7 +22,7 @@ import (
 	"fmt"
 
 	"github.com/synfinatic/aws-sso-cli/internal/awsconfig"
-	"github.com/synfinatic/aws-sso-cli/internal/url"
+	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
 
 type CacheCmd struct {
@@ -62,7 +62,7 @@ func (cc *CacheCmd) Run(ctx *RunContext) error {
 		log.Info("Updated cache", "added", added, "deleted", deleted)
 		// should we update our config??
 		if !ctx.Cli.Cache.NoConfigCheck && ctx.Settings.AutoConfigCheck {
-			if ctx.Settings.ConfigProfilesUrlAction != url.ConfigProfilesUndef {
+			if ctx.Settings.ConfigProfilesUrlAction != uri.ConfigProfilesUndef {
 				err := awsconfig.UpdateAwsConfig(ssoName, ctx.Settings, "", true, false)
 				if err != nil {
 					log.Error("Unable to auto-update aws config file", "error", err.Error())

@@ -1,4 +1,4 @@
-package url
+package uri
 
 /*
  * AWS SSO CLI
@@ -279,7 +279,7 @@ func selectElement(seed string, options []string) string {
 	for i := 0; i < len(seed); i++ {
 		v += bytes[i] // overflows
 	}
-	v %= byte(len(options))
+	v %= byte(len(options)) // nolint:gosec
 	return options[int(v)]
 }
 

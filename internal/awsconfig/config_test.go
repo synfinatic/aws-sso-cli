@@ -203,7 +203,7 @@ func TestUpdateAwsConfig(t *testing.T) {
 	err = UpdateAwsConfig("Default", s, fname, false, true)
 	assert.NoError(t, err)
 
-	cfile, err = os.Open(fname)
+	cfile, err = os.Open(fname) // nolint:gosec
 	assert.NoError(t, err)
 
 	buf := make([]byte, 1024*1024)

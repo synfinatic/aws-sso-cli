@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
-	tparse "github.com/synfinatic/aws-sso-cli/internal/time"
+	tparse "github.com/synfinatic/aws-sso-cli/internal/timeutils"
 )
 
 func TestNewListProfileResponse(t *testing.T) {

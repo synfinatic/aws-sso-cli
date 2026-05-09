@@ -38,7 +38,7 @@ import (
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
-	"github.com/synfinatic/aws-sso-cli/internal/url"
+	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
 
 type ConsoleCmd struct {
@@ -56,7 +56,7 @@ type ConsoleCmd struct {
 
 	AccessKeyId     string `kong:"env='AWS_ACCESS_KEY_ID',hidden"`
 	SecretAccessKey string `kong:"env='AWS_SECRET_ACCESS_KEY',hidden"`
-	SessionToken    string `kong:"env='AWS_SESSION_TOKEN',hidden"`
+	SessionToken    string `kong:"env='AWS_SESSION_TOKEN',hidden"` // nolint:gosec
 	AwsProfile      string `kong:"env='AWS_PROFILE',hidden"`
 }
 
@@ -299,11 +299,11 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials,
 	login := LoginUrlParams{
 		SsoRegion:   AwsSSO.SsoRegion,
 		Issuer:      issuer,
-		Destination: url.AWSConsoleUrl(AwsSSO.SsoRegion, region),
+		Destination: uri.AWSConsoleUrl(AwsSSO.SsoRegion, region),
 		SigninToken: loginResponse.SigninToken,
 	}
 
-	action, err := url.NewAction(ctx.Cli.Console.UrlAction)
+	action, err := uri.NewAction(ctx.Cli.Console.UrlAction)
 	if err != nil {
 		log.Fatal("Invalid --url-action", "action", ctx.Cli.Console.UrlAction)
 	}
@@ -311,7 +311,7 @@ func openConsoleAccessKey(ctx *RunContext, creds *storage.RoleCredentials,
 		action = ctx.Settings.UrlAction
 	}
 
-	urlOpener := url.NewHandleUrl(action, login.GetUrl(),
+	urlOpener := uri.NewHandleUrl(action, login.GetUrl(),
 		ctx.Settings.Browser, ctx.Settings.UrlExecCommand)
 
 	urlOpener.ContainerSettings(containerParams(ctx, accountId, role))
@@ -347,17 +347,17 @@ func (stup *SigninTokenUrlParams) GetUrl(roleChaining bool) string {
 	if roleChaining {
 		// when we used AssumeRole to do role chaining, we can't use the SessionDuration
 		return fmt.Sprintf("%s?Action=getSigninToken&Session=%s",
-			url.AWSFederatedUrl(stup.SsoRegion), stup.Session.Encode())
+			uri.AWSFederatedUrl(stup.SsoRegion), stup.Session.Encode())
 	}
 
 	return fmt.Sprintf("%s?Action=getSigninToken&SessionDuration=%d&Session=%s",
-		url.AWSFederatedUrl(stup.SsoRegion), stup.SessionDuration, stup.Session.Encode())
+		uri.AWSFederatedUrl(stup.SsoRegion), stup.SessionDuration, stup.Session.Encode())
 }
 
 type SessionUrlParams struct {
 	AccessKeyId     string `json:"sessionId"`
-	SecretAccessKey string `json:"sessionKey"`
-	SessionToken    string `json:"sessionToken"`
+	SecretAccessKey string `json:"sessionKey"`   // nolint:gosec
+	SessionToken    string `json:"sessionToken"` // nolint:gosec
 }
 
 func (sup *SessionUrlParams) Encode() string {
@@ -374,6 +374,6 @@ type LoginUrlParams struct {
 
 func (lup *LoginUrlParams) GetUrl() string {
 	return fmt.Sprintf("%s?Action=login&Issuer=%s&Destination=%s&SigninToken=%s",
-		url.AWSFederatedUrl(lup.SsoRegion), lup.Issuer, lup.Destination,
+		uri.AWSFederatedUrl(lup.SsoRegion), lup.Issuer, lup.Destination,
 		lup.SigninToken)
 }

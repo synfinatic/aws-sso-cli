@@ -72,7 +72,7 @@ func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 			}
 			// have to manually close since defer won't work in this case
 			f.Close()
-			os.Remove(f.Name())
+			os.Remove(f.Name()) // nolint:gosec
 
 			bearerToken = creds.BearerToken
 			privateKey = creds.PrivateKey

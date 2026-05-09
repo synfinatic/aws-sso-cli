@@ -24,7 +24,7 @@ func TestOpenSecurityFile(t *testing.T) {
 	testOpenSecurityFilePath = tempFile.Name()
 	defer func() {
 		testOpenSecurityFilePath = ""
-		os.Remove(tempFile.Name())
+		os.Remove(tempFile.Name()) // nolint:gosec
 	}()
 
 	_, err = OpenSecurityFile(READ_ONLY)
@@ -49,7 +49,7 @@ func TestReadWriteSecurityConfig(t *testing.T) {
 	assert.NoError(t, WriteSecurityConfig(f, "foo", "bar", "baz"))
 	assert.NoError(t, f.Close())
 
-	f, err = os.Open(f.Name())
+	f, err = os.Open(f.Name()) // nolint:gosec
 	assert.NoError(t, err)
 
 	values, err := ReadSecurityConfig(f)

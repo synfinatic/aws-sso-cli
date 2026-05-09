@@ -35,14 +35,14 @@ func TestGenProfileCredentials(t *testing.T) {
 
 	// Create example ProfileCredentials
 	creds := []ProfileCredentials{
-		{
+		{ // nolint:gosec
 			Profile:         "first",
 			AccessKeyId:     "AKIAIOSFODNN7EXAMPLE",
 			SecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 			SessionToken:    "AQoDYXdzEJr...<remainder of security token>",
 			Expires:         "2024-06-03 17:56:11 -0700 PDT",
 		},
-		{
+		{ // nolint:gosec
 			Profile:         "second",
 			AccessKeyId:     "AKIAYOMAMMAEXAMPLE",
 			SecretAccessKey: "wJalrXUtnFEMI/YESMAN/bPxRfiCYEXAMPLEKEY",

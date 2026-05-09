@@ -29,7 +29,7 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
 	"github.com/synfinatic/aws-sso-cli/internal/prompt"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
-	"github.com/synfinatic/aws-sso-cli/internal/url"
+	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
 
 var ranSetup = false
@@ -73,12 +73,12 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 	if reconfig {
 		// migrate old boolean flag to enum
 		if s.FirefoxOpenUrlInContainer {
-			s.UrlAction = url.OpenUrlContainer
+			s.UrlAction = uri.OpenUrlContainer
 		}
 
 		// upgrade deprecated config option
 		if s.ConfigUrlAction != "" && s.ConfigProfilesUrlAction == "" {
-			s.ConfigProfilesUrlAction, _ = url.NewConfigProfilesAction(s.ConfigUrlAction)
+			s.ConfigProfilesUrlAction, _ = uri.NewConfigProfilesAction(s.ConfigUrlAction)
 			s.ConfigUrlAction = ""
 		}
 		// skips:
@@ -101,7 +101,7 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 
 		s = &sso.Settings{
 			SSO:             map[string]*sso.SSOConfig{},
-			UrlAction:       url.Open,
+			UrlAction:       uri.Open,
 			LogLevel:        "error",
 			DefaultRegion:   defaultRegion,
 			ConsoleDuration: 720,
@@ -227,7 +227,7 @@ func promptOpen(s *sso.Settings) {
 	}
 
 	// do we need urlExecCommand?
-	if s.UrlAction == url.Exec {
+	if s.UrlAction == uri.Exec {
 		s.UrlExecCommand = promptUrlExecCommand(s.UrlExecCommand)
 	} else if s.UrlAction.IsContainer() {
 		s.UrlExecCommand = promptUseFirefox(s.UrlExecCommand)
@@ -236,7 +236,7 @@ func promptOpen(s *sso.Settings) {
 	}
 
 	// should we prompt user to override default browser?
-	if s.UrlAction == url.Open || s.ConfigProfilesUrlAction == url.ConfigProfilesOpen {
+	if s.UrlAction == uri.Open || s.ConfigProfilesUrlAction == uri.ConfigProfilesOpen {
 		s.Browser = promptDefaultBrowser(s.Browser)
 	}
 }

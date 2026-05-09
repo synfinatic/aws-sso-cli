@@ -75,7 +75,7 @@ type CredentialProcessOutput struct {
 	Version         int
 	AccessKeyId     string
 	SecretAccessKey string
-	SessionToken    string
+	SessionToken    string // nolint:gosec
 	Expiration      string // ISO8601
 }
 

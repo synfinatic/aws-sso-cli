@@ -188,7 +188,7 @@ func TestServerWithSSL(t *testing.T) {
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://%s/", l.Addr()), nil)
 	assert.NoError(t, err)
 
-	res, err := httpClient.Do(req)
+	res, err := httpClient.Do(req) // nolint:gosec
 	assert.NoError(t, err)
 	// nothing was loaded yet, so 404
 	assert.Equal(t, http.StatusNotFound, res.StatusCode)

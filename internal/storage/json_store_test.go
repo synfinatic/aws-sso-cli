@@ -95,7 +95,7 @@ func (s *JsonStoreTestSuite) TestRegisterClientData() {
 	key := "us-east-1|https://d-xxxxxxx.awsapps.com/start"
 	err = s.json.GetRegisterClientData(key, &rcd)
 	assert.Nil(t, err)
-	rcdTest := RegisterClientData{
+	rcdTest := RegisterClientData{ // nolint:gosec
 		ClientId:              "not a real client id",
 		ClientIdIssuedAt:      1629947379,
 		ClientSecret:          "not a real secret",
@@ -125,7 +125,7 @@ func (s *JsonStoreTestSuite) TestRoleCredentials() {
 	err = s.json.GetRoleCredentials(arn, &rc)
 	assert.Nil(t, err)
 
-	rcTest := RoleCredentials{
+	rcTest := RoleCredentials{ // nolint:gosec
 		RoleName:        "AWSAdministratorAccess",
 		AccountId:       12344553243,
 		AccessKeyId:     "not a real access key id",
@@ -188,7 +188,7 @@ func (s *JsonStoreTestSuite) TestStaticCredentials() {
 	cr := StaticCredentials{}
 	assert.NoError(t, s.json.GetStaticCredentials("arn:aws:iam::123456789012:user/foobar", &cr))
 
-	cr2 := StaticCredentials{
+	cr2 := StaticCredentials{ // nolint:gosec
 		UserName:        "foobar",
 		AccountId:       123456789012,
 		AccessKeyId:     "not a real access key id",

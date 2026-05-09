@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/synfinatic/aws-sso-cli/internal/time"
+	"github.com/synfinatic/aws-sso-cli/internal/timeutils"
 )
 
 type TimeCmd struct{}
@@ -39,11 +39,11 @@ func (cc *TimeCmd) Run(ctx *RunContext) error {
 		return nil // no output if nothing is set
 	}
 
-	t, err := time.ParseTimeString(expires)
+	t, err := timeutils.ParseTimeString(expires)
 	if err != nil {
 		return err
 	}
-	exp, err := time.TimeRemain(t, false)
+	exp, err := timeutils.TimeRemain(t, false)
 	if err != nil {
 		return err
 	}
