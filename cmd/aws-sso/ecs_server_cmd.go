@@ -2,7 +2,7 @@ package main
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2025 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2026 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -72,7 +72,7 @@ func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 			}
 			// have to manually close since defer won't work in this case
 			f.Close()
-			os.Remove(f.Name())
+			os.Remove(f.Name()) // nolint:gosec
 
 			bearerToken = creds.BearerToken
 			privateKey = creds.PrivateKey

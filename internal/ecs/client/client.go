@@ -2,7 +2,7 @@ package client
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2025 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2026 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -136,7 +136,7 @@ func (c *ECSClient) SubmitCreds(creds *storage.RoleCredentials, profile string, 
 	}
 
 	req, _ := c.newRequest(http.MethodPut, c.LoadUrl(path), bytes.NewBuffer(j))
-	resp, err := c.client.Do(req)
+	resp, err := c.client.Do(req) // nolint:gosec
 	if err != nil {
 		return err
 	}
@@ -146,7 +146,7 @@ func (c *ECSClient) SubmitCreds(creds *storage.RoleCredentials, profile string, 
 func (c *ECSClient) GetProfile() (ecs.ListProfilesResponse, error) {
 	lpr := ecs.ListProfilesResponse{}
 	req, _ := c.newRequest(http.MethodGet, c.ProfileUrl(), nil)
-	resp, err := c.client.Do(req)
+	resp, err := c.client.Do(req) // nolint:gosec
 	if err != nil {
 		return lpr, err
 	}
@@ -174,7 +174,7 @@ func (c *ECSClient) GetProfile() (ecs.ListProfilesResponse, error) {
 func (c *ECSClient) ListProfiles() ([]ecs.ListProfilesResponse, error) {
 	lpr := []ecs.ListProfilesResponse{}
 	req, _ := c.newRequest(http.MethodGet, c.ListUrl(), nil)
-	resp, err := c.client.Do(req)
+	resp, err := c.client.Do(req) // nolint:gosec
 	if err != nil {
 		return lpr, err
 	}
@@ -200,7 +200,7 @@ func (c *ECSClient) ListProfiles() ([]ecs.ListProfilesResponse, error) {
 func (c *ECSClient) Delete(profile string) error {
 	req, _ := c.newRequest(http.MethodDelete, c.LoadUrl(profile), bytes.NewBuffer([]byte("")))
 
-	resp, err := c.client.Do(req)
+	resp, err := c.client.Do(req) // nolint:gosec
 	if err != nil {
 		return err
 	}

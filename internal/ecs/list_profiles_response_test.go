@@ -2,7 +2,7 @@ package ecs
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2025 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2026 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
-	tparse "github.com/synfinatic/aws-sso-cli/internal/time"
+	tparse "github.com/synfinatic/aws-sso-cli/internal/timeutils"
 )
 
 func TestNewListProfileResponse(t *testing.T) {

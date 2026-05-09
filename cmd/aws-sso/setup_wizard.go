@@ -2,7 +2,7 @@ package main
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2025 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2026 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -31,7 +31,7 @@ import (
 	"github.com/manifoldco/promptui"
 	"github.com/synfinatic/aws-sso-cli/internal/predictor"
 	"github.com/synfinatic/aws-sso-cli/internal/prompt"
-	"github.com/synfinatic/aws-sso-cli/internal/url"
+	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
 
 const (
@@ -302,7 +302,7 @@ func promptUseFirefox(defaultValue []string) []string {
 	}
 }
 
-func promptUrlAction(defaultValue url.Action) url.Action {
+func promptUrlAction(defaultValue uri.Action) uri.Action {
 	var i = -1
 	var err error
 
@@ -363,7 +363,7 @@ func promptUrlAction(defaultValue url.Action) url.Action {
 		}
 	}
 
-	action, err := url.NewAction(items[i].Value)
+	action, err := uri.NewAction(items[i].Value)
 	if err != nil {
 		log.Error(err.Error())
 	}
@@ -718,7 +718,7 @@ func promptCacheRefresh(defaultValue int64) int64 {
 }
 
 func promptConfigProfilesUrlAction(
-	defaultValue url.ConfigProfilesAction, urlAction url.Action) url.ConfigProfilesAction {
+	defaultValue uri.ConfigProfilesAction, urlAction uri.Action) uri.ConfigProfilesAction {
 	var err error
 	var i = -1
 
@@ -736,8 +736,8 @@ func promptConfigProfilesUrlAction(
 		},
 	}
 
-	if defaultValue == url.ConfigProfilesUndef {
-		defaultValue, _ = url.NewConfigProfilesAction(string(urlAction))
+	if defaultValue == uri.ConfigProfilesUndef {
+		defaultValue, _ = uri.NewConfigProfilesAction(string(urlAction))
 	}
 
 	// if UrlExecCommand uses firefox, then we need to be consitent
@@ -776,7 +776,7 @@ func promptConfigProfilesUrlAction(
 		}
 	}
 
-	ret, _ := url.NewConfigProfilesAction(items[i].Value)
+	ret, _ := uri.NewConfigProfilesAction(items[i].Value)
 	return ret
 }
 

@@ -1,4 +1,4 @@
-PROJECT_VERSION        := 2.0.3
+PROJECT_VERSION        := 2.1.0
 DOCKER_REPO            := synfinatic
 PROJECT_NAME           := aws-sso
 DOCKER_PROJECT_NAME    := aws-sso-cli-ecs-server
@@ -35,6 +35,7 @@ DESCRIPTION               := AWS SSO CLI
 BUILDINFOS                ?= $(shell date +%FT%T%z)$(BUILDINFOSDET)
 LDFLAGS                   := -X "main.Version=$(PROJECT_VERSION)" -X "main.Delta=$(PROJECT_DELTA)" -X "main.Buildinfos=$(BUILDINFOS)" -X "main.Tag=$(PROJECT_TAG)" -X "main.CommitID=$(PROJECT_COMMIT)"
 OUTPUT_NAME               := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)  # default for current platform
+GOLANGCI_LINT_VERSION     := 2.10.1
 
 #ifeq ($(GOOS),darwin)
 # https://github.com/golang/go/issues/61229#issuecomment-1988965927
@@ -188,8 +189,20 @@ test-tidy:  ## Test to make sure go.mod is tidy
 	    exit -1 ; \
 	fi
 
-lint:  ## Run golangci-lint
+lint: .lint-check  ## Run golangci-lint
 	golangci-lint run
+
+lint-install:  ## Install golangci-lint
+	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v$(GOLANGCI_LINT_VERSION)
+
+.PHONY: .lint-check
+.lint-check:
+	@if test $$(golangci-lint --version 2>&1 | grep -c "version $(GOLANGCI_LINT_VERSION)") -eq 0 ; then \
+	   echo "Need to install golangci-lint $(GOLANGCI_LINT_VERSION)" ; \
+	   echo "Run: make lint-install" ; \
+	   exit -1 ; \
+	fi
+	
 
 test-homebrew: $(DIST_DIR)$(PROJECT_NAME)  ## Run the homebrew tests
 	@$(DIST_DIR)$(PROJECT_NAME) --config /dev/null version 2>/dev/null | grep -q "AWS SSO CLI Version $(PROJECT_VERSION)"

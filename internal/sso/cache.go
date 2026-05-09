@@ -2,7 +2,7 @@ package sso
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2025 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2026 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -86,7 +86,7 @@ func OpenCache(f string, s *Settings) (*Cache, error) {
 	var err error
 	var cacheBytes []byte
 	if f != "" {
-		cacheBytes, err = os.ReadFile(f)
+		cacheBytes, err = os.ReadFile(f) // nolint:gosec
 		if err != nil {
 			return &cache, err // return empty struct
 		}

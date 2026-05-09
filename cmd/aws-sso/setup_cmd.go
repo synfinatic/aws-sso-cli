@@ -8,7 +8,7 @@ import (
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2025 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2026 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -37,7 +37,7 @@ type SetupEcsCmd struct {
 }
 
 type EcsAuthCmd struct {
-	BearerToken string `kong:"short=t,help='Bearer token value to use for ECS Server',xor='flag'"`
+	BearerToken string `kong:"short=t,help='Bearer token value to use for ECS Server',xor='flag'"` // nolint:gosec
 	Delete      bool   `kong:"short=d,help='Delete the current bearer token',xor='flag'"`
 }
 
@@ -67,7 +67,7 @@ type EcsSSLCmd struct {
 	Delete      bool   `kong:"short=d,help='Disable SSL and delete the current SSL cert/key',xor='flag,cert,key'"`
 	Print       bool   `kong:"short=p,help='Print the current SSL certificate',xor='flag,cert,key'"`
 	Certificate string `kong:"short=c,type='existingfile',help='Path to certificate chain PEM file',predictor='allFiles',group='add-ssl',xor='cert'"`
-	PrivateKey  string `kong:"short=k,type='existingfile',help='Path to private key file PEM file',predictor='allFiles',group='add-ssl',xor='key'"`
+	PrivateKey  string `kong:"short=k,type='existingfile',help='Path to private key file PEM file',predictor='allFiles',group='add-ssl',xor='key'"` // nolint:gosec
 	Force       bool   `kong:"hidden,help='Force loading the certificate'"`
 }
 

@@ -2,7 +2,7 @@ package main
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2025 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2026 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -28,7 +28,7 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/predictor"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
-	"github.com/synfinatic/aws-sso-cli/internal/time"
+	"github.com/synfinatic/aws-sso-cli/internal/timeutils"
 	"github.com/synfinatic/gotable"
 )
 
@@ -201,7 +201,7 @@ func printRoles(ctx *RunContext, fields []string, csv bool, prefixSearch []strin
 		if err := ctx.Store.GetCreateTokenResponse(AwsSSO.StoreKey(), &ctr); err != nil {
 			log.Debug("Unable to get SSO session expire time", "error", err.Error())
 		} else {
-			if exp, err := time.TimeRemain(ctr.ExpiresAt, true); err != nil {
+			if exp, err := timeutils.TimeRemain(ctr.ExpiresAt, true); err != nil {
 				log.Error("Unable to determine time remain", "expiresAt", ctr.ExpiresAt, "error", err.Error())
 			} else {
 				expires = fmt.Sprintf(" [Expires in: %s]", strings.TrimSpace(exp))

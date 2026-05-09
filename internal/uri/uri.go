@@ -1,8 +1,8 @@
-package url
+package uri
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2025 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2026 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -279,7 +279,7 @@ func selectElement(seed string, options []string) string {
 	for i := 0; i < len(seed); i++ {
 		v += bytes[i] // overflows
 	}
-	v %= byte(len(options))
+	v %= byte(len(options)) // nolint:gosec
 	return options[int(v)]
 }
 

@@ -2,7 +2,7 @@ package ecs
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2025 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2026 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -21,7 +21,7 @@ package ecs
 import (
 	"reflect"
 
-	"github.com/synfinatic/aws-sso-cli/internal/time"
+	"github.com/synfinatic/aws-sso-cli/internal/timeutils"
 	"github.com/synfinatic/gotable"
 )
 
@@ -34,7 +34,7 @@ type ListProfilesResponse struct {
 }
 
 func NewListProfileRepsonse(cr *ECSClientRequest) ListProfilesResponse {
-	exp, _ := time.TimeRemain(cr.Creds.Expiration/1000, true)
+	exp, _ := timeutils.TimeRemain(cr.Creds.Expiration/1000, true)
 	return ListProfilesResponse{
 		ProfileName:  cr.ProfileName,
 		AccountIdPad: cr.Creds.AccountIdStr(),

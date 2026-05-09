@@ -2,7 +2,7 @@ package sso
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2025 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2026 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -35,7 +35,7 @@ import (
 	"github.com/knadh/koanf/providers/file"
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
-	"github.com/synfinatic/aws-sso-cli/internal/url"
+	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
 
 const (
@@ -59,11 +59,11 @@ type Settings struct {
 	MaxRetry                  int                      `koanf:"MaxRetry" yaml:"MaxRetry,omitempty"`
 	AutoConfigCheck           bool                     `koanf:"AutoConfigCheck" yaml:"AutoConfigCheck,omitempty"`
 	FirefoxOpenUrlInContainer bool                     `koanf:"FirefoxOpenUrlInContainer" yaml:"FirefoxOpenUrlInContainer,omitempty"` // deprecated
-	UrlAction                 url.Action               `koanf:"UrlAction" yaml:"UrlAction"`
+	UrlAction                 uri.Action               `koanf:"UrlAction" yaml:"UrlAction"`
 	Browser                   string                   `koanf:"Browser" yaml:"Browser,omitempty"`
 	ConfigUrlAction           string                   `koanf:"ConfigUrlAction" yaml:"ConfigUrlAction,omitempty"` // deprecated
 	ConfigProfilesBinaryPath  string                   `koanf:"ConfigProfilesBinaryPath" yaml:"ConfigProfilesBinaryPath,omitempty"`
-	ConfigProfilesUrlAction   url.ConfigProfilesAction `koanf:"ConfigProfilesUrlAction" yaml:"ConfigProfilesUrlAction,omitempty"`
+	ConfigProfilesUrlAction   uri.ConfigProfilesAction `koanf:"ConfigProfilesUrlAction" yaml:"ConfigProfilesUrlAction,omitempty"`
 	UrlExecCommand            []string                 `koanf:"UrlExecCommand" yaml:"UrlExecCommand,omitempty"` // string or list
 	LogLevel                  string                   `koanf:"LogLevel" yaml:"LogLevel,omitempty"`
 	LogLines                  bool                     `koanf:"LogLines" yaml:"LogLines,omitempty"`
@@ -216,7 +216,7 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 func (s *Settings) Validate() error {
 	// Does either action call `exec` without firefox containers?
 	if s.UrlAction.IsContainer() != s.ConfigProfilesUrlAction.IsContainer() {
-		if s.UrlAction == url.Exec || s.ConfigProfilesUrlAction == url.ConfigProfilesExec {
+		if s.UrlAction == uri.Exec || s.ConfigProfilesUrlAction == uri.ConfigProfilesExec {
 			return fmt.Errorf("must not select `exec` and a Firefox container option")
 		}
 	}
@@ -233,17 +233,17 @@ func (s *Settings) applyDeprecations() bool {
 	// Upgrade ConfigUrlAction to ConfigProfilesUrlAction because we want to
 	// deprecate ConfigUrlAction.
 	if s.ConfigUrlAction != "" && s.ConfigProfilesUrlAction == "" {
-		s.ConfigProfilesUrlAction, err = url.NewConfigProfilesAction(s.ConfigUrlAction)
+		s.ConfigProfilesUrlAction, err = uri.NewConfigProfilesAction(s.ConfigUrlAction)
 		if err != nil {
 			log.Warn("Invalid value for ConfigUrlAction", "value", s.ConfigUrlAction)
 		}
-		s.ConfigUrlAction = string(url.Undef) // disable old value so it is omitempty
+		s.ConfigUrlAction = string(uri.Undef) // disable old value so it is omitempty
 		change = true
 	}
 
 	// Upgrade FirefoxOpenUrlInContainer to UrlAction = open-url-in-container
 	if s.FirefoxOpenUrlInContainer {
-		s.UrlAction = url.OpenUrlContainer
+		s.UrlAction = uri.OpenUrlContainer
 		s.FirefoxOpenUrlInContainer = false // disable old value so it is omitempty
 		change = true
 	}

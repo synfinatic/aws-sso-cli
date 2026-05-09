@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
         go-version: '${{ vars.GO_VERSION }}'
         cache: false
@@ -55,7 +55,7 @@ jobs:
     name: golanci-lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: '${{ vars.GO_VERSION }}'
       - uses: actions/checkout@v5

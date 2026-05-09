@@ -119,6 +119,19 @@ allows you to easily assume a role in your current shell with auto-complete
 generated AWS Profile names as defined by the [ProfileFormat](
 config.md#profileformat) config variable.
 
+```bash
+# Basic usage with the default SSO instance
+aws-sso-profile MyProfile
+
+# Using a specific SSO instance (v2.1.0+)
+aws-sso-profile -S Production MyProfile
+aws-sso-profile --sso Production MyProfile
+```
+
+The `-S` or `--sso` flag allows you to specify which SSO instance to use when you
+have multiple SSO configurations. This is particularly useful when working with
+multiple AWS organizations.
+
 The latter (`aws-sso-clear`), clears all the environment variables
 installed by `aws-sso-profile`.
 

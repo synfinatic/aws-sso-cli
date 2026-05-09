@@ -2,7 +2,7 @@ package main
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2025 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2026 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/synfinatic/aws-sso-cli/internal/time"
+	"github.com/synfinatic/aws-sso-cli/internal/timeutils"
 )
 
 type TimeCmd struct{}
@@ -39,11 +39,11 @@ func (cc *TimeCmd) Run(ctx *RunContext) error {
 		return nil // no output if nothing is set
 	}
 
-	t, err := time.ParseTimeString(expires)
+	t, err := timeutils.ParseTimeString(expires)
 	if err != nil {
 		return err
 	}
-	exp, err := time.TimeRemain(t, false)
+	exp, err := timeutils.TimeRemain(t, false)
 	if err != nil {
 		return err
 	}

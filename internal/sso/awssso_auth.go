@@ -2,7 +2,7 @@ package sso
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2025 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2026 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -30,7 +30,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	oidctypes "github.com/aws/aws-sdk-go-v2/service/ssooidc/types"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
-	"github.com/synfinatic/aws-sso-cli/internal/url"
+	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
 
 const (
@@ -69,7 +69,7 @@ func (as *AWSSSO) ValidAuthToken() bool {
 
 // Authenticate retrieves an AWS SSO AccessToken from our cache or by
 // making the necessary AWS SSO calls.
-func (as *AWSSSO) Authenticate(urlAction url.Action, browser string) error {
+func (as *AWSSSO) Authenticate(urlAction uri.Action, browser string) error {
 	log.Trace("Authenticate", "urlAction", urlAction, "browser", browser)
 	// cache urlAction and browser for subsequent calls if necessary
 	// if action is still undefined, use the default action which is defined inside NewHandleUrl()
@@ -119,7 +119,7 @@ func (as *AWSSSO) reauthenticate() error {
 		return fmt.Errorf("unable to get device auth info from AWS SSO: %s", err.Error())
 	}
 
-	urlOpener := url.NewHandleUrl(as.urlAction, auth.VerificationUriComplete, as.browser, as.urlExecCommand)
+	urlOpener := uri.NewHandleUrl(as.urlAction, auth.VerificationUriComplete, as.browser, as.urlExecCommand)
 	urlOpener.ContainerSettings(as.StoreKey(), DEFAULT_AUTH_COLOR, DEFAULT_AUTH_ICON)
 
 	if err = urlOpener.Open(); err != nil {

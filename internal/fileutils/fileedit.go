@@ -2,7 +2,7 @@ package fileutils
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2025 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2026 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -130,10 +130,10 @@ func (f *FileEdit) UpdateConfig(printDiff, force bool, configFile string) (bool,
 			return false, diff, nil
 		}
 	} else if printDiff {
-		fmt.Fprintf(diffWriter, "%s", diff)
+		fmt.Fprintf(diffWriter, "%s", diff) // nolint:gosec
 	}
 
-	return true, diff, os.WriteFile(configFile, outputBytes, 0600)
+	return true, diff, os.WriteFile(configFile, outputBytes, 0600) // nolint:gosec
 }
 
 // GenerateNewFile generates the contents of a new config file

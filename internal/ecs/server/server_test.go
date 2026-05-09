@@ -2,7 +2,7 @@ package server
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2025 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2026 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -188,7 +188,7 @@ func TestServerWithSSL(t *testing.T) {
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://%s/", l.Addr()), nil)
 	assert.NoError(t, err)
 
-	res, err := httpClient.Do(req)
+	res, err := httpClient.Do(req) // nolint:gosec
 	assert.NoError(t, err)
 	// nothing was loaded yet, so 404
 	assert.Equal(t, http.StatusNotFound, res.StatusCode)

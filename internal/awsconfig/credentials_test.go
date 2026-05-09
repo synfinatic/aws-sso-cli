@@ -2,7 +2,7 @@ package awsconfig
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2025 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2026 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -35,14 +35,14 @@ func TestGenProfileCredentials(t *testing.T) {
 
 	// Create example ProfileCredentials
 	creds := []ProfileCredentials{
-		{
+		{ // nolint:gosec
 			Profile:         "first",
 			AccessKeyId:     "AKIAIOSFODNN7EXAMPLE",
 			SecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 			SessionToken:    "AQoDYXdzEJr...<remainder of security token>",
 			Expires:         "2024-06-03 17:56:11 -0700 PDT",
 		},
-		{
+		{ // nolint:gosec
 			Profile:         "second",
 			AccessKeyId:     "AKIAYOMAMMAEXAMPLE",
 			SecretAccessKey: "wJalrXUtnFEMI/YESMAN/bPxRfiCYEXAMPLEKEY",

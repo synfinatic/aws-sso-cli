@@ -2,7 +2,7 @@ package sso
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2025 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2026 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -27,7 +27,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"github.com/synfinatic/aws-sso-cli/internal/url"
+	"github.com/synfinatic/aws-sso-cli/internal/uri"
 	"github.com/synfinatic/flexlog"
 	testlogger "github.com/synfinatic/flexlog/test"
 )
@@ -66,13 +66,13 @@ func (suite *SettingsTestSuite) TestLoadSettings() {
 
 	assert.Equal(t, "", suite.settings.ConfigUrlAction) // deprecated
 	// ensure we upgraded ConfigUrlAction to UrlAction
-	assert.Equal(t, url.OpenUrlContainer, suite.settings.UrlAction)
+	assert.Equal(t, uri.OpenUrlContainer, suite.settings.UrlAction)
 	// ensure we applied UrlAction to ConfigProfilesUrlAction
-	assert.Equal(t, url.ConfigProfilesOpen, suite.settings.ConfigProfilesUrlAction)
+	assert.Equal(t, uri.ConfigProfilesOpen, suite.settings.ConfigProfilesUrlAction)
 
 	// ensure we upgraded FirefoxOpenUrlInContainer
 	assert.False(t, suite.settings.FirefoxOpenUrlInContainer)
-	assert.Equal(t, url.OpenUrlContainer, suite.settings.UrlAction)
+	assert.Equal(t, uri.OpenUrlContainer, suite.settings.UrlAction)
 }
 
 func TestConfigProfilesUrlAction(t *testing.T) {
@@ -81,13 +81,13 @@ func TestConfigProfilesUrlAction(t *testing.T) {
 	settings, err := LoadSettings(settingsFile, TEST_CACHE_FILE, map[string]interface{}{}, OverrideSettings{})
 	assert.NoError(t, err)
 
-	assert.Equal(t, url.ConfigProfilesOpen, settings.ConfigProfilesUrlAction)
+	assert.Equal(t, uri.ConfigProfilesOpen, settings.ConfigProfilesUrlAction)
 
 	settingsFile = "./testdata/settings3.yaml"
 	settings, err = LoadSettings(settingsFile, TEST_CACHE_FILE, map[string]interface{}{}, OverrideSettings{})
 	assert.NoError(t, err)
 
-	assert.Equal(t, url.ConfigProfilesOpenUrlContainer, settings.ConfigProfilesUrlAction)
+	assert.Equal(t, uri.ConfigProfilesOpenUrlContainer, settings.ConfigProfilesUrlAction)
 }
 
 func (suite *SettingsTestSuite) TestGetSelectedSSO() {
@@ -319,8 +319,8 @@ func (suite *SettingsTestSuite) TestValidate() {
 	t := suite.T()
 
 	assert.NoError(t, suite.settings.Validate())
-	suite.settings.UrlAction = url.Exec
-	suite.settings.ConfigProfilesUrlAction = url.ConfigProfilesGrantedContainer
+	suite.settings.UrlAction = uri.Exec
+	suite.settings.ConfigProfilesUrlAction = uri.ConfigProfilesGrantedContainer
 	assert.Error(t, suite.settings.Validate())
 }
 
@@ -379,19 +379,19 @@ func TestApplyDeprecations(t *testing.T) {
 		ListFields:                []string{"Foo", "Bar", "ExpiresStr", "AccountIdStr", "ARN"},
 		ProfileFormat:             "{{ AccountIdStr .AccountId }}:{{ .RoleName }}",
 		FirefoxOpenUrlInContainer: true,
-		ConfigProfilesUrlAction:   url.ConfigProfilesUndef,
-		ConfigUrlAction:           string(url.Exec),
+		ConfigProfilesUrlAction:   uri.ConfigProfilesUndef,
+		ConfigUrlAction:           string(uri.Exec),
 	}
 
 	r := s.applyDeprecations()
 	assert.True(t, r)
 
 	// Upgrade ConfigUrlAction to ConfigProfilesUrlAction
-	assert.Equal(t, string(url.Undef), s.ConfigUrlAction)
-	assert.Equal(t, url.ConfigProfilesExec, s.ConfigProfilesUrlAction)
+	assert.Equal(t, string(uri.Undef), s.ConfigUrlAction)
+	assert.Equal(t, uri.ConfigProfilesExec, s.ConfigProfilesUrlAction)
 
 	// Upgrade FirefoxOpenUrlInContainer to UrlAction
-	assert.Equal(t, url.OpenUrlContainer, s.UrlAction)
+	assert.Equal(t, uri.OpenUrlContainer, s.UrlAction)
 	assert.Equal(t, false, s.FirefoxOpenUrlInContainer)
 
 	// ExpiresStr => Expires, etc

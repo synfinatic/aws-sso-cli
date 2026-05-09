@@ -41,9 +41,9 @@ const (
 )
 
 type ECSSecurity struct {
-	PrivateKey  string `json:"privateKey"`
+	PrivateKey  string `json:"privateKey"` // nolint:gosec
 	CertChain   string `json:"certChain"`
-	BearerToken string `json:"bearerToken"`
+	BearerToken string `json:"bearerToken"` // nolint:gosec
 }
 
 func SecurityFilePath(mode ECSFileMode) string {

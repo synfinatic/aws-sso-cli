@@ -2,7 +2,7 @@ package awsconfig
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2025 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2026 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -203,7 +203,7 @@ func TestUpdateAwsConfig(t *testing.T) {
 	err = UpdateAwsConfig("Default", s, fname, false, true)
 	assert.NoError(t, err)
 
-	cfile, err = os.Open(fname)
+	cfile, err = os.Open(fname) // nolint:gosec
 	assert.NoError(t, err)
 
 	buf := make([]byte, 1024*1024)

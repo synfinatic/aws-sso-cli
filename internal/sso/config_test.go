@@ -2,7 +2,7 @@ package sso
 
 /*
  * AWS SSO CLI
- * Copyright (c) 2021-2025 Aaron Turner  <synfinatic at gmail dot com>
+ * Copyright (c) 2021-2026 Aaron Turner  <synfinatic at gmail dot com>
  *
  * This program is free software: you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/synfinatic/aws-sso-cli/internal/url"
+	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
 
 func TestGetRoleMatches(t *testing.T) {
@@ -85,7 +85,7 @@ func TestGetRoleMatches(t *testing.T) {
 func TestRefresh(t *testing.T) {
 	settings := &Settings{
 		ProfileFormat: "{{ .AccountIdPad }}:{{ .RoleName }}",
-		UrlAction:     url.Open,
+		UrlAction:     uri.Open,
 		MaxBackoff:    60,
 		MaxRetry:      3,
 	}
@@ -109,7 +109,7 @@ func TestRefresh(t *testing.T) {
 	c.Refresh(settings) // no crash
 	assert.Equal(t, SSOAccount{config: c}, *(c.Accounts["123456789012"]))
 
-	assert.Equal(t, c.AuthUrlAction, url.Open)
+	assert.Equal(t, c.AuthUrlAction, uri.Open)
 	assert.Equal(t, c.MaxBackoff, 60)
 	assert.Equal(t, c.MaxRetry, 3)
 	assert.Equal(t, c.settings, settings)
