@@ -20,15 +20,13 @@ package sso
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sso"
-	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
-	oidctypes "github.com/aws/aws-sdk-go-v2/service/ssooidc/types"
+	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
@@ -150,6 +148,7 @@ const (
 // RegisterClientData for later steps and saves it to our secret store
 func (as *AWSSSO) registerClient(force bool) error {
 	log.Trace("registerClient()")
+	oidcClient := oidc.NewAWSWithAPI(as.ssooidc)
 	if !force {
 		log.Trace("Checking cache for RegisterClientData", "storeKey", as.StoreKey())
 		err := as.store.GetRegisterClientData(as.StoreKey(), &as.ClientData)
@@ -159,28 +158,20 @@ func (as *AWSSSO) registerClient(force bool) error {
 		}
 	}
 
-	input := ssooidc.RegisterClientInput{
-		ClientName: aws.String(as.ClientName),
-		ClientType: aws.String(as.ClientType),
+	log.Trace("Registering new client with AWS SSO", "ClientName", as.ClientName, "ClientType", as.ClientType)
+	resp, err := oidcClient.RegisterClient(context.TODO(), oidc.RegisterClientInput{
+		ClientName: as.ClientName,
+		ClientType: as.ClientType,
 		// docs say this is optional, but it's required?
 		GrantTypes: []string{"refresh_token"},
 		Scopes:     nil,
-	}
-	log.Trace("Registering new client with AWS SSO", "ClientName", as.ClientName, "ClientType", as.ClientType)
-	resp, err := as.ssooidc.RegisterClient(context.TODO(), &input)
+	})
 	if err != nil {
-		return fmt.Errorf("registerClient: %s", err.Error())
+		return err
 	}
-	log.Trace("Registered new client with AWS SSO", "ClientId", aws.ToString(resp.ClientId), "ClientSecretExpiresAt", resp.ClientSecretExpiresAt)
+	log.Trace("Registered new client with AWS SSO", "ClientId", resp.ClientId, "ClientSecretExpiresAt", resp.ClientSecretExpiresAt)
 
-	as.ClientData = storage.RegisterClientData{
-		AuthorizationEndpoint: aws.ToString(resp.AuthorizationEndpoint), // not used?
-		ClientId:              aws.ToString(resp.ClientId),
-		ClientSecret:          aws.ToString(resp.ClientSecret),
-		ClientIdIssuedAt:      resp.ClientIdIssuedAt,
-		ClientSecretExpiresAt: resp.ClientSecretExpiresAt,
-		TokenEndpoint:         aws.ToString(resp.TokenEndpoint), // not used?
-	}
+	as.ClientData = resp
 	log.Trace("SaveRegisterClientData start", "storeKey", as.StoreKey())
 	err = as.store.SaveRegisterClientData(as.StoreKey(), as.ClientData)
 	if err != nil {
@@ -194,24 +185,17 @@ func (as *AWSSSO) registerClient(force bool) error {
 // to the SSO provider.
 func (as *AWSSSO) startDeviceAuthorization() error {
 	log.Trace("startDeviceAuthorization()", "storeKey", as.StoreKey())
-	input := ssooidc.StartDeviceAuthorizationInput{
-		StartUrl:     aws.String(as.StartUrl),
-		ClientId:     aws.String(as.ClientData.ClientId),
-		ClientSecret: aws.String(as.ClientData.ClientSecret),
-	}
-	resp, err := as.ssooidc.StartDeviceAuthorization(context.TODO(), &input)
+	oidcClient := oidc.NewAWSWithAPI(as.ssooidc)
+	resp, err := oidcClient.StartDeviceAuthorization(context.TODO(), oidc.StartDeviceAuthorizationInput{
+		StartURL:     as.StartUrl,
+		ClientID:     as.ClientData.ClientId,
+		ClientSecret: as.ClientData.ClientSecret,
+	})
 	if err != nil {
 		return err
 	}
 
-	as.DeviceAuth = storage.StartDeviceAuthData{
-		DeviceCode:              aws.ToString(resp.DeviceCode),
-		UserCode:                aws.ToString(resp.UserCode),
-		VerificationUri:         aws.ToString(resp.VerificationUri),
-		VerificationUriComplete: aws.ToString(resp.VerificationUriComplete),
-		ExpiresIn:               resp.ExpiresIn,
-		Interval:                resp.Interval,
-	}
+	as.DeviceAuth = resp
 	log.Debug("Created OIDC device code", "storeKey", as.StoreKey(), "expires", as.DeviceAuth.ExpiresIn)
 
 	fmt.Fprintf(os.Stderr, VERIFY_MSG, as.DeviceAuth.UserCode)
@@ -244,54 +228,29 @@ func (as *AWSSSO) getDeviceAuthInfo() (DeviceAuthInfo, error) {
 // to our secret store
 func (as *AWSSSO) createToken() error {
 	log.Trace("createToken()")
-	input := ssooidc.CreateTokenInput{
-		ClientId:     aws.String(as.ClientData.ClientId),
-		ClientSecret: aws.String(as.ClientData.ClientSecret),
-		DeviceCode:   aws.String(as.DeviceAuth.DeviceCode),
-		GrantType:    aws.String(awsSSOGrantType),
-		// RefreshToken is not supported by AWS
-	}
-
-	// figure out our timings
+	oidcClient := oidc.NewAWSWithAPI(as.ssooidc)
 	var slowDown = SLOW_DOWN_SEC * time.Second
 	var retryInterval = RETRY_INTERVAL * time.Second
 	if as.DeviceAuth.Interval > 0 {
 		retryInterval = time.Duration(as.DeviceAuth.Interval) * time.Second
 	}
 
-	var err error
-	var resp *ssooidc.CreateTokenOutput
-
-	for {
-		resp, err = as.ssooidc.CreateToken(context.TODO(), &input)
-		if err == nil {
-			break
-		}
-
-		var sde *oidctypes.SlowDownException
-		var ape *oidctypes.AuthorizationPendingException
-
-		if errors.As(err, &sde) {
-			log.Debug("Slowing down CreateToken()")
-			retryInterval += slowDown
-			time.Sleep(retryInterval)
-		} else if errors.As(err, &ape) {
-			time.Sleep(retryInterval)
-		} else {
-			return fmt.Errorf("createToken: %s", err.Error())
-		}
+	token, err := oidcClient.PollDeviceCodeToken(context.TODO(), oidc.PollDeviceCodeTokenInput{
+		CreateTokenInput: oidc.CreateTokenInput{
+			ClientID:     as.ClientData.ClientId,
+			ClientSecret: as.ClientData.ClientSecret,
+			DeviceCode:   as.DeviceAuth.DeviceCode,
+			GrantType:    awsSSOGrantType,
+		},
+		RetryInterval: retryInterval,
+		SlowDown:      slowDown,
+	})
+	if err != nil {
+		return err
 	}
 
-	secs, _ := time.ParseDuration(fmt.Sprintf("%ds", resp.ExpiresIn)) // seconds
 	as.tokenLock.Lock()
-	as.Token = storage.CreateTokenResponse{
-		AccessToken:  aws.ToString(resp.AccessToken),
-		ExpiresIn:    resp.ExpiresIn,
-		ExpiresAt:    time.Now().Add(secs).Unix(),
-		IdToken:      aws.ToString(resp.IdToken),      // per AWS docs, this may be undefined
-		RefreshToken: aws.ToString(resp.RefreshToken), // per AWS docs, not currently implemented
-		TokenType:    aws.ToString(resp.TokenType),
-	}
+	as.Token = token
 	as.tokenLock.Unlock()
 	as.tokenLock.RLock()
 	err = as.store.SaveCreateTokenResponse(as.StoreKey(), as.Token)
