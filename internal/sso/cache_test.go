@@ -68,7 +68,7 @@ func TestCacheTestSuite(t *testing.T) {
 	input, err := os.ReadFile(TEST_CACHE_FILE)
 	assert.NoError(t, err)
 
-	err = os.WriteFile(f.Name(), input, 0600)
+	err = os.WriteFile(f.Name(), input, 0600) // nolint:gosec
 	assert.NoError(t, err)
 
 	c, err := OpenCache(f.Name(), settings)

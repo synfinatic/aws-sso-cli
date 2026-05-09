@@ -123,7 +123,7 @@ func (suite *KeyringSuite) TestCreateTokenResponse() {
 func (suite *KeyringSuite) TestRoleCredentials() {
 	t := suite.T()
 
-	rc := RoleCredentials{
+	rc := RoleCredentials{ // nolint:gosec
 		RoleName:        "MyRole",
 		AccountId:       234566767,
 		AccessKeyId:     "some not-so-secret-string",
@@ -354,7 +354,7 @@ func (suite *KeyringSuite) TestStaticCredentials() {
 	t := suite.T()
 
 	arn := "arn:aws:iam::123456789012:role/foobar"
-	cr := StaticCredentials{
+	cr := StaticCredentials{ // nolint:gosec
 		UserName:        "foobar",
 		AccountId:       123456789012,
 		AccessKeyId:     "not a real access key id",
@@ -524,7 +524,7 @@ func TestSplitCredentials(t *testing.T) {
 	store, err := OpenKeyring(c)
 	assert.NoError(t, err)
 
-	rc := RoleCredentials{
+	rc := RoleCredentials{ // nolint:gosec
 		RoleName:        "MyRole",
 		AccountId:       234566767,
 		AccessKeyId:     "some not-so-secret-string",

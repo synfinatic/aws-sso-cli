@@ -64,7 +64,7 @@ func TestFileEdit(t *testing.T) {
 
 	prefix := fmt.Sprintf("%s_%s", CONFIG_PREFIX, "test")
 	suffix := fmt.Sprintf("%s_%s", CONFIG_SUFFIX, "test")
-	fBytes, err := os.ReadFile(tfile.Name())
+	fBytes, err := os.ReadFile(tfile.Name()) // nolint:gosec
 	assert.NoError(t, err)
 	assert.Equal(t, []byte(fmt.Sprintf(FILE_TEMPLATE, prefix, "foo", suffix)), fBytes)
 
@@ -91,7 +91,7 @@ func TestFileEdit(t *testing.T) {
 	assert.Error(t, err)
 
 	// check the empty diff code path
-	tfile2, err := os.Open(tfile.Name())
+	tfile2, err := os.Open(tfile.Name()) // nolint:gosec
 	assert.NoError(t, err)
 	changed, _, err = fe.UpdateConfig(false, true, tfile2.Name())
 	assert.NoError(t, err)
@@ -139,7 +139,7 @@ func TestFileEditNoChange(t *testing.T) {
 	changed, _, err = fe.UpdateConfig(false, true, tfile.Name())
 	assert.NoError(t, err)
 	assert.True(t, changed)
-	fileBytes, err := os.ReadFile(tfile.Name())
+	fileBytes, err := os.ReadFile(tfile.Name()) // nolint:gosec
 	assert.NoError(t, err)
 	assert.Contains(t, string(fileBytes), "# BEGIN_AWS_SSO_CLI_test\n")
 	assert.Contains(t, string(fileBytes), "foo\n")
@@ -153,7 +153,7 @@ func TestFileEditNoChange(t *testing.T) {
 	changed, _, err = fe.UpdateConfig(false, true, tfile.Name())
 	assert.NoError(t, err)
 	assert.True(t, changed)
-	fileBytes, err = os.ReadFile(tfile.Name())
+	fileBytes, err = os.ReadFile(tfile.Name()) // nolint:gosec
 	assert.NoError(t, err)
 	assert.Contains(t, string(fileBytes), "# BEGIN_AWS_SSO_CLI_test\n")
 	assert.Contains(t, string(fileBytes), "cow\n")
@@ -167,7 +167,7 @@ func TestFileEditNoChange(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, diff)
 	assert.True(t, changed)
-	fileBytes, err = os.ReadFile(tfile.Name())
+	fileBytes, err = os.ReadFile(tfile.Name()) // nolint:gosec
 	assert.NoError(t, err)
 	assert.NotContains(t, string(fileBytes), "# BEGIN_AWS_SSO_CLI_test\n")
 	assert.NotContains(t, string(fileBytes), "cow\n")
@@ -241,7 +241,7 @@ func TestDefaultFileEdit(t *testing.T) {
 	assert.NotEmpty(t, output)
 	tfile.Close()
 
-	fBytes, err := os.ReadFile(tfile.Name())
+	fBytes, err := os.ReadFile(tfile.Name()) // nolint:gosec
 	assert.NoError(t, err)
 	assert.Equal(t, []byte(fmt.Sprintf(FILE_TEMPLATE, CONFIG_PREFIX, "foo", CONFIG_SUFFIX)), fBytes)
 }
@@ -274,7 +274,7 @@ func TestPrompter(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, changed)
 
-	fBytes, err := os.ReadFile(tfile.Name())
+	fBytes, err := os.ReadFile(tfile.Name()) // nolint:gosec
 	assert.NoError(t, err)
 	assert.Empty(t, fBytes)
 
@@ -286,7 +286,7 @@ func TestPrompter(t *testing.T) {
 	_, _, err = fe.UpdateConfig(false, false, tfile.Name())
 	assert.NoError(t, err)
 
-	fBytes, err = os.ReadFile(tfile.Name())
+	fBytes, err = os.ReadFile(tfile.Name()) // nolint:gosec
 	assert.NoError(t, err)
 	assert.Equal(t, []byte(
 		fmt.Sprintf(FILE_TEMPLATE, CONFIG_PREFIX, "foo", CONFIG_SUFFIX)), fBytes)

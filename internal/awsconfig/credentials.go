@@ -40,7 +40,7 @@ type ProfileCredentials struct {
 	Profile         string
 	AccessKeyId     string
 	SecretAccessKey string
-	SessionToken    string
+	SessionToken    string // nolint:gosec
 	Expires         string
 }
 

@@ -91,7 +91,7 @@ func submitRequest(t *testing.T, url string, cr ecs.ECSClientRequest) (*http.Res
 
 	req.Header.Set("Content-Type", ecs.CHARSET_JSON)
 	client := &http.Client{}
-	return client.Do(req)
+	return client.Do(req) // nolint:gosec
 }
 
 func TestDefaultPut(t *testing.T) {
@@ -159,13 +159,13 @@ func TestDefaultDelete(t *testing.T) {
 
 	req.Header.Set("Content-Type", ecs.CHARSET_JSON)
 	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) // nolint:gosec
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "", dh.ecs.DefaultCreds.ProfileName)
 
 	// can't delete again
-	resp, err = client.Do(req)
+	resp, err = client.Do(req) // nolint:gosec
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }

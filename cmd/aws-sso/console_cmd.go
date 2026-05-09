@@ -56,7 +56,7 @@ type ConsoleCmd struct {
 
 	AccessKeyId     string `kong:"env='AWS_ACCESS_KEY_ID',hidden"`
 	SecretAccessKey string `kong:"env='AWS_SECRET_ACCESS_KEY',hidden"`
-	SessionToken    string `kong:"env='AWS_SESSION_TOKEN',hidden"`
+	SessionToken    string `kong:"env='AWS_SESSION_TOKEN',hidden"` // nolint:gosec
 	AwsProfile      string `kong:"env='AWS_PROFILE',hidden"`
 }
 
@@ -356,8 +356,8 @@ func (stup *SigninTokenUrlParams) GetUrl(roleChaining bool) string {
 
 type SessionUrlParams struct {
 	AccessKeyId     string `json:"sessionId"`
-	SecretAccessKey string `json:"sessionKey"`
-	SessionToken    string `json:"sessionToken"`
+	SecretAccessKey string `json:"sessionKey"`   // nolint:gosec
+	SessionToken    string `json:"sessionToken"` // nolint:gosec
 }
 
 func (sup *SessionUrlParams) Encode() string {

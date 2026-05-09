@@ -86,7 +86,7 @@ func OpenCache(f string, s *Settings) (*Cache, error) {
 	var err error
 	var cacheBytes []byte
 	if f != "" {
-		cacheBytes, err = os.ReadFile(f)
+		cacheBytes, err = os.ReadFile(f) // nolint:gosec
 		if err != nil {
 			return &cache, err // return empty struct
 		}

@@ -42,7 +42,7 @@ type RegisterClientData struct {
 	AuthorizationEndpoint string `json:"authorizationEndpoint,omitempty"`
 	ClientId              string `json:"clientId"`
 	ClientIdIssuedAt      int64  `json:"clientIdIssuedAt"`
-	ClientSecret          string `json:"clientSecret"`
+	ClientSecret          string `json:"clientSecret"` // nolint:gosec
 	ClientSecretExpiresAt int64  `json:"clientSecretExpiresAt"`
 	TokenEndpoint         string `json:"tokenEndpoint,omitempty"`
 }
@@ -63,11 +63,12 @@ type StartDeviceAuthData struct {
 }
 
 type CreateTokenResponse struct {
-	AccessToken  string `json:"accessToken"` // should be cached to issue new creds
+	// should be cached to issue new creds
+	AccessToken  string `json:"accessToken"` // nolint:gosec
 	ExpiresIn    int32  `json:"expiresIn"`   // number of seconds it expires in (from AWS)
 	ExpiresAt    int64  `json:"expiresAt"`   // Unix time when it expires
 	IdToken      string `json:"IdToken"`
-	RefreshToken string `json:"RefreshToken"`
+	RefreshToken string `json:"RefreshToken"` // nolint:gosec
 	TokenType    string `json:"tokenType"`
 }
 
@@ -82,7 +83,7 @@ type RoleCredentials struct { // Cache
 	AccountId       int64  `json:"accountId"`
 	AccessKeyId     string `json:"accessKeyId"`
 	SecretAccessKey string `json:"secretAccessKey"`
-	SessionToken    string `json:"sessionToken"`
+	SessionToken    string `json:"sessionToken"` // nolint:gosec
 	Expiration      int64  `json:"expiration"`   // not in seconds, but millisec
 	RoleChaining    bool   `json:"roleChaining"` // true if we used AssumeRole to get these creds
 }
