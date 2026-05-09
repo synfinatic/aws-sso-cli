@@ -38,7 +38,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
-	"github.com/synfinatic/aws-sso-cli/internal/url"
+	"github.com/synfinatic/aws-sso-cli/internal/uri"
 	"github.com/synfinatic/gotable"
 )
 
@@ -76,7 +76,7 @@ type AWSSSO struct {
 	Roles            map[string][]RoleInfo       `json:"Roles"` // key is AccountId
 	rolesLock        sync.RWMutex                // lock for our Roles
 	SSOConfig        *SSOConfig                  `json:"SSOConfig"`
-	urlAction        url.Action                  // cache for future calls
+	urlAction        uri.Action                  // cache for future calls
 	browser          string                      // cache for future calls
 	urlExecCommand   []string                    // cache for future calls
 	authenticateLock sync.RWMutex                // lock for reauthenticate()

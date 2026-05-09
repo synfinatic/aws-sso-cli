@@ -27,7 +27,7 @@ import (
 
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/tags"
-	"github.com/synfinatic/aws-sso-cli/internal/url"
+	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
 
 type SSOConfig struct {
@@ -39,7 +39,7 @@ type SSOConfig struct {
 	DefaultRegion string                 `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
 
 	// overrides for this SSO Instance
-	AuthUrlAction url.Action `koanf:"AuthUrlAction" yaml:"AuthUrlAction,omitempty"`
+	AuthUrlAction uri.Action `koanf:"AuthUrlAction" yaml:"AuthUrlAction,omitempty"`
 
 	// passed to AWSSSO from our Settings
 	MaxBackoff int `koanf:"-" yaml:"-"`
@@ -71,7 +71,7 @@ func (c *SSOConfig) Refresh(s *Settings) {
 	c.MaxBackoff = s.MaxBackoff
 	c.MaxRetry = s.MaxRetry
 
-	if c.AuthUrlAction == url.Undef {
+	if c.AuthUrlAction == uri.Undef {
 		c.AuthUrlAction = s.UrlAction
 	}
 

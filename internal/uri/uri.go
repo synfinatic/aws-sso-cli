@@ -1,4 +1,4 @@
-package url
+package uri
 
 /*
  * AWS SSO CLI

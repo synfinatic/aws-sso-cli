@@ -31,7 +31,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/tags"
-	tparse "github.com/synfinatic/aws-sso-cli/internal/time"
+	tparse "github.com/synfinatic/aws-sso-cli/internal/timeutils"
 	"github.com/synfinatic/gotable"
 )
 
