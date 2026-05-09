@@ -75,7 +75,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.30.1
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1
 	github.com/danjacques/gofslock v0.0.0-20240212154529-d899e02bfe22
-	github.com/docker/go-connections v0.7.0
 	github.com/jpillora/backoff v1.0.0
 	golang.org/x/net v0.39.0
 )
@@ -83,6 +82,7 @@ require (
 require (
 	github.com/containerd/errdefs v1.0.0 // indirect
 	github.com/containerd/errdefs/pkg v0.3.0 // indirect
+	github.com/docker/go-connections v0.7.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 )
 

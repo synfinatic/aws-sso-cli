@@ -58,7 +58,7 @@ func (e EcsDockerStartCmd) AfterApply(runCtx *RunContext) error {
 
 func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 	// Start the ECS Server in a Docker container
-	cli, err := client.NewClientWithOpts(client.FromEnv)
+	cli, err := client.New(client.FromEnv)
 	if err != nil {
 		return err
 	}
@@ -172,7 +172,7 @@ func (e EcsDockerStopCmd) AfterApply(runCtx *RunContext) error {
 
 func (cc *EcsDockerStopCmd) Run(ctx *RunContext) error {
 	// Stop the ECS Server in a Docker container
-	cli, err := client.NewClientWithOpts(client.FromEnv)
+	cli, err := client.New(client.FromEnv)
 	if err != nil {
 		return err
 	}
