@@ -45,6 +45,27 @@ the user, it becomes easier to identify when browser prompts are legitimately fo
 Users wishing to utilize the previous auto-login mechanisim can use then [AutoLogin](config.md#autologin)
 configuration option.
 
+### Should I use `AuthWorkflow: device_code` or `AuthWorkflow: pkce`?
+
+Most users should start with `AuthWorkflow: device_code` because it is the
+default and usually provides the smoothest experience. `aws-sso` opens the
+verification page in your browser and then waits for AWS Identity Center to
+finish the approval.
+
+`AuthWorkflow: pkce` uses the OAuth 2.0 `authorization_code` flow with PKCE.
+This can be useful if your environment prefers or requires a browser-based auth
+code flow, but there is currently one extra manual step: after authentication,
+you must paste the final callback URL back into the terminal so `aws-sso` can
+validate the returned `state` and exchange the code for tokens.
+
+As a rule of thumb:
+
+1. Use `device_code` if you want the simplest login flow.
+1. Use `pkce` if you specifically want an authorization code + PKCE workflow.
+1. If you are not sure, use `device_code` first.
+
+See [AuthWorkflow](config.md#authworkflow) for configuration examples.
+
 ---
 
 ## Advanced Features
@@ -166,6 +187,11 @@ You will also most likely need to set `UrlAction: print` since you will find it
 difficult to automatically open the browser.  This has the additional downside that
 you will have an independant SecureStore storing all the credentials which can be
 annoying if you're dealing with many remote hosts.
+
+If you are using `AuthWorkflow: pkce`, remote hosts are a bit more cumbersome
+because you also need to copy and paste the final callback URL back into the
+remote terminal after authenticating in your browser. For most remote-host use
+cases, `AuthWorkflow: device_code` is the easier option.
 
 The alternative is to run the [ECS Server](ecs-server.md) locally and then
 use [ssh port forwarding](remote-ssh.md) to make all the IAM credentials stored

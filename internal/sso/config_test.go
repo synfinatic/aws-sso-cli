@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
 
@@ -110,9 +111,14 @@ func TestRefresh(t *testing.T) {
 	assert.Equal(t, SSOAccount{config: c}, *(c.Accounts["123456789012"]))
 
 	assert.Equal(t, c.AuthUrlAction, uri.Open)
+	assert.Equal(t, oidc.AuthWorkflowDeviceCode, c.AuthWorkflow)
 	assert.Equal(t, c.MaxBackoff, 60)
 	assert.Equal(t, c.MaxRetry, 3)
 	assert.Equal(t, c.settings, settings)
+
+	c.AuthWorkflow = oidc.AuthWorkflowPKCE
+	c.Refresh(settings)
+	assert.Equal(t, oidc.AuthWorkflowPKCE, c.AuthWorkflow)
 
 	c.Accounts["123456789012"].Roles = map[string]*SSORole{}
 	c.Accounts["123456789012"].Roles["FooBar"] = nil

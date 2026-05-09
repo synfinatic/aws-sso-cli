@@ -20,61 +20,13 @@ package oidc
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
-	oidctypes "github.com/aws/aws-sdk-go-v2/service/ssooidc/types"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
-
-// API is the low-level AWS SSO OIDC client surface used by this package.
-type API interface {
-	RegisterClient(context.Context, *ssooidc.RegisterClientInput, ...func(*ssooidc.Options)) (*ssooidc.RegisterClientOutput, error)
-	StartDeviceAuthorization(context.Context, *ssooidc.StartDeviceAuthorizationInput, ...func(*ssooidc.Options)) (*ssooidc.StartDeviceAuthorizationOutput, error)
-	CreateToken(context.Context, *ssooidc.CreateTokenInput, ...func(*ssooidc.Options)) (*ssooidc.CreateTokenOutput, error)
-}
-
-// Client is the higher-level OIDC interface consumed by the sso package.
-// It intentionally supports generic token creation input so additional
-// workflows (for example PKCE authorization_code) can be added incrementally.
-type Client interface {
-	RegisterClient(context.Context, RegisterClientInput) (storage.RegisterClientData, error)
-	StartDeviceAuthorization(context.Context, StartDeviceAuthorizationInput) (storage.StartDeviceAuthData, error)
-	CreateToken(context.Context, CreateTokenInput) (storage.CreateTokenResponse, error)
-	PollDeviceCodeToken(context.Context, PollDeviceCodeTokenInput) (storage.CreateTokenResponse, error)
-}
-
-type RegisterClientInput struct {
-	ClientName string
-	ClientType string
-	GrantTypes []string
-	Scopes     []string
-}
-
-type StartDeviceAuthorizationInput struct {
-	StartURL     string
-	ClientID     string
-	ClientSecret string // nolint:gosec
-}
-
-type CreateTokenInput struct {
-	ClientID     string
-	ClientSecret string // nolint:gosec
-	GrantType    string
-	DeviceCode   string
-	Code         string
-	CodeVerifier string
-	RedirectURI  string
-}
-
-type PollDeviceCodeTokenInput struct {
-	CreateTokenInput
-	RetryInterval time.Duration
-	SlowDown      time.Duration
-}
 
 type AWSClient struct {
 	api API
@@ -113,26 +65,6 @@ func (c *AWSClient) RegisterClient(ctx context.Context, in RegisterClientInput) 
 	}, nil
 }
 
-func (c *AWSClient) StartDeviceAuthorization(ctx context.Context, in StartDeviceAuthorizationInput) (storage.StartDeviceAuthData, error) {
-	out, err := c.api.StartDeviceAuthorization(ctx, &ssooidc.StartDeviceAuthorizationInput{
-		StartUrl:     aws.String(in.StartURL),
-		ClientId:     aws.String(in.ClientID),
-		ClientSecret: aws.String(in.ClientSecret),
-	})
-	if err != nil {
-		return storage.StartDeviceAuthData{}, err
-	}
-
-	return storage.StartDeviceAuthData{
-		DeviceCode:              aws.ToString(out.DeviceCode),
-		UserCode:                aws.ToString(out.UserCode),
-		VerificationUri:         aws.ToString(out.VerificationUri),
-		VerificationUriComplete: aws.ToString(out.VerificationUriComplete),
-		ExpiresIn:               out.ExpiresIn,
-		Interval:                out.Interval,
-	}, nil
-}
-
 func (c *AWSClient) CreateToken(ctx context.Context, in CreateTokenInput) (storage.CreateTokenResponse, error) {
 	out, err := c.api.CreateToken(ctx, &ssooidc.CreateTokenInput{
 		ClientId:     aws.String(in.ClientID),
@@ -156,52 +88,4 @@ func (c *AWSClient) CreateToken(ctx context.Context, in CreateTokenInput) (stora
 		RefreshToken: aws.ToString(out.RefreshToken),
 		TokenType:    aws.ToString(out.TokenType),
 	}, nil
-}
-
-func (c *AWSClient) PollDeviceCodeToken(ctx context.Context, in PollDeviceCodeTokenInput) (storage.CreateTokenResponse, error) {
-	retryInterval := in.RetryInterval
-	if retryInterval <= 0 {
-		retryInterval = 5 * time.Second
-	}
-
-	slowDown := in.SlowDown
-	if slowDown <= 0 {
-		slowDown = 5 * time.Second
-	}
-
-	for {
-		token, err := c.CreateToken(ctx, in.CreateTokenInput)
-		if err == nil {
-			return token, nil
-		}
-
-		var sde *oidctypes.SlowDownException
-		var ape *oidctypes.AuthorizationPendingException
-
-		switch {
-		case errors.As(err, &sde):
-			retryInterval += slowDown
-			if err = sleepWithContext(ctx, retryInterval); err != nil {
-				return storage.CreateTokenResponse{}, err
-			}
-		case errors.As(err, &ape):
-			if err = sleepWithContext(ctx, retryInterval); err != nil {
-				return storage.CreateTokenResponse{}, err
-			}
-		default:
-			return storage.CreateTokenResponse{}, fmt.Errorf("createToken: %w", err)
-		}
-	}
-}
-
-func sleepWithContext(ctx context.Context, d time.Duration) error {
-	t := time.NewTimer(d)
-	defer t.Stop()
-
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-t.C:
-		return nil
-	}
 }

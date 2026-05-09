@@ -27,6 +27,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
 	"github.com/synfinatic/flexlog"
 	testlogger "github.com/synfinatic/flexlog/test"
@@ -319,6 +320,21 @@ func (suite *SettingsTestSuite) TestValidate() {
 	t := suite.T()
 
 	assert.NoError(t, suite.settings.Validate())
+
+	ssoKey := suite.settings.DefaultSSO
+	if _, ok := suite.settings.SSO[ssoKey]; !ok {
+		for k := range suite.settings.SSO {
+			ssoKey = k
+			break
+		}
+	}
+
+	oldWorkflow := suite.settings.SSO[ssoKey].AuthWorkflow
+	suite.settings.SSO[ssoKey].AuthWorkflow = oidc.AuthWorkflow("not-a-workflow")
+	assert.Error(t, suite.settings.Validate())
+	suite.settings.SSO[ssoKey].AuthWorkflow = oldWorkflow
+	assert.NoError(t, suite.settings.Validate())
+
 	suite.settings.UrlAction = uri.Exec
 	suite.settings.ConfigProfilesUrlAction = uri.ConfigProfilesGrantedContainer
 	assert.Error(t, suite.settings.Validate())

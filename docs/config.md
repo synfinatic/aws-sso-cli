@@ -25,6 +25,7 @@ SSOConfig:
         StartUrl: <URL for AWS SSO Portal>
         DefaultRegion: <AWS_DEFAULT_REGION>
         AuthUrlAction: [clip|exec|print|printurl|open|granted-containers|open-url-in-container|ansi-osc52]
+        AuthWorkflow: [device_code|pkce]
         Accounts:  # optional block for specifying tags & overrides
             <AccountId>:
                 Name: <Friendly Name of Account>
@@ -138,6 +139,43 @@ selected (most specific to most generic):
  1. At the AWS Account level:`SSOConfig -> <Name of the AWS SSO> -> Accounts -> <AccountId>`
  1. At the AWS SSO Instance level: `SSOConfig -> <AWS SSO Instance>`
  1. At the config file level (default is `us-east-1`)
+
+### AuthWorkflow
+
+Selects which OIDC authorization workflow is used when authenticating to AWS
+Identity Center for this SSO instance.
+
+Valid values:
+
+* `device_code` -- The default workflow. `aws-sso` opens the verification URL
+        and then waits for the browser approval to complete.
+* `pkce` -- Uses the OAuth 2.0 `authorization_code` flow with PKCE. `aws-sso`
+        opens the authorization URL in your browser and then prompts you to paste
+        the final redirected callback URL back into the terminal so it can validate
+        the returned `state` and exchange the authorization code for tokens.
+
+If `AuthWorkflow` is omitted, `device_code` is used.
+
+Example using the default device code workflow:
+
+```yaml
+SSOConfig:
+    Default:
+        SSORegion: us-east-1
+        StartUrl: https://example.awsapps.com/start
+        AuthWorkflow: device_code
+```
+
+Example using PKCE authorization code:
+
+```yaml
+SSOConfig:
+    Default:
+        SSORegion: us-east-1
+        StartUrl: https://example.awsapps.com/start
+        AuthWorkflow: pkce
+        AuthUrlAction: open
+```
 
 ### Accounts
 
@@ -317,6 +355,12 @@ https://yaml.org/spec/1.2-old/spec.html#id2774228) like `%`.
 `AuthUrlAction` allows you to override the global `UrlAction` when authenticating
 with your SSO provider to retrieve an AWS SSO token.
 
+`AuthWorkflow` controls which OIDC flow is used during authentication. In most
+environments `device_code` is simpler because `aws-sso` can wait for the browser
+approval after opening the verification page. `pkce` is useful when you want a
+browser-based authorization code flow instead, but it currently requires pasting
+the final callback URL back into the terminal.
+
 Examples:
 
 ##### Open URL In Default Browser
@@ -360,11 +404,24 @@ SSOConfig:
     Default:
         SSORegion: us-east-1
         StartUrl: https://example.awsapps.com/start
+        AuthWorkflow: device_code
         AuthUrlAction: open
 UrlAction: open-url-in-container
 UrlExecCommand:
     - /Applications/Firefox.app/Contents/MacOS/firefox
     - "%s"
+```
+
+##### Authenticate Using PKCE Authorization Code
+
+```yaml
+SSOConfig:
+    Default:
+        SSORegion: us-east-1
+        StartUrl: https://example.awsapps.com/start
+        AuthWorkflow: pkce
+        AuthUrlAction: open
+Browser: /Applications/Firefox.app
 ```
 
 ##### Use custom shell script

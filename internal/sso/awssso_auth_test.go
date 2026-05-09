@@ -30,6 +30,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
+	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
@@ -102,6 +103,35 @@ func TestStoreKey(t *testing.T) {
 	}
 
 	assert.Equal(t, "atest", as.StoreKey())
+}
+
+func TestAuthWorkflowSelection(t *testing.T) {
+	as := &AWSSSO{}
+	assert.Equal(t, oidc.AuthWorkflowDeviceCode, as.getAuthWorkflow())
+	assert.Equal(t, []string{"refresh_token"}, as.authGrantTypes())
+
+	as.SSOConfig = &SSOConfig{AuthWorkflow: oidc.AuthWorkflowPKCE}
+	assert.Equal(t, oidc.AuthWorkflowPKCE, as.getAuthWorkflow())
+	assert.Equal(t, []string{"refresh_token", oidc.GrantTypeAuthorizationCode}, as.authGrantTypes())
+}
+
+func TestParsePKCECode(t *testing.T) {
+	as := &AWSSSO{}
+
+	code, err := as.parsePKCECode("http://127.0.0.1:8250/callback?code=abc123&state=ok", "ok")
+	assert.NoError(t, err)
+	assert.Equal(t, "abc123", code)
+
+	_, err = as.parsePKCECode("not-a-url", "ok")
+	assert.Error(t, err)
+
+	_, err = as.parsePKCECode("http://127.0.0.1:8250/callback?code=abc123&state=nope", "ok")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "state mismatch")
+
+	_, err = as.parsePKCECode("http://127.0.0.1:8250/callback?state=ok", "ok")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "missing authorization code")
 }
 
 func TestAuthenticateSteps(t *testing.T) {

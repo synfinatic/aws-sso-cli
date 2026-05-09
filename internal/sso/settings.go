@@ -35,6 +35,7 @@ import (
 	"github.com/knadh/koanf/providers/file"
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
+	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
 
@@ -218,6 +219,12 @@ func (s *Settings) Validate() error {
 	if s.UrlAction.IsContainer() != s.ConfigProfilesUrlAction.IsContainer() {
 		if s.UrlAction == uri.Exec || s.ConfigProfilesUrlAction == uri.ConfigProfilesExec {
 			return fmt.Errorf("must not select `exec` and a Firefox container option")
+		}
+	}
+
+	for key, cfg := range s.SSO {
+		if err := oidc.ValidateAuthWorkflow(cfg.AuthWorkflow); err != nil {
+			return fmt.Errorf("invalid SSOConfig.%s.AuthWorkflow: %w", key, err)
 		}
 	}
 
