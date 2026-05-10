@@ -529,6 +529,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#should-i-use-authworkflow-device_code-or-authworkflow-pkce" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Should I use AuthWorkflow: device_code or AuthWorkflow: pkce?
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1604,6 +1615,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#should-i-use-authworkflow-device_code-or-authworkflow-pkce" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Should I use AuthWorkflow: device_code or AuthWorkflow: pkce?
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2054,6 +2076,18 @@ successfully phish their credentials.  By requiring logging in to be explictly i
 the user, it becomes easier to identify when browser prompts are legitimately for <code>aws-sso</code>.</p>
 <p>Users wishing to utilize the previous auto-login mechanisim can use then <a href="../config/#autologin">AutoLogin</a>
 configuration option.</p>
+<h3 id="should-i-use-authworkflow-device_code-or-authworkflow-pkce">Should I use <code>AuthWorkflow: device_code</code> or <code>AuthWorkflow: pkce</code>?</h3>
+<p>Most users should start with <code>AuthWorkflow: pkce</code> because it is now the
+default. <code>aws-sso</code> opens the authorization URL, starts a temporary loopback
+listener on <code>127.0.0.1</code>, validates the returned <code>state</code>, and exchanges the code
+for tokens automatically.</p>
+<p><code>AuthWorkflow: device_code</code> is <strong>not recommended</strong> — its short verification
+code is not bound to the initiating session, making it vulnerable to
+device code phishing and requires more human involvement.</p>
+<p>However, <code>device_code</code> is the correct choice for remote or headless environments where
+<code>aws-sso</code> does not run on the same machine as the browser, since PKCE relies
+on a loopback redirect that is not reachable in those environments.</p>
+<p>See <a href="../config/#authworkflow">AuthWorkflow</a> for global configuration examples.</p>
 <hr />
 <h2 id="advanced-features">Advanced Features</h2>
 <h3 id="does-aws-sso-cli-support-role-chaining">Does AWS SSO CLI support role chaining?</h3>
@@ -2139,6 +2173,8 @@ You will also most likely need to set <code>UrlAction: print</code> since you wi
 difficult to automatically open the browser.  This has the additional downside that
 you will have an independant SecureStore storing all the credentials which can be
 annoying if you're dealing with many remote hosts.</p>
+<p>Unfortunately, you will need to use <code>AuthWorkflow: device_code</code> as <code>pkce</code>
+does not work due to the need to dynamically forward ports.</p>
 <p>The alternative is to run the <a href="../ecs-server/">ECS Server</a> locally and then
 use <a href="../remote-ssh/">ssh port forwarding</a> to make all the IAM credentials stored
 in the ECS Server which can then be available to any remote host you login to.</p>

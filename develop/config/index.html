@@ -463,6 +463,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#authworkflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AuthWorkflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#accounts" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -691,6 +702,28 @@
     <span class="md-ellipsis">
       
         Open URL in Firefox Container
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#authenticate-using-pkce-authorization-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authenticate Using PKCE Authorization Code
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#authenticate-using-device-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authenticate Using Device Code
       
     </span>
   </a>
@@ -1673,6 +1706,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#authworkflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AuthWorkflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#accounts" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1901,6 +1945,28 @@
     <span class="md-ellipsis">
       
         Open URL in Firefox Container
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#authenticate-using-pkce-authorization-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authenticate Using PKCE Authorization Code
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#authenticate-using-device-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authenticate Using Device Code
       
     </span>
   </a>
@@ -2219,6 +2285,7 @@ Afterwords, you can edit the file and adjust the settings as desired or run
 
 # See description below for these options
 DefaultRegion: &lt;AWS_DEFAULT_REGION&gt;
+AuthWorkflow: [device_code|pkce]
 DefaultSSO: &lt;name of AWS SSO&gt;
 CacheRefresh: &lt;hours&gt;
 AutoConfigCheck: [false|true]
@@ -2301,6 +2368,22 @@ selected (most specific to most generic):</p>
 <li>At the AWS SSO Instance level: <code>SSOConfig -&gt; &lt;AWS SSO Instance&gt;</code></li>
 <li>At the config file level (default is <code>us-east-1</code>)</li>
 </ol>
+<h3 id="authworkflow">AuthWorkflow</h3>
+<p>Selects which OIDC authorization workflow is used when authenticating to AWS
+Identity Center. This is a global setting and applies to all configured SSO
+instances.</p>
+<p>Valid values:</p>
+<ul>
+<li><code>device_code</code> -- Opens the verification URL and then waits for the browser
+    approval to complete. User must validate the codes match.</li>
+<li><code>pkce</code> -- Uses the OAuth 2.0 <code>authorization_code</code> flow with PKCE. <code>aws-sso</code>
+        opens the authorization URL in your browser, starts a temporary loopback
+        callback listener on <code>127.0.0.1</code>, validates the returned <code>state</code>, and then
+        exchanges the authorization code for tokens automatically. <strong>PKCE requires
+        that <code>aws-sso</code> is running on the same machine as the browser.</strong> It is not
+        supported on remote/headless hosts; use <code>device_code</code> in those environments.</li>
+</ul>
+<p>If <code>AuthWorkflow</code> is omitted, <code>pkce</code> is used.</p>
 <h3 id="accounts">Accounts</h3>
 <p>The <code>Accounts</code> block is completely optional!  The only purpose of this block
 is to allow you to add additional tags (key/value pairs) to your accounts/roles
@@ -2431,6 +2514,11 @@ Only one instance of <code>%s</code> is allowed.  Note that YAML requires quotes
 strings which start with a <a href="https://yaml.org/spec/1.2-old/spec.html#id2774228">reserved indicator</a> like <code>%</code>.</p>
 <p><code>AuthUrlAction</code> allows you to override the global <code>UrlAction</code> when authenticating
 with your SSO provider to retrieve an AWS SSO token.</p>
+<p><code>AuthWorkflow</code> controls which OIDC flow is used during authentication for all
+configured SSO instances. By default <code>aws-sso</code> uses <code>pkce</code>, which works best
+when the browser can reach a temporary loopback callback listener on the same
+machine. <code>device_code</code> remains available when you prefer the verification-code
+flow or need something that is easier to use across remote sessions.</p>
 <p>Examples:</p>
 <h5 id="open-url-in-default-browser">Open URL In Default Browser</h5>
 <pre><code class="language-yaml">UrlAction: open
@@ -2456,7 +2544,8 @@ UrlExecCommand:
 <p><strong>Note:</strong> If you do not want your SSO Login page to be opened in a container,
 use the <a href="#authurlaction--browser--urlaction--urlexeccommand">AuthUrlAction</a>
 option to specify a different action:</p>
-<pre><code class="language-yaml">SSOConfig:
+<pre><code class="language-yaml">AuthWorkflow: pkce
+SSOConfig:
     Default:
         SSORegion: us-east-1
         StartUrl: https://example.awsapps.com/start
@@ -2465,6 +2554,25 @@ UrlAction: open-url-in-container
 UrlExecCommand:
     - /Applications/Firefox.app/Contents/MacOS/firefox
     - &quot;%s&quot;
+</code></pre>
+<h5 id="authenticate-using-pkce-authorization-code">Authenticate Using PKCE Authorization Code</h5>
+<p>This is the default workflow. It works best when the browser and <code>aws-sso</code> are
+running on the same machine, so the browser can reach the temporary loopback
+callback listener.</p>
+<pre><code class="language-yaml">AuthWorkflow: pkce
+SSOConfig:
+    Default:
+        SSORegion: us-east-1
+        StartUrl: https://example.awsapps.com/start
+        AuthUrlAction: open
+Browser: /Applications/Firefox.app
+</code></pre>
+<h5 id="authenticate-using-device-code">Authenticate Using Device Code</h5>
+<pre><code class="language-yaml">AuthWorkflow: device_code
+SSOConfig:
+    Default:
+        SSORegion: us-east-1
+        StartUrl: https://example.awsapps.com/start
 </code></pre>
 <h5 id="use-custom-shell-script">Use custom shell script</h5>
 <pre><code class="language-yaml">UrlAction: exec
