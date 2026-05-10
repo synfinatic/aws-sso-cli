@@ -6,6 +6,11 @@
 ### New Features
 
 * Add support for `AuthWorkflow` and PKCE authorization_code workflow (default) #1233
+* Add support for AWS European Sovereign Cloud (EUSC) #1309
+
+### Bugs
+
+* Unique profile name vailation now honors SSO instance #1306
 
 ## [v2.1.0] - 2025-09-03
 
