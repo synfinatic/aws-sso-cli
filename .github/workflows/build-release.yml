@@ -8,9 +8,6 @@ on:
   release:
     types: [created]
 
-env:
-  GO_VERSION: '${{ vars.GO_VERSION }}'
-
 jobs:
   # most binaries can be built on linux machine which is the most cost-efficient on GitHub actions
   # for building darwin-arm64 binary we need Xcode, therefore, we need to build it on MacOS
@@ -25,7 +22,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v6
         with:
-          go-version: '${{ vars.GO_VERSION }}'
+          go-version-file: 'go.mod'
 
       - name: Run Makefile
         run: |
@@ -53,7 +50,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v6
         with:
-          go-version: '${{ vars.GO_VERSION }}'
+          go-version-file: 'go.mod'
 
       - name: Run Makefile
         run: |
