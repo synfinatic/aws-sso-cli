@@ -79,7 +79,8 @@ func TestGetProfileMap(t *testing.T) {
 	p = *profiles
 	assert.Equal(t, 0, len(p))
 
-	// now fail
+	// Profiles from a different SSO with the same name should not cause
+	// a duplicate error, since UniqueCheck only checks the requested SSO
 	s.Cache.SSO["Other"] = &sso.SSOCache{
 		Roles: &sso.Roles{
 			Accounts: map[int64]*sso.AWSAccount{
@@ -96,7 +97,7 @@ func TestGetProfileMap(t *testing.T) {
 		},
 	}
 	_, err = getProfileMap("Default", s)
-	assert.Error(t, err)
+	assert.NoError(t, err)
 }
 
 func TestPrintAwsConfig(t *testing.T) {
@@ -215,7 +216,8 @@ func TestUpdateAwsConfig(t *testing.T) {
 	assert.Regexp(t, regexp.MustCompile(`# BEGIN_AWS_SSO_CLI`), string(buf))
 	assert.Regexp(t, regexp.MustCompile(`# END_AWS_SSO_CLI`), string(buf))
 
-	// now fail
+	// Profiles from a different SSO with the same name should not cause
+	// a duplicate error, since UniqueCheck only checks the requested SSO
 	s.Cache.SSO["Other"] = &sso.SSOCache{
 		Roles: &sso.Roles{
 			Accounts: map[int64]*sso.AWSAccount{
@@ -233,5 +235,5 @@ func TestUpdateAwsConfig(t *testing.T) {
 	}
 
 	err = UpdateAwsConfig("Default", s, fname, false, true)
-	assert.Error(t, err)
+	assert.NoError(t, err)
 }

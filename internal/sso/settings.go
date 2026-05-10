@@ -504,22 +504,22 @@ func (s *Settings) GetSSOProfiles(ssoName string) (*ProfileMap, error) {
 	return &profiles, nil
 }
 
-// UniqueCheck verifies that all of the profiles are unique
+// UniqueCheck verifies that all of the profiles are unique.
+// Only checks profiles that are actually in the ProfileMap rather than
+// iterating over all cached SSO instances, which could produce false
+// duplicates when the ProfileFormat includes {{ .SSO }}.
 func (p *ProfileMap) UniqueCheck(s *Settings) error {
 	profileUniqueCheck := map[string][]string{} // ProfileName() => Arn
 
-	for ssoName, sso := range s.Cache.SSO {
-		for _, role := range sso.Roles.GetAllRoles() {
-			profile, err := role.ProfileName(s)
-			if err != nil {
-				return err
-			}
+	for ssoName, roles := range *p {
+		for arn, config := range roles {
+			profile := config.Profile
 
 			if match, duplicate := profileUniqueCheck[profile]; duplicate {
 				return fmt.Errorf("duplicate profile name '%s' for:\n%s: %s\n%s: %s",
-					profile, match[0], match[1], ssoName, role.Arn)
+					profile, match[0], match[1], ssoName, arn)
 			}
-			profileUniqueCheck[profile] = []string{ssoName, role.Arn}
+			profileUniqueCheck[profile] = []string{ssoName, arn}
 		}
 	}
 
