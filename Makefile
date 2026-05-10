@@ -195,6 +195,10 @@ lint: .lint-check  ## Run golangci-lint
 lint-install:  ## Install golangci-lint
 	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v$(GOLANGCI_LINT_VERSION)
 
+.PHONY: .print-golangci-lint-version
+.print-golangci-lint-version:  ## Print golangci-lint version
+	@echo v$(GOLANGCI_LINT_VERSION)
+
 .PHONY: .lint-check
 .lint-check:
 	@if test $$(golangci-lint --version 2>&1 | grep -c "version $(GOLANGCI_LINT_VERSION)") -eq 0 ; then \
