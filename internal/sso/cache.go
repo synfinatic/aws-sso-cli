@@ -68,7 +68,7 @@ func (c *Cache) GetSSOByName(name string) *SSOCache {
 		History:    []string{},
 		Roles: &Roles{
 			Accounts: map[int64]*AWSAccount{},
-			ssoName:  c.ssoName,
+			SSOName:  c.ssoName,
 		},
 	}
 	return c.SSO[name]
@@ -103,7 +103,7 @@ func OpenCache(f string, s *Settings) (*Cache, error) {
 func (c *Cache) GetSSO() *SSOCache {
 	if v, ok := c.SSO[c.ssoName]; ok {
 		v.name = c.ssoName
-		v.Roles.ssoName = c.ssoName
+		v.Roles.SSOName = c.ssoName
 		return v
 	}
 
@@ -114,7 +114,7 @@ func (c *Cache) GetSSO() *SSOCache {
 		History:    []string{},
 		Roles: &Roles{
 			Accounts: map[int64]*AWSAccount{},
-			ssoName:  c.ssoName,
+			SSOName:  c.ssoName,
 		},
 	}
 	return c.SSO[c.ssoName]
@@ -512,7 +512,7 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig, threads int) (*Roles, er
 		StartUrl:      config.StartUrl,
 		DefaultRegion: config.DefaultRegion,
 		Accounts:      map[int64]*AWSAccount{},
-		ssoName:       config.settings.DefaultSSO,
+		SSOName:       config.settings.DefaultSSO,
 	}
 
 	if err := c.addSSORoles(&r, as, threads); err != nil {
@@ -523,7 +523,7 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig, threads int) (*Roles, er
 		return &Roles{}, err
 	}
 
-	if err := r.checkProfiles(c.settings); err != nil {
+	if err := r.CheckProfiles(c.settings); err != nil {
 		return &Roles{}, err
 	}
 

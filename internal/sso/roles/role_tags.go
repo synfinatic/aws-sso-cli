@@ -1,4 +1,4 @@
-package sso
+package roles
 
 /*
  * AWS SSO CLI
@@ -53,9 +53,9 @@ func (r *RoleTags) GetMatchingRoles(tags map[string]string) []string {
 	return matches
 }
 
-// GetPossibleMatches is like GetMatchingRoles, but takes another key
+// GetPossibleUniqueRoles is like GetMatchingRoles, but takes another key
 // and a list of values and it returns the unique set of all roles which
-// match the base tags and all the possible combnations of key/values
+// match the base tags and all the possible combinations of key/values
 func (r *RoleTags) GetPossibleUniqueRoles(tags map[string]string, key string, values []string) []string {
 	allRoles := []string{} // roles before removing duplicates
 	for _, val := range values {

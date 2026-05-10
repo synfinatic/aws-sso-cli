@@ -1,4 +1,4 @@
-package sso
+package roles
 
 /*
  * AWS SSO CLI
@@ -19,26 +19,12 @@ package sso
  */
 
 import (
-	"github.com/synfinatic/aws-sso-cli/internal/sso/roles"
+	"github.com/synfinatic/aws-sso-cli/internal/logger"
+	"github.com/synfinatic/flexlog"
 )
 
-// ProfileSettings is the interface for accessing profile configuration.
-// It is implemented by *Settings.
-type ProfileSettings = roles.ProfileSettings
+var log flexlog.FlexLogger
 
-// Type aliases — these types are now defined in the roles sub-package.
-type Roles = roles.Roles
-type AWSAccount = roles.AWSAccount
-type AWSRole = roles.AWSRole
-type AWSRoleFlat = roles.AWSRoleFlat
-type RoleTags = roles.RoleTags
-type FlatField = roles.FlatField
-type FlatFieldType = roles.FlatFieldType
-
-const DEFAULT_PROFILE_TEMPLATE = roles.DEFAULT_PROFILE_TEMPLATE
-
-const (
-	Serr = roles.Serr
-	Sval = roles.Sval
-	Ival = roles.Ival
-)
+func init() {
+	log = logger.GetLogger()
+}
