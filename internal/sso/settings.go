@@ -345,6 +345,11 @@ func (s *Settings) ConfigFile() string {
 	return s.configFile
 }
 
+// GetProfileFormat returns the profile format string, satisfying ProfileSettings.
+func (s *Settings) GetProfileFormat() string {
+	return s.ProfileFormat
+}
+
 func (s *Settings) CreatedAt() int64 {
 	f, err := os.Open(s.configFile)
 	if err != nil {

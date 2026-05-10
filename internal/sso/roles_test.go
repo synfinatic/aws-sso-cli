@@ -365,32 +365,6 @@ func TestRoleFlatAwsRole(t *testing.T) {
 	}, *x)
 }
 
-// profile functions
-func TestEmptyString(t *testing.T) {
-	assert.True(t, emptyString(""))
-	assert.False(t, emptyString("foo"))
-}
-
-func TestFirstItem(t *testing.T) {
-	assert.Equal(t, "x", firstItem("x", "b"))
-	assert.Equal(t, "x", firstItem("x"))
-	assert.Equal(t, "x", firstItem("", "x", "b"))
-	assert.Equal(t, "", firstItem())
-}
-
-func TestStringReplace(t *testing.T) {
-	assert.Equal(t, "aaaaa", stringReplace("b", "a", "bbbbb"))
-	assert.Equal(t, "zaaaaax", stringReplace("b", "a", "zbbbbbx"))
-}
-
-func TestStringsJoin(t *testing.T) {
-	assert.Equal(t, "a.b.c", stringsJoin(".", "a", "b", "c"))
-}
-
-func TestAccountIdToStr(t *testing.T) {
-	assert.Equal(t, "000000555555", accountIdToStr(555555))
-}
-
 func TestAWSRoleFlatHasPrefix(t *testing.T) {
 	f := &AWSRoleFlat{
 		Id:            10,
@@ -473,7 +447,7 @@ func (suite *CacheRolesTestSuite) TestCheckProfiles() {
 	assert.NoError(t, err)
 
 	for testName, testData := range tests {
-		err := testData.checkProfiles(suite.cache.settings)
+		err := testData.CheckProfiles(suite.cache.settings)
 		if strings.HasPrefix(testName, "Invalid") {
 			assert.Error(t, err, testName)
 		} else {
@@ -484,21 +458,21 @@ func (suite *CacheRolesTestSuite) TestCheckProfiles() {
 	badSettings := *suite.cache.settings
 	badSettings.ProfileFormat = "{{ .AccountName }}"
 	r := tests["Valid1"]
-	err = r.checkProfiles(&badSettings)
+	err = r.CheckProfiles(&badSettings)
 	assert.NoError(t, err)
 
 	r = tests["Valid2"]
-	err = r.checkProfiles(&badSettings)
+	err = r.CheckProfiles(&badSettings)
 	assert.Error(t, err)
 
 	badSettings.ProfileFormat = "{{ .RoleName }}"
 	r = tests["Valid3"]
-	err = r.checkProfiles(&badSettings)
+	err = r.CheckProfiles(&badSettings)
 	assert.Error(t, err)
 
 	badSettings.ProfileFormat = "{{ .InvalidFormat }}"
 	r = tests["Valid3"]
-	err = r.checkProfiles(&badSettings)
+	err = r.CheckProfiles(&badSettings)
 	assert.Error(t, err)
 }
 
