@@ -35,6 +35,7 @@ import (
 	"github.com/knadh/koanf/providers/file"
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
+	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
 
@@ -51,6 +52,7 @@ type Settings struct {
 	DefaultSSO                string                   `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`   // specify default SSO by key
 	SecureStore               string                   `koanf:"SecureStore" yaml:"SecureStore,omitempty"` // json or keyring
 	DefaultRegion             string                   `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
+	AuthWorkflow              oidc.AuthWorkflow        `koanf:"AuthWorkflow" yaml:"AuthWorkflow,omitempty"`
 	ConsoleDuration           int32                    `koanf:"ConsoleDuration" yaml:"ConsoleDuration,omitempty"`
 	JsonStore                 string                   `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
 	CacheRefresh              int64                    `koanf:"CacheRefresh" yaml:"CacheRefresh,omitempty"`
@@ -161,6 +163,7 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 	}
 
 	s.setOverrides(override)
+	s.AuthWorkflow = s.AuthWorkflow.OrDefault()
 
 	// set our SSO names
 	for k, v := range s.SSO {
@@ -219,6 +222,10 @@ func (s *Settings) Validate() error {
 		if s.UrlAction == uri.Exec || s.ConfigProfilesUrlAction == uri.ConfigProfilesExec {
 			return fmt.Errorf("must not select `exec` and a Firefox container option")
 		}
+	}
+
+	if err := oidc.ValidateAuthWorkflow(s.AuthWorkflow); err != nil {
+		return fmt.Errorf("invalid AuthWorkflow: %w", err)
 	}
 
 	return nil

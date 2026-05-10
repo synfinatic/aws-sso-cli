@@ -20,15 +20,15 @@ package sso
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"net"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sso"
-	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
-	oidctypes "github.com/aws/aws-sdk-go-v2/service/ssooidc/types"
+	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
@@ -96,50 +96,23 @@ func (as *AWSSSO) reauthenticate() error {
 	log.Trace("reauthenticate()", "storeKey", as.StoreKey())
 	err := as.registerClient(false)
 	if err != nil {
-		return fmt.Errorf("unable to register client with AWS SSO: %s", err.Error())
+		return fmt.Errorf("unable to register client with AWS SSO: %w", err)
 	}
 	log.Trace("<- reauthenticate()")
 
-	err = as.startDeviceAuthorization()
-	log.Trace("<- reauthenticate()")
-	if err != nil {
-		log.Debug("startDeviceAuthorization failed.  Forcing refresh of registerClient")
-		// startDeviceAuthorization can fail if our cached registerClient token is invalid
-		if err = as.registerClient(true); err != nil {
-			return fmt.Errorf("unable to register client with AWS SSO: %s", err.Error())
-		}
-		if err = as.startDeviceAuthorization(); err != nil {
-			return fmt.Errorf("unable to start device authorization with AWS SSO: %s", err.Error())
-		}
+	switch as.getAuthWorkflow() {
+	case oidc.AuthWorkflowDeviceCode:
+		return as.reauthenticateDeviceCode()
+	case oidc.AuthWorkflowPKCE:
+		return as.reauthenticatePKCE()
+	default:
+		return fmt.Errorf("unsupported auth workflow: %s", as.getAuthWorkflow())
 	}
-
-	auth, err := as.getDeviceAuthInfo()
-	log.Trace("<- reauthenticate()")
-	if err != nil {
-		return fmt.Errorf("unable to get device auth info from AWS SSO: %s", err.Error())
-	}
-
-	urlOpener := uri.NewHandleUrl(as.urlAction, auth.VerificationUriComplete, as.browser, as.urlExecCommand)
-	urlOpener.ContainerSettings(as.StoreKey(), DEFAULT_AUTH_COLOR, DEFAULT_AUTH_ICON)
-
-	if err = urlOpener.Open(); err != nil {
-		return err
-	}
-
-	log.Info("Waiting for SSO authentication...")
-
-	err = as.createToken()
-	if err != nil {
-		return fmt.Errorf("unable to create new AWS SSO token: %s", err.Error())
-	}
-
-	return nil
 }
 
 const (
 	awsSSOClientName = "aws-sso-cli"
 	awsSSOClientType = "public"
-	awsSSOGrantType  = "urn:ietf:params:oauth:grant-type:device_code"
 	// The default values for ODIC defined in:
 	// https://tools.ietf.org/html/draft-ietf-oauth-device-flow-15#section-3.5
 	SLOW_DOWN_SEC  = 5
@@ -159,28 +132,24 @@ func (as *AWSSSO) registerClient(force bool) error {
 		}
 	}
 
-	input := ssooidc.RegisterClientInput{
-		ClientName: aws.String(as.ClientName),
-		ClientType: aws.String(as.ClientType),
-		// docs say this is optional, but it's required?
-		GrantTypes: []string{"refresh_token"},
-		Scopes:     nil,
-	}
 	log.Trace("Registering new client with AWS SSO", "ClientName", as.ClientName, "ClientType", as.ClientType)
-	resp, err := as.ssooidc.RegisterClient(context.TODO(), &input)
+	input := oidc.RegisterClientInput{
+		ClientName: as.ClientName,
+		ClientType: as.ClientType,
+		GrantTypes: as.authGrantTypes(),
+		IssuerUrl:  as.StartUrl,
+	}
+	if as.getAuthWorkflow() == oidc.AuthWorkflowPKCE {
+		input.Scopes = []string{"sso:account:access"}
+		input.RedirectUris = []string{as.pkceRedirectURIBase()}
+	}
+	resp, err := as.oidcClient.RegisterClient(context.TODO(), input)
 	if err != nil {
-		return fmt.Errorf("registerClient: %s", err.Error())
+		return err
 	}
-	log.Trace("Registered new client with AWS SSO", "ClientId", aws.ToString(resp.ClientId), "ClientSecretExpiresAt", resp.ClientSecretExpiresAt)
+	log.Trace("Registered new client with AWS SSO", "ClientId", resp.ClientId, "ClientSecretExpiresAt", resp.ClientSecretExpiresAt)
 
-	as.ClientData = storage.RegisterClientData{
-		AuthorizationEndpoint: aws.ToString(resp.AuthorizationEndpoint), // not used?
-		ClientId:              aws.ToString(resp.ClientId),
-		ClientSecret:          aws.ToString(resp.ClientSecret),
-		ClientIdIssuedAt:      resp.ClientIdIssuedAt,
-		ClientSecretExpiresAt: resp.ClientSecretExpiresAt,
-		TokenEndpoint:         aws.ToString(resp.TokenEndpoint), // not used?
-	}
+	as.ClientData = resp
 	log.Trace("SaveRegisterClientData start", "storeKey", as.StoreKey())
 	err = as.store.SaveRegisterClientData(as.StoreKey(), as.ClientData)
 	if err != nil {
@@ -194,24 +163,16 @@ func (as *AWSSSO) registerClient(force bool) error {
 // to the SSO provider.
 func (as *AWSSSO) startDeviceAuthorization() error {
 	log.Trace("startDeviceAuthorization()", "storeKey", as.StoreKey())
-	input := ssooidc.StartDeviceAuthorizationInput{
-		StartUrl:     aws.String(as.StartUrl),
-		ClientId:     aws.String(as.ClientData.ClientId),
-		ClientSecret: aws.String(as.ClientData.ClientSecret),
-	}
-	resp, err := as.ssooidc.StartDeviceAuthorization(context.TODO(), &input)
+	resp, err := as.oidcClient.StartDeviceAuthorization(context.TODO(), oidc.StartDeviceAuthorizationInput{
+		StartURL:     as.StartUrl,
+		ClientID:     as.ClientData.ClientId,
+		ClientSecret: as.ClientData.ClientSecret,
+	})
 	if err != nil {
 		return err
 	}
 
-	as.DeviceAuth = storage.StartDeviceAuthData{
-		DeviceCode:              aws.ToString(resp.DeviceCode),
-		UserCode:                aws.ToString(resp.UserCode),
-		VerificationUri:         aws.ToString(resp.VerificationUri),
-		VerificationUriComplete: aws.ToString(resp.VerificationUriComplete),
-		ExpiresIn:               resp.ExpiresIn,
-		Interval:                resp.Interval,
-	}
+	as.DeviceAuth = resp
 	log.Debug("Created OIDC device code", "storeKey", as.StoreKey(), "expires", as.DeviceAuth.ExpiresIn)
 
 	fmt.Fprintf(os.Stderr, VERIFY_MSG, as.DeviceAuth.UserCode)
@@ -244,63 +205,160 @@ func (as *AWSSSO) getDeviceAuthInfo() (DeviceAuthInfo, error) {
 // to our secret store
 func (as *AWSSSO) createToken() error {
 	log.Trace("createToken()")
-	input := ssooidc.CreateTokenInput{
-		ClientId:     aws.String(as.ClientData.ClientId),
-		ClientSecret: aws.String(as.ClientData.ClientSecret),
-		DeviceCode:   aws.String(as.DeviceAuth.DeviceCode),
-		GrantType:    aws.String(awsSSOGrantType),
-		// RefreshToken is not supported by AWS
-	}
-
-	// figure out our timings
 	var slowDown = SLOW_DOWN_SEC * time.Second
 	var retryInterval = RETRY_INTERVAL * time.Second
 	if as.DeviceAuth.Interval > 0 {
 		retryInterval = time.Duration(as.DeviceAuth.Interval) * time.Second
 	}
 
-	var err error
-	var resp *ssooidc.CreateTokenOutput
-
-	for {
-		resp, err = as.ssooidc.CreateToken(context.TODO(), &input)
-		if err == nil {
-			break
-		}
-
-		var sde *oidctypes.SlowDownException
-		var ape *oidctypes.AuthorizationPendingException
-
-		if errors.As(err, &sde) {
-			log.Debug("Slowing down CreateToken()")
-			retryInterval += slowDown
-			time.Sleep(retryInterval)
-		} else if errors.As(err, &ape) {
-			time.Sleep(retryInterval)
-		} else {
-			return fmt.Errorf("createToken: %s", err.Error())
-		}
-	}
-
-	secs, _ := time.ParseDuration(fmt.Sprintf("%ds", resp.ExpiresIn)) // seconds
-	as.tokenLock.Lock()
-	as.Token = storage.CreateTokenResponse{
-		AccessToken:  aws.ToString(resp.AccessToken),
-		ExpiresIn:    resp.ExpiresIn,
-		ExpiresAt:    time.Now().Add(secs).Unix(),
-		IdToken:      aws.ToString(resp.IdToken),      // per AWS docs, this may be undefined
-		RefreshToken: aws.ToString(resp.RefreshToken), // per AWS docs, not currently implemented
-		TokenType:    aws.ToString(resp.TokenType),
-	}
-	as.tokenLock.Unlock()
-	as.tokenLock.RLock()
-	err = as.store.SaveCreateTokenResponse(as.StoreKey(), as.Token)
-	as.tokenLock.RUnlock()
+	token, err := as.oidcClient.PollDeviceCodeToken(context.TODO(), oidc.PollDeviceCodeTokenInput{
+		CreateTokenInput: oidc.CreateTokenInput{
+			ClientID:     as.ClientData.ClientId,
+			ClientSecret: as.ClientData.ClientSecret,
+			DeviceCode:   as.DeviceAuth.DeviceCode,
+			GrantType:    oidc.GrantTypeDeviceCode,
+		},
+		RetryInterval: retryInterval,
+		SlowDown:      slowDown,
+	})
 	if err != nil {
+		return err
+	}
+
+	return as.saveToken(token)
+}
+
+func (as *AWSSSO) saveToken(token storage.CreateTokenResponse) error {
+	as.tokenLock.Lock()
+	as.Token = token
+	as.tokenLock.Unlock()
+	// use the local variable directly to avoid a lock gap
+	if err := as.store.SaveCreateTokenResponse(as.StoreKey(), token); err != nil {
 		log.Error("unable to save CreateTokenResponse", "error", err.Error())
+	}
+	return nil
+}
+
+func (as *AWSSSO) getAuthWorkflow() oidc.AuthWorkflow {
+	if as.SSOConfig == nil || as.SSOConfig.settings == nil {
+		return oidc.AuthWorkflowPKCE
+	}
+	return as.SSOConfig.settings.AuthWorkflow.OrDefault()
+}
+
+func (as *AWSSSO) authGrantTypes() []string {
+	if as.getAuthWorkflow() == oidc.AuthWorkflowPKCE {
+		return []string{"refresh_token", oidc.GrantTypeAuthorizationCode}
+	}
+	return []string{"refresh_token"}
+}
+
+// pkceRedirectURIBase is used in RegisterClient (no port, no path per RFC 8252 §7.3)
+func (as *AWSSSO) pkceRedirectURIBase() string {
+	return "http://127.0.0.1"
+}
+
+// pkceAuthorizationEndpoint returns the OIDC /authorize endpoint URL.
+// AWS does not return this from RegisterClient, so we construct it from the region.
+func (as *AWSSSO) pkceAuthorizationEndpoint() string {
+	if as.ClientData.AuthorizationEndpoint != "" {
+		ep := strings.TrimSuffix(as.ClientData.AuthorizationEndpoint, "/")
+		if !strings.HasSuffix(ep, "/authorize") {
+			ep += "/authorize"
+		}
+		return ep
+	}
+	return fmt.Sprintf("https://oidc.%s.amazonaws.com/authorize", as.SsoRegion)
+}
+
+func (as *AWSSSO) reauthenticateDeviceCode() error {
+	err := as.startDeviceAuthorization()
+	log.Trace("<- reauthenticate()")
+	if err != nil {
+		log.Debug("startDeviceAuthorization failed.  Forcing refresh of registerClient")
+		// startDeviceAuthorization can fail if our cached registerClient token is invalid
+		if err = as.registerClient(true); err != nil {
+			return fmt.Errorf("unable to register client with AWS SSO: %w", err)
+		}
+		if err = as.startDeviceAuthorization(); err != nil {
+			return fmt.Errorf("unable to start device authorization with AWS SSO: %w", err)
+		}
+	}
+
+	auth, err := as.getDeviceAuthInfo()
+	log.Trace("<- reauthenticate()")
+	if err != nil {
+		return fmt.Errorf("unable to get device auth info from AWS SSO: %w", err)
+	}
+
+	urlOpener := uri.NewHandleUrl(as.urlAction, auth.VerificationUriComplete, as.browser, as.urlExecCommand)
+	urlOpener.ContainerSettings(as.StoreKey(), DEFAULT_AUTH_COLOR, DEFAULT_AUTH_ICON)
+
+	if err = urlOpener.Open(); err != nil {
+		return err
+	}
+
+	log.Info("Waiting for SSO authentication...")
+
+	err = as.createToken()
+	if err != nil {
+		return fmt.Errorf("unable to create new AWS SSO token: %w", err)
 	}
 
 	return nil
+}
+
+func (as *AWSSSO) reauthenticatePKCE() error {
+	// Find a free loopback port for the callback listener. RFC 8252 §7.3 recommends
+	// any available port rather than a fixed one to avoid bind conflicts.
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return fmt.Errorf("find free port for pkce callback: %w", err)
+	}
+	port := ln.Addr().(*net.TCPAddr).Port
+	_ = ln.Close()
+	redirectURI := fmt.Sprintf("http://127.0.0.1:%d", port)
+
+	flow, err := as.oidcClient.StartPKCEAuthCodeFlow(context.Background(), oidc.StartPKCEAuthCodeInput{
+		AuthorizationEndpoint: as.pkceAuthorizationEndpoint(),
+		ClientID:              as.ClientData.ClientId,
+		RedirectURI:           redirectURI,
+		Scopes:                []string{"sso:account:access"},
+	})
+	if err != nil {
+		return fmt.Errorf("unable to start pkce authorization with AWS SSO: %w", err)
+	}
+
+	urlOpener := uri.NewHandleUrl(as.urlAction, flow.AuthorizationURL, as.browser, as.urlExecCommand)
+	urlOpener.ContainerSettings(as.StoreKey(), DEFAULT_AUTH_COLOR, DEFAULT_AUTH_ICON)
+	if err = urlOpener.Open(); err != nil {
+		return err
+	}
+
+	// Give the user up to 5 minutes to complete the browser login.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	callback, err := as.oidcClient.WaitForPKCECallback(ctx, oidc.WaitForPKCECallbackInput{
+		RedirectURI:   redirectURI,
+		ExpectedState: flow.State,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to receive pkce callback: %w", err)
+	}
+
+	token, err := as.oidcClient.ExchangePKCEAuthCode(context.TODO(), oidc.ExchangePKCEAuthCodeInput{
+		ClientID:     as.ClientData.ClientId,
+		ClientSecret: as.ClientData.ClientSecret,
+		Code:         callback.Code,
+		CodeVerifier: flow.CodeVerifier,
+		RedirectURI:  redirectURI,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to exchange pkce authorization code: %w", err)
+	}
+
+	return as.saveToken(token)
 }
 
 // Logout performs an SSO logout with AWS and invalidates our SSO session

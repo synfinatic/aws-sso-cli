@@ -33,10 +33,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sso"
 	ssotypes "github.com/aws/aws-sdk-go-v2/service/sso/types"
-	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
+	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
 	"github.com/synfinatic/gotable"
@@ -44,13 +44,6 @@ import (
 
 var MAX_RETRY_ATTEMPTS int = 10
 var MAX_BACKOFF_SECONDS int = 5
-
-// Necessary for mocking
-type SsoOidcAPI interface {
-	RegisterClient(context.Context, *ssooidc.RegisterClientInput, ...func(*ssooidc.Options)) (*ssooidc.RegisterClientOutput, error)
-	StartDeviceAuthorization(context.Context, *ssooidc.StartDeviceAuthorizationInput, ...func(*ssooidc.Options)) (*ssooidc.StartDeviceAuthorizationOutput, error)
-	CreateToken(context.Context, *ssooidc.CreateTokenInput, ...func(*ssooidc.Options)) (*ssooidc.CreateTokenOutput, error)
-}
 
 type SsoAPI interface {
 	ListAccountRoles(context.Context, *sso.ListAccountRolesInput, ...func(*sso.Options)) (*sso.ListAccountRolesOutput, error)
@@ -62,7 +55,7 @@ type SsoAPI interface {
 type AWSSSO struct {
 	key              string // key in the settings file that names us
 	sso              SsoAPI
-	ssooidc          SsoOidcAPI
+	oidcClient       oidc.Client
 	store            storage.SecureStorage
 	ClientName       string                      `json:"ClientName"`
 	ClientType       string                      `json:"ClientType"`
@@ -98,10 +91,7 @@ func NewAWSSSO(s *SSOConfig, store storage.SecureStorage) *AWSSSO {
 		o.MaxBackoff = time.Duration(maxBackoff) * time.Second
 	})
 
-	oidcSession := ssooidc.New(ssooidc.Options{
-		Region:  s.SSORegion,
-		Retryer: r,
-	})
+	oidcSession := oidc.NewAWS(s.SSORegion, r)
 
 	ssoSession := sso.New(sso.Options{
 		Region:  s.SSORegion,
@@ -111,7 +101,7 @@ func NewAWSSSO(s *SSOConfig, store storage.SecureStorage) *AWSSSO {
 	as := AWSSSO{
 		key:            s.key,
 		sso:            ssoSession,
-		ssooidc:        oidcSession,
+		oidcClient:     oidcSession,
 		store:          store,
 		ClientName:     awsSSOClientName,
 		ClientType:     awsSSOClientType,

@@ -30,6 +30,7 @@ import (
 	ssotypes "github.com/aws/aws-sdk-go-v2/service/sso/types"
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	"github.com/stretchr/testify/assert"
+	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
 
@@ -147,11 +148,11 @@ func TestGetRoles(t *testing.T) {
 
 	duration, _ := time.ParseDuration("10s")
 	as := &AWSSSO{
-		SsoRegion: "us-west-1",
-		StartUrl:  "https://testing.awsapps.com/start",
-		ssooidc:   &mockSsoOidcAPI{},
-		store:     jstore,
-		Roles:     map[string][]RoleInfo{},
+		SsoRegion:  "us-west-1",
+		StartUrl:   "https://testing.awsapps.com/start",
+		oidcClient: oidc.NewAWSWithAPI(&mockSsoOidcAPI{}),
+		store:      jstore,
+		Roles:      map[string][]RoleInfo{},
 		SSOConfig: &SSOConfig{
 			Accounts: map[string]*SSOAccount{},
 			settings: &Settings{},
@@ -309,7 +310,7 @@ func TestGetRoles(t *testing.T) {
 	assert.Error(t, err)
 
 	// another code path
-	as.ssooidc = &mockSsoOidcAPI{
+	as.oidcClient = oidc.NewAWSWithAPI(&mockSsoOidcAPI{
 		Results: []mockSsoOidcAPIResults{
 			{
 				RegisterClient: &ssooidc.RegisterClientOutput{
@@ -344,7 +345,7 @@ func TestGetRoles(t *testing.T) {
 				Error: nil,
 			},
 		},
-	}
+	})
 
 	as.sso = &mockSsoAPI{
 		Results: []mockSsoAPIResults{
@@ -401,7 +402,7 @@ func TestGetRoles(t *testing.T) {
 		Accounts: map[string]*SSOAccount{},
 		settings: &Settings{},
 	}
-	as.ssooidc = &mockSsoOidcAPI{
+	as.oidcClient = oidc.NewAWSWithAPI(&mockSsoOidcAPI{
 		Results: []mockSsoOidcAPIResults{
 			{
 				RegisterClient: &ssooidc.RegisterClientOutput{
@@ -436,7 +437,7 @@ func TestGetRoles(t *testing.T) {
 				Error: nil,
 			},
 		},
-	}
+	})
 
 	as.sso = &mockSsoAPI{
 		Results: []mockSsoAPIResults{
@@ -599,7 +600,7 @@ func TestGetAccounts(t *testing.T) {
 		},
 	}
 
-	as.ssooidc = &mockSsoOidcAPI{
+	as.oidcClient = oidc.NewAWSWithAPI(&mockSsoOidcAPI{
 		Results: []mockSsoOidcAPIResults{
 			{
 				RegisterClient: &ssooidc.RegisterClientOutput{
@@ -634,7 +635,7 @@ func TestGetAccounts(t *testing.T) {
 				Error: nil,
 			},
 		},
-	}
+	})
 
 	_, err = as.GetAccounts()
 	assert.Error(t, err)

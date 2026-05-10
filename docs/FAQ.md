@@ -45,6 +45,23 @@ the user, it becomes easier to identify when browser prompts are legitimately fo
 Users wishing to utilize the previous auto-login mechanisim can use then [AutoLogin](config.md#autologin)
 configuration option.
 
+### Should I use `AuthWorkflow: device_code` or `AuthWorkflow: pkce`?
+
+Most users should start with `AuthWorkflow: pkce` because it is now the
+default. `aws-sso` opens the authorization URL, starts a temporary loopback
+listener on `127.0.0.1`, validates the returned `state`, and exchanges the code
+for tokens automatically.
+
+`AuthWorkflow: device_code` is **not recommended** — its short verification
+code is not bound to the initiating session, making it vulnerable to
+device code phishing and requires more human involvement.
+
+However, `device_code` is the correct choice for remote or headless environments where
+`aws-sso` does not run on the same machine as the browser, since PKCE relies
+on a loopback redirect that is not reachable in those environments.
+
+See [AuthWorkflow](config.md#authworkflow) for global configuration examples.
+
 ---
 
 ## Advanced Features
@@ -166,6 +183,9 @@ You will also most likely need to set `UrlAction: print` since you will find it
 difficult to automatically open the browser.  This has the additional downside that
 you will have an independant SecureStore storing all the credentials which can be
 annoying if you're dealing with many remote hosts.
+
+Unfortunately, you will need to use `AuthWorkflow: device_code` as `pkce`
+does not work due to the need to dynamically forward ports.
 
 The alternative is to run the [ECS Server](ecs-server.md) locally and then
 use [ssh port forwarding](remote-ssh.md) to make all the IAM credentials stored

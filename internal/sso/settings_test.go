@@ -27,6 +27,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
 	"github.com/synfinatic/flexlog"
 	testlogger "github.com/synfinatic/flexlog/test"
@@ -65,6 +66,7 @@ func (suite *SettingsTestSuite) TestLoadSettings() {
 	assert.Equal(t, TEST_SETTINGS_FILE, suite.settings.ConfigFile())
 
 	assert.Equal(t, "", suite.settings.ConfigUrlAction) // deprecated
+	assert.Equal(t, oidc.AuthWorkflowPKCE, suite.settings.AuthWorkflow)
 	// ensure we upgraded ConfigUrlAction to UrlAction
 	assert.Equal(t, uri.OpenUrlContainer, suite.settings.UrlAction)
 	// ensure we applied UrlAction to ConfigProfilesUrlAction
@@ -319,6 +321,13 @@ func (suite *SettingsTestSuite) TestValidate() {
 	t := suite.T()
 
 	assert.NoError(t, suite.settings.Validate())
+
+	oldWorkflow := suite.settings.AuthWorkflow
+	suite.settings.AuthWorkflow = oidc.AuthWorkflow("not-a-workflow")
+	assert.Error(t, suite.settings.Validate())
+	suite.settings.AuthWorkflow = oldWorkflow
+	assert.NoError(t, suite.settings.Validate())
+
 	suite.settings.UrlAction = uri.Exec
 	suite.settings.ConfigProfilesUrlAction = uri.ConfigProfilesGrantedContainer
 	assert.Error(t, suite.settings.Validate())
