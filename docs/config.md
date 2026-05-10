@@ -149,7 +149,7 @@ instances.
 Valid values:
 
 * `device_code` -- Opens the verification URL and then waits for the browser
-    approval to complete.
+    approval to complete. User must validate the codes match.
 * `pkce` -- Uses the OAuth 2.0 `authorization_code` flow with PKCE. `aws-sso`
         opens the authorization URL in your browser, starts a temporary loopback
         callback listener on `127.0.0.1`, validates the returned `state`, and then
@@ -158,26 +158,6 @@ Valid values:
         supported on remote/headless hosts; use `device_code` in those environments.
 
 If `AuthWorkflow` is omitted, `pkce` is used.
-
-Example using the default PKCE workflow:
-
-```yaml
-AuthWorkflow: pkce
-SSOConfig:
-    Default:
-        SSORegion: us-east-1
-        StartUrl: https://example.awsapps.com/start
-```
-
-Example using the device code workflow:
-
-```yaml
-AuthWorkflow: device_code
-SSOConfig:
-    Default:
-        SSORegion: us-east-1
-        StartUrl: https://example.awsapps.com/start
-```
 
 ### Accounts
 

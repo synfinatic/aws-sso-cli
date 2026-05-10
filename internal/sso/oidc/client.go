@@ -71,15 +71,24 @@ func (c *AWSClient) RegisterClient(ctx context.Context, in RegisterClientInput) 
 }
 
 func (c *AWSClient) CreateToken(ctx context.Context, in CreateTokenInput) (storage.CreateTokenResponse, error) {
-	out, err := c.api.CreateToken(ctx, &ssooidc.CreateTokenInput{
+	input := &ssooidc.CreateTokenInput{
 		ClientId:     aws.String(in.ClientID),
 		ClientSecret: aws.String(in.ClientSecret),
 		GrantType:    aws.String(in.GrantType),
-		DeviceCode:   aws.String(in.DeviceCode),
-		Code:         aws.String(in.Code),
-		CodeVerifier: aws.String(in.CodeVerifier),
-		RedirectUri:  aws.String(in.RedirectURI),
-	})
+	}
+	if in.DeviceCode != "" {
+		input.DeviceCode = aws.String(in.DeviceCode)
+	}
+	if in.Code != "" {
+		input.Code = aws.String(in.Code)
+	}
+	if in.CodeVerifier != "" {
+		input.CodeVerifier = aws.String(in.CodeVerifier)
+	}
+	if in.RedirectURI != "" {
+		input.RedirectUri = aws.String(in.RedirectURI)
+	}
+	out, err := c.api.CreateToken(ctx, input)
 	if err != nil {
 		return storage.CreateTokenResponse{}, err
 	}

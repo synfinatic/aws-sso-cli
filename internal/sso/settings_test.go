@@ -322,14 +322,6 @@ func (suite *SettingsTestSuite) TestValidate() {
 
 	assert.NoError(t, suite.settings.Validate())
 
-	ssoKey := suite.settings.DefaultSSO
-	if _, ok := suite.settings.SSO[ssoKey]; !ok {
-		for k := range suite.settings.SSO {
-			ssoKey = k
-			break
-		}
-	}
-
 	oldWorkflow := suite.settings.AuthWorkflow
 	suite.settings.AuthWorkflow = oidc.AuthWorkflow("not-a-workflow")
 	assert.Error(t, suite.settings.Validate())

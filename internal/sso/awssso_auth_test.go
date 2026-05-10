@@ -133,7 +133,7 @@ func TestAuthenticateSteps(t *testing.T) {
 		},
 	}
 
-	as.ssooidc = &mockSsoOidcAPI{
+	as.oidcClient = oidc.NewAWSWithAPI(&mockSsoOidcAPI{
 		Results: []mockSsoOidcAPIResults{
 			{
 				RegisterClient: &ssooidc.RegisterClientOutput{
@@ -168,7 +168,7 @@ func TestAuthenticateSteps(t *testing.T) {
 				Error: nil,
 			},
 		},
-	}
+	})
 
 	err = as.registerClient(false)
 	assert.NoError(t, err)
@@ -216,7 +216,7 @@ func TestAuthenticate(t *testing.T) {
 	secs, _ := time.ParseDuration("5s")
 	expires := time.Now().Add(secs).Unix()
 
-	as.ssooidc = &mockSsoOidcAPI{
+	as.oidcClient = oidc.NewAWSWithAPI(&mockSsoOidcAPI{
 		Results: []mockSsoOidcAPIResults{
 			{
 				RegisterClient: &ssooidc.RegisterClientOutput{
@@ -319,7 +319,7 @@ func TestAuthenticate(t *testing.T) {
 				Error: nil,
 			},
 		},
-	}
+	})
 
 	assert.False(t, as.ValidAuthToken())
 
@@ -424,7 +424,7 @@ func TestAuthenticateFailure(t *testing.T) {
 	secs, _ := time.ParseDuration("5s")
 	expires := time.Now().Add(secs).Unix()
 
-	as.ssooidc = &mockSsoOidcAPI{
+	as.oidcClient = oidc.NewAWSWithAPI(&mockSsoOidcAPI{
 		Results: []mockSsoOidcAPIResults{
 			// first test
 			{
@@ -559,7 +559,7 @@ func TestAuthenticateFailure(t *testing.T) {
 				Error: nil,
 			},
 		},
-	}
+	})
 
 	err = as.Authenticate("print", "fake-browser")
 	assert.Contains(t, err.Error(), "unable to register client with AWS SSO")
@@ -637,7 +637,7 @@ func TestReauthenticate(t *testing.T) {
 	*/
 	// valid urlAction, but command is invalid
 	as.urlAction = "exec"
-	as.ssooidc = &mockSsoOidcAPI{
+	as.oidcClient = oidc.NewAWSWithAPI(&mockSsoOidcAPI{
 		Results: []mockSsoOidcAPIResults{
 			{
 				RegisterClient: &ssooidc.RegisterClientOutput{
@@ -666,7 +666,7 @@ func TestReauthenticate(t *testing.T) {
 				Error:       fmt.Errorf("some error"),
 			},
 		},
-	}
+	})
 
 	err = as.reauthenticate()
 	assert.Contains(t, err.Error(), "unable to exec")
@@ -741,4 +741,315 @@ func TestLogout(t *testing.T) {
 	assert.NoError(t, err)
 	err = jstore.GetCreateTokenResponse("primary", &storage.CreateTokenResponse{})
 	assert.Error(t, err)
+}
+
+// mockOIDCClient is a full mock of the oidc.Client interface, used by PKCE tests.
+type mockOIDCClient struct {
+	registerClientResult  storage.RegisterClientData
+	registerClientErr     error
+	startDeviceAuthResult storage.StartDeviceAuthData
+	startDeviceAuthErr    error
+	pollDeviceCodeResult  storage.CreateTokenResponse
+	pollDeviceCodeErr     error
+	startPKCEFlowResult   oidc.PKCEAuthCodeFlow
+	startPKCEFlowErr      error
+	waitForCallbackResult oidc.PKCECallback
+	waitForCallbackErr    error
+	exchangePKCEResult    storage.CreateTokenResponse
+	exchangePKCEErr       error
+
+	// captured inputs for assertions
+	startPKCEFlowInputs   []oidc.StartPKCEAuthCodeInput
+	waitForCallbackInputs []oidc.WaitForPKCECallbackInput
+	exchangePKCEInputs    []oidc.ExchangePKCEAuthCodeInput
+	registerClientInputs  []oidc.RegisterClientInput
+}
+
+func (m *mockOIDCClient) RegisterClient(_ context.Context, in oidc.RegisterClientInput) (storage.RegisterClientData, error) {
+	m.registerClientInputs = append(m.registerClientInputs, in)
+	return m.registerClientResult, m.registerClientErr
+}
+
+func (m *mockOIDCClient) StartDeviceAuthorization(_ context.Context, _ oidc.StartDeviceAuthorizationInput) (storage.StartDeviceAuthData, error) {
+	return m.startDeviceAuthResult, m.startDeviceAuthErr
+}
+
+func (m *mockOIDCClient) PollDeviceCodeToken(_ context.Context, _ oidc.PollDeviceCodeTokenInput) (storage.CreateTokenResponse, error) {
+	return m.pollDeviceCodeResult, m.pollDeviceCodeErr
+}
+
+func (m *mockOIDCClient) StartPKCEAuthCodeFlow(_ context.Context, in oidc.StartPKCEAuthCodeInput) (oidc.PKCEAuthCodeFlow, error) {
+	m.startPKCEFlowInputs = append(m.startPKCEFlowInputs, in)
+	return m.startPKCEFlowResult, m.startPKCEFlowErr
+}
+
+func (m *mockOIDCClient) WaitForPKCECallback(_ context.Context, in oidc.WaitForPKCECallbackInput) (oidc.PKCECallback, error) {
+	m.waitForCallbackInputs = append(m.waitForCallbackInputs, in)
+	return m.waitForCallbackResult, m.waitForCallbackErr
+}
+
+func (m *mockOIDCClient) ExchangePKCEAuthCode(_ context.Context, in oidc.ExchangePKCEAuthCodeInput) (storage.CreateTokenResponse, error) {
+	m.exchangePKCEInputs = append(m.exchangePKCEInputs, in)
+	return m.exchangePKCEResult, m.exchangePKCEErr
+}
+
+func TestPkceAuthorizationEndpoint(t *testing.T) {
+	t.Run("default from region", func(t *testing.T) {
+		as := &AWSSSO{SsoRegion: "us-east-1"}
+		assert.Equal(t, "https://oidc.us-east-1.amazonaws.com/authorize", as.pkceAuthorizationEndpoint())
+	})
+
+	t.Run("custom endpoint without /authorize", func(t *testing.T) {
+		as := &AWSSSO{
+			SsoRegion:  "us-east-1",
+			ClientData: storage.RegisterClientData{AuthorizationEndpoint: "https://custom.example.com/oauth2"},
+		}
+		assert.Equal(t, "https://custom.example.com/oauth2/authorize", as.pkceAuthorizationEndpoint())
+	})
+
+	t.Run("custom endpoint already has /authorize", func(t *testing.T) {
+		as := &AWSSSO{
+			SsoRegion:  "us-east-1",
+			ClientData: storage.RegisterClientData{AuthorizationEndpoint: "https://custom.example.com/oauth2/authorize"},
+		}
+		assert.Equal(t, "https://custom.example.com/oauth2/authorize", as.pkceAuthorizationEndpoint())
+	})
+
+	t.Run("custom endpoint with trailing slash", func(t *testing.T) {
+		as := &AWSSSO{
+			SsoRegion:  "us-east-1",
+			ClientData: storage.RegisterClientData{AuthorizationEndpoint: "https://custom.example.com/oauth2/"},
+		}
+		assert.Equal(t, "https://custom.example.com/oauth2/authorize", as.pkceAuthorizationEndpoint())
+	})
+}
+
+func TestPkceRedirectURIBase(t *testing.T) {
+	as := &AWSSSO{}
+	assert.Equal(t, "http://127.0.0.1", as.pkceRedirectURIBase())
+}
+
+func TestSaveToken(t *testing.T) {
+	tfile, err := os.CreateTemp("", "*storage.json")
+	assert.NoError(t, err)
+	defer os.Remove(tfile.Name())
+
+	jstore, err := storage.OpenJsonStore(tfile.Name())
+	assert.NoError(t, err)
+
+	as := &AWSSSO{
+		key:   "test-key",
+		store: jstore,
+	}
+
+	token := storage.CreateTokenResponse{
+		AccessToken:  "test-access-token",
+		ExpiresIn:    3600,
+		ExpiresAt:    time.Now().Add(time.Hour).Unix(),
+		IdToken:      "test-id-token",
+		RefreshToken: "test-refresh-token",
+		TokenType:    "Bearer",
+	}
+
+	err = as.saveToken(token)
+	assert.NoError(t, err)
+	assert.Equal(t, token.AccessToken, as.Token.AccessToken)
+	assert.Equal(t, token.IdToken, as.Token.IdToken)
+
+	// confirm it was written to the store
+	var got storage.CreateTokenResponse
+	err = jstore.GetCreateTokenResponse("test-key", &got)
+	assert.NoError(t, err)
+	assert.Equal(t, "test-access-token", got.AccessToken)
+}
+
+func TestRegisterClientPKCE(t *testing.T) {
+	tfile, err := os.CreateTemp("", "*storage.json")
+	assert.NoError(t, err)
+	defer os.Remove(tfile.Name())
+
+	jstore, err := storage.OpenJsonStore(tfile.Name())
+	assert.NoError(t, err)
+
+	mock := &mockOIDCClient{
+		registerClientResult: storage.RegisterClientData{ // #nosec G101
+			ClientId:              "pkce-client-id",
+			ClientSecret:          "pkce-client-secret",
+			ClientSecretExpiresAt: time.Now().Add(time.Hour).Unix(),
+		},
+	}
+
+	as := &AWSSSO{
+		key:        "test",
+		SsoRegion:  "us-west-2",
+		StartUrl:   "https://d-test.awsapps.com/start",
+		ClientName: awsSSOClientName,
+		ClientType: awsSSOClientType,
+		store:      jstore,
+		oidcClient: mock,
+		SSOConfig:  &SSOConfig{settings: &Settings{AuthWorkflow: oidc.AuthWorkflowPKCE}},
+	}
+
+	err = as.registerClient(true)
+	assert.NoError(t, err)
+	assert.Equal(t, "pkce-client-id", as.ClientData.ClientId)
+
+	if assert.Len(t, mock.registerClientInputs, 1) {
+		in := mock.registerClientInputs[0]
+		assert.Equal(t, []string{"sso:account:access"}, in.Scopes)
+		assert.Equal(t, []string{"http://127.0.0.1"}, in.RedirectUris)
+		assert.Contains(t, in.GrantTypes, oidc.GrantTypeAuthorizationCode)
+	}
+}
+
+func TestReauthenticatePKCE(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		tfile, err := os.CreateTemp("", "*storage.json")
+		assert.NoError(t, err)
+		defer os.Remove(tfile.Name())
+
+		jstore, err := storage.OpenJsonStore(tfile.Name())
+		assert.NoError(t, err)
+
+		mock := &mockOIDCClient{
+			startPKCEFlowResult: oidc.PKCEAuthCodeFlow{
+				AuthorizationURL: "https://oidc.us-east-1.amazonaws.com/authorize?client_id=cid",
+				State:            "test-state",
+				CodeVerifier:     "test-verifier",
+			},
+			waitForCallbackResult: oidc.PKCECallback{Code: "auth-code"},
+			exchangePKCEResult: storage.CreateTokenResponse{ // #nosec G101
+				AccessToken:  "pkce-access-token",
+				ExpiresIn:    3600,
+				ExpiresAt:    time.Now().Add(time.Hour).Unix(),
+				IdToken:      "pkce-id-token",
+				RefreshToken: "pkce-refresh-token",
+				TokenType:    "Bearer",
+			},
+		}
+
+		as := &AWSSSO{
+			key:       "test",
+			SsoRegion: "us-east-1",
+			store:     jstore,
+			urlAction: "print",
+			ClientData: storage.RegisterClientData{
+				ClientId:     "cid",
+				ClientSecret: "csecret",
+			},
+			oidcClient: mock,
+			SSOConfig:  &SSOConfig{settings: &Settings{AuthWorkflow: oidc.AuthWorkflowPKCE}},
+		}
+
+		err = as.reauthenticatePKCE()
+		assert.NoError(t, err)
+		assert.Equal(t, "pkce-access-token", as.Token.AccessToken)
+		assert.Equal(t, "pkce-id-token", as.Token.IdToken)
+
+		// verify the code verifier and code were forwarded to ExchangePKCEAuthCode
+		if assert.Len(t, mock.exchangePKCEInputs, 1) {
+			in := mock.exchangePKCEInputs[0]
+			assert.Equal(t, "cid", in.ClientID)
+			assert.Equal(t, "csecret", in.ClientSecret)
+			assert.Equal(t, "auth-code", in.Code)
+			assert.Equal(t, "test-verifier", in.CodeVerifier)
+		}
+
+		// verify state was forwarded to WaitForPKCECallback
+		if assert.Len(t, mock.waitForCallbackInputs, 1) {
+			assert.Equal(t, "test-state", mock.waitForCallbackInputs[0].ExpectedState)
+		}
+	})
+
+	t.Run("StartPKCEAuthCodeFlow error", func(t *testing.T) {
+		tfile, err := os.CreateTemp("", "*storage.json")
+		assert.NoError(t, err)
+		defer os.Remove(tfile.Name())
+
+		jstore, err := storage.OpenJsonStore(tfile.Name())
+		assert.NoError(t, err)
+
+		mock := &mockOIDCClient{
+			startPKCEFlowErr: fmt.Errorf("pkce start failed"),
+		}
+
+		as := &AWSSSO{
+			key:        "test",
+			SsoRegion:  "us-east-1",
+			store:      jstore,
+			urlAction:  "print",
+			oidcClient: mock,
+			SSOConfig:  &SSOConfig{settings: &Settings{AuthWorkflow: oidc.AuthWorkflowPKCE}},
+		}
+
+		err = as.reauthenticatePKCE()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "unable to start pkce authorization")
+		assert.Contains(t, err.Error(), "pkce start failed")
+	})
+
+	t.Run("WaitForPKCECallback error", func(t *testing.T) {
+		tfile, err := os.CreateTemp("", "*storage.json")
+		assert.NoError(t, err)
+		defer os.Remove(tfile.Name())
+
+		jstore, err := storage.OpenJsonStore(tfile.Name())
+		assert.NoError(t, err)
+
+		mock := &mockOIDCClient{
+			startPKCEFlowResult: oidc.PKCEAuthCodeFlow{
+				AuthorizationURL: "https://oidc.us-east-1.amazonaws.com/authorize?client_id=cid",
+				State:            "test-state",
+				CodeVerifier:     "test-verifier",
+			},
+			waitForCallbackErr: fmt.Errorf("callback timed out"),
+		}
+
+		as := &AWSSSO{
+			key:        "test",
+			SsoRegion:  "us-east-1",
+			store:      jstore,
+			urlAction:  "print",
+			oidcClient: mock,
+			SSOConfig:  &SSOConfig{settings: &Settings{AuthWorkflow: oidc.AuthWorkflowPKCE}},
+		}
+
+		err = as.reauthenticatePKCE()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "unable to receive pkce callback")
+		assert.Contains(t, err.Error(), "callback timed out")
+	})
+
+	t.Run("ExchangePKCEAuthCode error", func(t *testing.T) {
+		tfile, err := os.CreateTemp("", "*storage.json")
+		assert.NoError(t, err)
+		defer os.Remove(tfile.Name())
+
+		jstore, err := storage.OpenJsonStore(tfile.Name())
+		assert.NoError(t, err)
+
+		mock := &mockOIDCClient{
+			startPKCEFlowResult: oidc.PKCEAuthCodeFlow{
+				AuthorizationURL: "https://oidc.us-east-1.amazonaws.com/authorize?client_id=cid",
+				State:            "test-state",
+				CodeVerifier:     "test-verifier",
+			},
+			waitForCallbackResult: oidc.PKCECallback{Code: "auth-code"},
+			exchangePKCEErr:       fmt.Errorf("token exchange failed"),
+		}
+
+		as := &AWSSSO{
+			key:        "test",
+			SsoRegion:  "us-east-1",
+			store:      jstore,
+			urlAction:  "print",
+			oidcClient: mock,
+			SSOConfig:  &SSOConfig{settings: &Settings{AuthWorkflow: oidc.AuthWorkflowPKCE}},
+		}
+
+		err = as.reauthenticatePKCE()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "unable to exchange pkce authorization code")
+		assert.Contains(t, err.Error(), "token exchange failed")
+	})
 }

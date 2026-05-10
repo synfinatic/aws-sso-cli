@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -18,7 +19,7 @@ import (
 
 const pkceCallbackSuccessHTML = "<html><body><h1>Authentication complete</h1><p>You can close this window and return to aws-sso.</p></body></html>"
 
-func (c *AWSClient) StartPKCEAuthCodeFlow(in StartPKCEAuthCodeInput) (PKCEAuthCodeFlow, error) {
+func (c *AWSClient) StartPKCEAuthCodeFlow(_ context.Context, in StartPKCEAuthCodeInput) (PKCEAuthCodeFlow, error) {
 	if in.AuthorizationEndpoint == "" {
 		return PKCEAuthCodeFlow{}, fmt.Errorf("authorization endpoint is required")
 	}
@@ -61,7 +62,7 @@ func (c *AWSClient) StartPKCEAuthCodeFlow(in StartPKCEAuthCodeInput) (PKCEAuthCo
 	q.Set("code_challenge_method", PKCECodeChallengeMethodS256)
 	q.Set("state", state)
 	if len(in.Scopes) > 0 {
-		q.Set("scopes", strings.Join(in.Scopes, " "))
+		q.Set("scope", strings.Join(in.Scopes, " "))
 	}
 	u.RawQuery = q.Encode()
 
@@ -128,7 +129,10 @@ func (c *AWSClient) WaitForPKCECallback(ctx context.Context, in WaitForPKCECallb
 	callbackCh := make(chan PKCECallback, 1)
 	errCh := make(chan error, 1)
 	mux := http.NewServeMux()
-	server := &http.Server{Handler: mux}
+	server := &http.Server{
+		ReadHeaderTimeout: time.Duration(5) * time.Second,
+		Handler:           mux,
+	}
 
 	mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		callback, callbackErr := parsePKCECallback(r.URL, in.ExpectedState)
@@ -182,7 +186,7 @@ func ValidatePKCEState(expected, got string) error {
 	if got == "" {
 		return fmt.Errorf("returned state is empty")
 	}
-	if expected != got {
+	if subtle.ConstantTimeCompare([]byte(expected), []byte(got)) != 1 {
 		return fmt.Errorf("state mismatch")
 	}
 	return nil

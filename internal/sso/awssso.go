@@ -55,7 +55,7 @@ type SsoAPI interface {
 type AWSSSO struct {
 	key              string // key in the settings file that names us
 	sso              SsoAPI
-	ssooidc          oidc.API
+	oidcClient       oidc.Client
 	store            storage.SecureStorage
 	ClientName       string                      `json:"ClientName"`
 	ClientType       string                      `json:"ClientType"`
@@ -91,7 +91,7 @@ func NewAWSSSO(s *SSOConfig, store storage.SecureStorage) *AWSSSO {
 		o.MaxBackoff = time.Duration(maxBackoff) * time.Second
 	})
 
-	oidcSession := oidc.NewAWSAPI(s.SSORegion, r)
+	oidcSession := oidc.NewAWS(s.SSORegion, r)
 
 	ssoSession := sso.New(sso.Options{
 		Region:  s.SSORegion,
@@ -101,7 +101,7 @@ func NewAWSSSO(s *SSOConfig, store storage.SecureStorage) *AWSSSO {
 	as := AWSSSO{
 		key:            s.key,
 		sso:            ssoSession,
-		ssooidc:        oidcSession,
+		oidcClient:     oidcSession,
 		store:          store,
 		ClientName:     awsSSOClientName,
 		ClientType:     awsSSOClientType,

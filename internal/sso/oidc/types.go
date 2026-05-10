@@ -17,14 +17,13 @@ type API interface {
 }
 
 // Client is the higher-level OIDC interface consumed by the sso package.
-// It intentionally supports generic token creation input so additional
-// workflows (for example PKCE authorization_code) can be added incrementally.
+// CreateToken is intentionally not exposed; callers should use the
+// workflow-specific methods (PollDeviceCodeToken, ExchangePKCEAuthCode).
 type Client interface {
 	RegisterClient(context.Context, RegisterClientInput) (storage.RegisterClientData, error)
 	StartDeviceAuthorization(context.Context, StartDeviceAuthorizationInput) (storage.StartDeviceAuthData, error)
-	CreateToken(context.Context, CreateTokenInput) (storage.CreateTokenResponse, error)
 	PollDeviceCodeToken(context.Context, PollDeviceCodeTokenInput) (storage.CreateTokenResponse, error)
-	StartPKCEAuthCodeFlow(StartPKCEAuthCodeInput) (PKCEAuthCodeFlow, error)
+	StartPKCEAuthCodeFlow(context.Context, StartPKCEAuthCodeInput) (PKCEAuthCodeFlow, error)
 	WaitForPKCECallback(context.Context, WaitForPKCECallbackInput) (PKCECallback, error)
 	ExchangePKCEAuthCode(context.Context, ExchangePKCEAuthCodeInput) (storage.CreateTokenResponse, error)
 }

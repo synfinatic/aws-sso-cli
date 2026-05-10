@@ -3,6 +3,10 @@
 
 ## [Unreleased]
 
+### New Features
+
+* Add support for `AuthWorkflow` and PKCE authorization_code workflow (default) #1233
+
 ## [v2.1.0] - 2025-09-03
 
 ### New Features

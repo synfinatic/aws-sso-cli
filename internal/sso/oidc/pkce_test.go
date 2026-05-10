@@ -18,7 +18,7 @@ func TestStartPKCEAuthCodeFlow(t *testing.T) {
 	t.Run("success with generated state", func(t *testing.T) {
 		client := NewAWSWithAPI(&mockOIDCAPI{})
 
-		flow, err := client.StartPKCEAuthCodeFlow(StartPKCEAuthCodeInput{
+		flow, err := client.StartPKCEAuthCodeFlow(context.Background(), StartPKCEAuthCodeInput{
 			AuthorizationEndpoint: "https://auth.example.com/oauth2/authorize",
 			ClientID:              "client-id",
 			RedirectURI:           "http://localhost:12345/callback",
@@ -46,7 +46,7 @@ func TestStartPKCEAuthCodeFlow(t *testing.T) {
 	t.Run("success with provided state", func(t *testing.T) {
 		client := NewAWSWithAPI(&mockOIDCAPI{})
 
-		flow, err := client.StartPKCEAuthCodeFlow(StartPKCEAuthCodeInput{
+		flow, err := client.StartPKCEAuthCodeFlow(context.Background(), StartPKCEAuthCodeInput{
 			AuthorizationEndpoint: "https://auth.example.com/oauth2/authorize",
 			ClientID:              "client-id",
 			RedirectURI:           "http://localhost:12345/callback",
@@ -60,12 +60,34 @@ func TestStartPKCEAuthCodeFlow(t *testing.T) {
 	t.Run("invalid input", func(t *testing.T) {
 		client := NewAWSWithAPI(&mockOIDCAPI{})
 
-		_, err := client.StartPKCEAuthCodeFlow(StartPKCEAuthCodeInput{})
+		_, err := client.StartPKCEAuthCodeFlow(context.Background(), StartPKCEAuthCodeInput{})
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "authorization endpoint is required")
 
-		_, err = client.StartPKCEAuthCodeFlow(StartPKCEAuthCodeInput{
+		_, err = client.StartPKCEAuthCodeFlow(context.Background(), StartPKCEAuthCodeInput{
+			AuthorizationEndpoint: "https://auth.example.com/authorize",
+		})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "client id is required")
+
+		_, err = client.StartPKCEAuthCodeFlow(context.Background(), StartPKCEAuthCodeInput{
+			AuthorizationEndpoint: "https://auth.example.com/authorize",
+			ClientID:              "client-id",
+		})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "redirect uri is required")
+
+		_, err = client.StartPKCEAuthCodeFlow(context.Background(), StartPKCEAuthCodeInput{
 			AuthorizationEndpoint: "://bad-url",
+			ClientID:              "client-id",
+			RedirectURI:           "http://localhost:12345/callback",
+		})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid authorization endpoint")
+
+		// URL that parses without error but has no scheme or host
+		_, err = client.StartPKCEAuthCodeFlow(context.Background(), StartPKCEAuthCodeInput{
+			AuthorizationEndpoint: "not-a-url-just-a-path",
 			ClientID:              "client-id",
 			RedirectURI:           "http://localhost:12345/callback",
 		})
@@ -111,10 +133,53 @@ func TestExchangePKCEAuthCode(t *testing.T) {
 		_, err := client.ExchangePKCEAuthCode(context.Background(), ExchangePKCEAuthCodeInput{})
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "client id is required")
+
+		_, err = client.ExchangePKCEAuthCode(context.Background(), ExchangePKCEAuthCodeInput{
+			ClientID: "client-id",
+		})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "authorization code is required")
+
+		_, err = client.ExchangePKCEAuthCode(context.Background(), ExchangePKCEAuthCodeInput{
+			ClientID: "client-id",
+			Code:     "auth-code",
+		})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "code verifier is required")
+
+		_, err = client.ExchangePKCEAuthCode(context.Background(), ExchangePKCEAuthCodeInput{
+			ClientID:     "client-id",
+			Code:         "auth-code",
+			CodeVerifier: "verifier",
+		})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "redirect uri is required")
 	})
 }
 
 func TestWaitForPKCECallback(t *testing.T) {
+	t.Run("invalid input", func(t *testing.T) {
+		client := NewAWSWithAPI(&mockOIDCAPI{})
+
+		_, err := client.WaitForPKCECallback(context.Background(), WaitForPKCECallbackInput{})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "redirect uri is required")
+
+		_, err = client.WaitForPKCECallback(context.Background(), WaitForPKCECallbackInput{
+			RedirectURI: "http://127.0.0.1:12345/callback",
+		})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "expected state is required")
+
+		// URL that parses but has no scheme/host
+		_, err = client.WaitForPKCECallback(context.Background(), WaitForPKCECallbackInput{
+			RedirectURI:   "not-a-url",
+			ExpectedState: "state",
+		})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid redirect uri")
+	})
+
 	t.Run("success", func(t *testing.T) {
 		client := NewAWSWithAPI(&mockOIDCAPI{})
 		redirectURI := testPKCERedirectURI(t)
@@ -154,10 +219,65 @@ func TestWaitForPKCECallback(t *testing.T) {
 	})
 
 	t.Run("invalid state", func(t *testing.T) {
+		err := pkceCallbackError(t, "expected-state", "?code=auth-code&state=wrong-state")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "state mismatch")
+	})
+
+	t.Run("missing code in callback", func(t *testing.T) {
+		err := pkceCallbackError(t, "expected-state", "?state=expected-state")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "missing authorization code")
+	})
+
+	t.Run("redirect uri without path exercises default path", func(t *testing.T) {
 		client := NewAWSWithAPI(&mockOIDCAPI{})
-		redirectURI := testPKCERedirectURI(t)
+		// Allocate a free port, then use a redirect URI with no path so path defaults to "/"
+		ln, err := net.Listen("tcp", "127.0.0.1:0")
+		assert.NoError(t, err)
+		port := ln.Addr().(*net.TCPAddr).Port
+		_ = ln.Close()
+		redirectURI := fmt.Sprintf("http://127.0.0.1:%d", port)
+
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
+
+		resultCh := make(chan PKCECallback, 1)
+		errCh := make(chan error, 1)
+		go func() {
+			callback, err := client.WaitForPKCECallback(ctx, WaitForPKCECallbackInput{
+				RedirectURI:   redirectURI,
+				ExpectedState: "my-state",
+			})
+			if err != nil {
+				errCh <- err
+				return
+			}
+			resultCh <- callback
+		}()
+
+		waitForPKCEListener(t, redirectURI+"/")
+
+		resp, err := http.Get(fmt.Sprintf("%s/?code=my-code&state=my-state", redirectURI))
+		assert.NoError(t, err)
+		if resp != nil {
+			_ = resp.Body.Close()
+		}
+
+		select {
+		case callback := <-resultCh:
+			assert.Equal(t, "my-code", callback.Code)
+		case err := <-errCh:
+			assert.NoError(t, err)
+		case <-ctx.Done():
+			t.Fatalf("timed out: %v", ctx.Err())
+		}
+	})
+
+	t.Run("context canceled before callback", func(t *testing.T) {
+		client := NewAWSWithAPI(&mockOIDCAPI{})
+		redirectURI := testPKCERedirectURI(t)
+		ctx, cancel := context.WithCancel(context.Background())
 
 		errCh := make(chan error, 1)
 		go func() {
@@ -169,19 +289,14 @@ func TestWaitForPKCECallback(t *testing.T) {
 		}()
 
 		waitForPKCEListener(t, redirectURI)
-
-		resp, err := http.Get(fmt.Sprintf("%s?code=auth-code&state=wrong-state", redirectURI))
-		assert.NoError(t, err)
-		if resp != nil {
-			_ = resp.Body.Close()
-		}
+		cancel()
 
 		select {
 		case err := <-errCh:
 			assert.Error(t, err)
-			assert.Contains(t, err.Error(), "state mismatch")
-		case <-ctx.Done():
-			t.Fatalf("timed out waiting for PKCE callback error: %v", ctx.Err())
+			assert.ErrorIs(t, err, context.Canceled)
+		case <-time.After(5 * time.Second):
+			t.Fatal("timed out waiting for context cancellation")
 		}
 	})
 }
@@ -227,4 +342,39 @@ func waitForPKCEListener(t *testing.T, redirectURI string) {
 	}
 
 	t.Fatalf("pkce listener did not start for %s", redirectURI)
+}
+
+// pkceCallbackError starts a WaitForPKCECallback listener, sends an HTTP GET with
+// the given query string, and returns the error from the callback handler.
+func pkceCallbackError(t *testing.T, expectedState, query string) error {
+	t.Helper()
+	client := NewAWSWithAPI(&mockOIDCAPI{})
+	redirectURI := testPKCERedirectURI(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	errCh := make(chan error, 1)
+	go func() {
+		_, err := client.WaitForPKCECallback(ctx, WaitForPKCECallbackInput{
+			RedirectURI:   redirectURI,
+			ExpectedState: expectedState,
+		})
+		errCh <- err
+	}()
+
+	waitForPKCEListener(t, redirectURI)
+
+	resp, err := http.Get(redirectURI + query) //nolint:noctx
+	assert.NoError(t, err)
+	if resp != nil {
+		_ = resp.Body.Close()
+	}
+
+	select {
+	case err := <-errCh:
+		return err
+	case <-ctx.Done():
+		t.Fatalf("timed out waiting for PKCE callback error")
+		return nil
+	}
 }
