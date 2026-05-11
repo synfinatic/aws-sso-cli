@@ -1,4 +1,4 @@
-package sso
+package cache
 
 /*
  * AWS SSO CLI
@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
+	ssoconfig "github.com/synfinatic/aws-sso-cli/internal/sso/config"
 )
 
 const (
@@ -32,7 +33,7 @@ const (
 
 // Refresh updates our cached Roles based on AWS SSO & our Config
 // but does not save this data!  Returns the ARNs of roles added/deleted
-func (c *Cache) Refresh(sso RoleProvider, config *SSOConfig, ssoName string, threads int, s SettingsReader) ([]string, []string, error) {
+func (c *Cache) Refresh(sso ssoconfig.RoleProvider, config *ssoconfig.SSOConfig, ssoName string, threads int, s SettingsReader) ([]string, []string, error) {
 	// Only refresh once per execution
 	if c.refreshed {
 		return nil, nil, nil
@@ -153,7 +154,7 @@ func (c *Cache) Refresh(sso RoleProvider, config *SSOConfig, ssoName string, thr
 }
 
 // NewRoles merges data from AWS SSO and the config file into a fresh Roles struct.
-func (c *Cache) NewRoles(as RoleProvider, config *SSOConfig, threads int, s SettingsReader) (*Roles, error) {
+func (c *Cache) NewRoles(as ssoconfig.RoleProvider, config *ssoconfig.SSOConfig, threads int, s SettingsReader) (*Roles, error) {
 	r := Roles{
 		SSORegion:     config.SSORegion,
 		StartUrl:      config.StartUrl,
@@ -178,7 +179,7 @@ func (c *Cache) NewRoles(as RoleProvider, config *SSOConfig, threads int, s Sett
 }
 
 // fetchSSORole is a goroutine worker that fetches RoleInfo for each AccountInfo received.
-func fetchSSORole(id int, as RoleProvider, aInfo <-chan AccountInfo, rInfo chan<- []RoleInfo) {
+func fetchSSORole(id int, as ssoconfig.RoleProvider, aInfo <-chan ssoconfig.AccountInfo, rInfo chan<- []ssoconfig.RoleInfo) {
 	for {
 		a := <-aInfo
 		if a.AccountId == "" {
@@ -196,7 +197,7 @@ func fetchSSORole(id int, as RoleProvider, aInfo <-chan AccountInfo, rInfo chan<
 
 // processSSORoles updates r with the list of RoleInfo using the SSOCache for
 // preserving existing Expires and History tag values.
-func processSSORoles(roles []RoleInfo, cache *SSOCache, r *Roles) {
+func processSSORoles(roles []ssoconfig.RoleInfo, cache *SSOCache, r *Roles) {
 	for _, role := range roles {
 		log.Debug(fmt.Sprintf("Processing %s:%s", role.AccountId, role.RoleName))
 		accountId := role.GetAccountId64()
@@ -236,7 +237,7 @@ func processSSORoles(roles []RoleInfo, cache *SSOCache, r *Roles) {
 // addSSORoles retrieves all SSO roles from AWS SSO and places them in r.
 // The first account is fetched serially to allow token refresh; remaining
 // accounts are fetched in parallel via a bounded worker pool.
-func (c *Cache) addSSORoles(r *Roles, as RoleProvider, threads int, s SettingsReader) error {
+func (c *Cache) addSSORoles(r *Roles, as ssoconfig.RoleProvider, threads int, s SettingsReader) error {
 	cache := c.GetSSO()
 
 	accounts, err := as.GetAccounts()
@@ -268,8 +269,8 @@ func (c *Cache) addSSORoles(r *Roles, as RoleProvider, threads int, s SettingsRe
 			workers = len(accounts)
 		}
 
-		tasks := make(chan AccountInfo, len(accounts))
-		results := make(chan []RoleInfo, len(accounts))
+		tasks := make(chan ssoconfig.AccountInfo, len(accounts))
+		results := make(chan []ssoconfig.RoleInfo, len(accounts))
 
 		// feed our workers with our other accounts
 		for _, aInfo := range accounts {
@@ -310,7 +311,7 @@ const (
 
 // addConfigRoles decorates the provided Roles with the contents of our config file.
 // For accounts and roles not in SSO, entries may also be created here.
-func (c *Cache) addConfigRoles(r *Roles, config *SSOConfig) error {
+func (c *Cache) addConfigRoles(r *Roles, config *ssoconfig.SSOConfig) error {
 	for accountId, account := range config.Accounts {
 		id, err := awsparse.AccountIdToInt64(accountId)
 		if err != nil {

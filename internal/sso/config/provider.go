@@ -1,4 +1,4 @@
-package sso
+package config
 
 /*
  * AWS SSO CLI
@@ -18,17 +18,9 @@ package sso
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import (
-	ssocache "github.com/synfinatic/aws-sso-cli/internal/sso/cache"
-	ssoconfig "github.com/synfinatic/aws-sso-cli/internal/sso/config"
-)
-
-// Type aliases for backward compatibility with the flat sso/ package.
-// These will be removed once the old flat files are deleted.
-type SettingsReader = ssocache.SettingsReader
-type RoleProvider = ssoconfig.RoleProvider
-type AccountInfo = ssoconfig.AccountInfo
-type RoleInfo = ssoconfig.RoleInfo
-
-// Compile-time assertion that *Settings satisfies ssocache.SettingsReader.
-var _ ssocache.SettingsReader = (*Settings)(nil)
+// RoleProvider is the interface that wraps the AWS SSO role-fetching operations.
+// *auth.AWSSSO satisfies this interface.
+type RoleProvider interface {
+	GetAccounts() ([]AccountInfo, error)
+	GetRoles(account AccountInfo) ([]RoleInfo, error)
+}

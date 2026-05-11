@@ -1,4 +1,4 @@
-package sso
+package auth
 
 /*
  * AWS SSO CLI
@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/sso"
+	awssso "github.com/aws/aws-sdk-go-v2/service/sso"
 	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
@@ -37,6 +37,15 @@ const (
 	DEFAULT_AUTH_COLOR = "blue"
 	DEFAULT_AUTH_ICON  = "fingerprint"
 	VERIFY_MSG         = "\n\tVerify this code in your browser: %s\n"
+)
+
+const (
+	awsSSOClientName = "aws-sso-cli"
+	awsSSOClientType = "public"
+	// The default values for ODIC defined in:
+	// https://tools.ietf.org/html/draft-ietf-oauth-device-flow-15#section-3.5
+	SLOW_DOWN_SEC  = 5
+	RETRY_INTERVAL = 5
 )
 
 // ValidAuthToken returns true if we have a valid AWS SSO authentication token
@@ -109,15 +118,6 @@ func (as *AWSSSO) reauthenticate() error {
 		return fmt.Errorf("unsupported auth workflow: %s", as.getAuthWorkflow())
 	}
 }
-
-const (
-	awsSSOClientName = "aws-sso-cli"
-	awsSSOClientType = "public"
-	// The default values for ODIC defined in:
-	// https://tools.ietf.org/html/draft-ietf-oauth-device-flow-15#section-3.5
-	SLOW_DOWN_SEC  = 5
-	RETRY_INTERVAL = 5
-)
 
 // registerClient does the needful to talk to AWS or read our cache to get the
 // RegisterClientData for later steps and saves it to our secret store
@@ -379,7 +379,7 @@ func (as *AWSSSO) Logout() error {
 		}
 	}
 
-	input := &sso.LogoutInput{
+	input := &awssso.LogoutInput{
 		AccessToken: aws.String(token),
 	}
 

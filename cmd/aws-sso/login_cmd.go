@@ -19,7 +19,7 @@ package main
  */
 
 import (
-	"github.com/synfinatic/aws-sso-cli/internal/sso"
+	ssoauth "github.com/synfinatic/aws-sso-cli/internal/sso/auth"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
 
@@ -49,7 +49,7 @@ func checkAuth(ctx *RunContext) bool {
 			log.Fatal("unable to select SSO", "sso", ctx.Cli.SSO, err.Error())
 		}
 
-		AwsSSO = sso.NewAWSSSO(s, ctx.Store)
+		AwsSSO = ssoauth.NewAWSSSO(s, ctx.Store)
 	}
 
 	return AwsSSO.ValidAuthToken()

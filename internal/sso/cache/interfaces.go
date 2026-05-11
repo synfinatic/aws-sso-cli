@@ -1,4 +1,4 @@
-package sso
+package cache
 
 /*
  * AWS SSO CLI
@@ -18,17 +18,16 @@ package sso
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import (
-	ssocache "github.com/synfinatic/aws-sso-cli/internal/sso/cache"
-	ssoconfig "github.com/synfinatic/aws-sso-cli/internal/sso/config"
-)
-
-// Type aliases for backward compatibility with the flat sso/ package.
-// These will be removed once the old flat files are deleted.
-type SettingsReader = ssocache.SettingsReader
-type RoleProvider = ssoconfig.RoleProvider
-type AccountInfo = ssoconfig.AccountInfo
-type RoleInfo = ssoconfig.RoleInfo
-
-// Compile-time assertion that *Settings satisfies ssocache.SettingsReader.
-var _ ssocache.SettingsReader = (*Settings)(nil)
+// SettingsReader is the interface that provides cache-relevant configuration
+// from Settings without exposing the full concrete type.
+// *sso.Settings satisfies this interface.
+type SettingsReader interface {
+	GetCacheFile() string
+	GetDefaultSSO() string
+	GetHistoryLimit() int64
+	GetHistoryMinutes() int64
+	GetProfileFormat() string
+	GetEnvVarTags() map[string]string
+	GetThreads() int
+	GetSSONames() []string
+}

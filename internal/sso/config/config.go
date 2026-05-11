@@ -1,4 +1,4 @@
-package sso
+package config
 
 /*
  * AWS SSO CLI
@@ -31,6 +31,19 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/tags"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
+
+// SSOConfigSettings holds the settings that Settings passes to SSOConfig.Refresh().
+// Using a value struct avoids a circular import between config/ and sso/.
+type SSOConfigSettings struct {
+	MaxBackoff     int
+	MaxRetry       int
+	UrlAction      uri.Action
+	Browser        string
+	UrlExecCommand []string
+	AuthWorkflow   oidc.AuthWorkflow
+	CacheRefresh   int64
+	ConfigFile     string
+}
 
 type SSOConfig struct {
 	key           string                 // our key in Settings.SSO[]
@@ -74,23 +87,43 @@ type SSORole struct {
 	SourceIdentity string            `koanf:"SourceIdentity" yaml:"SourceIdentity,omitempty"`
 }
 
+// GetKey returns the key used to identify this SSOConfig in Settings.SSO.
+func (c *SSOConfig) GetKey() string {
+	return c.key
+}
+
+// SetKey sets the key for this SSOConfig instance (used by Settings.LoadSettings).
+func (c *SSOConfig) SetKey(k string) {
+	c.key = k
+}
+
+// GetConfigFile returns the path to the parent config file.
+func (c *SSOConfig) GetConfigFile() string {
+	return c.configFile
+}
+
+// SetConfigFile sets the path to the parent config file.
+func (c *SSOConfig) SetConfigFile(f string) {
+	c.configFile = f
+}
+
 // Refresh should be called any time you load the SSOConfig into memory or add a role
 // to update the Role -> Account references
-func (c *SSOConfig) Refresh(s *Settings) {
-	c.MaxBackoff = s.MaxBackoff
-	c.MaxRetry = s.MaxRetry
+func (c *SSOConfig) Refresh(params SSOConfigSettings) {
+	c.MaxBackoff = params.MaxBackoff
+	c.MaxRetry = params.MaxRetry
 
 	if c.AuthUrlAction == uri.Undef {
-		c.AuthUrlAction = s.UrlAction
+		c.AuthUrlAction = params.UrlAction
 	}
 
 	// copy settings fields needed by AWSSSO and cache
-	c.UrlAction = s.UrlAction
-	c.Browser = s.Browser
-	c.UrlExecCommand = s.UrlExecCommand
-	c.AuthWorkflow = s.AuthWorkflow
-	c.CacheRefresh = s.CacheRefresh
-	c.configFile = s.configFile
+	c.UrlAction = params.UrlAction
+	c.Browser = params.Browser
+	c.UrlExecCommand = params.UrlExecCommand
+	c.AuthWorkflow = params.AuthWorkflow
+	c.CacheRefresh = params.CacheRefresh
+	c.configFile = params.ConfigFile
 
 	for accountId, a := range c.Accounts {
 		// normalize the accountId to a string representation of an integer
@@ -149,34 +182,27 @@ func (s *SSOConfig) GetRoles() []*SSORole {
 	return roles
 }
 
-// returns all of the available account & role tags for our SSO Provider
+// GetAllTags returns all of the available account & role tags for our SSO Provider
 func (s *SSOConfig) GetAllTags() *tags.TagsList {
-	tags := tags.NewTagsList()
+	t := tags.NewTagsList()
 
 	for _, accountInfo := range s.Accounts {
-		/*
-			if accountInfo.Tags != nil {
-				for k, v := range accountInfo.GetAllTags(account) {
-					tags.Add(k, v)
-				}
-			}
-		*/
 		for _, roleInfo := range accountInfo.Roles {
 			for k, v := range roleInfo.GetAllTags() {
-				tags.Add(k, v)
+				t.Add(k, v)
 			}
 		}
 	}
-	return tags
+	return t
 }
 
 // GetRoleMatches finds all the roles which match all of the given tags
-func (s *SSOConfig) GetRoleMatches(tags map[string]string) []*SSORole {
+func (s *SSOConfig) GetRoleMatches(tagMap map[string]string) []*SSORole {
 	match := []*SSORole{}
 	for _, role := range s.GetRoles() {
 		isMatch := true
 		roleTags := role.GetAllTags()
-		for tk, tv := range tags {
+		for tk, tv := range tagMap {
 			if roleTags[tk] != tv {
 				isMatch = false
 				break
@@ -233,20 +259,20 @@ func (a *SSOAccount) GetAllTags(id int64) map[string]string {
 	if a.Name != "" {
 		accountName = strings.ReplaceAll(a.Name, " ", "_")
 	}
-	tags := map[string]string{
+	t := map[string]string{
 		"AccountName": accountName,
 	}
 	if id > 0 {
 		accountId, _ := awsparse.AccountIdToString(id)
-		tags["AccountId"] = accountId
+		t["AccountId"] = accountId
 	}
 	if a.DefaultRegion != "" {
-		tags["DefaultRegion"] = a.DefaultRegion
+		t["DefaultRegion"] = a.DefaultRegion
 	}
 	for k, v := range a.Tags {
-		tags[k] = v
+		t[k] = v
 	}
-	return tags
+	return t
 }
 
 func (r *SSORole) SetParentAccount(a *SSOAccount) {
@@ -259,24 +285,24 @@ func (a *SSOAccount) SetParentConfig(c *SSOConfig) {
 
 // GetAllTags returns all of the user defined and calculated tags for this role
 func (r *SSORole) GetAllTags() map[string]string {
-	tags := map[string]string{}
+	t := map[string]string{}
 	// First pull in the account tags
 	for k, v := range r.account.GetAllTags(r.GetAccountId64()) {
-		tags[k] = v
+		t[k] = v
 	}
 
 	// Then override/add any specific tags
-	tags["RoleName"] = r.GetRoleName()
-	tags["AccountId"] = r.GetAccountId()
+	t["RoleName"] = r.GetRoleName()
+	t["AccountId"] = r.GetAccountId()
 
 	if r.DefaultRegion != "" {
-		tags["DefaultRegion"] = r.DefaultRegion
+		t["DefaultRegion"] = r.DefaultRegion
 	}
 	for k, v := range r.Tags {
-		tags[k] = v
+		t[k] = v
 	}
 
-	return tags
+	return t
 }
 
 // GetRoleName returns the role name portion of the ARN

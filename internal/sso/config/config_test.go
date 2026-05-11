@@ -1,4 +1,4 @@
-package sso
+package config
 
 /*
  * AWS SSO CLI
@@ -83,11 +83,10 @@ func TestGetRoleMatches(t *testing.T) {
 }
 
 func TestRefresh(t *testing.T) {
-	settings := &Settings{
-		ProfileFormat: "{{ .AccountIdPad }}:{{ .RoleName }}",
-		UrlAction:     uri.Open,
-		MaxBackoff:    60,
-		MaxRetry:      3,
+	params := SSOConfigSettings{
+		UrlAction:  uri.Open,
+		MaxBackoff: 60,
+		MaxRetry:   3,
 	}
 
 	c := &SSOConfig{
@@ -105,7 +104,7 @@ func TestRefresh(t *testing.T) {
 			},
 		},
 	}
-	c.Refresh(settings) // no crash
+	c.Refresh(params) // no crash
 	assert.Equal(t, SSOAccount{config: c}, *(c.Accounts["123456789012"]))
 
 	assert.Equal(t, c.AuthUrlAction, uri.Open)
@@ -115,7 +114,7 @@ func TestRefresh(t *testing.T) {
 	c.Accounts["123456789012"].Roles = map[string]*SSORole{}
 	c.Accounts["123456789012"].Roles["FooBar"] = nil
 
-	c.Refresh(settings) // no crash
+	c.Refresh(params) // no crash
 	assert.Equal(t, *(c.Accounts["123456789012"].Roles["FooBar"]), SSORole{
 		ARN:     "arn:aws:iam::123456789012:role/FooBar",
 		account: c.Accounts["123456789012"],

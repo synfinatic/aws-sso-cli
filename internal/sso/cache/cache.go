@@ -1,4 +1,4 @@
-package sso
+package cache
 
 /*
  * AWS SSO CLI
@@ -25,11 +25,20 @@ import (
 	"time"
 
 	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
+	ssoconfig "github.com/synfinatic/aws-sso-cli/internal/sso/config"
+	"github.com/synfinatic/aws-sso-cli/internal/sso/roles"
 )
 
 const (
 	CACHE_VERSION = 4
 )
+
+// Re-export roles types for backward compatibility with sso/ package consumers
+type Roles = roles.Roles
+type AWSAccount = roles.AWSAccount
+type AWSRole = roles.AWSRole
+type AWSRoleFlat = roles.AWSRoleFlat
+type RoleTags = roles.RoleTags
 
 type SSOCache struct {
 	LastUpdate int64    `json:"LastUpdate,omitempty"` // when these records for this SSO were updated
@@ -39,7 +48,7 @@ type SSOCache struct {
 	name       string   // name of this SSO Instance
 }
 
-// Our Cachefile.  Sub-structs defined in sso/cache.go
+// Our Cachefile.  Sub-structs defined in cache.go
 type Cache struct {
 	Version         int64                `json:"Version"`
 	cacheFile       string               // path to the cache file
@@ -47,6 +56,26 @@ type Cache struct {
 	SSO             map[string]*SSOCache `json:"SSO,omitempty"`
 	ssoName         string               // name of SSO that is active
 	refreshed       bool                 // track if we have run Refresh() since this is expensive
+}
+
+// GetSSOName returns the name of the active SSO instance.
+func (c *Cache) GetSSOName() string {
+	return c.ssoName
+}
+
+// SetSSOName sets the name of the active SSO instance.
+func (c *Cache) SetSSOName(name string) {
+	c.ssoName = name
+}
+
+// IsRefreshed returns whether the cache has been refreshed in this execution.
+func (c *Cache) IsRefreshed() bool {
+	return c.refreshed
+}
+
+// SetRefreshed sets the refreshed state.
+func (c *Cache) SetRefreshed(b bool) {
+	c.refreshed = b
 }
 
 func (c *Cache) GetSSOByName(name string) *SSOCache {
@@ -66,13 +95,13 @@ func (c *Cache) GetSSOByName(name string) *SSOCache {
 	return c.SSO[name]
 }
 
-func OpenCache(f string, s *Settings) (*Cache, error) {
+func OpenCache(f string, s SettingsReader) (*Cache, error) {
 	cache := Cache{
 		cacheFile:       f,
 		ConfigCreatedAt: 0,
 		Version:         1, // use an invalid default version for cache files without a version
 		SSO:             map[string]*SSOCache{},
-		ssoName:         s.DefaultSSO, // default to the config file default
+		ssoName:         s.GetDefaultSSO(), // default to the config file default
 	}
 
 	var err error
@@ -118,7 +147,7 @@ func (c *Cache) GetSSO() *SSOCache {
 // Expired returns if our Roles cache data is too old.
 // If configFile is a valid file, we check the lastModificationTime of that file
 // vs. the ConfigCreatedAt to determine if the cache needs to be updated
-func (c *Cache) Expired(s *SSOConfig) error {
+func (c *Cache) Expired(s *ssoconfig.SSOConfig) error {
 	if c.Version < CACHE_VERSION {
 		return fmt.Errorf("local cache is out of date; current cache version %d is less than %d", c.Version, CACHE_VERSION)
 	}
@@ -166,18 +195,18 @@ func (c *Cache) Save(updateTime bool) error {
 	return nil
 }
 
-// Check to see if our cache needs to be refreshed
-func (c *SSOCache) NeedsRefresh(s *SSOConfig, settings *Settings) bool {
-	checkHash := s.GetConfigHash(settings.ProfileFormat)
+// NeedsRefresh checks whether the config hash has changed
+func (c *SSOCache) NeedsRefresh(s *ssoconfig.SSOConfig, settings SettingsReader) bool {
+	checkHash := s.GetConfigHash(settings.GetProfileFormat())
 	return checkHash != c.ConfigHash
 }
 
-// pruneSSO removes any SSO instances that are no longer configured
-func (c *Cache) PruneSSO(settings *Settings) {
+// PruneSSO removes any SSO instances that are no longer configured
+func (c *Cache) PruneSSO(settings SettingsReader) {
 	log.Debug("pruning our cache of outdated SSO instances")
 	for sso := range c.SSO {
 		hasSSO := false
-		for s := range settings.SSO {
+		for _, s := range settings.GetSSONames() {
 			if s == sso {
 				log.Debug("keeping in cache", "SSOName", sso)
 				hasSSO = true

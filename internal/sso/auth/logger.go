@@ -1,4 +1,4 @@
-package sso
+package auth
 
 /*
  * AWS SSO CLI
@@ -19,16 +19,12 @@ package sso
  */
 
 import (
-	ssocache "github.com/synfinatic/aws-sso-cli/internal/sso/cache"
-	ssoconfig "github.com/synfinatic/aws-sso-cli/internal/sso/config"
+	"github.com/synfinatic/aws-sso-cli/internal/logger"
+	"github.com/synfinatic/flexlog"
 )
 
-// Type aliases for backward compatibility with the flat sso/ package.
-// These will be removed once the old flat files are deleted.
-type SettingsReader = ssocache.SettingsReader
-type RoleProvider = ssoconfig.RoleProvider
-type AccountInfo = ssoconfig.AccountInfo
-type RoleInfo = ssoconfig.RoleInfo
+var log flexlog.FlexLogger
 
-// Compile-time assertion that *Settings satisfies ssocache.SettingsReader.
-var _ ssocache.SettingsReader = (*Settings)(nil)
+func init() {
+	log = logger.GetLogger()
+}
