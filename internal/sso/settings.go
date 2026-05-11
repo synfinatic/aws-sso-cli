@@ -195,7 +195,10 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 		}
 	}
 
-	s.SSO[s.DefaultSSO].Refresh(s.ToSSOConfigSettings())
+	params := s.ToSSOConfigSettings()
+	for _, v := range s.SSO {
+		v.Refresh(params)
+	}
 
 	s.applyDeprecations()
 

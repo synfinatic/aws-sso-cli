@@ -92,6 +92,37 @@ func TestConfigProfilesUrlAction(t *testing.T) {
 	assert.Equal(t, uri.ConfigProfilesOpenUrlContainer, settings.ConfigProfilesUrlAction)
 }
 
+// TestAllSSOInstancesRefreshed ensures that every configured SSO instance (not
+// just the default) receives settings-derived fields (configFile, UrlAction,
+// Browser, AuthWorkflow, CacheRefresh, etc.) during LoadSettings.  This is a
+// regression test for the bug where only s.SSO[s.DefaultSSO] was refreshed.
+func TestAllSSOInstancesRefreshed(t *testing.T) {
+	t.Parallel()
+	// settings2.yaml has three SSO instances: Default, Another, Bug292
+	settings, err := LoadSettings("./testdata/settings2.yaml", TEST_CACHE_FILE,
+		map[string]interface{}{}, OverrideSettings{})
+	assert.NoError(t, err)
+	assert.Len(t, settings.SSO, 3)
+
+	expectedCacheFile := "./testdata/settings2.yaml"
+	for name, sso := range settings.SSO {
+		assert.Equal(t, expectedCacheFile, sso.GetConfigFile(),
+			"SSO %q: configFile not set after LoadSettings", name)
+		assert.Equal(t, settings.UrlAction, sso.UrlAction,
+			"SSO %q: UrlAction not propagated", name)
+		assert.Equal(t, settings.Browser, sso.Browser,
+			"SSO %q: Browser not propagated", name)
+		assert.Equal(t, settings.AuthWorkflow, sso.AuthWorkflow,
+			"SSO %q: AuthWorkflow not propagated", name)
+		assert.Equal(t, settings.CacheRefresh, sso.CacheRefresh,
+			"SSO %q: CacheRefresh not propagated", name)
+		assert.Equal(t, settings.MaxBackoff, sso.MaxBackoff,
+			"SSO %q: MaxBackoff not propagated", name)
+		assert.Equal(t, settings.MaxRetry, sso.MaxRetry,
+			"SSO %q: MaxRetry not propagated", name)
+	}
+}
+
 func (suite *SettingsTestSuite) TestGetSelectedSSO() {
 	t := suite.T()
 
