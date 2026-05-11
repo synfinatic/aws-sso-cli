@@ -21,7 +21,6 @@ package sso
 import (
 	"context"
 	"fmt"
-	"slices"
 	"time"
 
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
@@ -32,11 +31,11 @@ const (
 )
 
 // Refresh updates our cached Roles based on AWS SSO & our Config
-// but does not save this data!  Returns the number of roles added/deleted
-func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads int) (int, int, error) {
+// but does not save this data!  Returns the ARNs of roles added/deleted
+func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads int) ([]string, []string, error) {
 	// Only refresh once per execution
 	if c.refreshed {
-		return 0, 0, nil
+		return nil, nil, nil
 	}
 	c.refreshed = true
 	log.Debug("refreshing SSO cache", "SSOname", ssoName)
@@ -67,9 +66,9 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads 
 
 	// zero out our current roles cache entries so they don't get merged
 	oldRoles := cache.Roles.GetAllRoles()
-	oldRoleArns := []string{}
+	oldRoleSet := make(map[string]struct{}, len(oldRoles))
 	for _, role := range oldRoles {
-		oldRoleArns = append(oldRoleArns, role.Arn)
+		oldRoleSet[role.Arn] = struct{}{}
 	}
 
 	c.SSO[ssoName].Roles = &Roles{}
@@ -78,27 +77,27 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads 
 	// load our AWSSSO & Config
 	r, err := c.NewRoles(sso, config, threads)
 	if err != nil {
-		return 0, 0, err
+		return nil, nil, err
 	}
 	c.SSO[ssoName].Roles = r
 
 	// figure out what roles were added/deleted
 	newRoles := c.SSO[ssoName].Roles.GetAllRoles()
-	newRoleArns := []string{}
+	newRoleSet := make(map[string]struct{}, len(newRoles))
 	for _, role := range newRoles {
-		newRoleArns = append(newRoleArns, role.Arn)
+		newRoleSet[role.Arn] = struct{}{}
 	}
 
-	// do we have any new or deleted roles?
-	added, deleted := 0, 0
-	for _, arn := range newRoleArns {
-		if !slices.Contains(oldRoleArns, arn) {
-			added++
+	// build slices of added/deleted ARNs using set lookups (O(n) vs O(n²))
+	var added, deleted []string
+	for arn := range newRoleSet {
+		if _, ok := oldRoleSet[arn]; !ok {
+			added = append(added, arn)
 		}
 	}
-	for _, arn := range oldRoleArns {
-		if !slices.Contains(newRoleArns, arn) {
-			deleted++
+	for arn := range oldRoleSet {
+		if _, ok := newRoleSet[arn]; !ok {
+			deleted = append(deleted, arn)
 		}
 	}
 
@@ -106,7 +105,7 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads 
 	for aId, account := range config.Accounts {
 		accountId, err := awsparse.AccountIdToInt64(aId)
 		if err != nil {
-			return 0, 0, fmt.Errorf("unable to parse accountId from config.yaml %s: %s", aId, err.Error())
+			return nil, nil, fmt.Errorf("unable to parse accountId from config.yaml %s: %s", aId, err.Error())
 		}
 		// if aId is scientific notation, convert to int64 string
 		aId, _ := awsparse.AccountIdToString(accountId)

@@ -20,6 +20,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/synfinatic/aws-sso-cli/internal/awsconfig"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
@@ -27,6 +28,7 @@ import (
 
 type CacheCmd struct {
 	NoConfigCheck bool `kong:"help='Disable automatic ~/.aws/config updates'"`
+	Silent        bool `kong:"help='Suppress role diff output'"`
 	Threads       int  `kong:"help='Override number of threads for talking to AWS',default=${DEFAULT_THREADS}"`
 }
 
@@ -58,8 +60,18 @@ func (cc *CacheCmd) Run(ctx *RunContext) error {
 		return fmt.Errorf("unable to save role cache: %s", err.Error())
 	}
 
-	if added > 0 || deleted > 0 {
-		log.Info("Updated cache", "added", added, "deleted", deleted)
+	if len(added) > 0 || len(deleted) > 0 {
+		log.Info("Updated cache", "added", len(added), "deleted", len(deleted))
+		if !ctx.Cli.Cache.Silent {
+			sort.Strings(added)
+			sort.Strings(deleted)
+			for _, arn := range added {
+				fmt.Printf("+ %s\n", arn)
+			}
+			for _, arn := range deleted {
+				fmt.Printf("- %s\n", arn)
+			}
+		}
 		// should we update our config??
 		if !ctx.Cli.Cache.NoConfigCheck && ctx.Settings.AutoConfigCheck {
 			if ctx.Settings.ConfigProfilesUrlAction != uri.ConfigProfilesUndef {
