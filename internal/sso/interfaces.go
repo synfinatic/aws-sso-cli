@@ -20,15 +20,7 @@ package sso
 
 import (
 	ssocache "github.com/synfinatic/aws-sso-cli/internal/sso/cache"
-	ssoconfig "github.com/synfinatic/aws-sso-cli/internal/sso/config"
 )
-
-// Type aliases for backward compatibility with the flat sso/ package.
-// These will be removed once the old flat files are deleted.
-type SettingsReader = ssocache.SettingsReader
-type RoleProvider = ssoconfig.RoleProvider
-type AccountInfo = ssoconfig.AccountInfo
-type RoleInfo = ssoconfig.RoleInfo
 
 // Compile-time assertion that *Settings satisfies ssocache.SettingsReader.
 var _ ssocache.SettingsReader = (*Settings)(nil)
