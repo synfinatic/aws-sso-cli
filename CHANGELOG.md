@@ -7,6 +7,7 @@
 
 * Add support for `AuthWorkflow` and PKCE authorization_code workflow (default) #1233
 * Add support for AWS European Sovereign Cloud (EUSC) #1309
+* Add AWS Partition support to setup wizard (commercial, gov-cloud, china, EU)
 
 ### Bugs
 

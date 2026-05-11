@@ -91,8 +91,9 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 		if advanced {
 			instanceName = promptSsoInstance("")
 		}
-		startHostname := promptStartUrl("")
-		ssoRegion := promptAwsSsoRegion("")
+		partition := promptAwsPartition("")
+		startHostname := promptStartUrl("", partition.FqdnSuffix)
+		ssoRegion := promptAwsSsoRegion("", partition.SSORegions)
 
 		defaultRegion := ""
 		if advanced {
