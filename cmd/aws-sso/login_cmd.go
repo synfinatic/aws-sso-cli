@@ -96,8 +96,8 @@ func doAuth(ctx *RunContext) {
 			log.Fatal("Unable to refresh cache", "error", err.Error())
 		}
 
-		if added > 0 || deleted > 0 {
-			log.Info("Updated cache", "added", added, "deletd", deleted)
+		if len(added) > 0 || len(deleted) > 0 {
+			log.Info("Updated cache", "added", len(added), "deleted", len(deleted))
 		}
 
 		if err = ctx.Settings.Cache.Save(true); err != nil {

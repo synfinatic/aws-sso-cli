@@ -409,8 +409,8 @@ func (suite *CacheTestSuite) TestCacheRefreshMocked() {
 	suite.cache.refreshed = true
 	added, deleted, err := suite.cache.Refresh(nil, settings.SSO["Default"], "Default", 1)
 	assert.NoError(t, err)
-	assert.Equal(t, 0, added)
-	assert.Equal(t, 0, deleted)
+	assert.Nil(t, added)
+	assert.Nil(t, deleted)
 	suite.cache.refreshed = false // reset for next sub-tests
 
 	// --- NewRoles error propagated ---
@@ -436,9 +436,33 @@ func (suite *CacheTestSuite) TestCacheRefreshMocked() {
 
 	added, deleted, err = suite.cache.Refresh(as, settings.SSO["Default"], "Default", 1)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, added)
-	assert.Equal(t, 0, deleted)
+	assert.Contains(t, added, "arn:aws:iam::000001111111:role/ReadOnly")
+	assert.Empty(t, deleted)
 	assert.Contains(t, suite.cache.SSO["Default"].Roles.Accounts[1111111].Roles, "ReadOnly")
+
+	// --- deleted role: pre-seed a role that AWS no longer returns ---
+	suite.cache.SSO["Default"].Roles = &Roles{
+		Accounts: map[int64]*AWSAccount{
+			1111111: {
+				Roles: map[string]*AWSRole{
+					"OldRole": {Arn: "arn:aws:iam::000001111111:role/OldRole"},
+				},
+				Tags: map[string]string{},
+			},
+		},
+	}
+	suite.cache.refreshed = false
+
+	asEmpty, cleanup3 := makeTestAWSSSOWithMock(t, []mockSsoAPIResults{
+		listAccountsResult("000001111111"),
+		listRolesResult("000001111111"), // no roles returned
+	})
+	defer cleanup3()
+
+	added, deleted, err = suite.cache.Refresh(asEmpty, settings.SSO["Default"], "Default", 1)
+	assert.NoError(t, err)
+	assert.Empty(t, added)
+	assert.Contains(t, deleted, "arn:aws:iam::000001111111:role/OldRole")
 }
 
 /*

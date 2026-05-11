@@ -9,6 +9,7 @@
 * Add support for AWS European Sovereign Cloud (EUSC) #1309
 * Add AWS Partition support to setup wizard (commercial, gov-cloud, china, EU)
 * Add SecretServiceCollection to override the default name #1293
+* `cache` command now prints a diff of added/removed roles #661
 
 ### Bugs
 
