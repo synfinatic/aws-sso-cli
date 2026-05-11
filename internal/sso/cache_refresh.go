@@ -32,7 +32,7 @@ const (
 
 // Refresh updates our cached Roles based on AWS SSO & our Config
 // but does not save this data!  Returns the ARNs of roles added/deleted
-func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads int) ([]string, []string, error) {
+func (c *Cache) Refresh(sso RoleProvider, config *SSOConfig, ssoName string, threads int) ([]string, []string, error) {
 	// Only refresh once per execution
 	if c.refreshed {
 		return nil, nil, nil
@@ -153,7 +153,7 @@ func (c *Cache) Refresh(sso *AWSSSO, config *SSOConfig, ssoName string, threads 
 }
 
 // NewRoles merges data from AWS SSO and the config file into a fresh Roles struct.
-func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig, threads int) (*Roles, error) {
+func (c *Cache) NewRoles(as RoleProvider, config *SSOConfig, threads int) (*Roles, error) {
 	r := Roles{
 		SSORegion:     config.SSORegion,
 		StartUrl:      config.StartUrl,
@@ -178,7 +178,7 @@ func (c *Cache) NewRoles(as *AWSSSO, config *SSOConfig, threads int) (*Roles, er
 }
 
 // fetchSSORole is a goroutine worker that fetches RoleInfo for each AccountInfo received.
-func fetchSSORole(id int, as *AWSSSO, aInfo <-chan AccountInfo, rInfo chan<- []RoleInfo) {
+func fetchSSORole(id int, as RoleProvider, aInfo <-chan AccountInfo, rInfo chan<- []RoleInfo) {
 	for {
 		a := <-aInfo
 		if a.AccountId == "" {
@@ -236,7 +236,7 @@ func processSSORoles(roles []RoleInfo, cache *SSOCache, r *Roles) {
 // addSSORoles retrieves all SSO roles from AWS SSO and places them in r.
 // The first account is fetched serially to allow token refresh; remaining
 // accounts are fetched in parallel via a bounded worker pool.
-func (c *Cache) addSSORoles(r *Roles, as *AWSSSO, threads int) error {
+func (c *Cache) addSSORoles(r *Roles, as RoleProvider, threads int) error {
 	cache := c.GetSSO()
 
 	accounts, err := as.GetAccounts()
