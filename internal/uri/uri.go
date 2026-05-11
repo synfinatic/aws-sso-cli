@@ -392,6 +392,8 @@ func AWSConsoleUrl(ssoRegion, region string) string {
 		return fmt.Sprintf("https://console.amazonaws.cn/console/home?region=%s", region)
 	} else if strings.HasPrefix(ssoRegion, "us-gov-") {
 		return fmt.Sprintf("https://console.amazonaws-us-gov.com/console/home?region=%s", region)
+	} else if strings.HasPrefix(ssoRegion, "eusc-") {
+		return fmt.Sprintf("https://console.amazonaws-eusc.eu/console/home?region=%s", region)
 	}
 	return fmt.Sprintf("https://console.aws.amazon.com/console/home?region=%s", region)
 }

@@ -41,6 +41,89 @@ const (
 	DEFAULT_PROFILE_FORMAT = "{{ .AccountIdPad }}:{{ .RoleName }}"
 )
 
+// awsPartition describes an AWS partition relevant to IAM Identity Center setup.
+type awsPartition struct {
+	Name       string // human-readable label
+	Value      string // partition identifier (e.g. "aws", "aws-cn")
+	FqdnSuffix string // domain suffix for the SSO start URL hostname
+	SSORegions []string
+}
+
+var awsPartitions = []awsPartition{
+	{
+		Name:       "Commercial",
+		Value:      "aws",
+		FqdnSuffix: ".awsapps.com",
+		SSORegions: []string{
+			"us-east-1", "us-east-2", "us-west-1", "us-west-2",
+			"af-south-1", "ap-east-1", "ap-south-1",
+			"ap-northeast-1", "ap-northeast-2", "ap-northeast-3",
+			"ap-southeast-1", "ap-southeast-2", "ap-southeast-3",
+			"ca-central-1",
+			"eu-central-1", "eu-west-1", "eu-west-2", "eu-west-3",
+			"eu-south-1", "eu-north-1",
+			"sa-east-1", "me-south-1",
+		},
+	},
+	{
+		Name:       "US GovCloud",
+		Value:      "aws-us-gov",
+		FqdnSuffix: ".signin.amazonaws-us-gov.com",
+		SSORegions: []string{"us-gov-east-1", "us-gov-west-1"},
+	},
+	{
+		Name:       "China",
+		Value:      "aws-cn",
+		FqdnSuffix: ".awsapps.cn",
+		SSORegions: []string{"cn-north-1", "cn-northwest-1"},
+	},
+	// EU doesn't have global endpoints, instead they are region specific
+	{
+		Name:       "EU Digital Sovereignty (Brandenburg, Germany)",
+		Value:      "aws-eusc",
+		FqdnSuffix: ".eusc-de-east-1.portal.amazonaws.eu",
+		SSORegions: []string{"eusc-de-east-1"},
+	},
+}
+
+func partitionByValue(value string) awsPartition {
+	for _, p := range awsPartitions {
+		if p.Value == value {
+			return p
+		}
+	}
+	return awsPartitions[0] // default to commercial
+}
+
+func promptAwsPartition(defaultValue string) awsPartition {
+	var i = -1
+	var err error
+
+	fmt.Printf("\n")
+
+	items := make([]selectOptions, len(awsPartitions))
+	for j, p := range awsPartitions {
+		items[j] = selectOptions{Name: p.Name, Value: p.Value}
+	}
+
+	label := "AWS Partition:"
+	for i < 0 {
+		sel := promptui.Select{
+			Label:        label,
+			Items:        items,
+			CursorPos:    defaultSelect(items, defaultValue),
+			HideSelected: false,
+			Stdout:       &prompt.BellSkipper{},
+			Templates:    makeSelectTemplate(label),
+		}
+		if i, _, err = sel.Run(); err != nil {
+			checkSelectError(err)
+		}
+	}
+
+	return partitionByValue(items[i].Value)
+}
+
 type selectOptions struct {
 	Name  string
 	Value string
@@ -148,7 +231,7 @@ func checkSelectError(err error) {
 	}
 }
 
-func promptStartUrl(defaultValue string) string {
+func promptStartUrl(defaultValue string, fqdnSuffix string) string {
 	var val string
 	var err error
 	validFQDN := false
@@ -157,8 +240,10 @@ func promptStartUrl(defaultValue string) string {
 
 	for !validFQDN {
 		// Get the hostname of the AWS SSO start URL
-		label := fmt.Sprintf("SSO Start URL Hostname (XXXXXXX%s)", START_FQDN_SUFFIX)
-		regexpFQDNSuffix := strings.ReplaceAll(START_FQDN_SUFFIX, ".", "\\.")
+		label := fmt.Sprintf("SSO Start URL Hostname (XXXXXXX%s)", fqdnSuffix)
+		regexpFQDNSuffix := strings.ReplaceAll(fqdnSuffix, ".", "\\.")
+		// Reset cached regexp so it reflects the current partition's suffix
+		ssoHostnameRegexp = nil
 		prompt := promptui.Prompt{
 			Label: label,
 			Validate: func(input string) error {
@@ -185,7 +270,7 @@ func promptStartUrl(defaultValue string) string {
 		// User input value is either the hostname or full FQDN and
 		// we need the full FQDN
 		if !strings.Contains(val, ".") {
-			val = val + START_FQDN_SUFFIX
+			val = val + fqdnSuffix
 		}
 
 		if _, err := net.LookupHost(val); err == nil {
@@ -199,14 +284,14 @@ func promptStartUrl(defaultValue string) string {
 	return val
 }
 
-func promptAwsSsoRegion(defaultValue string) string {
+func promptAwsSsoRegion(defaultValue string, regions []string) string {
 	var i int
 	var err error
 
 	fmt.Printf("\n")
 
 	items := []selectOptions{}
-	for _, x := range predictor.AvailableAwsSSORegions {
+	for _, x := range regions {
 		items = append(items, selectOptions{
 			Value: x,
 			Name:  x,

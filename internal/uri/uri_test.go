@@ -338,6 +338,14 @@ func TestAWSConsoleUrl(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = net.LookupIP(pUrl.Hostname())
 	assert.NoError(t, err)
+
+	// currently only Brandenburg, Germany is supported by AWS
+	u = AWSConsoleUrl("eusc-de-east-1", "eusc-de-east-1")
+	assert.Equal(t, u, "https://console.amazonaws-eusc.eu/console/home?region=eusc-de-east-1")
+	pUrl, err = url.Parse(u)
+	assert.NoError(t, err)
+	_, err = net.LookupIP(pUrl.Hostname())
+	assert.NoError(t, err)
 }
 
 func TestGetConfigProfilesAction(t *testing.T) {
