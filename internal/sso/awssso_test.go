@@ -733,6 +733,87 @@ func TestGetRoleCredentials(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func makeChainTestAWSSSOBase(t *testing.T) (*AWSSSO, func()) {
+	t.Helper()
+	tfile, err := os.CreateTemp("", "*storage.json")
+	assert.NoError(t, err)
+	jstore, err := storage.OpenJsonStore(tfile.Name())
+	assert.NoError(t, err)
+
+	duration, _ := time.ParseDuration("10s")
+	as := &AWSSSO{
+		SsoRegion: "us-west-1",
+		StartUrl:  "https://testing.awsapps.com/start",
+		store:     jstore,
+		SSOConfig: &SSOConfig{
+			settings: &Settings{},
+			Accounts: map[string]*SSOAccount{
+				"000001111111": {
+					Roles: map[string]*SSORole{
+						"ChainRole": {
+							ARN: "arn:aws:iam::000001111111:role/ChainRole",
+							Via: "arn:aws:iam::000001111111:role/BaseRole",
+						},
+						"InvalidViaRole": {
+							ARN: "arn:aws:iam::000001111111:role/InvalidViaRole",
+							Via: "not-a-valid-arn",
+						},
+					},
+				},
+			},
+		},
+		Token: storage.CreateTokenResponse{
+			AccessToken:  "access-token",
+			ExpiresIn:    42,
+			ExpiresAt:    time.Now().Add(duration).Unix(),
+			IdToken:      "id-token",
+			RefreshToken: "refresh-token",
+			TokenType:    "token-type",
+		},
+	}
+	return as, func() { os.Remove(tfile.Name()) } // #nosec G703 -- temp file path from os.CreateTemp
+}
+
+// TestGetRoleCredentialsInvalidVia verifies that a role with an unparseable Via ARN returns an error.
+func TestGetRoleCredentialsInvalidVia(t *testing.T) {
+	as, cleanup := makeChainTestAWSSSOBase(t)
+	defer cleanup()
+
+	_, err := as.GetRoleCredentials(int64(1111111), "InvalidViaRole")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid Via")
+}
+
+// TestGetRoleCredentialsLoopDetection verifies that a cycle in the Via chain causes a panic.
+func TestGetRoleCredentialsLoopDetection(t *testing.T) {
+	as, cleanup := makeChainTestAWSSSOBase(t)
+	defer cleanup()
+
+	// Pre-populate the chain map with the ARN that ChainRole.Via points to, simulating a loop.
+	loopMap := map[string]bool{
+		"arn:aws:iam::000001111111:role/BaseRole": true,
+	}
+	assert.Panics(t, func() {
+		_, _ = as.getRoleCredentials(int64(1111111), "ChainRole", loopMap)
+	})
+}
+
+// TestGetRoleCredentialsViaRecursiveError verifies that an error from the recursive Via call propagates.
+func TestGetRoleCredentialsViaRecursiveError(t *testing.T) {
+	as, cleanup := makeChainTestAWSSSOBase(t)
+	defer cleanup()
+
+	// BaseRole is not in SSOConfig, so the recursive call will try the SSO API directly and fail.
+	as.sso = &mockSsoAPI{
+		Results: []mockSsoAPIResults{
+			{Error: fmt.Errorf("base role fetch failed")},
+		},
+	}
+
+	_, err := as.GetRoleCredentials(int64(1111111), "ChainRole")
+	assert.Error(t, err)
+}
+
 func TestGetFieldNameAccountInfo(t *testing.T) {
 	ai := AccountInfo{
 		AccountId:   "1111111",

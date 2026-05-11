@@ -1,4 +1,4 @@
-package sso
+package ui
 
 /*
  * AWS SSO CLI
@@ -25,6 +25,7 @@ import (
 	"github.com/c-bata/go-prompt"
 )
 
+// PromptColors holds color configuration for the interactive CLI prompt.
 type PromptColors struct {
 	DescriptionBGColor           string
 	DescriptionTextColor         string
@@ -46,9 +47,9 @@ type PromptColors struct {
 
 type ColorOptionFunction func(prompt.Color) prompt.Option
 
-var PROMPT_COLOR_FUNCS map[string]ColorOptionFunction = map[string]ColorOptionFunction{
+var PromptColorFuncs map[string]ColorOptionFunction = map[string]ColorOptionFunction{
 	"OptionDescriptionBGColor":           prompt.OptionDescriptionBGColor,
-	"OptionDescriptionTextColor":         prompt.OptionInputTextColor,
+	"OptionDescriptionTextColor":         prompt.OptionDescriptionTextColor,
 	"OptionInputBGColor":                 prompt.OptionInputBGColor,
 	"OptionInputTextColor":               prompt.OptionInputTextColor,
 	"OptionPrefixBackgroundColor":        prompt.OptionPrefixBackgroundColor,
@@ -58,14 +59,14 @@ var PROMPT_COLOR_FUNCS map[string]ColorOptionFunction = map[string]ColorOptionFu
 	"OptionScrollbarBGColor":             prompt.OptionScrollbarBGColor,
 	"OptionScrollbarThumbColor":          prompt.OptionScrollbarThumbColor,
 	"OptionSelectedDescriptionBGColor":   prompt.OptionSelectedDescriptionBGColor,
-	"OptionSelectedDescriptionTextColor": prompt.OptionSelectedSuggestionTextColor,
+	"OptionSelectedDescriptionTextColor": prompt.OptionSelectedDescriptionTextColor,
 	"OptionSelectedSuggestionBGColor":    prompt.OptionSelectedSuggestionBGColor,
 	"OptionSelectedSuggestionTextColor":  prompt.OptionSelectedSuggestionTextColor,
 	"OptionSuggestionBGColor":            prompt.OptionSuggestionBGColor,
 	"OptionSuggestionTextColor":          prompt.OptionSuggestionTextColor,
 }
 
-var PROMPT_COLORS map[string]prompt.Color = map[string]prompt.Color{
+var PromptColorNames map[string]prompt.Color = map[string]prompt.Color{
 	"DefaultColor": prompt.DefaultColor,
 	// Low intensity
 	"Black":     prompt.Black,
@@ -78,6 +79,7 @@ var PROMPT_COLORS map[string]prompt.Color = map[string]prompt.Color{
 	"LightGrey": prompt.LightGray,
 	// High intensity
 	"DarkGrey":  prompt.DarkGray,
+	"DarkGray":  prompt.DarkGray, // alias used by default config
 	"Red":       prompt.Red,
 	"Green":     prompt.Green,
 	"Yellow":    prompt.Yellow,
@@ -87,35 +89,29 @@ var PROMPT_COLORS map[string]prompt.Color = map[string]prompt.Color{
 	"White":     prompt.White,
 }
 
-// Our default and common prompt.Options for all CLI interface
-func (s *Settings) DefaultOptions(exit prompt.ExitChecker) []prompt.Option {
+// DefaultOptions returns the base prompt.Options for the interactive CLI.
+func DefaultOptions(exit prompt.ExitChecker) []prompt.Option {
 	return []prompt.Option{
 		prompt.OptionSetExitCheckerOnInput(exit),
 		prompt.OptionPrefix("> "),
 		prompt.OptionCompletionOnDown(),
 		prompt.OptionShowCompletionAtStart(),
-		// go-prompt history isn't that useful except for accesing the "last", but
-		// seems more dangerous than it is worth IMHO, so it's disabled
-		// prompt.OptionHistory(s.Cache.History),
 	}
 }
 
-// GetPromptOptions returns a list of promp.Options for prompt.New()
-func (s *Settings) GetColorOptions() []prompt.Option {
+// GetColorOptions returns prompt.Options for prompt.New() based on the configured PromptColors.
+func GetColorOptions(colors PromptColors) []prompt.Option {
 	opts := []prompt.Option{}
-	// Iterate through all the fields in the struct
-	v := reflect.ValueOf(s.PromptColors)
-	t := reflect.TypeOf(s.PromptColors)
+	v := reflect.ValueOf(colors)
+	t := reflect.TypeOf(colors)
 
 	for i := 0; i < v.NumField(); i++ {
 		value := v.Field(i).String()
 		field := t.Field(i).Name
 		optionName := fmt.Sprintf("Option%s", field)
-		log.Trace("ColorOption", "field", field, "value", value)
 
-		colorValue := PROMPT_COLORS[value]
-
-		opts = append(opts, PROMPT_COLOR_FUNCS[optionName](colorValue))
+		colorValue := PromptColorNames[value]
+		opts = append(opts, PromptColorFuncs[optionName](colorValue))
 	}
 
 	return opts
