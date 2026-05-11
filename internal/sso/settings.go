@@ -46,8 +46,9 @@ type Settings struct {
 	Cache                     *Cache                   `yaml:"-"` // our cache data
 	SSO                       map[string]*SSOConfig    `koanf:"SSOConfig" yaml:"SSOConfig,omitempty"`
 	AutoLogin                 bool                     `koanf:"AutoLogin" yaml:"AutoLogin,omitempty"`
-	DefaultSSO                string                   `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`   // specify default SSO by key
-	SecureStore               string                   `koanf:"SecureStore" yaml:"SecureStore,omitempty"` // json or keyring
+	DefaultSSO                string                   `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`                           // specify default SSO by key
+	SecureStore               string                   `koanf:"SecureStore" yaml:"SecureStore,omitempty"`                         // json or keyring
+	SecretServiceCollection   string                   `koanf:"SecretServiceCollection" yaml:"SecretServiceCollection,omitempty"` // libsecret collection name; defaults to KEYRING_NAME
 	DefaultRegion             string                   `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
 	AuthWorkflow              oidc.AuthWorkflow        `koanf:"AuthWorkflow" yaml:"AuthWorkflow,omitempty"`
 	ConsoleDuration           int32                    `koanf:"ConsoleDuration" yaml:"ConsoleDuration,omitempty"`

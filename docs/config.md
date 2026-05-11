@@ -70,6 +70,7 @@ HistoryMinutes: <integer>
 
 SecureStore: [file|keychain|kwallet|pass|secret-service|wincred|json]
 JsonStore: <path to json file>
+SecretServiceCollection: <libsecret collection name>
 
 ProfileFormat: "<template>"
 ConfigVariables:
@@ -686,6 +687,11 @@ advanced debugging.
 **Note:** The `file` option supports passing in the password via the `AWS_SSO_FILE_PASSWORD` environment variable.
 
 **Note:** The `pass` option supports passing in the password via the [gpg-agent](https://www.gnupg.org/documentation/manuals/gnupg24/gpg-agent.1.html).
+
+#### SecretServiceCollection
+
+Overrides the libsecret collection name used by the `secret-service` backend.
+Defaults to `awsssocli`. Has no effect on other `SecureStore` backends.
 
 #### EnvVarTags
 

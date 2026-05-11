@@ -50,7 +50,7 @@ func TestKeyringSuite(t *testing.T) {
 	}()
 
 	os.Setenv(ENV_SSO_FILE_PASSWORD, "justapassword")
-	c, err := NewKeyringConfig("file", d)
+	c, err := NewKeyringConfig("file", d, "")
 	assert.NoError(t, err)
 
 	s := KeyringSuite{}
@@ -266,7 +266,7 @@ func TestGetStorageData(t *testing.T) {
 	defer os.RemoveAll(d)
 
 	os.Setenv(ENV_SSO_FILE_PASSWORD, "justapassword")
-	c, err := NewKeyringConfig("file", d)
+	c, err := NewKeyringConfig("file", d, "")
 	assert.NoError(t, err)
 
 	s := KeyringSuite{}
@@ -296,7 +296,7 @@ func TestKeyringErrors(t *testing.T) {
 	defer os.RemoveAll(d)
 
 	os.Setenv(ENV_SSO_FILE_PASSWORD, "justapassword")
-	c, err := NewKeyringConfig("file", d)
+	c, err := NewKeyringConfig("file", d, "")
 	assert.NoError(t, err)
 
 	ks := &KeyringStore{
@@ -437,22 +437,38 @@ func TestNewKeyringConfig(t *testing.T) {
 	assert.NoError(t, err)
 
 	getPasswordFunc = getPasswordErrorFunc
-	_, err = NewKeyringConfig("file", d)
+	_, err = NewKeyringConfig("file", d, "")
 	assert.Error(t, err)
 
 	getPasswordFunc = getPasswordDifferentFunc
-	_, err = NewKeyringConfig("file", d)
+	_, err = NewKeyringConfig("file", d, "")
 	assert.Error(t, err)
 
 	getPasswordFunc = getPasswordErrorDifferentFunc
-	_, err = NewKeyringConfig("file", d)
+	_, err = NewKeyringConfig("file", d, "")
 	assert.Error(t, err)
 
 	getPasswordFunc = getPasswordDifferentFunc
 	getPasswords = []string{"password", "password"}
-	_, err = NewKeyringConfig("file", d)
+	_, err = NewKeyringConfig("file", d, "")
 	assert.NoError(t, err)
 	assert.Equal(t, "password", NewPassword)
+}
+
+func TestNewKeyringConfigCollectionName(t *testing.T) {
+	d, err := os.MkdirTemp("", "test-keyring-collection")
+	assert.NoError(t, err)
+	defer os.RemoveAll(d)
+
+	// empty collectionName falls back to KEYRING_NAME
+	c, err := NewKeyringConfig("", d, "")
+	assert.NoError(t, err)
+	assert.Equal(t, KEYRING_NAME, c.LibSecretCollectionName)
+
+	// non-empty collectionName is propagated
+	c, err = NewKeyringConfig("", d, "mycollection")
+	assert.NoError(t, err)
+	assert.Equal(t, "mycollection", c.LibSecretCollectionName)
 }
 
 func TestKeyringSuiteFails(t *testing.T) {
@@ -469,7 +485,7 @@ func TestKeyringSuiteFails(t *testing.T) {
 	}()
 
 	os.Setenv(ENV_SSO_FILE_PASSWORD, "happy1")
-	c, err := NewKeyringConfig("file", d)
+	c, err := NewKeyringConfig("file", d, "")
 	assert.NoError(t, err)
 
 	ring, err := keyring.Open(*c)
@@ -518,7 +534,7 @@ func TestSplitCredentials(t *testing.T) {
 	}()
 
 	os.Setenv(ENV_SSO_FILE_PASSWORD, "justapassword")
-	c, err := NewKeyringConfig("file", d)
+	c, err := NewKeyringConfig("file", d, "")
 	assert.NoError(t, err)
 
 	store, err := OpenKeyring(c)

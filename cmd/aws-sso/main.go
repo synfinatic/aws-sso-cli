@@ -233,7 +233,7 @@ func loadSecureStore(ctx *RunContext) {
 		}
 		log.Warn("Using insecure json file for SecureStore", "file", sfile)
 	default:
-		cfg, err := storage.NewKeyringConfig(ctx.Settings.SecureStore, config.ConfigDir(true))
+		cfg, err := storage.NewKeyringConfig(ctx.Settings.SecureStore, config.ConfigDir(true), ctx.Settings.SecretServiceCollection)
 		if err != nil {
 			log.Fatal("Unable to create SecureStore", "error", err.Error())
 		}

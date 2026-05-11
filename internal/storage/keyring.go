@@ -28,6 +28,7 @@ import (
 
 	"github.com/99designs/keyring"
 	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
+
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/danjacques/gofslock/fslock"
 
@@ -94,8 +95,12 @@ type getPassword func(string) (string, error)
 
 var getPasswordFunc getPassword = fileKeyringPassword
 
-func NewKeyringConfig(name, configDir string) (*keyring.Config, error) {
+func NewKeyringConfig(name, configDir, collectionName string) (*keyring.Config, error) {
 	securePath := path.Join(configDir, "secure")
+
+	if collectionName == "" {
+		collectionName = KEYRING_NAME
+	}
 
 	c := keyring.Config{
 		ServiceName: KEYRING_ID, // generic backend provider
@@ -107,7 +112,7 @@ func NewKeyringConfig(name, configDir string) (*keyring.Config, error) {
 		// Other systems below this line
 		FileDir:                 securePath,
 		FilePasswordFunc:        fileKeyringPassword,
-		LibSecretCollectionName: KEYRING_NAME,
+		LibSecretCollectionName: collectionName,
 		KWalletAppID:            KEYRING_ID,
 		KWalletFolder:           KEYRING_ID,
 		WinCredPrefix:           KEYRING_ID,
