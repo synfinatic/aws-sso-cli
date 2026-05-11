@@ -19,7 +19,9 @@ package config
  */
 
 import (
+	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
@@ -152,4 +154,190 @@ func TestGetRole(t *testing.T) {
 	r, err := c.GetRole(23456789012, "FooBar0")
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
+}
+
+func TestGetKeySetKey(t *testing.T) {
+	c := &SSOConfig{}
+	assert.Empty(t, c.GetKey())
+	c.SetKey("MySSO")
+	assert.Equal(t, "MySSO", c.GetKey())
+}
+
+func TestGetConfigFileSetConfigFile(t *testing.T) {
+	c := &SSOConfig{}
+	assert.Empty(t, c.GetConfigFile())
+	c.SetConfigFile("/tmp/test.yaml")
+	assert.Equal(t, "/tmp/test.yaml", c.GetConfigFile())
+}
+
+func TestCreatedAt(t *testing.T) {
+	f, err := os.CreateTemp("", "ssoconfig-*.yaml")
+	assert.NoError(t, err)
+	defer os.Remove(f.Name())
+	f.Close()
+
+	before := time.Now().Unix()
+	c := &SSOConfig{}
+	c.SetConfigFile(f.Name())
+	ts := c.CreatedAt()
+	after := time.Now().Unix()
+
+	assert.GreaterOrEqual(t, ts, before)
+	assert.LessOrEqual(t, ts, after)
+}
+
+func TestGetRoles(t *testing.T) {
+	account := &SSOAccount{
+		Roles: map[string]*SSORole{
+			"Alpha": {ARN: "arn:aws:iam::123456789012:role/Alpha"},
+			"Beta":  {ARN: "arn:aws:iam::123456789012:role/Beta"},
+		},
+	}
+	c := &SSOConfig{
+		Accounts: map[string]*SSOAccount{
+			"123456789012": account,
+		},
+	}
+	roles := c.GetRoles()
+	assert.Len(t, roles, 2)
+}
+
+func TestSSOConfigGetAllTags(t *testing.T) {
+	account := &SSOAccount{
+		Name: "MyAccount",
+	}
+	role := &SSORole{
+		account: account,
+		ARN:     "arn:aws:iam::123456789012:role/MyRole",
+		Tags:    map[string]string{"Env": "prod"},
+	}
+	account.Roles = map[string]*SSORole{"MyRole": role}
+	c := &SSOConfig{
+		Accounts: map[string]*SSOAccount{"123456789012": account},
+	}
+	tl := c.GetAllTags()
+	assert.NotNil(t, tl)
+	envVals, ok := (*tl)["Env"]
+	assert.True(t, ok)
+	assert.Contains(t, envVals, "prod")
+}
+
+func TestGetConfigHash(t *testing.T) {
+	c := &SSOConfig{
+		Accounts: map[string]*SSOAccount{
+			"123456789012": {
+				Roles: map[string]*SSORole{
+					"MyRole": {Tags: map[string]string{"k": "v"}},
+				},
+			},
+		},
+	}
+	h1 := c.GetConfigHash("format-a")
+	h2 := c.GetConfigHash("format-a")
+	h3 := c.GetConfigHash("format-b")
+	assert.Equal(t, h1, h2)
+	assert.NotEqual(t, h1, h3)
+	assert.Len(t, h1, 64) // hex-encoded SHA256
+}
+
+func TestSSOAccountGetAllTags(t *testing.T) {
+	a := &SSOAccount{
+		Name:          "My Account",
+		DefaultRegion: "us-west-2",
+		Tags:          map[string]string{"Team": "ops"},
+	}
+	tags := a.GetAllTags(123456789012)
+	assert.Equal(t, "My_Account", tags["AccountName"])
+	assert.Equal(t, "123456789012", tags["AccountId"])
+	assert.Equal(t, "us-west-2", tags["DefaultRegion"])
+	assert.Equal(t, "ops", tags["Team"])
+
+	// zero id: AccountId tag not set
+	tagsNoId := a.GetAllTags(0)
+	_, hasId := tagsNoId["AccountId"]
+	assert.False(t, hasId)
+
+	// unnamed: falls back to *Unknown*
+	aUnnamed := &SSOAccount{}
+	tagsUnnamed := aUnnamed.GetAllTags(0)
+	assert.Equal(t, "*Unknown*", tagsUnnamed["AccountName"])
+}
+
+func TestSSORoleGetRoleName(t *testing.T) {
+	r := &SSORole{ARN: "arn:aws:iam::123456789012:role/MyRole"}
+	assert.Equal(t, "MyRole", r.GetRoleName())
+}
+
+func TestSSORoleGetAccountId(t *testing.T) {
+	r := &SSORole{ARN: "arn:aws:iam::123456789012:role/MyRole"}
+	assert.Equal(t, "123456789012", r.GetAccountId())
+}
+
+func TestSSORoleGetAccountId64(t *testing.T) {
+	r := &SSORole{ARN: "arn:aws:iam::123456789012:role/MyRole"}
+	assert.Equal(t, int64(123456789012), r.GetAccountId64())
+}
+
+func TestSSORoleGetAllTags(t *testing.T) {
+	account := &SSOAccount{
+		Name: "MyAccount",
+		Tags: map[string]string{"Env": "staging"},
+	}
+	role := &SSORole{
+		account:       account,
+		ARN:           "arn:aws:iam::123456789012:role/MyRole",
+		DefaultRegion: "eu-west-1",
+		Tags:          map[string]string{"Team": "infra"},
+	}
+	tags := role.GetAllTags()
+	assert.Equal(t, "MyRole", tags["RoleName"])
+	assert.Equal(t, "123456789012", tags["AccountId"])
+	assert.Equal(t, "eu-west-1", tags["DefaultRegion"])
+	assert.Equal(t, "infra", tags["Team"])
+	assert.Equal(t, "staging", tags["Env"])
+	assert.Equal(t, "MyAccount", tags["AccountName"])
+
+	// no DefaultRegion: tag absent
+	roleNoRegion := &SSORole{
+		account: account,
+		ARN:     "arn:aws:iam::123456789012:role/Other",
+	}
+	tagsNoRegion := roleNoRegion.GetAllTags()
+	_, hasRegion := tagsNoRegion["DefaultRegion"]
+	assert.False(t, hasRegion)
+}
+
+func TestRoleInfoRoleArn(t *testing.T) {
+	ri := RoleInfo{AccountId: "123456789012", RoleName: "MyRole"}
+	assert.Equal(t, "arn:aws:iam::123456789012:role/MyRole", ri.RoleArn())
+}
+
+func TestRoleInfoGetAccountId64(t *testing.T) {
+	ri := RoleInfo{AccountId: "123456789012"}
+	assert.Equal(t, int64(123456789012), ri.GetAccountId64())
+}
+
+func TestRoleInfoGetHeader(t *testing.T) {
+	ri := RoleInfo{}
+	h, err := ri.GetHeader("RoleName")
+	assert.NoError(t, err)
+	assert.Equal(t, "RoleName", h)
+
+	_, err = ri.GetHeader("NonExistentField")
+	assert.Error(t, err)
+}
+
+func TestAccountInfoGetAccountId64(t *testing.T) {
+	ai := AccountInfo{AccountId: "123456789012"}
+	assert.Equal(t, int64(123456789012), ai.GetAccountId64())
+}
+
+func TestAccountInfoGetHeader(t *testing.T) {
+	ai := AccountInfo{}
+	h, err := ai.GetHeader("AccountName")
+	assert.NoError(t, err)
+	assert.Equal(t, "AccountName", h)
+
+	_, err = ai.GetHeader("NonExistentField")
+	assert.Error(t, err)
 }

@@ -418,3 +418,28 @@ func TestGetExecutable(t *testing.T) {
 	// can't test the NIX path really can we??
 	assert.Contains(t, path, "sso.test")
 }
+
+func (suite *SettingsTestSuite) TestGetCacheFile() {
+	t := suite.T()
+	assert.Equal(t, TEST_CACHE_FILE, suite.settings.GetCacheFile())
+}
+
+func (suite *SettingsTestSuite) TestGetHistoryLimit() {
+	t := suite.T()
+	assert.Equal(t, suite.settings.HistoryLimit, suite.settings.GetHistoryLimit())
+}
+
+func (suite *SettingsTestSuite) TestGetThreads() {
+	t := suite.T()
+	assert.Equal(t, suite.settings.Threads, suite.settings.GetThreads())
+}
+
+func (suite *SettingsTestSuite) TestGetSSONames() {
+	t := suite.T()
+	names := suite.settings.GetSSONames()
+	assert.NotEmpty(t, names)
+	for name := range suite.settings.SSO {
+		assert.Contains(t, names, name)
+	}
+	assert.Len(t, names, len(suite.settings.SSO))
+}

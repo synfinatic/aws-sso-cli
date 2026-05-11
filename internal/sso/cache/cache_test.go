@@ -168,6 +168,22 @@ func (suite *CacheTestSuite) TestCacheFile() {
 	assert.Equal(t, suite.cacheFile, suite.cache.CacheFile())
 }
 
+func (suite *CacheTestSuite) TestGetSetSSOName() {
+	t := suite.T()
+	orig := suite.cache.ssoName
+	suite.cache.SetSSOName("MySSO")
+	assert.Equal(t, "MySSO", suite.cache.GetSSOName())
+	suite.cache.SetSSOName(orig)
+}
+
+func (suite *CacheTestSuite) TestIsSetRefreshed() {
+	t := suite.T()
+	suite.cache.SetRefreshed(true)
+	assert.True(t, suite.cache.IsRefreshed())
+	suite.cache.SetRefreshed(false)
+	assert.False(t, suite.cache.IsRefreshed())
+}
+
 func (suite *CacheTestSuite) TestPruneSSO() {
 	t := suite.T()
 
