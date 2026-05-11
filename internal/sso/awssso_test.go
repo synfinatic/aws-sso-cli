@@ -98,7 +98,6 @@ func TestNewAWSSSO(t *testing.T) {
 	c := SSOConfig{
 		StartUrl:   "https://starturl.com/start",
 		SSORegion:  "us-east-1",
-		settings:   &Settings{},
 		MaxRetry:   1,
 		MaxBackoff: 1,
 	}
@@ -155,7 +154,6 @@ func TestGetRoles(t *testing.T) {
 		Roles:      map[string][]RoleInfo{},
 		SSOConfig: &SSOConfig{
 			Accounts: map[string]*SSOAccount{},
-			settings: &Settings{},
 		},
 		urlAction: "print",
 		Token: storage.CreateTokenResponse{
@@ -400,7 +398,6 @@ func TestGetRoles(t *testing.T) {
 	as.Roles = map[string][]RoleInfo{} // flush cache
 	as.SSOConfig = &SSOConfig{
 		Accounts: map[string]*SSOAccount{},
-		settings: &Settings{},
 	}
 	as.oidcClient = oidc.NewAWSWithAPI(&mockSsoOidcAPI{
 		Results: []mockSsoOidcAPIResults{
@@ -475,9 +472,7 @@ func TestGetAccounts(t *testing.T) {
 		StartUrl:  "https://testing.awsapps.com/start",
 		store:     jstore,
 		Roles:     map[string][]RoleInfo{},
-		SSOConfig: &SSOConfig{
-			settings: &Settings{},
-		},
+		SSOConfig: &SSOConfig{},
 		Token: storage.CreateTokenResponse{
 			AccessToken:  "access-token",
 			ExpiresIn:    42,
@@ -680,7 +675,6 @@ func TestGetRoleCredentials(t *testing.T) {
 			},
 		},
 		SSOConfig: &SSOConfig{
-			settings: &Settings{},
 			// GetRoleCredentials() calls SSOConfig.GetRoles() so we need this too
 			Accounts: map[string]*SSOAccount{
 				"000001111111": {
@@ -746,7 +740,6 @@ func makeChainTestAWSSSOBase(t *testing.T) (*AWSSSO, func()) {
 		StartUrl:  "https://testing.awsapps.com/start",
 		store:     jstore,
 		SSOConfig: &SSOConfig{
-			settings: &Settings{},
 			Accounts: map[string]*SSOAccount{
 				"000001111111": {
 					Roles: map[string]*SSORole{

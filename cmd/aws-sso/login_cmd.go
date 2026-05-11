@@ -91,7 +91,7 @@ func doAuth(ctx *RunContext) {
 			log.Fatal("unable to GetSelectedSSOName", "sso", ctx.Cli.SSO, "error", err.Error())
 		}
 		log.Info("Refreshing AWS SSO role cache, please wait...", "sso", ssoName)
-		added, deleted, err := ctx.Settings.Cache.Refresh(AwsSSO, s, ssoName, ctx.Cli.Login.Threads)
+		added, deleted, err := ctx.Settings.Cache.Refresh(AwsSSO, s, ssoName, ctx.Cli.Login.Threads, ctx.Settings)
 		if err != nil {
 			log.Fatal("Unable to refresh cache", "error", err.Error())
 		}

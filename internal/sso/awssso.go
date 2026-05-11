@@ -109,9 +109,9 @@ func NewAWSSSO(s *SSOConfig, store storage.SecureStorage) *AWSSSO {
 		StartUrl:       s.StartUrl,
 		Roles:          map[string][]RoleInfo{}, // key is AccountId
 		SSOConfig:      s,
-		urlAction:      s.settings.UrlAction,
-		browser:        s.settings.Browser,
-		urlExecCommand: s.settings.UrlExecCommand,
+		urlAction:      s.UrlAction,
+		browser:        s.Browser,
+		urlExecCommand: s.UrlExecCommand,
 	}
 	return &as
 }

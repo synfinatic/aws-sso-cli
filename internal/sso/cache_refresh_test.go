@@ -194,7 +194,6 @@ func makeTestAWSSSOWithMock(t *testing.T, results []mockSsoAPIResults) (*AWSSSO,
 			Accounts:  map[string]*SSOAccount{},
 			SSORegion: "us-east-1",
 			StartUrl:  "https://testing.awsapps.com/start",
-			settings:  &Settings{},
 		},
 		Token: storage.CreateTokenResponse{
 			AccessToken:  "access-token",
@@ -259,6 +258,8 @@ func (suite *CacheTestSuite) TestAddSSORoles() {
 		MAX_RETRY_ATTEMPTS = origRetry
 	}()
 
+	mockSR := &Settings{ProfileFormat: "{{ .AccountIdPad }}:{{ .RoleName }}"}
+
 	// --- error: GetAccounts fails ---
 	as, cleanup := makeTestAWSSSOWithMock(t, []mockSsoAPIResults{
 		{ListAccounts: &sso.ListAccountsOutput{}, Error: fmt.Errorf("AWS down")},
@@ -266,7 +267,7 @@ func (suite *CacheTestSuite) TestAddSSORoles() {
 	defer cleanup()
 
 	r := &Roles{Accounts: map[int64]*AWSAccount{}}
-	err := suite.cache.addSSORoles(r, as, 1)
+	err := suite.cache.addSSORoles(r, as, 1, mockSR)
 	assert.Error(t, err)
 
 	// --- error: no accounts returned ---
@@ -281,7 +282,7 @@ func (suite *CacheTestSuite) TestAddSSORoles() {
 	defer cleanup2()
 
 	r2 := &Roles{Accounts: map[int64]*AWSAccount{}}
-	err = suite.cache.addSSORoles(r2, as2, 1)
+	err = suite.cache.addSSORoles(r2, as2, 1, mockSR)
 	assert.Error(t, err)
 
 	// --- single account: serial path (no worker pool) ---
@@ -292,7 +293,7 @@ func (suite *CacheTestSuite) TestAddSSORoles() {
 	defer cleanup3()
 
 	r3 := &Roles{Accounts: map[int64]*AWSAccount{}}
-	err = suite.cache.addSSORoles(r3, as3, 1)
+	err = suite.cache.addSSORoles(r3, as3, 1, mockSR)
 	assert.NoError(t, err)
 	assert.Len(t, r3.Accounts, 1)
 	assert.Contains(t, r3.Accounts[1111111].Roles, "ReadOnly")
@@ -306,7 +307,7 @@ func (suite *CacheTestSuite) TestAddSSORoles() {
 	defer cleanup4()
 
 	r4 := &Roles{Accounts: map[int64]*AWSAccount{}}
-	err = suite.cache.addSSORoles(r4, as4, 1)
+	err = suite.cache.addSSORoles(r4, as4, 1, mockSR)
 	assert.NoError(t, err)
 	assert.Len(t, r4.Accounts, 2)
 	assert.Contains(t, r4.Accounts[1111111].Roles, "Alpha")
@@ -330,12 +331,10 @@ func (suite *CacheTestSuite) TestNewRoles() {
 		StartUrl:      "https://testing.awsapps.com/start",
 		DefaultRegion: "us-east-1",
 		Accounts:      map[string]*SSOAccount{},
-		settings: &Settings{
-			DefaultSSO:    "Default",
-			ProfileFormat: "{{ .AccountIdPad }}:{{ .RoleName }}",
-		},
 	}
-	suite.cache.settings.ProfileFormat = "{{ .AccountIdPad }}:{{ .RoleName }}"
+	mockSR := &Settings{
+		ProfileFormat: "{{ .AccountIdPad }}:{{ .RoleName }}",
+	}
 
 	// --- addSSORoles error propagated ---
 	as, cleanup := makeTestAWSSSOWithMock(t, []mockSsoAPIResults{
@@ -343,7 +342,7 @@ func (suite *CacheTestSuite) TestNewRoles() {
 	})
 	defer cleanup()
 
-	_, err := suite.cache.NewRoles(as, config, 1)
+	_, err := suite.cache.NewRoles(as, config, 1, mockSR)
 	assert.Error(t, err)
 
 	// --- happy path: single account, single role ---
@@ -353,7 +352,7 @@ func (suite *CacheTestSuite) TestNewRoles() {
 	})
 	defer cleanup2()
 
-	roles, err := suite.cache.NewRoles(as2, config, 1)
+	roles, err := suite.cache.NewRoles(as2, config, 1, mockSR)
 	assert.NoError(t, err)
 	assert.NotNil(t, roles)
 	assert.Len(t, roles.Accounts, 1)
@@ -391,23 +390,20 @@ func (suite *CacheTestSuite) TestCacheRefreshMocked() {
 		configFile:     suite.cacheFile, // needed for config.CreatedAt()
 		ProfileFormat:  "{{ .AccountIdPad }}:{{ .RoleName }}",
 	}
-	settings.SSO["Default"].settings = settings
+	// copy needed fields into SSO config (normally done by Settings.Refresh)
+	settings.SSO["Default"].configFile = settings.configFile
 
 	// snapshot state that we'll mutate, restore at end
-	origSettings := suite.cache.settings
 	origRoles := suite.cache.SSO["Default"].Roles
 	origRefreshed := suite.cache.refreshed
 	defer func() {
-		suite.cache.settings = origSettings
 		suite.cache.SSO["Default"].Roles = origRoles
 		suite.cache.refreshed = origRefreshed
 	}()
 
-	suite.cache.settings = settings
-
 	// --- early-return: already refreshed ---
 	suite.cache.refreshed = true
-	added, deleted, err := suite.cache.Refresh(nil, settings.SSO["Default"], "Default", 1)
+	added, deleted, err := suite.cache.Refresh(nil, settings.SSO["Default"], "Default", 1, settings)
 	assert.NoError(t, err)
 	assert.Nil(t, added)
 	assert.Nil(t, deleted)
@@ -420,7 +416,7 @@ func (suite *CacheTestSuite) TestCacheRefreshMocked() {
 	defer cleanup()
 
 	suite.cache.refreshed = false
-	_, _, err = suite.cache.Refresh(asErr, settings.SSO["Default"], "Default", 1)
+	_, _, err = suite.cache.Refresh(asErr, settings.SSO["Default"], "Default", 1, settings)
 	assert.Error(t, err)
 
 	// --- happy path: adds one role, no deletes ---
@@ -434,7 +430,7 @@ func (suite *CacheTestSuite) TestCacheRefreshMocked() {
 	})
 	defer cleanup2()
 
-	added, deleted, err = suite.cache.Refresh(as, settings.SSO["Default"], "Default", 1)
+	added, deleted, err = suite.cache.Refresh(as, settings.SSO["Default"], "Default", 1, settings)
 	assert.NoError(t, err)
 	assert.Contains(t, added, "arn:aws:iam::000001111111:role/ReadOnly")
 	assert.Empty(t, deleted)
@@ -459,7 +455,7 @@ func (suite *CacheTestSuite) TestCacheRefreshMocked() {
 	})
 	defer cleanup3()
 
-	added, deleted, err = suite.cache.Refresh(asEmpty, settings.SSO["Default"], "Default", 1)
+	added, deleted, err = suite.cache.Refresh(asEmpty, settings.SSO["Default"], "Default", 1, settings)
 	assert.NoError(t, err)
 	assert.Empty(t, added)
 	assert.Contains(t, deleted, "arn:aws:iam::000001111111:role/OldRole")

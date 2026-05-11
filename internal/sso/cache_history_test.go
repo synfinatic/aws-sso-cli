@@ -27,14 +27,26 @@ import (
 	testlogger "github.com/synfinatic/flexlog/test"
 )
 
+// mockSettingsReader is a minimal SettingsReader for cache history tests.
+type mockSettingsReader struct {
+	historyLimit   int64
+	historyMinutes int64
+}
+
+func (m *mockSettingsReader) GetCacheFile() string             { return "" }
+func (m *mockSettingsReader) GetHistoryLimit() int64           { return m.historyLimit }
+func (m *mockSettingsReader) GetHistoryMinutes() int64         { return m.historyMinutes }
+func (m *mockSettingsReader) GetProfileFormat() string         { return "" }
+func (m *mockSettingsReader) GetEnvVarTags() map[string]string { return map[string]string{} }
+func (m *mockSettingsReader) GetThreads() int                  { return 1 }
+func (m *mockSettingsReader) GetSSONames() []string            { return nil }
+
 func (suite *CacheTestSuite) TestAddHistory() {
 	t := suite.T()
 
+	sr := &mockSettingsReader{historyLimit: 1, historyMinutes: 90}
+
 	c := &Cache{
-		settings: &Settings{
-			HistoryLimit:   1,
-			HistoryMinutes: 90,
-		},
 		ssoName: "Default",
 		SSO: map[string]*SSOCache{
 			"Default": {
@@ -74,48 +86,48 @@ func (suite *CacheTestSuite) TestAddHistory() {
 	now := time.Now().Unix()
 
 	// Basic add
-	c.AddHistory("arn:aws:iam::123456789012:role/Foo")
+	c.AddHistory(sr, "arn:aws:iam::123456789012:role/Foo")
 	assert.Equal(t, []string{"arn:aws:iam::123456789012:role/Foo"}, cache.History)
 	tag := fmt.Sprintf("MyAccount:Foo,%d", now)
 	assert.Equal(t, tag, c.GetSSO().Roles.Accounts[123456789012].Roles["Foo"].Tags["History"])
 
 	// Add again which should be a no-op
-	c.AddHistory("arn:aws:iam::123456789012:role/Foo")
+	c.AddHistory(sr, "arn:aws:iam::123456789012:role/Foo")
 	assert.Equal(t, []string{"arn:aws:iam::123456789012:role/Foo"}, cache.History)
 	tag = fmt.Sprintf("MyAccount:Foo,%d", now)
 	assert.Equal(t, tag, c.GetSSO().Roles.Accounts[123456789012].Roles["Foo"].Tags["History"])
 
 	// Add a new item which expires the previous item
-	c.AddHistory("arn:aws:iam::123456789012:role/Bar")
+	c.AddHistory(sr, "arn:aws:iam::123456789012:role/Bar")
 	assert.Equal(t, []string{"arn:aws:iam::123456789012:role/Bar"}, cache.History)
 	tag = fmt.Sprintf("MyAccount:Bar,%d", now)
 	assert.NotContains(t, "History", c.GetSSO().Roles.Accounts[123456789012].Roles["Foo"].Tags)
 	assert.Equal(t, tag, c.GetSSO().Roles.Accounts[123456789012].Roles["Bar"].Tags["History"])
 
 	// Add the same item again
-	c.AddHistory("arn:aws:iam::123456789012:role/Bar")
+	c.AddHistory(sr, "arn:aws:iam::123456789012:role/Bar")
 	assert.Equal(t, []string{"arn:aws:iam::123456789012:role/Bar"}, cache.History)
 
 	// Basic tests with two items in the History slice
-	c.settings.HistoryLimit = 2
-	c.AddHistory("arn:aws:iam::123456789012:role/Foo")
+	sr.historyLimit = 2
+	c.AddHistory(sr, "arn:aws:iam::123456789012:role/Foo")
 	assert.Equal(t, []string{
 		"arn:aws:iam::123456789012:role/Foo",
 		"arn:aws:iam::123456789012:role/Bar"}, cache.History)
 
 	// this should be a no-op
-	c.AddHistory("arn:aws:iam::123456789012:role/Foo")
+	c.AddHistory(sr, "arn:aws:iam::123456789012:role/Foo")
 	assert.Equal(t, []string{
 		"arn:aws:iam::123456789012:role/Foo",
 		"arn:aws:iam::123456789012:role/Bar"}, cache.History)
 
 	// reorder args
-	c.AddHistory("arn:aws:iam::123456789012:role/Baz")
+	c.AddHistory(sr, "arn:aws:iam::123456789012:role/Baz")
 	assert.Equal(t, []string{
 		"arn:aws:iam::123456789012:role/Baz",
 		"arn:aws:iam::123456789012:role/Foo"}, cache.History)
 
-	c.AddHistory("arn:aws:iam::123456789012:role/Foo")
+	c.AddHistory(sr, "arn:aws:iam::123456789012:role/Foo")
 	assert.Equal(t, []string{
 		"arn:aws:iam::123456789012:role/Foo",
 		"arn:aws:iam::123456789012:role/Baz"}, cache.History)
@@ -125,10 +137,6 @@ func (suite *CacheTestSuite) TestAddHistory() {
 
 func (suite *CacheTestSuite) setupDeleteOldHistory() *Cache {
 	c := &Cache{
-		settings: &Settings{
-			HistoryLimit:   2,
-			HistoryMinutes: 5,
-		},
 		ssoName: "Default",
 		SSO:     map[string]*SSOCache{},
 	}
@@ -164,6 +172,8 @@ func (suite *CacheTestSuite) setupDeleteOldHistory() *Cache {
 func (suite *CacheTestSuite) TestDeleteOldHistory() {
 	t := suite.T()
 
+	sr := &mockSettingsReader{historyLimit: 2, historyMinutes: 5}
+
 	c := suite.setupDeleteOldHistory()
 
 	// check setup
@@ -173,7 +183,7 @@ func (suite *CacheTestSuite) TestDeleteOldHistory() {
 	}, c.GetSSO().History)
 
 	// no-op because we haven't timed out yet
-	c.deleteOldHistory()
+	c.deleteOldHistory(sr)
 	assert.Equal(t, []string{
 		"arn:aws:iam::123456789012:role/Test",
 		"arn:aws:iam::123456789012:role/Foo",
@@ -182,17 +192,16 @@ func (suite *CacheTestSuite) TestDeleteOldHistory() {
 	c = suite.setupDeleteOldHistory()
 
 	// no-op when HistoryMinutes <= 0
-	c.settings.HistoryLimit = 1
-	c.settings.HistoryMinutes = 0
-	c.deleteOldHistory()
+	sr2 := &mockSettingsReader{historyLimit: 1, historyMinutes: 0}
+	c.deleteOldHistory(sr2)
 	assert.Equal(t, []string{
 		"arn:aws:iam::123456789012:role/Test",
 		"arn:aws:iam::123456789012:role/Foo",
 	}, c.GetSSO().History)
 
 	// remove one due to HistoryLimit
-	c.settings.HistoryMinutes = 1
-	c.deleteOldHistory()
+	sr2.historyMinutes = 1
+	c.deleteOldHistory(sr2)
 	assert.Equal(t, []string{
 		"arn:aws:iam::123456789012:role/Test",
 	}, c.GetSSO().History)
@@ -209,8 +218,8 @@ func (suite *CacheTestSuite) TestDeleteOldHistory() {
 
 	// remove one because of HistoryMinutes expires
 	c = suite.setupDeleteOldHistory()
-	c.settings.HistoryMinutes = 1
-	c.deleteOldHistory()
+	sr3 := &mockSettingsReader{historyLimit: 2, historyMinutes: 1}
+	c.deleteOldHistory(sr3)
 
 	msg := testlogger.LogMessage{}
 	assert.NoError(t, tLogger.GetNext(&msg))
@@ -222,7 +231,7 @@ func (suite *CacheTestSuite) TestDeleteOldHistory() {
 	tLogger.Reset()
 	c = suite.setupDeleteOldHistory()
 	c.GetSSO().History = append(c.GetSSO().History, "arn:aws:iam:")
-	c.deleteOldHistory()
+	c.deleteOldHistory(sr)
 	assert.NoError(t, tLogger.GetNext(&msg))
 	assert.Equal(t, slog.LevelDebug, msg.Level)
 	assert.Contains(t, "Unable to parse History ARN", msg.Message)
@@ -230,7 +239,7 @@ func (suite *CacheTestSuite) TestDeleteOldHistory() {
 	tLogger.Reset()
 	c = suite.setupDeleteOldHistory()
 	c.GetSSO().History = append(c.GetSSO().History, "arn:aws:iam::123456789012:role/NoHistoryTag")
-	c.deleteOldHistory()
+	c.deleteOldHistory(sr)
 	assert.NoError(t, tLogger.GetNext(&msg))
 	assert.Equal(t, slog.LevelDebug, msg.Level)
 	assert.Contains(t, msg.Message, "but no role by that name")
@@ -238,7 +247,7 @@ func (suite *CacheTestSuite) TestDeleteOldHistory() {
 	tLogger.Reset()
 	c = suite.setupDeleteOldHistory()
 	c.GetSSO().History = append(c.GetSSO().History, "arn:aws:iam::1234567890:role/NoHistoryTag")
-	c.deleteOldHistory()
+	c.deleteOldHistory(sr)
 	assert.NoError(t, tLogger.GetNext(&msg))
 	assert.Equal(t, slog.LevelDebug, msg.Level)
 	assert.Contains(t, msg.Message, "but no account by that name")
@@ -247,7 +256,7 @@ func (suite *CacheTestSuite) TestDeleteOldHistory() {
 	c = suite.setupDeleteOldHistory()
 	c.GetSSO().History = append(c.GetSSO().History, "arn:aws:iam::123456789012:role/NoHistoryTag")
 	c.GetSSO().Roles.Accounts[123456789012].Roles["NoHistoryTag"] = &AWSRole{}
-	c.deleteOldHistory()
+	c.deleteOldHistory(sr)
 	assert.NoError(t, tLogger.GetNext(&msg))
 	assert.Equal(t, slog.LevelDebug, msg.Level)
 	assert.Contains(t, msg.Message, "in history list without a History tag")
@@ -260,7 +269,7 @@ func (suite *CacheTestSuite) TestDeleteOldHistory() {
 			"History": "What:Foo",
 		},
 	}
-	c.deleteOldHistory()
+	c.deleteOldHistory(sr)
 	assert.NoError(t, tLogger.GetNext(&msg))
 	assert.Equal(t, slog.LevelDebug, msg.Level)
 	assert.Contains(t, msg.Message, "Too few fields for")
@@ -273,7 +282,7 @@ func (suite *CacheTestSuite) TestDeleteOldHistory() {
 			"History": "What:Foo,kkkk",
 		},
 	}
-	c.deleteOldHistory()
+	c.deleteOldHistory(sr)
 	assert.NoError(t, tLogger.GetNext(&msg))
 	assert.Equal(t, slog.LevelDebug, msg.Level)
 	assert.Contains(t, msg.Message, "Unable to parse")

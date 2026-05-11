@@ -446,8 +446,9 @@ func (suite *CacheRolesTestSuite) TestCheckProfiles() {
 	err = goyaml.Unmarshal(data, &tests)
 	assert.NoError(t, err)
 
+	loopSettings := &Settings{}
 	for testName, testData := range tests {
-		err := testData.CheckProfiles(suite.cache.settings)
+		err := testData.CheckProfiles(loopSettings)
 		if strings.HasPrefix(testName, "Invalid") {
 			assert.Error(t, err, testName)
 		} else {
@@ -455,7 +456,7 @@ func (suite *CacheRolesTestSuite) TestCheckProfiles() {
 		}
 	}
 
-	badSettings := *suite.cache.settings
+	badSettings := *suite.settings
 	badSettings.ProfileFormat = "{{ .AccountName }}"
 	r := tests["Valid1"]
 	err = r.CheckProfiles(&badSettings)

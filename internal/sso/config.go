@@ -23,15 +23,16 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
+	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
 	"github.com/synfinatic/aws-sso-cli/internal/tags"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
 
 type SSOConfig struct {
-	settings      *Settings              // pointer back up
 	key           string                 // our key in Settings.SSO[]
 	SSORegion     string                 `koanf:"SSORegion" yaml:"SSORegion"`
 	StartUrl      string                 `koanf:"StartUrl" yaml:"StartUrl"`
@@ -44,6 +45,14 @@ type SSOConfig struct {
 	// passed to AWSSSO from our Settings
 	MaxBackoff int `koanf:"-" yaml:"-"`
 	MaxRetry   int `koanf:"-" yaml:"-"`
+
+	// copied from Settings during Refresh
+	UrlAction      uri.Action        `koanf:"-" yaml:"-"`
+	Browser        string            `koanf:"-" yaml:"-"`
+	UrlExecCommand []string          `koanf:"-" yaml:"-"`
+	AuthWorkflow   oidc.AuthWorkflow `koanf:"-" yaml:"-"`
+	CacheRefresh   int64             `koanf:"-" yaml:"-"`
+	configFile     string            // path to parent config file
 }
 
 type SSOAccount struct {
@@ -75,6 +84,14 @@ func (c *SSOConfig) Refresh(s *Settings) {
 		c.AuthUrlAction = s.UrlAction
 	}
 
+	// copy settings fields needed by AWSSSO and cache
+	c.UrlAction = s.UrlAction
+	c.Browser = s.Browser
+	c.UrlExecCommand = s.UrlExecCommand
+	c.AuthWorkflow = s.AuthWorkflow
+	c.CacheRefresh = s.CacheRefresh
+	c.configFile = s.configFile
+
 	for accountId, a := range c.Accounts {
 		// normalize the accountId to a string representation of an integer
 		aId, err := awsparse.AccountIdToInt64(accountId)
@@ -104,12 +121,21 @@ func (c *SSOConfig) Refresh(s *Settings) {
 			r.ARN = awsparse.MakeRoleARNs(id, roleName)
 		}
 	}
-	c.settings = s
 }
 
 // CreatedAt returns the Unix epoch seconds that this config file was created at
 func (c *SSOConfig) CreatedAt() int64 {
-	return c.settings.CreatedAt()
+	f, err := os.Open(c.configFile)
+	if err != nil {
+		log.Fatal("Unable to open", "file", c.configFile, "error", err.Error())
+	}
+	defer f.Close()
+
+	info, err := f.Stat()
+	if err != nil {
+		log.Fatal("Unable to stat", "file", c.configFile, "error", err.Error())
+	}
+	return info.ModTime().Unix()
 }
 
 // GetRoles returns a list of all the roles for this SSOConfig

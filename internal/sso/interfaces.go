@@ -38,3 +38,19 @@ type Authenticator interface {
 // Compile-time assertions that *AWSSSO satisfies both interfaces.
 var _ RoleProvider = (*AWSSSO)(nil)
 var _ Authenticator = (*AWSSSO)(nil)
+
+// SettingsReader is the interface that provides cache-relevant configuration
+// from Settings without exposing the full concrete type.
+// *Settings satisfies this interface.
+type SettingsReader interface {
+	GetCacheFile() string
+	GetHistoryLimit() int64
+	GetHistoryMinutes() int64
+	GetProfileFormat() string
+	GetEnvVarTags() map[string]string
+	GetThreads() int
+	GetSSONames() []string
+}
+
+// Compile-time assertion that *Settings satisfies SettingsReader.
+var _ SettingsReader = (*Settings)(nil)

@@ -91,7 +91,6 @@ func TestRefresh(t *testing.T) {
 	}
 
 	c := &SSOConfig{
-		settings: settings,
 		Accounts: map[string]*SSOAccount{
 			"123456789012": nil,
 			"023456789012": {
@@ -112,7 +111,6 @@ func TestRefresh(t *testing.T) {
 	assert.Equal(t, c.AuthUrlAction, uri.Open)
 	assert.Equal(t, c.MaxBackoff, 60)
 	assert.Equal(t, c.MaxRetry, 3)
-	assert.Equal(t, c.settings, settings)
 
 	c.Accounts["123456789012"].Roles = map[string]*SSORole{}
 	c.Accounts["123456789012"].Roles["FooBar"] = nil

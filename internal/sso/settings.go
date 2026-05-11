@@ -394,6 +394,35 @@ func (s *Settings) GetSelectedSSOName(name string) (string, error) {
 	return "", fmt.Errorf("no available AWS SSO Instance")
 }
 
+// GetCacheFile returns the path to the cache file, satisfying SettingsReader.
+func (s *Settings) GetCacheFile() string {
+	return s.cacheFile
+}
+
+// GetHistoryLimit returns the maximum number of history entries, satisfying SettingsReader.
+func (s *Settings) GetHistoryLimit() int64 {
+	return s.HistoryLimit
+}
+
+// GetHistoryMinutes returns the history expiry in minutes, satisfying SettingsReader.
+func (s *Settings) GetHistoryMinutes() int64 {
+	return s.HistoryMinutes
+}
+
+// GetThreads returns the number of worker threads, satisfying SettingsReader.
+func (s *Settings) GetThreads() int {
+	return s.Threads
+}
+
+// GetSSONames returns the names of all configured SSO instances, satisfying SettingsReader.
+func (s *Settings) GetSSONames() []string {
+	names := make([]string, 0, len(s.SSO))
+	for name := range s.SSO {
+		names = append(names, name)
+	}
+	return names
+}
+
 // Returns the Tag name => Environment variable name
 func (s *Settings) GetEnvVarTags() map[string]string {
 	ret := map[string]string{}

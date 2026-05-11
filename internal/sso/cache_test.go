@@ -88,9 +88,7 @@ func (suite *CacheTestSuite) TestNeedsRefresh() {
 
 func (suite *CacheTestSuite) TestExpired() {
 	t := suite.T()
-	s := SSOConfig{
-		settings: &Settings{},
-	}
+	s := SSOConfig{}
 
 	// invalid version
 	c := &Cache{
@@ -101,10 +99,10 @@ func (suite *CacheTestSuite) TestExpired() {
 
 	c.Version = CACHE_VERSION
 
-	s.settings.CacheRefresh = 0
+	s.CacheRefresh = 0
 	assert.NoError(t, suite.cache.Expired(&s))
 
-	s.settings.CacheRefresh = 1
+	s.CacheRefresh = 1
 	assert.Error(t, suite.cache.Expired(&s))
 }
 

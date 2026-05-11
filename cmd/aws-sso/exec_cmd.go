@@ -81,7 +81,7 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 func execCmd(ctx *RunContext, accountid int64, role string) error {
 	region := ctx.Settings.GetDefaultRegion(accountid, role, ctx.Cli.Exec.NoRegion)
 
-	ctx.Settings.Cache.AddHistory(awsparse.MakeRoleARN(accountid, role))
+	ctx.Settings.Cache.AddHistory(ctx.Settings, awsparse.MakeRoleARN(accountid, role))
 	if err := ctx.Settings.Cache.Save(false); err != nil {
 		log.Warn("Unable to update cache", "error", err.Error())
 	}

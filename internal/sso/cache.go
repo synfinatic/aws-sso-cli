@@ -42,7 +42,7 @@ type SSOCache struct {
 // Our Cachefile.  Sub-structs defined in sso/cache.go
 type Cache struct {
 	Version         int64                `json:"Version"`
-	settings        *Settings            // pointer back up
+	cacheFile       string               // path to the cache file
 	ConfigCreatedAt int64                `json:"ConfigCreatedAt"` // track config.yaml
 	SSO             map[string]*SSOCache `json:"SSO,omitempty"`
 	ssoName         string               // name of SSO that is active
@@ -68,7 +68,7 @@ func (c *Cache) GetSSOByName(name string) *SSOCache {
 
 func OpenCache(f string, s *Settings) (*Cache, error) {
 	cache := Cache{
-		settings:        s,
+		cacheFile:       f,
 		ConfigCreatedAt: 0,
 		Version:         1, // use an invalid default version for cache files without a version
 		SSO:             map[string]*SSOCache{},
@@ -83,10 +83,13 @@ func OpenCache(f string, s *Settings) (*Cache, error) {
 			return &cache, err // return empty struct
 		}
 		err = json.Unmarshal(cacheBytes, &cache)
+		if err == nil {
+			cache.cacheFile = f // restore after unmarshal (not in JSON)
+		}
 	}
 
 	c := &cache
-	c.deleteOldHistory()
+	c.deleteOldHistory(s)
 
 	return c, err
 }
@@ -121,11 +124,11 @@ func (c *Cache) Expired(s *SSOConfig) error {
 	}
 
 	// negative values disable refresh
-	if s.settings.CacheRefresh <= 0 {
+	if s.CacheRefresh <= 0 {
 		return nil
 	}
 
-	ttl := s.settings.CacheRefresh * 60 * 60 // convert hours to seconds
+	ttl := s.CacheRefresh * 60 * 60 // convert hours to seconds
 	cache := c.GetSSO()
 	if cache.LastUpdate+ttl < time.Now().Unix() {
 		return fmt.Errorf("local cache is out of date; TTL has been exceeded")
@@ -138,7 +141,7 @@ func (c *Cache) Expired(s *SSOConfig) error {
 }
 
 func (c *Cache) CacheFile() string {
-	return c.settings.cacheFile
+	return c.cacheFile
 }
 
 // Save saves our cache to the current file

@@ -240,10 +240,10 @@ func (as *AWSSSO) saveToken(token storage.CreateTokenResponse) error {
 }
 
 func (as *AWSSSO) getAuthWorkflow() oidc.AuthWorkflow {
-	if as.SSOConfig == nil || as.SSOConfig.settings == nil {
+	if as.SSOConfig == nil {
 		return oidc.AuthWorkflowPKCE
 	}
-	return as.SSOConfig.settings.AuthWorkflow.OrDefault()
+	return as.SSOConfig.AuthWorkflow.OrDefault()
 }
 
 func (as *AWSSSO) authGrantTypes() []string {

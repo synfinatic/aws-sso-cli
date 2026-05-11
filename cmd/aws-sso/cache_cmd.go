@@ -49,7 +49,7 @@ func (cc *CacheCmd) Run(ctx *RunContext) error {
 		log.Fatal("unable to get name for SSO instance", "sso", ctx.Cli.SSO, "error", err.Error())
 	}
 
-	added, deleted, err := ctx.Settings.Cache.Refresh(AwsSSO, s, ssoName, ctx.Cli.Cache.Threads)
+	added, deleted, err := ctx.Settings.Cache.Refresh(AwsSSO, s, ssoName, ctx.Cli.Cache.Threads, ctx.Settings)
 	if err != nil {
 		return fmt.Errorf("unable to refresh role cache: %s", err.Error())
 	}

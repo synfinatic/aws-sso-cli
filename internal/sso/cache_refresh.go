@@ -32,7 +32,7 @@ const (
 
 // Refresh updates our cached Roles based on AWS SSO & our Config
 // but does not save this data!  Returns the ARNs of roles added/deleted
-func (c *Cache) Refresh(sso RoleProvider, config *SSOConfig, ssoName string, threads int) ([]string, []string, error) {
+func (c *Cache) Refresh(sso RoleProvider, config *SSOConfig, ssoName string, threads int, s SettingsReader) ([]string, []string, error) {
 	// Only refresh once per execution
 	if c.refreshed {
 		return nil, nil, nil
@@ -72,10 +72,10 @@ func (c *Cache) Refresh(sso RoleProvider, config *SSOConfig, ssoName string, thr
 	}
 
 	c.SSO[ssoName].Roles = &Roles{}
-	c.SSO[ssoName].ConfigHash = config.GetConfigHash(c.settings.ProfileFormat)
+	c.SSO[ssoName].ConfigHash = config.GetConfigHash(s.GetProfileFormat())
 
 	// load our AWSSSO & Config
-	r, err := c.NewRoles(sso, config, threads)
+	r, err := c.NewRoles(sso, config, threads, s)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -153,16 +153,16 @@ func (c *Cache) Refresh(sso RoleProvider, config *SSOConfig, ssoName string, thr
 }
 
 // NewRoles merges data from AWS SSO and the config file into a fresh Roles struct.
-func (c *Cache) NewRoles(as RoleProvider, config *SSOConfig, threads int) (*Roles, error) {
+func (c *Cache) NewRoles(as RoleProvider, config *SSOConfig, threads int, s SettingsReader) (*Roles, error) {
 	r := Roles{
 		SSORegion:     config.SSORegion,
 		StartUrl:      config.StartUrl,
 		DefaultRegion: config.DefaultRegion,
 		Accounts:      map[int64]*AWSAccount{},
-		SSOName:       config.settings.DefaultSSO,
+		SSOName:       c.ssoName,
 	}
 
-	if err := c.addSSORoles(&r, as, threads); err != nil {
+	if err := c.addSSORoles(&r, as, threads, s); err != nil {
 		return &Roles{}, err
 	}
 
@@ -170,7 +170,7 @@ func (c *Cache) NewRoles(as RoleProvider, config *SSOConfig, threads int) (*Role
 		return &Roles{}, err
 	}
 
-	if err := r.CheckProfiles(c.settings); err != nil {
+	if err := r.CheckProfiles(s); err != nil {
 		return &Roles{}, err
 	}
 
@@ -236,7 +236,7 @@ func processSSORoles(roles []RoleInfo, cache *SSOCache, r *Roles) {
 // addSSORoles retrieves all SSO roles from AWS SSO and places them in r.
 // The first account is fetched serially to allow token refresh; remaining
 // accounts are fetched in parallel via a bounded worker pool.
-func (c *Cache) addSSORoles(r *Roles, as RoleProvider, threads int) error {
+func (c *Cache) addSSORoles(r *Roles, as RoleProvider, threads int, s SettingsReader) error {
 	cache := c.GetSSO()
 
 	accounts, err := as.GetAccounts()
@@ -260,7 +260,7 @@ func (c *Cache) addSSORoles(r *Roles, as RoleProvider, threads int) error {
 	// Per #448, doing this serially is too slow for many accounts.  Hence,
 	// we'll use a worker pool.
 	if len(accounts) > 0 {
-		workers := c.settings.Threads
+		workers := s.GetThreads()
 		if threads > 0 {
 			workers = threads
 		}

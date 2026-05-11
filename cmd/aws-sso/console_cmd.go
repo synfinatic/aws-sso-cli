@@ -239,7 +239,7 @@ func openConsole(ctx *RunContext, accountid int64, role string) error {
 		duration = ctx.Cli.Console.Duration
 	}
 
-	ctx.Settings.Cache.AddHistory(awsparse.MakeRoleARN(accountid, role))
+	ctx.Settings.Cache.AddHistory(ctx.Settings, awsparse.MakeRoleARN(accountid, role))
 	if err := ctx.Settings.Cache.Save(false); err != nil {
 		log.Warn("Unable to update cache", "error", err.Error())
 	}
