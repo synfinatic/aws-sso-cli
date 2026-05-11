@@ -963,6 +963,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#secretservicecollection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SecretServiceCollection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#envvartags" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2206,6 +2217,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#secretservicecollection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SecretServiceCollection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#envvartags" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2311,6 +2333,7 @@ HistoryMinutes: &lt;integer&gt;
 
 SecureStore: [file|keychain|kwallet|pass|secret-service|wincred|json]
 JsonStore: &lt;path to json file&gt;
+SecretServiceCollection: &lt;libsecret collection name&gt;
 
 ProfileFormat: &quot;&lt;template&gt;&quot;
 ConfigVariables:
@@ -2785,6 +2808,9 @@ advanced debugging.</p>
 </ul>
 <p><strong>Note:</strong> The <code>file</code> option supports passing in the password via the <code>AWS_SSO_FILE_PASSWORD</code> environment variable.</p>
 <p><strong>Note:</strong> The <code>pass</code> option supports passing in the password via the <a href="https://www.gnupg.org/documentation/manuals/gnupg24/gpg-agent.1.html">gpg-agent</a>.</p>
+<h4 id="secretservicecollection">SecretServiceCollection</h4>
+<p>Overrides the libsecret collection name used by the <code>secret-service</code> backend.
+Defaults to <code>awsssocli</code>. Has no effect on other <code>SecureStore</code> backends.</p>
 <h4 id="envvartags">EnvVarTags</h4>
 <p>List of tag keys that should be set as a shell environment variable when
 using the <code>eval</code> or <code>exec</code> commands.</p>
