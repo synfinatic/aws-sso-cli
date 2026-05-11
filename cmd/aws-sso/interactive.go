@@ -29,6 +29,7 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
 	"github.com/synfinatic/aws-sso-cli/internal/tags"
+	"github.com/synfinatic/aws-sso-cli/internal/ui"
 )
 
 type CompleterExec = func(*RunContext, int64, string) error
@@ -53,8 +54,8 @@ func (ctx *RunContext) PromptExec(exec CompleterExec) error {
 	fmt.Println("Type `exit` or `Ctrl-D` to abort.")
 
 	c := NewTagsCompleter(ctx, sso, exec)
-	opts := ctx.Settings.DefaultOptions(c.ExitChecker)
-	opts = append(opts, ctx.Settings.GetColorOptions()...)
+	opts := ui.DefaultOptions(c.ExitChecker)
+	opts = append(opts, ui.GetColorOptions(ctx.Settings.PromptColors)...)
 
 	p := prompt.New(
 		c.Executor,

@@ -36,6 +36,7 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
 	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
+	"github.com/synfinatic/aws-sso-cli/internal/ui"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
 
@@ -74,7 +75,7 @@ type Settings struct {
 	ProfileFormat             string                   `koanf:"ProfileFormat" yaml:"ProfileFormat,omitempty"`
 	AccountPrimaryTag         []string                 `koanf:"AccountPrimaryTag" yaml:"AccountPrimaryTag,omitempty"`
 	FirstTag                  string                   `koanf:"FirstTag" yaml:"FirstTag,omitempty"`
-	PromptColors              PromptColors             `koanf:"PromptColors" yaml:"PromptColors,omitempty"` // go-prompt colors
+	PromptColors              ui.PromptColors          `koanf:"PromptColors" yaml:"PromptColors,omitempty"` // go-prompt colors
 	ListFields                []string                 `koanf:"ListFields" yaml:"ListFields,omitempty"`
 	ConfigVariables           map[string]interface{}   `koanf:"ConfigVariables" yaml:"ConfigVariables,omitempty"`
 	EnvVarTags                []string                 `koanf:"EnvVarTags" yaml:"EnvVarTags,omitempty"`
