@@ -1,4 +1,4 @@
-package sso
+package cache
 
 /*
  * AWS SSO CLI
@@ -29,12 +29,12 @@ import (
 
 // AddHistory adds a role ARN to the History list up to the max number of entries
 // and then removes the History tag from any roles that aren't in our list
-func (c *Cache) AddHistory(item string) {
+func (c *Cache) AddHistory(s SettingsReader, item string) {
 	// If it's already in the list, remove item
 	c.deleteHistoryItem(item)
 
 	c.GetSSO().History = append([]string{item}, c.GetSSO().History...) // push on top
-	for int64(len(c.GetSSO().History)) > c.settings.HistoryLimit {
+	for int64(len(c.GetSSO().History)) > s.GetHistoryLimit() {
 		// remove the oldest entry
 		c.GetSSO().History = c.GetSSO().History[:len(c.GetSSO().History)-1]
 	}
@@ -78,8 +78,8 @@ func (c *Cache) deleteHistoryItem(arn string) {
 
 // deleteOldHistory removes any items from history which are older than HistoryMinutes.
 // Does not save to disk; only updates the in-memory cache.
-func (c *Cache) deleteOldHistory() {
-	if c.settings.HistoryMinutes <= 0 {
+func (c *Cache) deleteOldHistory(s SettingsReader) {
+	if s.GetHistoryMinutes() <= 0 {
 		// no op if HistoryMinutes <= 0
 		return
 	}
@@ -123,7 +123,7 @@ func (c *Cache) deleteOldHistory() {
 				}
 
 				d := time.Since(time.Unix(lastTime, 0))
-				if int64(d.Minutes()) < c.settings.HistoryMinutes {
+				if int64(d.Minutes()) < s.GetHistoryMinutes() {
 					// keep current entries in our list
 					newHistoryItems = append(newHistoryItems, arn)
 				} else {

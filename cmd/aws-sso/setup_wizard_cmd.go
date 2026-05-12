@@ -29,6 +29,7 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
 	"github.com/synfinatic/aws-sso-cli/internal/prompt"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
+	ssoconfig "github.com/synfinatic/aws-sso-cli/internal/sso/config"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
 
@@ -101,7 +102,7 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 		}
 
 		s = &sso.Settings{
-			SSO:             map[string]*sso.SSOConfig{},
+			SSO:             map[string]*ssoconfig.SSOConfig{},
 			UrlAction:       uri.Open,
 			LogLevel:        "error",
 			DefaultRegion:   defaultRegion,
@@ -115,7 +116,7 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 			ProfileFormat:   DEFAULT_PROFILE_FORMAT,
 		}
 
-		s.SSO[instanceName] = &sso.SSOConfig{
+		s.SSO[instanceName] = &ssoconfig.SSOConfig{
 			SSORegion:     ssoRegion,
 			StartUrl:      fmt.Sprintf(START_URL_FORMAT, startHostname),
 			DefaultRegion: defaultRegion,

@@ -28,17 +28,22 @@ import (
 	goyaml "github.com/goccy/go-yaml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"github.com/synfinatic/aws-sso-cli/internal/sso/cache"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
 
 const (
 	TEST_JSON_STORE_FILE = "../storage/testdata/store.json"
 	TEST_ROLES_TEST_FILE = "./testdata/roles_tests.yaml"
+	TEST_CACHE_FILE      = "./testdata/cache.json"
 )
+
+// ProfileTests is used for unmarshaling profile test data
+type ProfileTests map[string]cache.Roles
 
 type CacheRolesTestSuite struct {
 	suite.Suite
-	cache     *Cache
+	cache     *cache.Cache
 	cacheFile string
 	settings  *Settings
 	storage   storage.SecureStorage
@@ -65,7 +70,7 @@ func TestCacheRolesTestSuite(t *testing.T) {
 	err = os.WriteFile(f.Name(), input, 0600) // nolint:gosec
 	assert.NoError(t, err)
 
-	c, err := OpenCache(f.Name(), settings)
+	c, err := cache.OpenCache(f.Name(), settings)
 	assert.NoError(t, err)
 
 	// secure store
@@ -106,7 +111,7 @@ func (suite *CacheRolesTestSuite) TearDownAllSuite() {
 
 func (suite *CacheRolesTestSuite) TestAccountIds() {
 	t := suite.T()
-	roles := suite.cache.SSO[suite.cache.ssoName].Roles
+	roles := suite.cache.SSO[suite.cache.GetSSOName()].Roles
 
 	assert.NotEmpty(t, roles.AccountIds())
 	assert.Contains(t, roles.AccountIds(), int64(25823461518))
@@ -116,14 +121,14 @@ func (suite *CacheRolesTestSuite) TestAccountIds() {
 func (suite *CacheRolesTestSuite) TestGetAllRoles() {
 	t := suite.T()
 
-	roles := suite.cache.SSO[suite.cache.ssoName].Roles
+	roles := suite.cache.SSO[suite.cache.GetSSOName()].Roles
 	flat := roles.GetAllRoles()
 	assert.NotEmpty(t, flat)
 }
 
 func (suite *CacheRolesTestSuite) TestGetAccountRoles() {
 	t := suite.T()
-	roles := suite.cache.SSO[suite.cache.ssoName].Roles
+	roles := suite.cache.SSO[suite.cache.GetSSOName()].Roles
 
 	flat := roles.GetAccountRoles(25823461518)
 	assert.NotEmpty(t, flat)
@@ -134,7 +139,7 @@ func (suite *CacheRolesTestSuite) TestGetAccountRoles() {
 
 func (suite *CacheRolesTestSuite) TestGetAllTags() {
 	t := suite.T()
-	roles := suite.cache.SSO[suite.cache.ssoName].Roles
+	roles := suite.cache.SSO[suite.cache.GetSSOName()].Roles
 
 	tags := *(roles.GetAllTags())
 	assert.NotEmpty(t, tags)
@@ -144,7 +149,7 @@ func (suite *CacheRolesTestSuite) TestGetAllTags() {
 
 func (suite *CacheRolesTestSuite) TestGetRoleTags() {
 	t := suite.T()
-	roles := suite.cache.SSO[suite.cache.ssoName].Roles
+	roles := suite.cache.SSO[suite.cache.GetSSOName()].Roles
 
 	tags := *(roles.GetRoleTags())
 	assert.NotEmpty(t, tags)
@@ -157,7 +162,7 @@ func (suite *CacheRolesTestSuite) TestGetRoleTags() {
 
 func (suite *CacheRolesTestSuite) TestGetRole() {
 	t := suite.T()
-	roles := suite.cache.SSO[suite.cache.ssoName].Roles
+	roles := suite.cache.SSO[suite.cache.GetSSOName()].Roles
 
 	_, err := roles.GetRole(58234615182, "AWSAdministratorAccess")
 	assert.Error(t, err)
@@ -180,7 +185,7 @@ func (suite *CacheRolesTestSuite) TestGetRole() {
 
 func (suite *CacheRolesTestSuite) TestProfileName() {
 	t := suite.T()
-	roles := suite.cache.SSO[suite.cache.ssoName].Roles
+	roles := suite.cache.SSO[suite.cache.GetSSOName()].Roles
 	r, err := roles.GetRole(25823461518, "AWSAdministratorAccess")
 	assert.NoError(t, err)
 
@@ -202,7 +207,7 @@ func (suite *CacheRolesTestSuite) TestProfileName() {
 
 func (suite *CacheRolesTestSuite) TestGetRoleByProfile() {
 	t := suite.T()
-	roles := suite.cache.SSO[suite.cache.ssoName].Roles
+	roles := suite.cache.SSO[suite.cache.GetSSOName()].Roles
 	flat, err := roles.GetRoleByProfile("audit-admin", suite.settings)
 	assert.NoError(t, err)
 	assert.Equal(t, "arn:aws:iam::502470824893:role/AWSAdministratorAccess", flat.Arn)
@@ -217,7 +222,7 @@ func (suite *CacheRolesTestSuite) TestGetRoleByProfile() {
 
 func (suite *CacheRolesTestSuite) TestGetEnvVarTags() {
 	t := suite.T()
-	roles := suite.cache.SSO[suite.cache.ssoName].Roles
+	roles := suite.cache.SSO[suite.cache.GetSSOName()].Roles
 	flat, err := roles.GetRoleByProfile("audit-admin", suite.settings)
 	assert.NoError(t, err)
 
@@ -446,8 +451,9 @@ func (suite *CacheRolesTestSuite) TestCheckProfiles() {
 	err = goyaml.Unmarshal(data, &tests)
 	assert.NoError(t, err)
 
+	loopSettings := &Settings{}
 	for testName, testData := range tests {
-		err := testData.CheckProfiles(suite.cache.settings)
+		err := testData.CheckProfiles(loopSettings)
 		if strings.HasPrefix(testName, "Invalid") {
 			assert.Error(t, err, testName)
 		} else {
@@ -455,7 +461,7 @@ func (suite *CacheRolesTestSuite) TestCheckProfiles() {
 		}
 	}
 
-	badSettings := *suite.cache.settings
+	badSettings := *suite.settings
 	badSettings.ProfileFormat = "{{ .AccountName }}"
 	r := tests["Valid1"]
 	err = r.CheckProfiles(&badSettings)
@@ -479,7 +485,7 @@ func (suite *CacheRolesTestSuite) TestCheckProfiles() {
 func (suite *CacheRolesTestSuite) TestGetRoleChain() {
 	t := suite.T()
 
-	roles := suite.cache.SSO[suite.cache.ssoName].Roles
+	roles := suite.cache.SSO[suite.cache.GetSSOName()].Roles
 	flat := roles.GetRoleChain(707513610766, "AWSPowerUserAccess")
 	assert.Equal(t, 2, len(flat))
 

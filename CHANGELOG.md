@@ -15,6 +15,10 @@
 
 * Unique profile name vailation now honors SSO instance #1306
 
+### Changes
+
+* Massive refactor of internal/sso for long term maintainability and improved testing
+
 ## [v2.1.0] - 2025-09-03
 
 ### New Features

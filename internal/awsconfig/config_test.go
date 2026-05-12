@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
+	ssocache "github.com/synfinatic/aws-sso-cli/internal/sso/cache"
 )
 
 func TestAwsConfigFile(t *testing.T) {
@@ -43,8 +44,8 @@ func TestAwsConfigFile(t *testing.T) {
 
 func TestGetProfileMap(t *testing.T) {
 	s := &sso.Settings{
-		Cache: &sso.Cache{
-			SSO: map[string]*sso.SSOCache{
+		Cache: &ssocache.Cache{
+			SSO: map[string]*ssocache.SSOCache{
 				"Default": {
 					Roles: &sso.Roles{
 						Accounts: map[int64]*sso.AWSAccount{
@@ -81,7 +82,7 @@ func TestGetProfileMap(t *testing.T) {
 
 	// Profiles from a different SSO with the same name should not cause
 	// a duplicate error, since UniqueCheck only checks the requested SSO
-	s.Cache.SSO["Other"] = &sso.SSOCache{
+	s.Cache.SSO["Other"] = &ssocache.SSOCache{
 		Roles: &sso.Roles{
 			Accounts: map[int64]*sso.AWSAccount{
 				12345: {
@@ -102,8 +103,8 @@ func TestGetProfileMap(t *testing.T) {
 
 func TestPrintAwsConfig(t *testing.T) {
 	s := &sso.Settings{
-		Cache: &sso.Cache{
-			SSO: map[string]*sso.SSOCache{
+		Cache: &ssocache.Cache{
+			SSO: map[string]*ssocache.SSOCache{
 				"Default": {
 					Roles: &sso.Roles{
 						Accounts: map[int64]*sso.AWSAccount{
@@ -149,7 +150,7 @@ func TestPrintAwsConfig(t *testing.T) {
 	stdout.Close()
 
 	// now fail
-	s.Cache.SSO["Other"] = &sso.SSOCache{
+	s.Cache.SSO["Other"] = &ssocache.SSOCache{
 		Roles: &sso.Roles{
 			Accounts: map[int64]*sso.AWSAccount{
 				12345: {
@@ -171,8 +172,8 @@ func TestPrintAwsConfig(t *testing.T) {
 
 func TestUpdateAwsConfig(t *testing.T) {
 	s := &sso.Settings{
-		Cache: &sso.Cache{
-			SSO: map[string]*sso.SSOCache{
+		Cache: &ssocache.Cache{
+			SSO: map[string]*ssocache.SSOCache{
 				"Default": {
 					Roles: &sso.Roles{
 						Accounts: map[int64]*sso.AWSAccount{
@@ -218,7 +219,7 @@ func TestUpdateAwsConfig(t *testing.T) {
 
 	// Profiles from a different SSO with the same name should not cause
 	// a duplicate error, since UniqueCheck only checks the requested SSO
-	s.Cache.SSO["Other"] = &sso.SSOCache{
+	s.Cache.SSO["Other"] = &ssocache.SSOCache{
 		Roles: &sso.Roles{
 			Accounts: map[int64]*sso.AWSAccount{
 				12345: {

@@ -19,7 +19,7 @@ package main
  */
 
 import (
-	"github.com/synfinatic/aws-sso-cli/internal/sso"
+	ssoauth "github.com/synfinatic/aws-sso-cli/internal/sso/auth"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
 
@@ -49,7 +49,7 @@ func checkAuth(ctx *RunContext) bool {
 			log.Fatal("unable to select SSO", "sso", ctx.Cli.SSO, err.Error())
 		}
 
-		AwsSSO = sso.NewAWSSSO(s, ctx.Store)
+		AwsSSO = ssoauth.NewAWSSSO(s, ctx.Store)
 	}
 
 	return AwsSSO.ValidAuthToken()
@@ -91,7 +91,7 @@ func doAuth(ctx *RunContext) {
 			log.Fatal("unable to GetSelectedSSOName", "sso", ctx.Cli.SSO, "error", err.Error())
 		}
 		log.Info("Refreshing AWS SSO role cache, please wait...", "sso", ssoName)
-		added, deleted, err := ctx.Settings.Cache.Refresh(AwsSSO, s, ssoName, ctx.Cli.Login.Threads)
+		added, deleted, err := ctx.Settings.Cache.Refresh(AwsSSO, s, ssoName, ctx.Cli.Login.Threads, ctx.Settings)
 		if err != nil {
 			log.Fatal("Unable to refresh cache", "error", err.Error())
 		}

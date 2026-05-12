@@ -1,4 +1,4 @@
-package sso
+package auth
 
 /*
  * AWS SSO CLI
@@ -26,10 +26,11 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/sso"
+	awssso "github.com/aws/aws-sdk-go-v2/service/sso"
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
+	ssoconfig "github.com/synfinatic/aws-sso-cli/internal/sso/config"
 	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
@@ -97,9 +98,7 @@ func TestStoreKey(t *testing.T) {
 		key:       "atest",
 		SsoRegion: "us-west-1",
 		StartUrl:  "https://testing.awsapps.com/start",
-		SSOConfig: &SSOConfig{
-			settings: &Settings{},
-		},
+		SSOConfig: &ssoconfig.SSOConfig{},
 	}
 
 	assert.Equal(t, "atest", as.StoreKey())
@@ -110,7 +109,7 @@ func TestAuthWorkflowSelection(t *testing.T) {
 	assert.Equal(t, oidc.AuthWorkflowPKCE, as.getAuthWorkflow())
 	assert.Equal(t, []string{"refresh_token", oidc.GrantTypeAuthorizationCode}, as.authGrantTypes())
 
-	as.SSOConfig = &SSOConfig{settings: &Settings{AuthWorkflow: oidc.AuthWorkflowDeviceCode}}
+	as.SSOConfig = &ssoconfig.SSOConfig{AuthWorkflow: oidc.AuthWorkflowDeviceCode}
 	assert.Equal(t, oidc.AuthWorkflowDeviceCode, as.getAuthWorkflow())
 	assert.Equal(t, []string{"refresh_token"}, as.authGrantTypes())
 }
@@ -128,8 +127,8 @@ func TestAuthenticateSteps(t *testing.T) {
 		SsoRegion: "us-west-1",
 		StartUrl:  "https://testing.awsapps.com/start",
 		store:     jstore,
-		SSOConfig: &SSOConfig{
-			settings: &Settings{AuthWorkflow: oidc.AuthWorkflowDeviceCode},
+		SSOConfig: &ssoconfig.SSOConfig{
+			AuthWorkflow: oidc.AuthWorkflowDeviceCode,
 		},
 	}
 
@@ -208,8 +207,8 @@ func TestAuthenticate(t *testing.T) {
 		SsoRegion: "us-west-1",
 		StartUrl:  "https://testing.awsapps.com/start",
 		store:     jstore,
-		SSOConfig: &SSOConfig{
-			settings: &Settings{AuthWorkflow: oidc.AuthWorkflowDeviceCode},
+		SSOConfig: &ssoconfig.SSOConfig{
+			AuthWorkflow: oidc.AuthWorkflowDeviceCode,
 		},
 	}
 
@@ -373,8 +372,8 @@ func TestValidAuthToken(t *testing.T) {
 		SsoRegion: "us-west-1",
 		StartUrl:  "https://testing.awsapps.com/start",
 		store:     jstore,
-		SSOConfig: &SSOConfig{
-			settings: &Settings{AuthWorkflow: oidc.AuthWorkflowDeviceCode},
+		SSOConfig: &ssoconfig.SSOConfig{
+			AuthWorkflow: oidc.AuthWorkflowDeviceCode,
 		},
 	}
 
@@ -416,8 +415,8 @@ func TestAuthenticateFailure(t *testing.T) {
 		SsoRegion: "us-west-1",
 		StartUrl:  "https://testing.awsapps.com/start",
 		store:     jstore,
-		SSOConfig: &SSOConfig{
-			settings: &Settings{AuthWorkflow: oidc.AuthWorkflowDeviceCode},
+		SSOConfig: &ssoconfig.SSOConfig{
+			AuthWorkflow: oidc.AuthWorkflowDeviceCode,
 		},
 	}
 
@@ -593,48 +592,14 @@ func TestReauthenticate(t *testing.T) {
 		urlAction:      "invalid",
 		browser:        "no-such-browser",
 		urlExecCommand: []string{"/dev/null", "%s"},
-		SSOConfig: &SSOConfig{
-			settings: &Settings{AuthWorkflow: oidc.AuthWorkflowDeviceCode},
+		SSOConfig: &ssoconfig.SSOConfig{
+			AuthWorkflow: oidc.AuthWorkflowDeviceCode,
 		},
 	}
 
 	secs, _ := time.ParseDuration("5s")
 	expires := time.Now().Add(secs).Unix()
-	/*
-		as.ssooidc = &mockSsoOidcAPI{
-			Results: []mockSsoOidcAPIResults{
-				{
-					RegisterClient: &ssooidc.RegisterClientOutput{
-						AuthorizationEndpoint: nil,
-						ClientId:              aws.String("this-is-my-client-id"),
-						ClientSecret:          aws.String("this-is-my-client-secret"),
-						ClientIdIssuedAt:      time.Now().Unix(),
-						ClientSecretExpiresAt: int64(expires),
-						TokenEndpoint:         nil,
-					},
-					Error: nil,
-				},
-				{
-					StartDeviceAuthorization: &ssooidc.StartDeviceAuthorizationOutput{
-						DeviceCode:              aws.String("device-code"),
-						UserCode:                aws.String("user-code"),
-						VerificationUri:         aws.String("verification-uri"),
-						VerificationUriComplete: aws.String("verification-uri-complete"),
-						ExpiresIn:               int32(expires),
-						Interval:                5,
-					},
-					Error: nil,
-				},
-				{
-					CreateToken: &ssooidc.CreateTokenOutput{},
-					Error:       fmt.Errorf("some error"),
-				},
-			},
-		}
 
-		// invalid urlAction
-		assert.Panics(t, func() { _ = as.reauthenticate() })
-	*/
 	// valid urlAction, but command is invalid
 	as.urlAction = "exec"
 	as.oidcClient = oidc.NewAWSWithAPI(&mockSsoOidcAPI{
@@ -686,10 +651,8 @@ func TestLogout(t *testing.T) {
 		SsoRegion: "us-west-1",
 		StartUrl:  "https://testing.awsapps.com/start",
 		store:     jstore,
-		Roles:     map[string][]RoleInfo{},
-		SSOConfig: &SSOConfig{
-			settings: &Settings{},
-		},
+		Roles:     map[string][]ssoconfig.RoleInfo{},
+		SSOConfig: &ssoconfig.SSOConfig{},
 		Token: storage.CreateTokenResponse{
 			AccessToken:  "access-token",
 			ExpiresIn:    42,
@@ -704,7 +667,7 @@ func TestLogout(t *testing.T) {
 	as.sso = &mockSsoAPI{
 		Results: []mockSsoAPIResults{
 			{
-				Logout: &sso.LogoutOutput{},
+				Logout: &awssso.LogoutOutput{},
 				Error:  nil,
 			},
 		},
@@ -719,7 +682,7 @@ func TestLogout(t *testing.T) {
 	as.sso = &mockSsoAPI{
 		Results: []mockSsoAPIResults{
 			{
-				Logout: &sso.LogoutOutput{},
+				Logout: &awssso.LogoutOutput{},
 				Error:  nil,
 			},
 		},
@@ -887,7 +850,7 @@ func TestRegisterClientPKCE(t *testing.T) {
 		ClientType: awsSSOClientType,
 		store:      jstore,
 		oidcClient: mock,
-		SSOConfig:  &SSOConfig{settings: &Settings{AuthWorkflow: oidc.AuthWorkflowPKCE}},
+		SSOConfig:  &ssoconfig.SSOConfig{AuthWorkflow: oidc.AuthWorkflowPKCE},
 	}
 
 	err = as.registerClient(true)
@@ -938,7 +901,7 @@ func TestReauthenticatePKCE(t *testing.T) {
 				ClientSecret: "csecret",
 			},
 			oidcClient: mock,
-			SSOConfig:  &SSOConfig{settings: &Settings{AuthWorkflow: oidc.AuthWorkflowPKCE}},
+			SSOConfig:  &ssoconfig.SSOConfig{AuthWorkflow: oidc.AuthWorkflowPKCE},
 		}
 
 		err = as.reauthenticatePKCE()
@@ -979,7 +942,7 @@ func TestReauthenticatePKCE(t *testing.T) {
 			store:      jstore,
 			urlAction:  "print",
 			oidcClient: mock,
-			SSOConfig:  &SSOConfig{settings: &Settings{AuthWorkflow: oidc.AuthWorkflowPKCE}},
+			SSOConfig:  &ssoconfig.SSOConfig{AuthWorkflow: oidc.AuthWorkflowPKCE},
 		}
 
 		err = as.reauthenticatePKCE()
@@ -1011,7 +974,7 @@ func TestReauthenticatePKCE(t *testing.T) {
 			store:      jstore,
 			urlAction:  "print",
 			oidcClient: mock,
-			SSOConfig:  &SSOConfig{settings: &Settings{AuthWorkflow: oidc.AuthWorkflowPKCE}},
+			SSOConfig:  &ssoconfig.SSOConfig{AuthWorkflow: oidc.AuthWorkflowPKCE},
 		}
 
 		err = as.reauthenticatePKCE()
@@ -1044,7 +1007,7 @@ func TestReauthenticatePKCE(t *testing.T) {
 			store:      jstore,
 			urlAction:  "print",
 			oidcClient: mock,
-			SSOConfig:  &SSOConfig{settings: &Settings{AuthWorkflow: oidc.AuthWorkflowPKCE}},
+			SSOConfig:  &ssoconfig.SSOConfig{AuthWorkflow: oidc.AuthWorkflowPKCE},
 		}
 
 		err = as.reauthenticatePKCE()

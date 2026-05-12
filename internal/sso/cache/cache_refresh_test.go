@@ -1,4 +1,4 @@
-package sso
+package cache
 
 /*
  * AWS SSO CLI
@@ -20,21 +20,34 @@ package sso
 
 import (
 	"fmt"
-	"os"
-	"testing"
-	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/sso"
-	ssotypes "github.com/aws/aws-sdk-go-v2/service/sso/types"
 	"github.com/stretchr/testify/assert"
-	"github.com/synfinatic/aws-sso-cli/internal/storage"
+	ssoconfig "github.com/synfinatic/aws-sso-cli/internal/sso/config"
 )
+
+// mockRoleProvider implements ssoconfig.RoleProvider for cache tests.
+type mockRoleProvider struct {
+	accounts   []ssoconfig.AccountInfo
+	accountErr error
+	roles      map[string][]ssoconfig.RoleInfo
+	roleErr    error
+}
+
+func (m *mockRoleProvider) GetAccounts() ([]ssoconfig.AccountInfo, error) {
+	return m.accounts, m.accountErr
+}
+
+func (m *mockRoleProvider) GetRoles(account ssoconfig.AccountInfo) ([]ssoconfig.RoleInfo, error) {
+	if m.roleErr != nil {
+		return nil, m.roleErr
+	}
+	return m.roles[account.AccountId], nil
+}
 
 func (suite *CacheTestSuite) TestProcessSSORoles() {
 	t := suite.T()
 
-	roles := []RoleInfo{
+	roles := []ssoconfig.RoleInfo{
 		{
 			Id:           0,
 			Arn:          "arn:aws:iam::123456789012:role/testing",
@@ -78,10 +91,10 @@ func (suite *CacheTestSuite) TestProcessSSORoles() {
 func (suite *CacheTestSuite) TestAddConfigRoles() {
 	t := suite.T()
 
-	config := &SSOConfig{
-		Accounts: map[string]*SSOAccount{
+	config := &ssoconfig.SSOConfig{
+		Accounts: map[string]*ssoconfig.SSOAccount{
 			"123456789012": {
-				Roles: map[string]*SSORole{
+				Roles: map[string]*ssoconfig.SSORole{
 					"Foo": {},
 					"Bar": {},
 				},
@@ -97,10 +110,10 @@ func (suite *CacheTestSuite) TestAddConfigRoles() {
 	assert.NoError(t, err)
 
 	// invalid accountId returns error
-	configBadId := &SSOConfig{
-		Accounts: map[string]*SSOAccount{
+	configBadId := &ssoconfig.SSOConfig{
+		Accounts: map[string]*ssoconfig.SSOAccount{
 			"not-an-id": {
-				Roles: map[string]*SSORole{"Foo": {}},
+				Roles: map[string]*ssoconfig.SSORole{"Foo": {}},
 			},
 		},
 	}
@@ -127,13 +140,13 @@ func (suite *CacheTestSuite) TestAddConfigRoles() {
 			},
 		},
 	}
-	configFull := &SSOConfig{
-		Accounts: map[string]*SSOAccount{
+	configFull := &ssoconfig.SSOConfig{
+		Accounts: map[string]*ssoconfig.SSOAccount{
 			"123456789012": {
 				Name:          "MyAccountName",
 				DefaultRegion: "eu-west-1",
 				Tags:          map[string]string{"Env": "prod"},
-				Roles: map[string]*SSORole{
+				Roles: map[string]*ssoconfig.SSORole{
 					"Foo": {
 						DefaultRegion: "us-west-2",
 						Via:           "arn:aws:iam::123456789012:role/Bar",
@@ -175,138 +188,57 @@ func (suite *CacheTestSuite) TestAddConfigRoles() {
 	assert.Equal(t, "MyAccountName", roles2.Accounts[123456789012].Roles["Foo"].Tags["AccountName"])
 }
 
-// makeTestAWSSSOWithMock builds an AWSSSO suitable for unit tests using a mockSsoAPI.
-func makeTestAWSSSOWithMock(t *testing.T, results []mockSsoAPIResults) (*AWSSSO, func()) {
-	t.Helper()
-	tfile, err := os.CreateTemp("", "*storage.json")
-	assert.NoError(t, err)
-
-	jstore, err := storage.OpenJsonStore(tfile.Name())
-	assert.NoError(t, err)
-
-	duration := 10 * time.Second
-	as := &AWSSSO{
-		SsoRegion: "us-east-1",
-		StartUrl:  "https://testing.awsapps.com/start",
-		store:     jstore,
-		Roles:     map[string][]RoleInfo{},
-		SSOConfig: &SSOConfig{
-			Accounts:  map[string]*SSOAccount{},
-			SSORegion: "us-east-1",
-			StartUrl:  "https://testing.awsapps.com/start",
-			settings:  &Settings{},
-		},
-		Token: storage.CreateTokenResponse{
-			AccessToken:  "access-token",
-			ExpiresIn:    42,
-			ExpiresAt:    time.Now().Add(duration).Unix(),
-			IdToken:      "id-token",
-			RefreshToken: "refresh-token",
-			TokenType:    "token-type",
-		},
-		urlAction: "print",
-	}
-	as.sso = &mockSsoAPI{Results: results}
-
-	cleanup := func() { os.Remove(tfile.Name()) } // #nosec G703 -- temp file path from os.CreateTemp
-	return as, cleanup
-}
-
-// listAccountsResult is a helper that constructs a single-page ListAccountsOutput.
-func listAccountsResult(ids ...string) mockSsoAPIResults {
-	accounts := make([]ssotypes.AccountInfo, len(ids))
-	for i, id := range ids {
-		accounts[i] = ssotypes.AccountInfo{
-			AccountId:    aws.String(id),
-			AccountName:  aws.String("Account-" + id),
-			EmailAddress: aws.String(id + "@example.com"),
-		}
-	}
-	return mockSsoAPIResults{
-		ListAccounts: &sso.ListAccountsOutput{
-			NextToken:   aws.String(""),
-			AccountList: accounts,
-		},
-	}
-}
-
-// listRolesResult is a helper that constructs a single-page ListAccountRolesOutput.
-func listRolesResult(accountId string, roles ...string) mockSsoAPIResults {
-	ri := make([]ssotypes.RoleInfo, len(roles))
-	for i, r := range roles {
-		ri[i] = ssotypes.RoleInfo{
-			AccountId: aws.String(accountId),
-			RoleName:  aws.String(r),
-		}
-	}
-	return mockSsoAPIResults{
-		ListAccountRoles: &sso.ListAccountRolesOutput{
-			NextToken: aws.String(""),
-			RoleList:  ri,
-		},
-	}
-}
-
 func (suite *CacheTestSuite) TestAddSSORoles() {
 	t := suite.T()
 
-	origBackoff := MAX_BACKOFF_SECONDS
-	origRetry := MAX_RETRY_ATTEMPTS
-	MAX_BACKOFF_SECONDS = 0 // keep retries fast
-	MAX_RETRY_ATTEMPTS = 0  // no retries so mock isn't over-called
-	defer func() {
-		MAX_BACKOFF_SECONDS = origBackoff
-		MAX_RETRY_ATTEMPTS = origRetry
-	}()
+	mockSR := &mockSettingsReader{profileFormat: "{{ .AccountIdPad }}:{{ .RoleName }}"}
 
 	// --- error: GetAccounts fails ---
-	as, cleanup := makeTestAWSSSOWithMock(t, []mockSsoAPIResults{
-		{ListAccounts: &sso.ListAccountsOutput{}, Error: fmt.Errorf("AWS down")},
-	})
-	defer cleanup()
-
+	provErr := &mockRoleProvider{accountErr: fmt.Errorf("AWS down")}
 	r := &Roles{Accounts: map[int64]*AWSAccount{}}
-	err := suite.cache.addSSORoles(r, as, 1)
+	err := suite.cache.addSSORoles(r, provErr, 1, mockSR)
 	assert.Error(t, err)
 
 	// --- error: no accounts returned ---
-	as2, cleanup2 := makeTestAWSSSOWithMock(t, []mockSsoAPIResults{
-		{
-			ListAccounts: &sso.ListAccountsOutput{
-				NextToken:   aws.String(""),
-				AccountList: []ssotypes.AccountInfo{},
-			},
-		},
-	})
-	defer cleanup2()
-
+	provEmpty := &mockRoleProvider{accounts: []ssoconfig.AccountInfo{}}
 	r2 := &Roles{Accounts: map[int64]*AWSAccount{}}
-	err = suite.cache.addSSORoles(r2, as2, 1)
+	err = suite.cache.addSSORoles(r2, provEmpty, 1, mockSR)
 	assert.Error(t, err)
 
 	// --- single account: serial path (no worker pool) ---
-	as3, cleanup3 := makeTestAWSSSOWithMock(t, []mockSsoAPIResults{
-		listAccountsResult("000001111111"),
-		listRolesResult("000001111111", "ReadOnly"),
-	})
-	defer cleanup3()
-
+	prov3 := &mockRoleProvider{
+		accounts: []ssoconfig.AccountInfo{
+			{AccountId: "000001111111", AccountName: "Account-000001111111", EmailAddress: "000001111111@example.com"},
+		},
+		roles: map[string][]ssoconfig.RoleInfo{
+			"000001111111": {
+				{RoleName: "ReadOnly", AccountId: "000001111111", AccountName: "Account-000001111111", EmailAddress: "000001111111@example.com"},
+			},
+		},
+	}
 	r3 := &Roles{Accounts: map[int64]*AWSAccount{}}
-	err = suite.cache.addSSORoles(r3, as3, 1)
+	err = suite.cache.addSSORoles(r3, prov3, 1, mockSR)
 	assert.NoError(t, err)
 	assert.Len(t, r3.Accounts, 1)
 	assert.Contains(t, r3.Accounts[1111111].Roles, "ReadOnly")
 
 	// --- two accounts: exercises worker pool path ---
-	as4, cleanup4 := makeTestAWSSSOWithMock(t, []mockSsoAPIResults{
-		listAccountsResult("000001111111", "000002222222"),
-		listRolesResult("000001111111", "Alpha"), // serial first account
-		listRolesResult("000002222222", "Beta"),  // worker pool second account
-	})
-	defer cleanup4()
-
+	prov4 := &mockRoleProvider{
+		accounts: []ssoconfig.AccountInfo{
+			{AccountId: "000001111111", AccountName: "Account-000001111111", EmailAddress: "000001111111@example.com"},
+			{AccountId: "000002222222", AccountName: "Account-000002222222", EmailAddress: "000002222222@example.com"},
+		},
+		roles: map[string][]ssoconfig.RoleInfo{
+			"000001111111": {
+				{RoleName: "Alpha", AccountId: "000001111111", AccountName: "Account-000001111111", EmailAddress: "000001111111@example.com"},
+			},
+			"000002222222": {
+				{RoleName: "Beta", AccountId: "000002222222", AccountName: "Account-000002222222", EmailAddress: "000002222222@example.com"},
+			},
+		},
+	}
 	r4 := &Roles{Accounts: map[int64]*AWSAccount{}}
-	err = suite.cache.addSSORoles(r4, as4, 1)
+	err = suite.cache.addSSORoles(r4, prov4, 1, mockSR)
 	assert.NoError(t, err)
 	assert.Len(t, r4.Accounts, 2)
 	assert.Contains(t, r4.Accounts[1111111].Roles, "Alpha")
@@ -316,44 +248,33 @@ func (suite *CacheTestSuite) TestAddSSORoles() {
 func (suite *CacheTestSuite) TestNewRoles() {
 	t := suite.T()
 
-	origBackoff := MAX_BACKOFF_SECONDS
-	origRetry := MAX_RETRY_ATTEMPTS
-	MAX_BACKOFF_SECONDS = 0
-	MAX_RETRY_ATTEMPTS = 0
-	defer func() {
-		MAX_BACKOFF_SECONDS = origBackoff
-		MAX_RETRY_ATTEMPTS = origRetry
-	}()
-
-	config := &SSOConfig{
+	config := &ssoconfig.SSOConfig{
 		SSORegion:     "us-east-1",
 		StartUrl:      "https://testing.awsapps.com/start",
 		DefaultRegion: "us-east-1",
-		Accounts:      map[string]*SSOAccount{},
-		settings: &Settings{
-			DefaultSSO:    "Default",
-			ProfileFormat: "{{ .AccountIdPad }}:{{ .RoleName }}",
-		},
+		Accounts:      map[string]*ssoconfig.SSOAccount{},
 	}
-	suite.cache.settings.ProfileFormat = "{{ .AccountIdPad }}:{{ .RoleName }}"
+	mockSR := &mockSettingsReader{
+		profileFormat: "{{ .AccountIdPad }}:{{ .RoleName }}",
+	}
 
 	// --- addSSORoles error propagated ---
-	as, cleanup := makeTestAWSSSOWithMock(t, []mockSsoAPIResults{
-		{ListAccounts: &sso.ListAccountsOutput{}, Error: fmt.Errorf("AWS down")},
-	})
-	defer cleanup()
-
-	_, err := suite.cache.NewRoles(as, config, 1)
+	provErr := &mockRoleProvider{accountErr: fmt.Errorf("AWS down")}
+	_, err := suite.cache.NewRoles(provErr, config, 1, mockSR)
 	assert.Error(t, err)
 
 	// --- happy path: single account, single role ---
-	as2, cleanup2 := makeTestAWSSSOWithMock(t, []mockSsoAPIResults{
-		listAccountsResult("000001111111"),
-		listRolesResult("000001111111", "ReadOnly"),
-	})
-	defer cleanup2()
-
-	roles, err := suite.cache.NewRoles(as2, config, 1)
+	prov := &mockRoleProvider{
+		accounts: []ssoconfig.AccountInfo{
+			{AccountId: "000001111111", AccountName: "Account-000001111111", EmailAddress: "000001111111@example.com"},
+		},
+		roles: map[string][]ssoconfig.RoleInfo{
+			"000001111111": {
+				{RoleName: "ReadOnly", AccountId: "000001111111", AccountName: "Account-000001111111", EmailAddress: "000001111111@example.com"},
+			},
+		},
+	}
+	roles, err := suite.cache.NewRoles(prov, config, 1, mockSR)
 	assert.NoError(t, err)
 	assert.NotNil(t, roles)
 	assert.Len(t, roles.Accounts, 1)
@@ -365,76 +286,62 @@ func (suite *CacheTestSuite) TestNewRoles() {
 func (suite *CacheTestSuite) TestCacheRefreshMocked() {
 	t := suite.T()
 
-	origBackoff := MAX_BACKOFF_SECONDS
-	origRetry := MAX_RETRY_ATTEMPTS
-	MAX_BACKOFF_SECONDS = 0
-	MAX_RETRY_ATTEMPTS = 0
-	defer func() {
-		MAX_BACKOFF_SECONDS = origBackoff
-		MAX_RETRY_ATTEMPTS = origRetry
-	}()
-
 	// config.CreatedAt() requires a real file; use our test cache file as stand-in
-	settings := &Settings{
-		SSO: map[string]*SSOConfig{
-			"Default": {
-				SSORegion:     "us-east-1",
-				StartUrl:      "https://testing.awsapps.com/start",
-				DefaultRegion: "us-east-1",
-				Accounts:      map[string]*SSOAccount{},
-			},
-		},
-		HistoryLimit:   1,
-		HistoryMinutes: 90,
-		DefaultSSO:     "Default",
-		cacheFile:      suite.cacheFile,
-		configFile:     suite.cacheFile, // needed for config.CreatedAt()
-		ProfileFormat:  "{{ .AccountIdPad }}:{{ .RoleName }}",
+	ssoConf := &ssoconfig.SSOConfig{
+		SSORegion:     "us-east-1",
+		StartUrl:      "https://testing.awsapps.com/start",
+		DefaultRegion: "us-east-1",
+		Accounts:      map[string]*ssoconfig.SSOAccount{},
 	}
-	settings.SSO["Default"].settings = settings
+	ssoConf.SetConfigFile(suite.cacheFile)
+
+	settings := &mockSettingsReader{
+		defaultSSO:     "Default",
+		historyLimit:   1,
+		historyMinutes: 90,
+		cacheFile:      suite.cacheFile,
+		profileFormat:  "{{ .AccountIdPad }}:{{ .RoleName }}",
+		ssoNames:       []string{"Default"},
+	}
 
 	// snapshot state that we'll mutate, restore at end
-	origSettings := suite.cache.settings
 	origRoles := suite.cache.SSO["Default"].Roles
 	origRefreshed := suite.cache.refreshed
 	defer func() {
-		suite.cache.settings = origSettings
 		suite.cache.SSO["Default"].Roles = origRoles
 		suite.cache.refreshed = origRefreshed
 	}()
 
-	suite.cache.settings = settings
-
 	// --- early-return: already refreshed ---
 	suite.cache.refreshed = true
-	added, deleted, err := suite.cache.Refresh(nil, settings.SSO["Default"], "Default", 1)
+	added, deleted, err := suite.cache.Refresh(nil, ssoConf, "Default", 1, settings)
 	assert.NoError(t, err)
 	assert.Nil(t, added)
 	assert.Nil(t, deleted)
 	suite.cache.refreshed = false // reset for next sub-tests
 
 	// --- NewRoles error propagated ---
-	asErr, cleanup := makeTestAWSSSOWithMock(t, []mockSsoAPIResults{
-		{ListAccounts: &sso.ListAccountsOutput{}, Error: fmt.Errorf("AWS down")},
-	})
-	defer cleanup()
-
+	provErr := &mockRoleProvider{accountErr: fmt.Errorf("AWS down")}
 	suite.cache.refreshed = false
-	_, _, err = suite.cache.Refresh(asErr, settings.SSO["Default"], "Default", 1)
+	_, _, err = suite.cache.Refresh(provErr, ssoConf, "Default", 1, settings)
 	assert.Error(t, err)
 
 	// --- happy path: adds one role, no deletes ---
-	// make sure the cache has no existing roles for "Default" so we get a clean add count
 	suite.cache.SSO["Default"].Roles = &Roles{Accounts: map[int64]*AWSAccount{}}
 	suite.cache.refreshed = false
 
-	as, cleanup2 := makeTestAWSSSOWithMock(t, []mockSsoAPIResults{
-		listAccountsResult("000001111111"),
-		listRolesResult("000001111111", "ReadOnly"),
-	})
-	defer cleanup2()
+	prov := &mockRoleProvider{
+		accounts: []ssoconfig.AccountInfo{
+			{AccountId: "000001111111", AccountName: "Account-000001111111", EmailAddress: "000001111111@example.com"},
+		},
+		roles: map[string][]ssoconfig.RoleInfo{
+			"000001111111": {
+				{RoleName: "ReadOnly", AccountId: "000001111111", AccountName: "Account-000001111111", EmailAddress: "000001111111@example.com"},
+			},
+		},
+	}
 
-	added, deleted, err = suite.cache.Refresh(as, settings.SSO["Default"], "Default", 1)
+	added, deleted, err = suite.cache.Refresh(prov, ssoConf, "Default", 1, settings)
 	assert.NoError(t, err)
 	assert.Contains(t, added, "arn:aws:iam::000001111111:role/ReadOnly")
 	assert.Empty(t, deleted)
@@ -453,53 +360,17 @@ func (suite *CacheTestSuite) TestCacheRefreshMocked() {
 	}
 	suite.cache.refreshed = false
 
-	asEmpty, cleanup3 := makeTestAWSSSOWithMock(t, []mockSsoAPIResults{
-		listAccountsResult("000001111111"),
-		listRolesResult("000001111111"), // no roles returned
-	})
-	defer cleanup3()
+	provEmpty := &mockRoleProvider{
+		accounts: []ssoconfig.AccountInfo{
+			{AccountId: "000001111111", AccountName: "Account-000001111111", EmailAddress: "000001111111@example.com"},
+		},
+		roles: map[string][]ssoconfig.RoleInfo{
+			"000001111111": {}, // no roles returned
+		},
+	}
 
-	added, deleted, err = suite.cache.Refresh(asEmpty, settings.SSO["Default"], "Default", 1)
+	added, deleted, err = suite.cache.Refresh(provEmpty, ssoConf, "Default", 1, settings)
 	assert.NoError(t, err)
 	assert.Empty(t, added)
 	assert.Contains(t, deleted, "arn:aws:iam::000001111111:role/OldRole")
 }
-
-/*
-func (suite *CacheTestSuite) TestCacheRefresh() {
-	t := suite.T()
-
-	settings := &Settings{
-		SSO: map[string]*SSOConfig{
-			"Default": {
-				SSORegion:     "us-east-1",
-				DefaultRegion: "us-east-1",
-			},
-		},
-		HistoryLimit:   1,
-		HistoryMinutes: 90,
-		DefaultSSO:     "Default",
-		cacheFile:      suite.cacheFile,
-		ProfileFormat:  "{{ .AccountIdPad }}:{{ .RoleName }}",
-	}
-	settings.SSO["Default"].settings = settings
-
-	storeFile, err := os.CreateTemp("", "*")
-	assert.NoError(t, err)
-	storeFile.Close()
-	defer os.Remove(storeFile.Name())
-
-	jstore, err := storage.OpenJsonStore(storeFile.Name())
-	assert.NoError(t, err)
-
-	sso := NewAWSSSO(suite.settings.SSO["Default"], &jstore)
-
-	// Ensure the SecureStorage interface is implemented correctly
-	added, deleted, err := suite.cache.Refresh(sso, settings.SSO["Default"], "Default", 1)
-	assert.NoError(t, err)
-	assert.Equal(t, int64(0), suite.cache.ConfigCreatedAt)
-	assert.Equal(t, int64(1), suite.cache.Version)
-	assert.Equal(t, 1, added)
-	assert.Equal(t, 0, deleted)
-}
-*/

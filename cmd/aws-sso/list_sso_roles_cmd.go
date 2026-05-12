@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
+	ssoconfig "github.com/synfinatic/aws-sso-cli/internal/sso/config"
 	"github.com/synfinatic/gotable"
 )
 
@@ -36,7 +37,7 @@ func (l ListSSORolesCmd) AfterApply(runCtx *RunContext) error {
 func (cc *ListSSORolesCmd) Run(ctx *RunContext) error {
 	var err error
 
-	var accounts []sso.AccountInfo
+	var accounts []ssoconfig.AccountInfo
 	if accounts, err = AwsSSO.GetAccounts(); err != nil {
 		return err
 	}

@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	ssocache "github.com/synfinatic/aws-sso-cli/internal/sso/cache"
 )
 
 const (
@@ -66,7 +68,7 @@ func (s *Settings) resolvedBinaryPath() (string, error) {
 // buildProfilesForSSO populates profiles with a ProfileConfig for every role
 // in the given SSOCache instance.  profiles is a map type (reference) so
 // mutations are visible to the caller.
-func (s *Settings) buildProfilesForSSO(profiles ProfileMap, ssoName string, sso *SSOCache, binaryPath string) error {
+func (s *Settings) buildProfilesForSSO(profiles ProfileMap, ssoName string, sso *ssocache.SSOCache, binaryPath string) error {
 	for _, role := range sso.Roles.GetAllRoles() {
 		profile, err := role.ProfileName(s)
 		if err != nil {

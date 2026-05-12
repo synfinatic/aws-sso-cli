@@ -110,7 +110,7 @@ func ecsLoadCmd(ctx *RunContext, accountId int64, role string) error {
 	}
 
 	// save history
-	ctx.Settings.Cache.AddHistory(awsparse.MakeRoleARN(rFlat.AccountId, rFlat.RoleName))
+	ctx.Settings.Cache.AddHistory(ctx.Settings, awsparse.MakeRoleARN(rFlat.AccountId, rFlat.RoleName))
 	if err := ctx.Settings.Cache.Save(false); err != nil {
 		log.Warn("Unable to update cache", "error", err.Error())
 	}

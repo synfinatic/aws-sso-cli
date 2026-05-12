@@ -1,4 +1,4 @@
-package sso
+package auth
 
 /*
  * AWS SSO CLI
@@ -26,10 +26,11 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/sso"
+	awssso "github.com/aws/aws-sdk-go-v2/service/sso"
 	ssotypes "github.com/aws/aws-sdk-go-v2/service/sso/types"
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	"github.com/stretchr/testify/assert"
+	ssoconfig "github.com/synfinatic/aws-sso-cli/internal/sso/config"
 	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
@@ -40,44 +41,44 @@ type mockSsoAPI struct {
 }
 
 type mockSsoAPIResults struct {
-	ListAccountRoles   *sso.ListAccountRolesOutput
-	ListAccounts       *sso.ListAccountsOutput
-	GetRoleCredentials *sso.GetRoleCredentialsOutput
-	Logout             *sso.LogoutOutput
+	ListAccountRoles   *awssso.ListAccountRolesOutput
+	ListAccounts       *awssso.ListAccountsOutput
+	GetRoleCredentials *awssso.GetRoleCredentialsOutput
+	Logout             *awssso.LogoutOutput
 	Error              error
 }
 
-func (m *mockSsoAPI) ListAccountRoles(ctx context.Context, params *sso.ListAccountRolesInput, optFns ...func(*sso.Options)) (*sso.ListAccountRolesOutput, error) {
+func (m *mockSsoAPI) ListAccountRoles(ctx context.Context, params *awssso.ListAccountRolesInput, optFns ...func(*awssso.Options)) (*awssso.ListAccountRolesOutput, error) {
 	var x mockSsoAPIResults
 	if len(m.Results) == 0 {
-		return &sso.ListAccountRolesOutput{}, fmt.Errorf("calling mocked ListAccountRoles too many times")
+		return &awssso.ListAccountRolesOutput{}, fmt.Errorf("calling mocked ListAccountRoles too many times")
 	}
 	x, m.Results = m.Results[0], m.Results[1:]
 	return x.ListAccountRoles, x.Error
 }
 
-func (m *mockSsoAPI) ListAccounts(ctx context.Context, params *sso.ListAccountsInput, optFns ...func(*sso.Options)) (*sso.ListAccountsOutput, error) {
+func (m *mockSsoAPI) ListAccounts(ctx context.Context, params *awssso.ListAccountsInput, optFns ...func(*awssso.Options)) (*awssso.ListAccountsOutput, error) {
 	var x mockSsoAPIResults
 	if len(m.Results) == 0 {
-		return &sso.ListAccountsOutput{}, fmt.Errorf("calling mocked ListAccounts too many times")
+		return &awssso.ListAccountsOutput{}, fmt.Errorf("calling mocked ListAccounts too many times")
 	}
 	x, m.Results = m.Results[0], m.Results[1:]
 	return x.ListAccounts, x.Error
 }
 
-func (m *mockSsoAPI) GetRoleCredentials(ctx context.Context, params *sso.GetRoleCredentialsInput, optFns ...func(*sso.Options)) (*sso.GetRoleCredentialsOutput, error) {
+func (m *mockSsoAPI) GetRoleCredentials(ctx context.Context, params *awssso.GetRoleCredentialsInput, optFns ...func(*awssso.Options)) (*awssso.GetRoleCredentialsOutput, error) {
 	var x mockSsoAPIResults
 	if len(m.Results) == 0 {
-		return &sso.GetRoleCredentialsOutput{}, fmt.Errorf("calling mocked GetRoleCredentials too many times")
+		return &awssso.GetRoleCredentialsOutput{}, fmt.Errorf("calling mocked GetRoleCredentials too many times")
 	}
 	x, m.Results = m.Results[0], m.Results[1:]
 	return x.GetRoleCredentials, x.Error
 }
 
-func (m *mockSsoAPI) Logout(context.Context, *sso.LogoutInput, ...func(*sso.Options)) (*sso.LogoutOutput, error) {
+func (m *mockSsoAPI) Logout(context.Context, *awssso.LogoutInput, ...func(*awssso.Options)) (*awssso.LogoutOutput, error) {
 	var x mockSsoAPIResults
 	if len(m.Results) == 0 {
-		return &sso.LogoutOutput{}, fmt.Errorf("calling mocked Logout too many times")
+		return &awssso.LogoutOutput{}, fmt.Errorf("calling mocked Logout too many times")
 	}
 	x, m.Results = m.Results[0], m.Results[1:]
 	return x.Logout, x.Error
@@ -95,10 +96,9 @@ func TestNewAWSSSO(t *testing.T) {
 
 	MAX_BACKOFF_SECONDS = 0 // make unit tests go fast
 
-	c := SSOConfig{
+	c := ssoconfig.SSOConfig{
 		StartUrl:   "https://starturl.com/start",
 		SSORegion:  "us-east-1",
-		settings:   &Settings{},
 		MaxRetry:   1,
 		MaxBackoff: 1,
 	}
@@ -116,7 +116,7 @@ func TestNewAWSSSO(t *testing.T) {
 }
 
 func TestRoleARN(t *testing.T) {
-	ri := RoleInfo{
+	ri := ssoconfig.RoleInfo{
 		AccountId: "1111111",
 		RoleName:  "FooBar",
 	}
@@ -124,7 +124,7 @@ func TestRoleARN(t *testing.T) {
 }
 
 func TestGetFieldNameRoleInfo(t *testing.T) {
-	ri := RoleInfo{
+	ri := ssoconfig.RoleInfo{
 		AccountId: "1111111",
 		RoleName:  "FooBar",
 	}
@@ -152,10 +152,9 @@ func TestGetRoles(t *testing.T) {
 		StartUrl:   "https://testing.awsapps.com/start",
 		oidcClient: oidc.NewAWSWithAPI(&mockSsoOidcAPI{}),
 		store:      jstore,
-		Roles:      map[string][]RoleInfo{},
-		SSOConfig: &SSOConfig{
-			Accounts: map[string]*SSOAccount{},
-			settings: &Settings{},
+		Roles:      map[string][]ssoconfig.RoleInfo{},
+		SSOConfig: &ssoconfig.SSOConfig{
+			Accounts: map[string]*ssoconfig.SSOAccount{},
 		},
 		urlAction: "print",
 		Token: storage.CreateTokenResponse{
@@ -171,7 +170,7 @@ func TestGetRoles(t *testing.T) {
 	as.sso = &mockSsoAPI{
 		Results: []mockSsoAPIResults{
 			{
-				ListAccountRoles: &sso.ListAccountRolesOutput{
+				ListAccountRoles: &awssso.ListAccountRolesOutput{
 					NextToken: aws.String("next-token"),
 					RoleList: []ssotypes.RoleInfo{
 						{
@@ -187,7 +186,7 @@ func TestGetRoles(t *testing.T) {
 				Error: nil,
 			},
 			{
-				ListAccountRoles: &sso.ListAccountRolesOutput{
+				ListAccountRoles: &awssso.ListAccountRolesOutput{
 					NextToken: aws.String(""),
 					RoleList: []ssotypes.RoleInfo{
 						{
@@ -204,7 +203,7 @@ func TestGetRoles(t *testing.T) {
 		},
 	}
 
-	aInfo := AccountInfo{
+	aInfo := ssoconfig.AccountInfo{
 		Id:           0,
 		AccountId:    "000001111111",
 		AccountName:  "MyAccount",
@@ -219,7 +218,7 @@ func TestGetRoles(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 3, len(rinfo))
 
-	assert.Equal(t, RoleInfo{
+	assert.Equal(t, ssoconfig.RoleInfo{
 		Id:           0,
 		Arn:          "arn:aws:iam::000001111111:role/FooBar",
 		RoleName:     "FooBar",
@@ -231,7 +230,7 @@ func TestGetRoles(t *testing.T) {
 	}, rinfo[0])
 	assert.Equal(t, rinfo[0], as.Roles["000001111111"][0])
 
-	assert.Equal(t, RoleInfo{
+	assert.Equal(t, ssoconfig.RoleInfo{
 		Id:           1,
 		Arn:          "arn:aws:iam::000001111111:role/HappyClam",
 		RoleName:     "HappyClam",
@@ -243,7 +242,7 @@ func TestGetRoles(t *testing.T) {
 	}, rinfo[1])
 	assert.Equal(t, rinfo[1], as.Roles["000001111111"][1])
 
-	assert.Equal(t, RoleInfo{
+	assert.Equal(t, ssoconfig.RoleInfo{
 		Id:           2,
 		Arn:          "arn:aws:iam::000001111111:role/MooCow",
 		RoleName:     "MooCow",
@@ -256,7 +255,7 @@ func TestGetRoles(t *testing.T) {
 	assert.Equal(t, rinfo[2], as.Roles["000001111111"][2])
 
 	// account doesn't exist
-	aInfo = AccountInfo{
+	aInfo = ssoconfig.AccountInfo{
 		Id:           0,
 		AccountId:    "00000888888",
 		AccountName:  "MyAccount",
@@ -267,11 +266,11 @@ func TestGetRoles(t *testing.T) {
 	assert.Error(t, err)
 
 	// Check our retry logic
-	as.Roles = map[string][]RoleInfo{}
+	as.Roles = map[string][]ssoconfig.RoleInfo{}
 	as.sso = &mockSsoAPI{
 		Results: []mockSsoAPIResults{
 			{
-				ListAccountRoles: &sso.ListAccountRolesOutput{
+				ListAccountRoles: &awssso.ListAccountRolesOutput{
 					NextToken: aws.String(""),
 					RoleList:  []ssotypes.RoleInfo{},
 				},
@@ -280,7 +279,7 @@ func TestGetRoles(t *testing.T) {
 				},
 			},
 			{
-				ListAccountRoles: &sso.ListAccountRolesOutput{
+				ListAccountRoles: &awssso.ListAccountRolesOutput{
 					NextToken: aws.String(""),
 					RoleList:  []ssotypes.RoleInfo{},
 				},
@@ -289,7 +288,7 @@ func TestGetRoles(t *testing.T) {
 				},
 			},
 			{
-				ListAccountRoles: &sso.ListAccountRolesOutput{
+				ListAccountRoles: &awssso.ListAccountRolesOutput{
 					NextToken: aws.String(""),
 					RoleList:  []ssotypes.RoleInfo{},
 				},
@@ -300,7 +299,7 @@ func TestGetRoles(t *testing.T) {
 		},
 	}
 
-	aInfo = AccountInfo{
+	aInfo = ssoconfig.AccountInfo{
 		Id:           0,
 		AccountId:    "000001111111",
 		AccountName:  "MyAccount",
@@ -353,7 +352,7 @@ func TestGetRoles(t *testing.T) {
 				Error: fmt.Errorf("Force a new token"),
 			},
 			{
-				ListAccountRoles: &sso.ListAccountRolesOutput{
+				ListAccountRoles: &awssso.ListAccountRolesOutput{
 					NextToken: aws.String("next-token"),
 					RoleList: []ssotypes.RoleInfo{
 						{
@@ -369,7 +368,7 @@ func TestGetRoles(t *testing.T) {
 				Error: nil,
 			},
 			{
-				ListAccountRoles: &sso.ListAccountRolesOutput{
+				ListAccountRoles: &awssso.ListAccountRolesOutput{
 					NextToken: aws.String(""),
 					RoleList: []ssotypes.RoleInfo{
 						{
@@ -386,7 +385,7 @@ func TestGetRoles(t *testing.T) {
 		},
 	}
 
-	aInfo = AccountInfo{
+	aInfo = ssoconfig.AccountInfo{
 		Id:           0,
 		AccountId:    "000001111111",
 		AccountName:  "MyAccount",
@@ -397,10 +396,9 @@ func TestGetRoles(t *testing.T) {
 	assert.Equal(t, 3, len(rinfo))
 
 	// yet another code path
-	as.Roles = map[string][]RoleInfo{} // flush cache
-	as.SSOConfig = &SSOConfig{
-		Accounts: map[string]*SSOAccount{},
-		settings: &Settings{},
+	as.Roles = map[string][]ssoconfig.RoleInfo{} // flush cache
+	as.SSOConfig = &ssoconfig.SSOConfig{
+		Accounts: map[string]*ssoconfig.SSOAccount{},
 	}
 	as.oidcClient = oidc.NewAWSWithAPI(&mockSsoOidcAPI{
 		Results: []mockSsoOidcAPIResults{
@@ -450,7 +448,7 @@ func TestGetRoles(t *testing.T) {
 		},
 	}
 
-	aInfo = AccountInfo{
+	aInfo = ssoconfig.AccountInfo{
 		Id:           0,
 		AccountId:    "000001111111",
 		AccountName:  "MyAccount",
@@ -474,10 +472,8 @@ func TestGetAccounts(t *testing.T) {
 		SsoRegion: "us-west-1",
 		StartUrl:  "https://testing.awsapps.com/start",
 		store:     jstore,
-		Roles:     map[string][]RoleInfo{},
-		SSOConfig: &SSOConfig{
-			settings: &Settings{},
-		},
+		Roles:     map[string][]ssoconfig.RoleInfo{},
+		SSOConfig: &ssoconfig.SSOConfig{},
 		Token: storage.CreateTokenResponse{
 			AccessToken:  "access-token",
 			ExpiresIn:    42,
@@ -493,7 +489,7 @@ func TestGetAccounts(t *testing.T) {
 	as.sso = &mockSsoAPI{
 		Results: []mockSsoAPIResults{
 			{
-				ListAccounts: &sso.ListAccountsOutput{
+				ListAccounts: &awssso.ListAccountsOutput{
 					NextToken:   aws.String(""),
 					AccountList: []ssotypes.AccountInfo{},
 				},
@@ -502,7 +498,7 @@ func TestGetAccounts(t *testing.T) {
 				},
 			},
 			{
-				ListAccounts: &sso.ListAccountsOutput{
+				ListAccounts: &awssso.ListAccountsOutput{
 					NextToken:   aws.String(""),
 					AccountList: []ssotypes.AccountInfo{},
 				},
@@ -520,7 +516,7 @@ func TestGetAccounts(t *testing.T) {
 	as.sso = &mockSsoAPI{
 		Results: []mockSsoAPIResults{
 			{
-				ListAccounts: &sso.ListAccountsOutput{
+				ListAccounts: &awssso.ListAccountsOutput{
 					NextToken: aws.String("next-token"),
 					AccountList: []ssotypes.AccountInfo{
 						{
@@ -538,7 +534,7 @@ func TestGetAccounts(t *testing.T) {
 				Error: nil,
 			},
 			{
-				ListAccounts: &sso.ListAccountsOutput{
+				ListAccounts: &awssso.ListAccountsOutput{
 					NextToken: aws.String(""),
 					AccountList: []ssotypes.AccountInfo{
 						{
@@ -561,7 +557,7 @@ func TestGetAccounts(t *testing.T) {
 		aInfo, err := as.GetAccounts()
 		assert.NoError(t, err)
 		assert.Equal(t, 3, len(aInfo))
-		assert.Equal(t, AccountInfo{
+		assert.Equal(t, ssoconfig.AccountInfo{
 			Id:           0,
 			AccountId:    "000001111111",
 			AccountName:  "MyAccount",
@@ -569,7 +565,7 @@ func TestGetAccounts(t *testing.T) {
 		}, aInfo[0])
 		assert.Equal(t, aInfo[0], as.Accounts[0])
 
-		assert.Equal(t, AccountInfo{
+		assert.Equal(t, ssoconfig.AccountInfo{
 			Id:           1,
 			AccountId:    "000002222222",
 			AccountName:  "MyOtherAccount",
@@ -577,7 +573,7 @@ func TestGetAccounts(t *testing.T) {
 		}, aInfo[1])
 		assert.Equal(t, aInfo[1], as.Accounts[1])
 
-		assert.Equal(t, AccountInfo{
+		assert.Equal(t, ssoconfig.AccountInfo{
 			Id:           2,
 			AccountId:    "00000333333",
 			AccountName:  "MyLastAccount",
@@ -587,7 +583,7 @@ func TestGetAccounts(t *testing.T) {
 	}
 
 	// verify we handle more complex error situations
-	as.Accounts = []AccountInfo{} // flush cash
+	as.Accounts = []ssoconfig.AccountInfo{} // flush cache
 
 	as.sso = &mockSsoAPI{
 		Results: []mockSsoAPIResults{
@@ -655,7 +651,7 @@ func TestGetRoleCredentials(t *testing.T) {
 		SsoRegion: "us-west-1",
 		StartUrl:  "https://testing.awsapps.com/start",
 		store:     jstore,
-		Roles: map[string][]RoleInfo{
+		Roles: map[string][]ssoconfig.RoleInfo{
 			"000001111111": {
 				{
 					Id:           0,
@@ -679,12 +675,11 @@ func TestGetRoleCredentials(t *testing.T) {
 				},
 			},
 		},
-		SSOConfig: &SSOConfig{
-			settings: &Settings{},
+		SSOConfig: &ssoconfig.SSOConfig{
 			// GetRoleCredentials() calls SSOConfig.GetRoles() so we need this too
-			Accounts: map[string]*SSOAccount{
+			Accounts: map[string]*ssoconfig.SSOAccount{
 				"000001111111": {
-					Roles: map[string]*SSORole{
+					Roles: map[string]*ssoconfig.SSORole{
 						"FooBar": {
 							ARN: "arn:aws:iam::000001111111:role/FooBar",
 						},
@@ -705,7 +700,7 @@ func TestGetRoleCredentials(t *testing.T) {
 	as.sso = &mockSsoAPI{
 		Results: []mockSsoAPIResults{
 			{
-				GetRoleCredentials: &sso.GetRoleCredentialsOutput{
+				GetRoleCredentials: &awssso.GetRoleCredentialsOutput{
 					RoleCredentials: &ssotypes.RoleCredentials{
 						AccessKeyId:     aws.String("access-key-id"),
 						Expiration:      42,
@@ -745,11 +740,10 @@ func makeChainTestAWSSSOBase(t *testing.T) (*AWSSSO, func()) {
 		SsoRegion: "us-west-1",
 		StartUrl:  "https://testing.awsapps.com/start",
 		store:     jstore,
-		SSOConfig: &SSOConfig{
-			settings: &Settings{},
-			Accounts: map[string]*SSOAccount{
+		SSOConfig: &ssoconfig.SSOConfig{
+			Accounts: map[string]*ssoconfig.SSOAccount{
 				"000001111111": {
-					Roles: map[string]*SSORole{
+					Roles: map[string]*ssoconfig.SSORole{
 						"ChainRole": {
 							ARN: "arn:aws:iam::000001111111:role/ChainRole",
 							Via: "arn:aws:iam::000001111111:role/BaseRole",
@@ -815,7 +809,7 @@ func TestGetRoleCredentialsViaRecursiveError(t *testing.T) {
 }
 
 func TestGetFieldNameAccountInfo(t *testing.T) {
-	ai := AccountInfo{
+	ai := ssoconfig.AccountInfo{
 		AccountId:   "1111111",
 		AccountName: "FooBar",
 	}
@@ -829,7 +823,7 @@ func TestGetFieldNameAccountInfo(t *testing.T) {
 }
 
 func TestGetAccountId64(t *testing.T) {
-	ai := AccountInfo{
+	ai := ssoconfig.AccountInfo{
 		AccountId: "1111111",
 	}
 
@@ -841,7 +835,7 @@ func TestGetAccountId64(t *testing.T) {
 	ai.AccountId = "InvalidAccountId"
 	assert.Panics(t, func() { ai.GetAccountId64() })
 
-	ri := RoleInfo{
+	ri := ssoconfig.RoleInfo{
 		AccountId: "1111111",
 	}
 

@@ -28,6 +28,7 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/logger"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
+	ssocache "github.com/synfinatic/aws-sso-cli/internal/sso/cache"
 	"github.com/synfinatic/flexlog"
 )
 
@@ -66,7 +67,7 @@ func NewPredictor(cacheFile, configFile string) *Predictor {
 		return &p
 	}
 
-	c, err := sso.OpenCache(cacheFile, settings)
+	c, err := ssocache.OpenCache(cacheFile, settings)
 	if err != nil {
 		return &p
 	}
@@ -90,7 +91,7 @@ func (p *Predictor) KongpletePredictor() map[string]complete.Predictor {
 }
 
 // newPredictor returns a Predictor based on our settings & cache structs
-func (p *Predictor) newPredictor(s *sso.Settings, c *sso.Cache) *Predictor {
+func (p *Predictor) newPredictor(s *sso.Settings, c *ssocache.Cache) *Predictor {
 	uniqueRoles := map[string]bool{}
 
 	cache := c.GetSSO()

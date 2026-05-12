@@ -1,4 +1,4 @@
-package sso
+package auth
 
 /*
  * AWS SSO CLI
@@ -22,34 +22,33 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
-	"github.com/aws/aws-sdk-go-v2/config"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/service/sso"
+	awssso "github.com/aws/aws-sdk-go-v2/service/sso"
 	ssotypes "github.com/aws/aws-sdk-go-v2/service/sso/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
+	ssoconfig "github.com/synfinatic/aws-sso-cli/internal/sso/config"
 	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
-	"github.com/synfinatic/gotable"
 )
 
 var MAX_RETRY_ATTEMPTS int = 10
 var MAX_BACKOFF_SECONDS int = 5
 
 type SsoAPI interface {
-	ListAccountRoles(context.Context, *sso.ListAccountRolesInput, ...func(*sso.Options)) (*sso.ListAccountRolesOutput, error)
-	ListAccounts(context.Context, *sso.ListAccountsInput, ...func(*sso.Options)) (*sso.ListAccountsOutput, error)
-	GetRoleCredentials(context.Context, *sso.GetRoleCredentialsInput, ...func(*sso.Options)) (*sso.GetRoleCredentialsOutput, error)
-	Logout(context.Context, *sso.LogoutInput, ...func(*sso.Options)) (*sso.LogoutOutput, error)
+	ListAccountRoles(context.Context, *awssso.ListAccountRolesInput, ...func(*awssso.Options)) (*awssso.ListAccountRolesOutput, error)
+	ListAccounts(context.Context, *awssso.ListAccountsInput, ...func(*awssso.Options)) (*awssso.ListAccountsOutput, error)
+	GetRoleCredentials(context.Context, *awssso.GetRoleCredentialsInput, ...func(*awssso.Options)) (*awssso.GetRoleCredentialsOutput, error)
+	Logout(context.Context, *awssso.LogoutInput, ...func(*awssso.Options)) (*awssso.LogoutOutput, error)
 }
 
 type AWSSSO struct {
@@ -57,25 +56,25 @@ type AWSSSO struct {
 	sso              SsoAPI
 	oidcClient       oidc.Client
 	store            storage.SecureStorage
-	ClientName       string                      `json:"ClientName"`
-	ClientType       string                      `json:"ClientType"`
-	SsoRegion        string                      `json:"ssoRegion"`
-	StartUrl         string                      `json:"startUrl"`
-	ClientData       storage.RegisterClientData  `json:"RegisterClient"`
-	DeviceAuth       storage.StartDeviceAuthData `json:"StartDeviceAuth"`
-	Token            storage.CreateTokenResponse `json:"TokenResponse"`
-	tokenLock        sync.RWMutex                // lock for our Token
-	Accounts         []AccountInfo               `json:"Accounts"`
-	Roles            map[string][]RoleInfo       `json:"Roles"` // key is AccountId
-	rolesLock        sync.RWMutex                // lock for our Roles
-	SSOConfig        *SSOConfig                  `json:"SSOConfig"`
-	urlAction        uri.Action                  // cache for future calls
-	browser          string                      // cache for future calls
-	urlExecCommand   []string                    // cache for future calls
-	authenticateLock sync.RWMutex                // lock for reauthenticate()
+	ClientName       string                          `json:"ClientName"`
+	ClientType       string                          `json:"ClientType"`
+	SsoRegion        string                          `json:"ssoRegion"`
+	StartUrl         string                          `json:"startUrl"`
+	ClientData       storage.RegisterClientData      `json:"RegisterClient"`
+	DeviceAuth       storage.StartDeviceAuthData     `json:"StartDeviceAuth"`
+	Token            storage.CreateTokenResponse     `json:"TokenResponse"`
+	tokenLock        sync.RWMutex                    // lock for our Token
+	Accounts         []ssoconfig.AccountInfo         `json:"Accounts"`
+	Roles            map[string][]ssoconfig.RoleInfo `json:"Roles"` // key is AccountId
+	rolesLock        sync.RWMutex                    // lock for our Roles
+	SSOConfig        *ssoconfig.SSOConfig            `json:"SSOConfig"`
+	urlAction        uri.Action                      // cache for future calls
+	browser          string                          // cache for future calls
+	urlExecCommand   []string                        // cache for future calls
+	authenticateLock sync.RWMutex                    // lock for reauthenticate()
 }
 
-func NewAWSSSO(s *SSOConfig, store storage.SecureStorage) *AWSSSO {
+func NewAWSSSO(s *ssoconfig.SSOConfig, store storage.SecureStorage) *AWSSSO {
 	var maxRetry = MAX_RETRY_ATTEMPTS
 	if s.MaxRetry > 0 {
 		maxRetry = s.MaxRetry
@@ -93,13 +92,13 @@ func NewAWSSSO(s *SSOConfig, store storage.SecureStorage) *AWSSSO {
 
 	oidcSession := oidc.NewAWS(s.SSORegion, r)
 
-	ssoSession := sso.New(sso.Options{
+	ssoSession := awssso.New(awssso.Options{
 		Region:  s.SSORegion,
 		Retryer: r,
 	})
 
 	as := AWSSSO{
-		key:            s.key,
+		key:            s.GetKey(),
 		sso:            ssoSession,
 		oidcClient:     oidcSession,
 		store:          store,
@@ -107,55 +106,19 @@ func NewAWSSSO(s *SSOConfig, store storage.SecureStorage) *AWSSSO {
 		ClientType:     awsSSOClientType,
 		SsoRegion:      s.SSORegion,
 		StartUrl:       s.StartUrl,
-		Roles:          map[string][]RoleInfo{}, // key is AccountId
+		Roles:          map[string][]ssoconfig.RoleInfo{}, // key is AccountId
 		SSOConfig:      s,
-		urlAction:      s.settings.UrlAction,
-		browser:        s.settings.Browser,
-		urlExecCommand: s.settings.UrlExecCommand,
+		urlAction:      s.UrlAction,
+		browser:        s.Browser,
+		urlExecCommand: s.UrlExecCommand,
 	}
 	return &as
-}
-
-type RoleInfo struct {
-	Id           int    `yaml:"Id" json:"Id" header:"Id"`
-	Arn          string `yaml:"-" json:"-" header:"Arn"`
-	RoleName     string `yaml:"RoleName" json:"RoleName" header:"RoleName"`
-	AccountId    string `yaml:"AccountId" json:"AccountId" header:"AccountId"`
-	AccountName  string `yaml:"AccountName" json:"AccountName" header:"AccountName"`
-	EmailAddress string `yaml:"EmailAddress" json:"EmailAddress" header:"EmailAddress"`
-	Expires      int64  `yaml:"Expires" json:"Expires" header:"Expires"`
-	Profile      string `yaml:"Profile" json:"Profile" header:"Profile"`
-	Region       string `yaml:"Region" json:"Region" header:"Region"`
-	SSORegion    string `header:"SSORegion"`
-	StartUrl     string `header:"StartUrl"`
-	Via          string `header:"Via"`
-}
-
-func (ri RoleInfo) GetHeader(fieldName string) (string, error) {
-	v := reflect.ValueOf(ri)
-	return gotable.GetHeaderTag(v, fieldName)
-}
-
-func (ri RoleInfo) RoleArn() string {
-	a, _ := strconv.ParseInt(ri.AccountId, 10, 64)
-	return awsparse.MakeRoleARN(a, ri.RoleName)
-}
-
-func (ri RoleInfo) GetAccountId64() int64 {
-	i64, err := strconv.ParseInt(ri.AccountId, 10, 64)
-	if err != nil {
-		panic(fmt.Sprintf("Invalid AWS AccountID from AWS SSO: %s", ri.AccountId))
-	}
-	if i64 < 0 {
-		panic(fmt.Sprintf("AWS AccountID must be >= 0: %s", ri.AccountId))
-	}
-	return i64
 }
 
 // GetRoles fetches all the AWS SSO IAM Roles for the given AWS Account
 // Code is running up to X Threads via cache.processSSORoles()
 // and we must stricly protect reads & writes to our as.Roles[] dict
-func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
+func (as *AWSSSO) GetRoles(account ssoconfig.AccountInfo) ([]ssoconfig.RoleInfo, error) {
 	as.rolesLock.RLock()
 	roles, ok := as.Roles[account.AccountId]
 	as.rolesLock.RUnlock()
@@ -164,12 +127,12 @@ func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 	}
 
 	as.rolesLock.Lock()
-	as.Roles[account.AccountId] = []RoleInfo{}
+	as.Roles[account.AccountId] = []ssoconfig.RoleInfo{}
 	as.rolesLock.Unlock()
 
-	// must lock this becacase the access token can change
+	// must lock this because the access token can change
 	as.tokenLock.Lock()
-	input := sso.ListAccountRolesInput{
+	input := awssso.ListAccountRolesInput{
 		AccessToken: aws.String(as.Token.AccessToken),
 		AccountId:   aws.String(account.AccountId),
 		MaxResults:  aws.Int32(1000),
@@ -213,9 +176,9 @@ func (as *AWSSSO) GetRoles(account AccountInfo) ([]RoleInfo, error) {
 	return as.Roles[account.AccountId], nil
 }
 
-func (as *AWSSSO) ListAccounts(input *sso.ListAccountsInput) (*sso.ListAccountsOutput, error) {
+func (as *AWSSSO) ListAccounts(input *awssso.ListAccountsInput) (*awssso.ListAccountsOutput, error) {
 	var err = errors.New("foo")
-	var output *sso.ListAccountsOutput
+	var output *awssso.ListAccountsOutput
 
 	for cnt := 0; err != nil && cnt <= MAX_RETRY_ATTEMPTS; cnt++ {
 		output, err = as.sso.ListAccounts(context.TODO(), input)
@@ -249,9 +212,9 @@ func (as *AWSSSO) ListAccounts(input *sso.ListAccountsInput) (*sso.ListAccountsO
 }
 
 // ListAccountRoles is a wrapper around sso.ListAccountRoles which does our retry logic
-func (as *AWSSSO) ListAccountRoles(input *sso.ListAccountRolesInput) (*sso.ListAccountRolesOutput, error) {
+func (as *AWSSSO) ListAccountRoles(input *awssso.ListAccountRolesInput) (*awssso.ListAccountRolesOutput, error) {
 	var err = errors.New("foo")
-	var output *sso.ListAccountRolesOutput
+	var output *awssso.ListAccountRolesOutput
 
 	for cnt := 0; err != nil && cnt <= MAX_RETRY_ATTEMPTS; cnt++ {
 		output, err = as.sso.ListAccountRoles(context.TODO(), input)
@@ -287,7 +250,7 @@ func (as *AWSSSO) ListAccountRoles(input *sso.ListAccountRolesInput) (*sso.ListA
 }
 
 // makeRoleInfo takes the sso.types.RoleInfo and adds it onto our as.Roles[accountId] list
-func (as *AWSSSO) makeRoleInfo(account AccountInfo, i int, r ssotypes.RoleInfo) {
+func (as *AWSSSO) makeRoleInfo(account ssoconfig.AccountInfo, i int, r ssotypes.RoleInfo) {
 	var via string
 
 	aId, _ := strconv.ParseInt(account.AccountId, 10, 64)
@@ -298,7 +261,7 @@ func (as *AWSSSO) makeRoleInfo(account AccountInfo, i int, r ssotypes.RoleInfo) 
 
 	as.rolesLock.Lock()
 	defer as.rolesLock.Unlock()
-	as.Roles[account.AccountId] = append(as.Roles[account.AccountId], RoleInfo{
+	as.Roles[account.AccountId] = append(as.Roles[account.AccountId], ssoconfig.RoleInfo{
 		Id:           i,
 		AccountId:    aws.ToString(r.AccountId),
 		Arn:          awsparse.MakeRoleARN(aId, aws.ToString(r.RoleName)),
@@ -311,36 +274,13 @@ func (as *AWSSSO) makeRoleInfo(account AccountInfo, i int, r ssotypes.RoleInfo) 
 	})
 }
 
-type AccountInfo struct {
-	Id           int    `yaml:"Id" json:"Id" header:"Id"`
-	AccountId    string `yaml:"AccountId" json:"AccountId" header:"AccountId"`
-	AccountName  string `yaml:"AccountName" json:"AccountName" header:"AccountName"`
-	EmailAddress string `yaml:"EmailAddress" json:"EmailAddress" header:"EmailAddress"`
-}
-
-func (ai AccountInfo) GetHeader(fieldName string) (string, error) {
-	v := reflect.ValueOf(ai)
-	return gotable.GetHeaderTag(v, fieldName)
-}
-
-func (ai AccountInfo) GetAccountId64() int64 {
-	i64, err := strconv.ParseInt(ai.AccountId, 10, 64)
-	if err != nil {
-		panic(fmt.Sprintf("Invalid AWS AccountID from AWS SSO: %s", ai.AccountId))
-	}
-	if i64 < 0 {
-		panic(fmt.Sprintf("AWS AccountID must be >= 0: %s", ai.AccountId))
-	}
-	return i64
-}
-
 // GetAccounts queries AWS and returns a list of AWS accounts
-func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {
+func (as *AWSSSO) GetAccounts() ([]ssoconfig.AccountInfo, error) {
 	if len(as.Accounts) > 0 {
 		return as.Accounts, nil
 	}
 
-	input := sso.ListAccountsInput{
+	input := awssso.ListAccountsInput{
 		AccessToken: aws.String(as.Token.AccessToken),
 		MaxResults:  aws.Int32(1000),
 	}
@@ -350,7 +290,7 @@ func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {
 	}
 
 	for i, r := range output.AccountList {
-		as.Accounts = append(as.Accounts, AccountInfo{
+		as.Accounts = append(as.Accounts, ssoconfig.AccountInfo{
 			Id:           i,
 			AccountId:    aws.ToString(r.AccountId),
 			AccountName:  aws.ToString(r.AccountName),
@@ -366,7 +306,7 @@ func (as *AWSSSO) GetAccounts() ([]AccountInfo, error) {
 		}
 		x := len(as.Accounts)
 		for i, r := range output.AccountList {
-			as.Accounts = append(as.Accounts, AccountInfo{
+			as.Accounts = append(as.Accounts, ssoconfig.AccountInfo{
 				Id:           x + i,
 				AccountId:    aws.ToString(r.AccountId),
 				AccountName:  aws.ToString(r.AccountName),
@@ -398,19 +338,21 @@ func (as *AWSSSO) getRoleCredentials(accountId int64, role string, chainMap map[
 		log.Debug("SSOConfig.GetRole()", "error", err.Error(), "config", as.SSOConfig)
 	}
 
-	// If not in config OR config does not require doing a Via
-	if err != nil || configRole.Via == "" {
-		log.Debug("Getting role directly", "accountID", aId, "role", role)
-		// This is the actual role creds requested through AWS SSO
-		input := sso.GetRoleCredentialsInput{
+	if configRole.Via == "" {
+		// no role chaining needed — fetch directly via SSO GetRoleCredentials
+		as.tokenLock.RLock()
+		input := awssso.GetRoleCredentialsInput{
 			AccessToken: aws.String(as.Token.AccessToken),
 			AccountId:   aws.String(aId),
 			RoleName:    aws.String(role),
 		}
+		as.tokenLock.RUnlock()
+
 		output, err := as.sso.GetRoleCredentials(context.TODO(), &input)
 		if err != nil {
 			return storage.RoleCredentials{}, err
 		}
+		log.Debug("sso.GetRoleCredentials", "output", spew.Sdump(output))
 
 		ret := storage.RoleCredentials{
 			AccountId:       accountId,
@@ -454,9 +396,9 @@ func (as *AWSSSO) getRoleCredentials(accountId int64, role string, chainMap map[
 		creds.SessionToken,
 	)
 
-	cfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion(as.SsoRegion),
-		config.WithCredentialsProvider(cfgCreds),
+	cfg, err := awsconfig.LoadDefaultConfig(context.TODO(),
+		awsconfig.WithRegion(as.SsoRegion),
+		awsconfig.WithCredentialsProvider(cfgCreds),
 	)
 	if err != nil {
 		return storage.RoleCredentials{}, err
@@ -472,7 +414,7 @@ func (as *AWSSSO) getRoleCredentials(accountId int64, role string, chainMap map[
 		RoleSessionName: aws.String(previousRole),
 	}
 	if configRole.ExternalId != "" {
-		// Optional vlaue: https://docs.aws.amazon.com/sdk-for-go/api/service/sts/#AssumeRoleInput
+		// Optional value: https://docs.aws.amazon.com/sdk-for-go/api/service/sts/#AssumeRoleInput
 		input.ExternalId = aws.String(configRole.ExternalId)
 	}
 	if configRole.SourceIdentity != "" {

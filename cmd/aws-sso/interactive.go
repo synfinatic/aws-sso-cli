@@ -28,6 +28,8 @@ import (
 	//	"github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
+	ssocache "github.com/synfinatic/aws-sso-cli/internal/sso/cache"
+	ssoconfig "github.com/synfinatic/aws-sso-cli/internal/sso/config"
 	"github.com/synfinatic/aws-sso-cli/internal/tags"
 	"github.com/synfinatic/aws-sso-cli/internal/ui"
 )
@@ -49,7 +51,7 @@ func (ctx *RunContext) PromptExec(exec CompleterExec) error {
 		}
 	}
 
-	sso.Refresh(ctx.Settings)
+	sso.Refresh(ctx.Settings.ToSSOConfigSettings())
 	fmt.Println("Use <Up/Down Arrow> to highlight key/value and then <Space> to select.")
 	fmt.Println("Type `exit` or `Ctrl-D` to abort.")
 
@@ -68,8 +70,8 @@ func (ctx *RunContext) PromptExec(exec CompleterExec) error {
 
 type TagsCompleter struct {
 	ctx            *RunContext
-	sso            *sso.SSOConfig
-	roleTags       *sso.RoleTags
+	sso            *ssoconfig.SSOConfig
+	roleTags       *ssocache.RoleTags
 	allTags        *tags.TagsList
 	suggest        []prompt.Suggest
 	exec           CompleterExec
@@ -77,7 +79,7 @@ type TagsCompleter struct {
 }
 
 // NewTagsCompleter creates our TagsCompleter
-func NewTagsCompleter(ctx *RunContext, s *sso.SSOConfig, exec CompleterExec) *TagsCompleter {
+func NewTagsCompleter(ctx *RunContext, s *ssoconfig.SSOConfig, exec CompleterExec) *TagsCompleter {
 	set := ctx.Settings
 	roleTags := set.Cache.GetRoleTagsSelect()
 	allTags := set.Cache.GetAllTagsSelect()

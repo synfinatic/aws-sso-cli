@@ -18,7 +18,7 @@ package main
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 import (
-	"github.com/synfinatic/aws-sso-cli/internal/sso"
+	ssoauth "github.com/synfinatic/aws-sso-cli/internal/sso/auth"
 )
 
 // LogoutCmd defines the Kong args for the flush command
@@ -38,14 +38,14 @@ func (cc *LogoutCmd) Run(ctx *RunContext) error {
 	if err != nil {
 		return err
 	}
-	awssso := sso.NewAWSSSO(s, ctx.Store)
+	awssso := ssoauth.NewAWSSSO(s, ctx.Store)
 
 	flushSts(ctx, awssso)
 	return awssso.Logout() // invalidate our AccessToken
 }
 
 // flushSts flushes our IAM STS Role credentials from the secure store
-func flushSts(ctx *RunContext, awssso *sso.AWSSSO) {
+func flushSts(ctx *RunContext, awssso *ssoauth.AWSSSO) {
 	cache := ctx.Settings.Cache.GetSSO()
 	for _, role := range cache.Roles.GetAllRoles() {
 		if !role.IsExpired() {

@@ -35,48 +35,50 @@ import (
 	"github.com/knadh/koanf/providers/file"
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
+	ssocache "github.com/synfinatic/aws-sso-cli/internal/sso/cache"
+	ssoconfig "github.com/synfinatic/aws-sso-cli/internal/sso/config"
 	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
 	"github.com/synfinatic/aws-sso-cli/internal/ui"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
 
 type Settings struct {
-	configFile                string                   // name of this file
-	cacheFile                 string                   // name of cache file; always passed in via CLI args
-	Cache                     *Cache                   `yaml:"-"` // our cache data
-	SSO                       map[string]*SSOConfig    `koanf:"SSOConfig" yaml:"SSOConfig,omitempty"`
-	AutoLogin                 bool                     `koanf:"AutoLogin" yaml:"AutoLogin,omitempty"`
-	DefaultSSO                string                   `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`                           // specify default SSO by key
-	SecureStore               string                   `koanf:"SecureStore" yaml:"SecureStore,omitempty"`                         // json or keyring
-	SecretServiceCollection   string                   `koanf:"SecretServiceCollection" yaml:"SecretServiceCollection,omitempty"` // libsecret collection name; defaults to KEYRING_NAME
-	DefaultRegion             string                   `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
-	AuthWorkflow              oidc.AuthWorkflow        `koanf:"AuthWorkflow" yaml:"AuthWorkflow,omitempty"`
-	ConsoleDuration           int32                    `koanf:"ConsoleDuration" yaml:"ConsoleDuration,omitempty"`
-	JsonStore                 string                   `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
-	CacheRefresh              int64                    `koanf:"CacheRefresh" yaml:"CacheRefresh,omitempty"`
-	Threads                   int                      `koanf:"Threads" yaml:"Threads,omitempty"`
-	MaxBackoff                int                      `koanf:"MaxBackoff" yaml:"MaxBackoff,omitempty"`
-	MaxRetry                  int                      `koanf:"MaxRetry" yaml:"MaxRetry,omitempty"`
-	AutoConfigCheck           bool                     `koanf:"AutoConfigCheck" yaml:"AutoConfigCheck,omitempty"`
-	FirefoxOpenUrlInContainer bool                     `koanf:"FirefoxOpenUrlInContainer" yaml:"FirefoxOpenUrlInContainer,omitempty"` // deprecated
-	UrlAction                 uri.Action               `koanf:"UrlAction" yaml:"UrlAction"`
-	Browser                   string                   `koanf:"Browser" yaml:"Browser,omitempty"`
-	ConfigUrlAction           string                   `koanf:"ConfigUrlAction" yaml:"ConfigUrlAction,omitempty"` // deprecated
-	ConfigProfilesBinaryPath  string                   `koanf:"ConfigProfilesBinaryPath" yaml:"ConfigProfilesBinaryPath,omitempty"`
-	ConfigProfilesUrlAction   uri.ConfigProfilesAction `koanf:"ConfigProfilesUrlAction" yaml:"ConfigProfilesUrlAction,omitempty"`
-	UrlExecCommand            []string                 `koanf:"UrlExecCommand" yaml:"UrlExecCommand,omitempty"` // string or list
-	LogLevel                  string                   `koanf:"LogLevel" yaml:"LogLevel,omitempty"`
-	LogLines                  bool                     `koanf:"LogLines" yaml:"LogLines,omitempty"`
-	HistoryLimit              int64                    `koanf:"HistoryLimit" yaml:"HistoryLimit,omitempty"`
-	HistoryMinutes            int64                    `koanf:"HistoryMinutes" yaml:"HistoryMinutes,omitempty"`
-	ProfileFormat             string                   `koanf:"ProfileFormat" yaml:"ProfileFormat,omitempty"`
-	AccountPrimaryTag         []string                 `koanf:"AccountPrimaryTag" yaml:"AccountPrimaryTag,omitempty"`
-	FirstTag                  string                   `koanf:"FirstTag" yaml:"FirstTag,omitempty"`
-	PromptColors              ui.PromptColors          `koanf:"PromptColors" yaml:"PromptColors,omitempty"` // go-prompt colors
-	ListFields                []string                 `koanf:"ListFields" yaml:"ListFields,omitempty"`
-	ConfigVariables           map[string]interface{}   `koanf:"ConfigVariables" yaml:"ConfigVariables,omitempty"`
-	EnvVarTags                []string                 `koanf:"EnvVarTags" yaml:"EnvVarTags,omitempty"`
-	FullTextSearch            bool                     `koanf:"FullTextSearch" yaml:"FullTextSearch"`
+	configFile                string                          // name of this file
+	cacheFile                 string                          // name of cache file; always passed in via CLI args
+	Cache                     *ssocache.Cache                 `yaml:"-"` // our cache data
+	SSO                       map[string]*ssoconfig.SSOConfig `koanf:"SSOConfig" yaml:"SSOConfig,omitempty"`
+	AutoLogin                 bool                            `koanf:"AutoLogin" yaml:"AutoLogin,omitempty"`
+	DefaultSSO                string                          `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`                           // specify default SSO by key
+	SecureStore               string                          `koanf:"SecureStore" yaml:"SecureStore,omitempty"`                         // json or keyring
+	SecretServiceCollection   string                          `koanf:"SecretServiceCollection" yaml:"SecretServiceCollection,omitempty"` // libsecret collection name; defaults to KEYRING_NAME
+	DefaultRegion             string                          `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
+	AuthWorkflow              oidc.AuthWorkflow               `koanf:"AuthWorkflow" yaml:"AuthWorkflow,omitempty"`
+	ConsoleDuration           int32                           `koanf:"ConsoleDuration" yaml:"ConsoleDuration,omitempty"`
+	JsonStore                 string                          `koanf:"JsonStore" yaml:"JsonStore,omitempty"`
+	CacheRefresh              int64                           `koanf:"CacheRefresh" yaml:"CacheRefresh,omitempty"`
+	Threads                   int                             `koanf:"Threads" yaml:"Threads,omitempty"`
+	MaxBackoff                int                             `koanf:"MaxBackoff" yaml:"MaxBackoff,omitempty"`
+	MaxRetry                  int                             `koanf:"MaxRetry" yaml:"MaxRetry,omitempty"`
+	AutoConfigCheck           bool                            `koanf:"AutoConfigCheck" yaml:"AutoConfigCheck,omitempty"`
+	FirefoxOpenUrlInContainer bool                            `koanf:"FirefoxOpenUrlInContainer" yaml:"FirefoxOpenUrlInContainer,omitempty"` // deprecated
+	UrlAction                 uri.Action                      `koanf:"UrlAction" yaml:"UrlAction"`
+	Browser                   string                          `koanf:"Browser" yaml:"Browser,omitempty"`
+	ConfigUrlAction           string                          `koanf:"ConfigUrlAction" yaml:"ConfigUrlAction,omitempty"` // deprecated
+	ConfigProfilesBinaryPath  string                          `koanf:"ConfigProfilesBinaryPath" yaml:"ConfigProfilesBinaryPath,omitempty"`
+	ConfigProfilesUrlAction   uri.ConfigProfilesAction        `koanf:"ConfigProfilesUrlAction" yaml:"ConfigProfilesUrlAction,omitempty"`
+	UrlExecCommand            []string                        `koanf:"UrlExecCommand" yaml:"UrlExecCommand,omitempty"` // string or list
+	LogLevel                  string                          `koanf:"LogLevel" yaml:"LogLevel,omitempty"`
+	LogLines                  bool                            `koanf:"LogLines" yaml:"LogLines,omitempty"`
+	HistoryLimit              int64                           `koanf:"HistoryLimit" yaml:"HistoryLimit,omitempty"`
+	HistoryMinutes            int64                           `koanf:"HistoryMinutes" yaml:"HistoryMinutes,omitempty"`
+	ProfileFormat             string                          `koanf:"ProfileFormat" yaml:"ProfileFormat,omitempty"`
+	AccountPrimaryTag         []string                        `koanf:"AccountPrimaryTag" yaml:"AccountPrimaryTag,omitempty"`
+	FirstTag                  string                          `koanf:"FirstTag" yaml:"FirstTag,omitempty"`
+	PromptColors              ui.PromptColors                 `koanf:"PromptColors" yaml:"PromptColors,omitempty"` // go-prompt colors
+	ListFields                []string                        `koanf:"ListFields" yaml:"ListFields,omitempty"`
+	ConfigVariables           map[string]interface{}          `koanf:"ConfigVariables" yaml:"ConfigVariables,omitempty"`
+	EnvVarTags                []string                        `koanf:"EnvVarTags" yaml:"EnvVarTags,omitempty"`
+	FullTextSearch            bool                            `koanf:"FullTextSearch" yaml:"FullTextSearch"`
 }
 
 // GetDefaultRegion scans the config settings file to pick the most local DefaultRegion from the tree
@@ -165,7 +167,7 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 
 	// set our SSO names
 	for k, v := range s.SSO {
-		v.key = k
+		v.SetKey(k)
 	}
 
 	if _, ok := s.SSO[s.DefaultSSO]; !ok {
@@ -193,7 +195,10 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 		}
 	}
 
-	s.SSO[s.DefaultSSO].Refresh(s)
+	params := s.ToSSOConfigSettings()
+	for _, v := range s.SSO {
+		v.Refresh(params)
+	}
 
 	s.applyDeprecations()
 
@@ -207,7 +212,7 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 	}
 
 	// load the cache
-	if s.Cache, err = OpenCache(s.cacheFile, s); err != nil {
+	if s.Cache, err = ssocache.OpenCache(s.cacheFile, s); err != nil {
 		log.Info("unable to open cache file", "error", err.Error())
 	}
 
@@ -364,10 +369,10 @@ func (s *Settings) CreatedAt() int64 {
 
 // GetSelectedSSO returns a valid SSOConfig based on user intput, configured
 // value or our hardcoded 'Default' if it exists and name is empty String
-func (s *Settings) GetSelectedSSO(name string) (*SSOConfig, error) {
+func (s *Settings) GetSelectedSSO(name string) (*ssoconfig.SSOConfig, error) {
 	n, err := s.GetSelectedSSOName(name)
 	if err != nil {
-		return &SSOConfig{}, err
+		return &ssoconfig.SSOConfig{}, err
 	}
 	return s.SSO[n], nil
 }
@@ -392,6 +397,54 @@ func (s *Settings) GetSelectedSSOName(name string) (string, error) {
 		return "Default", nil
 	}
 	return "", fmt.Errorf("no available AWS SSO Instance")
+}
+
+// GetCacheFile returns the path to the cache file, satisfying SettingsReader.
+func (s *Settings) GetCacheFile() string {
+	return s.cacheFile
+}
+
+// GetHistoryLimit returns the maximum number of history entries, satisfying SettingsReader.
+func (s *Settings) GetHistoryLimit() int64 {
+	return s.HistoryLimit
+}
+
+// GetHistoryMinutes returns the history expiry in minutes, satisfying SettingsReader.
+func (s *Settings) GetHistoryMinutes() int64 {
+	return s.HistoryMinutes
+}
+
+// GetThreads returns the number of worker threads, satisfying SettingsReader.
+func (s *Settings) GetThreads() int {
+	return s.Threads
+}
+
+// GetSSONames returns the names of all configured SSO instances, satisfying SettingsReader.
+func (s *Settings) GetSSONames() []string {
+	names := make([]string, 0, len(s.SSO))
+	for name := range s.SSO {
+		names = append(names, name)
+	}
+	return names
+}
+
+// GetDefaultSSO returns the name of the default SSO instance, satisfying SettingsReader.
+func (s *Settings) GetDefaultSSO() string {
+	return s.DefaultSSO
+}
+
+// ToSSOConfigSettings converts the settings relevant to SSOConfig.Refresh into SSOConfigSettings.
+func (s *Settings) ToSSOConfigSettings() ssoconfig.SSOConfigSettings {
+	return ssoconfig.SSOConfigSettings{
+		MaxBackoff:     s.MaxBackoff,
+		MaxRetry:       s.MaxRetry,
+		UrlAction:      s.UrlAction,
+		Browser:        s.Browser,
+		UrlExecCommand: s.UrlExecCommand,
+		AuthWorkflow:   s.AuthWorkflow,
+		CacheRefresh:   s.CacheRefresh,
+		ConfigFile:     s.configFile,
+	}
 }
 
 // Returns the Tag name => Environment variable name

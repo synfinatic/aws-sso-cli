@@ -34,6 +34,7 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
 	"github.com/synfinatic/aws-sso-cli/internal/predictor"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
+	ssoauth "github.com/synfinatic/aws-sso-cli/internal/sso/auth"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/willabides/kongplete"
 )
@@ -46,7 +47,7 @@ var CommitID = "unknown"
 var Delta = ""
 var VALID_LOG_LEVELS = []string{"error", "warn", "info", "debug", "trace"}
 
-var AwsSSO *sso.AWSSSO // global
+var AwsSSO *ssoauth.AWSSSO // global
 
 type CommandAuth int
 
@@ -207,7 +208,7 @@ func main() {
 		}
 
 		loadSecureStore(c)
-		AwsSSO = sso.NewAWSSSO(s, c.Store)
+		AwsSSO = ssoauth.NewAWSSSO(s, c.Store)
 	case AUTH_UNKNOWN:
 		log.Fatal("Internal error: AUTH_UNKNOWN, please open a bug report")
 	}
@@ -331,7 +332,7 @@ func (cc *VersionCmd) Run(ctx *RunContext) error {
 }
 
 // Get our RoleCredentials from the secure store or from AWS SSO
-func GetRoleCredentials(ctx *RunContext, awssso *sso.AWSSSO, refreshSTS bool, accountid int64, role string) *storage.RoleCredentials {
+func GetRoleCredentials(ctx *RunContext, awssso *ssoauth.AWSSSO, refreshSTS bool, accountid int64, role string) *storage.RoleCredentials {
 	creds := storage.RoleCredentials{}
 
 	// First look for our creds in the secure store, if we're not forcing a refresh
