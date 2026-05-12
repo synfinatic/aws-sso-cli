@@ -74,7 +74,7 @@ func (c *AWSClient) CreateToken(ctx context.Context, in CreateTokenInput) (stora
 	input := &ssooidc.CreateTokenInput{
 		ClientId:     aws.String(in.ClientID),
 		ClientSecret: aws.String(in.ClientSecret),
-		GrantType:    aws.String(in.GrantType),
+		GrantType:    aws.String(string(in.GrantType)),
 	}
 	if in.DeviceCode != "" {
 		input.DeviceCode = aws.String(in.DeviceCode)

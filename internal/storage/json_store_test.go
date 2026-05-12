@@ -100,6 +100,7 @@ func (s *JsonStoreTestSuite) TestRegisterClientData() {
 		ClientIdIssuedAt:      1629947379,
 		ClientSecret:          "not a real secret",
 		ClientSecretExpiresAt: 1637723379,
+		GrantTypes:            []GrantType{GrantTypeDeviceCode},
 	}
 	assert.Equal(t, rcdTest, rcd)
 

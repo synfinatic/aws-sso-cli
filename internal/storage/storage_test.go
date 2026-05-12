@@ -19,6 +19,7 @@ package storage
  */
 
 import (
+	"encoding/json"
 	"os"
 	"testing"
 	"time"
@@ -60,6 +61,42 @@ func TestRegisterClientDataExpired(t *testing.T) {
 
 	tr.ClientSecretExpiresAt = time.Now().Unix() + 60*60 + 1
 	assert.False(t, tr.Expired())
+}
+
+func TestRegisterClientDataUnmarshalJSON(t *testing.T) {
+	// Old JSON with no grantTypes field should default to ["authorization_code"]
+	old := []byte(`{"clientId":"cid","clientIdIssuedAt":0,"clientSecret":"sec","clientSecretExpiresAt":9999999999}`)
+	var r RegisterClientData
+	assert.NoError(t, json.Unmarshal(old, &r))
+	assert.Equal(t, []GrantType{GrantTypeDeviceCode}, r.GrantTypes)
+	assert.False(t, r.SupportsAuthorizationCode())
+
+	// Explicit empty array should also get the default
+	empty := []byte(`{"clientId":"cid","clientIdIssuedAt":0,"clientSecret":"sec","clientSecretExpiresAt":9999999999,"grantTypes":[]}`)
+	var r2 RegisterClientData
+	assert.NoError(t, json.Unmarshal(empty, &r2))
+	assert.Equal(t, []GrantType{GrantTypeDeviceCode}, r2.GrantTypes)
+	assert.False(t, r2.SupportsAuthorizationCode())
+
+	// JSON with refresh_token present
+	withRefresh := []byte(`{"clientId":"cid","clientIdIssuedAt":0,"clientSecret":"sec","clientSecretExpiresAt":9999999999,"grantTypes":["refresh_token","authorization_code"]}`)
+	var r3 RegisterClientData
+	assert.NoError(t, json.Unmarshal(withRefresh, &r3))
+	assert.True(t, r3.SupportsAuthorizationCode())
+}
+
+func TestRegisterClientDataSupportsAuthorizationCode(t *testing.T) {
+	r := &RegisterClientData{}
+	assert.False(t, r.SupportsAuthorizationCode())
+
+	r.GrantTypes = []GrantType{GrantTypeAuthorizationCode}
+	assert.True(t, r.SupportsAuthorizationCode())
+
+	r.GrantTypes = []GrantType{GrantTypeDeviceCode}
+	assert.False(t, r.SupportsAuthorizationCode())
+
+	r.GrantTypes = []GrantType{GrantTypeDeviceCode, GrantTypeAuthorizationCode}
+	assert.True(t, r.SupportsAuthorizationCode())
 }
 
 func TestRoleCredentialsExpired(t *testing.T) {

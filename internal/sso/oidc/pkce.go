@@ -92,7 +92,7 @@ func (c *AWSClient) ExchangePKCEAuthCode(ctx context.Context, in ExchangePKCEAut
 	return c.CreateToken(ctx, CreateTokenInput{
 		ClientID:     in.ClientID,
 		ClientSecret: in.ClientSecret,
-		GrantType:    GrantTypeAuthorizationCode,
+		GrantType:    storage.GrantTypeAuthorizationCode,
 		Code:         in.Code,
 		CodeVerifier: in.CodeVerifier,
 		RedirectURI:  in.RedirectURI,

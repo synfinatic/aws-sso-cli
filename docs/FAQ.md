@@ -47,14 +47,15 @@ configuration option.
 
 ### Should I use `AuthWorkflow: device_code` or `AuthWorkflow: pkce`?
 
-Most users should start with `AuthWorkflow: pkce` because it is now the
-default. `aws-sso` opens the authorization URL, starts a temporary loopback
+Most users should start with `AuthWorkflow: pkce` because it is faster and more secure.
+With PKCE `aws-sso` opens the authorization URL in your browser, starts a temporary loopback
 listener on `127.0.0.1`, validates the returned `state`, and exchanges the code
 for tokens automatically.
 
 `AuthWorkflow: device_code` is **not recommended** — its short verification
 code is not bound to the initiating session, making it vulnerable to
-device code phishing and requires more human involvement.
+[device code phishing](https://blog.christophetd.fr/pkce-aws-sso/)
+and requires more human involvement.
 
 However, `device_code` is the correct choice for remote or headless environments where
 `aws-sso` does not run on the same machine as the browser, since PKCE relies
