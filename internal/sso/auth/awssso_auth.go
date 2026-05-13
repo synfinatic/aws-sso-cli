@@ -56,14 +56,16 @@ func (as *AWSSSO) ValidAuthToken() bool {
 	// registrations (or those written before GrantTypes was persisted) won't
 	// have "refresh_token" and must re-register to get a refresh-capable token.
 	clientData := storage.RegisterClientData{}
-	if err := as.store.GetRegisterClientData(as.StoreKey(), &clientData); err != nil || !clientData.SupportsAuthorizationCode() {
-		// always add refresh token support, even if we are using device_code
-		log.Debug("Cached SSO registration lacks PKCE authorization_code support. Forcing device authentication...")
-		err = as.store.DeleteRegisterClientData(as.StoreKey())
-		if err != nil {
-			log.Error("unable to delete RegisterClientData from secure store", "storeKey", as.StoreKey(), "error", err.Error())
+	if err := as.store.GetRegisterClientData(as.StoreKey(), &clientData); err != nil {
+		if !clientData.SupportsAuthorizationCode() || !clientData.SupportsRefreshToken() {
+			// always add refresh token support, even if we are using device_code
+			log.Debug("Cached SSO registration lacks PKCE authorization_code support. Forcing device authentication...")
+			err = as.store.DeleteRegisterClientData(as.StoreKey())
+			if err != nil {
+				log.Error("unable to delete RegisterClientData from secure store", "storeKey", as.StoreKey(), "error", err.Error())
+			}
+			return false
 		}
-		return false
 	}
 
 	// check our cache
@@ -89,7 +91,33 @@ func (as *AWSSSO) ValidAuthToken() bool {
 	} else {
 		log.Info("Cached SSO token has expired.  Reauthenticating...")
 	}
+
+	// Attempt a silent renewal using the stored refresh token before
+	// falling back to a full browser-based re-authentication.
+	if token.RefreshToken != "" && as.tryRefreshToken(token, clientData) {
+		return true
+	}
 	return false
+}
+
+// tryRefreshToken attempts to silently renew an expired access token using
+// the stored refresh token.  It saves the new token and returns true on
+// success, or logs and returns false so the caller can fall back to a full
+// re-authentication flow.
+func (as *AWSSSO) tryRefreshToken(expiredToken storage.CreateTokenResponse, clientData storage.RegisterClientData) bool {
+	log.Debug("Attempting silent token refresh", "storeKey", as.StoreKey())
+	newToken, err := as.oidcClient.ExchangeRefreshToken(context.Background(), oidc.ExchangeRefreshTokenInput{
+		ClientID:     clientData.ClientId,
+		ClientSecret: clientData.ClientSecret,
+		RefreshToken: expiredToken.RefreshToken,
+	})
+	if err != nil {
+		log.Debug("Token refresh failed, falling back to full re-authentication", "error", err.Error())
+		return false
+	}
+	_ = as.saveToken(newToken)
+	log.Debug("Token successfully refreshed", "storeKey", as.StoreKey())
+	return true
 }
 
 // Authenticate retrieves an AWS SSO AccessToken from our cache or by
@@ -273,7 +301,7 @@ func (as *AWSSSO) getAuthWorkflow() oidc.AuthWorkflow {
 func (as *AWSSSO) GrantTypes() []storage.GrantType {
 	log.Debug("GrantTypes()", "authWorkflow", as.getAuthWorkflow())
 	// for now we always return both grant types.
-	return []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeDeviceCode}
+	return []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken}
 	/*
 		if as.getAuthWorkflow() == oidc.AuthWorkflowDeviceCode {
 			// Device code flow uses device_code to get the initial token; also include

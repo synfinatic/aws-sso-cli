@@ -162,3 +162,76 @@ func TestCreateToken(t *testing.T) {
 		assert.Contains(t, err.Error(), "token failed")
 	})
 }
+
+func TestExchangeRefreshToken(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		now := time.Now().Unix()
+		api := &mockOIDCAPI{
+			createTokenOutputs: []*ssooidc.CreateTokenOutput{
+				{
+					AccessToken:  aws.String("new-access"),
+					ExpiresIn:    3600,
+					IdToken:      aws.String("new-id"),
+					RefreshToken: aws.String("new-refresh"),
+					TokenType:    aws.String("Bearer"),
+				},
+			},
+		}
+
+		client := NewAWSWithAPI(api)
+		out, err := client.ExchangeRefreshToken(context.Background(), ExchangeRefreshTokenInput{
+			ClientID:     "cid",
+			ClientSecret: "secret",
+			RefreshToken: "old-refresh",
+		})
+
+		assert.NoError(t, err)
+		if assert.Len(t, api.createTokenInputs, 1) {
+			in := api.createTokenInputs[0]
+			assert.Equal(t, "cid", aws.ToString(in.ClientId))
+			assert.Equal(t, "secret", aws.ToString(in.ClientSecret))
+			assert.Equal(t, "refresh_token", aws.ToString(in.GrantType))
+			assert.Equal(t, "old-refresh", aws.ToString(in.RefreshToken))
+			// fields not relevant to refresh token grant should be absent
+			assert.Nil(t, in.DeviceCode)
+			assert.Nil(t, in.Code)
+			assert.Nil(t, in.CodeVerifier)
+		}
+
+		assert.Equal(t, "new-access", out.AccessToken)
+		assert.Equal(t, int32(3600), out.ExpiresIn)
+		assert.Equal(t, "new-id", out.IdToken)
+		assert.Equal(t, "new-refresh", out.RefreshToken)
+		assert.Equal(t, "Bearer", out.TokenType)
+		assert.GreaterOrEqual(t, out.ExpiresAt, now+3599)
+	})
+
+	t.Run("missing client id", func(t *testing.T) {
+		client := NewAWSWithAPI(&mockOIDCAPI{})
+		_, err := client.ExchangeRefreshToken(context.Background(), ExchangeRefreshTokenInput{
+			RefreshToken: "tok",
+		})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "client id is required")
+	})
+
+	t.Run("missing refresh token", func(t *testing.T) {
+		client := NewAWSWithAPI(&mockOIDCAPI{})
+		_, err := client.ExchangeRefreshToken(context.Background(), ExchangeRefreshTokenInput{
+			ClientID: "cid",
+		})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "refresh token is required")
+	})
+
+	t.Run("api error passthrough", func(t *testing.T) {
+		api := &mockOIDCAPI{createTokenErrors: []error{errors.New("expired_token")}}
+		client := NewAWSWithAPI(api)
+		_, err := client.ExchangeRefreshToken(context.Background(), ExchangeRefreshTokenInput{
+			ClientID:     "cid",
+			RefreshToken: "tok",
+		})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "expired_token")
+	})
+}

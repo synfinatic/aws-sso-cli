@@ -43,7 +43,7 @@ type GrantType string
 const (
 	GrantTypeDeviceCode        GrantType = "urn:ietf:params:oauth:grant-type:device_code"
 	GrantTypeAuthorizationCode GrantType = "authorization_code" // aka PKCE
-	GrantTypeRefreshToken      GrantType = "refresh_token"      // unused
+	GrantTypeRefreshToken      GrantType = "refresh_token"
 )
 
 // this struct should be cached for long term if possible
@@ -79,6 +79,28 @@ func (r *RegisterClientData) UnmarshalJSON(b []byte) error {
 func (r *RegisterClientData) SupportsAuthorizationCode() bool {
 	for _, gt := range r.GrantTypes {
 		if gt == GrantTypeAuthorizationCode {
+			return true
+		}
+	}
+	return false
+}
+
+// SupportsRefreshToken returns true if the registration includes the
+// "refresh_token" grant type.
+func (r *RegisterClientData) SupportsRefreshToken() bool {
+	for _, gt := range r.GrantTypes {
+		if gt == GrantTypeRefreshToken {
+			return true
+		}
+	}
+	return false
+}
+
+// SupportsDeviceCode returns true if the registration includes the
+// "device_code" grant type.
+func (r *RegisterClientData) SupportsDeviceCode() bool {
+	for _, gt := range r.GrantTypes {
+		if gt == GrantTypeDeviceCode {
 			return true
 		}
 	}

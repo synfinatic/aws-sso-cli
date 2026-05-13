@@ -18,7 +18,8 @@ type API interface {
 
 // Client is the higher-level OIDC interface consumed by the sso package.
 // CreateToken is intentionally not exposed; callers should use the
-// workflow-specific methods (PollDeviceCodeToken, ExchangePKCEAuthCode).
+// workflow-specific methods (PollDeviceCodeToken, ExchangePKCEAuthCode,
+// ExchangeRefreshToken).
 type Client interface {
 	RegisterClient(context.Context, RegisterClientInput) (storage.RegisterClientData, error)
 	StartDeviceAuthorization(context.Context, StartDeviceAuthorizationInput) (storage.StartDeviceAuthData, error)
@@ -26,6 +27,7 @@ type Client interface {
 	StartPKCEAuthCodeFlow(context.Context, StartPKCEAuthCodeInput) (PKCEAuthCodeFlow, error)
 	WaitForPKCECallback(context.Context, WaitForPKCECallbackInput) (PKCECallback, error)
 	ExchangePKCEAuthCode(context.Context, ExchangePKCEAuthCodeInput) (storage.CreateTokenResponse, error)
+	ExchangeRefreshToken(context.Context, ExchangeRefreshTokenInput) (storage.CreateTokenResponse, error)
 }
 
 const (
@@ -89,7 +91,7 @@ type CreateTokenInput struct {
 	Code         string
 	CodeVerifier string
 	RedirectURI  string
-	RefreshToken string
+	RefreshToken string // nolint:gosec
 }
 
 type PollDeviceCodeTokenInput struct {
@@ -129,4 +131,10 @@ type ExchangePKCEAuthCodeInput struct {
 	Code         string
 	CodeVerifier string
 	RedirectURI  string
+}
+
+type ExchangeRefreshTokenInput struct {
+	ClientID     string
+	ClientSecret string // nolint:gosec
+	RefreshToken string // nolint:gosec
 }
