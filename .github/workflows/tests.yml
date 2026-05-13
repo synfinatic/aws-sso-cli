@@ -19,8 +19,17 @@ permissions:
   # pull-requests: read
 
 jobs:
+  changelog:
+    name: Check Changelog
+    runs-on: ubuntu-latest
+    steps:
+      - uses: tarides/changelog-check-action@v2
+        if: github.event_name == 'pull_request'
+        with:
+          changelog: CHANGELOG.md
+
   build:
-    name: build-tests
+    name: Build Tests
     runs-on: ubuntu-latest
     steps:
     - name: Check out code into the Go module directory
@@ -37,7 +46,7 @@ jobs:
       uses: codecov/codecov-action@v6
 
   govulncheck:
-    name: govulncheck
+    name: Go Vuln Check
     runs-on: ubuntu-latest
     steps:
     - name: govulncheck
@@ -47,7 +56,7 @@ jobs:
         go-package: ./...
 
   golangci:
-    name: golanci-lint
+    name: GoLang CI Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

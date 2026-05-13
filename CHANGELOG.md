@@ -7,7 +7,7 @@
 
 * Add support for `AuthWorkflow` and PKCE authorization_code workflow (default) #1233
 * Add support for AWS European Sovereign Cloud (EUSC) #1309
-* Add AWS Partition support to setup wizard (commercial, gov-cloud, china, EU)
+* Update SSO and AWS Region support
 * Add SecretServiceCollection to override the default name #1293
 * `cache` command now prints a diff of added/removed roles #661
 * Support managing `$AWS_REGION` #1277
@@ -19,7 +19,7 @@
 ### Changes
 
 * Massive refactor of internal/sso for long term maintainability and improved testing
-* Setup Wizard now prompts for partition and start URL #1235
+* Setup Wizard now prompts for partition and start URL, not just hostname #1235
 
 ## [v2.1.0] - 2025-09-03
 
