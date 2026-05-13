@@ -2077,13 +2077,14 @@ the user, it becomes easier to identify when browser prompts are legitimately fo
 <p>Users wishing to utilize the previous auto-login mechanisim can use then <a href="../config/#autologin">AutoLogin</a>
 configuration option.</p>
 <h3 id="should-i-use-authworkflow-device_code-or-authworkflow-pkce">Should I use <code>AuthWorkflow: device_code</code> or <code>AuthWorkflow: pkce</code>?</h3>
-<p>Most users should start with <code>AuthWorkflow: pkce</code> because it is now the
-default. <code>aws-sso</code> opens the authorization URL, starts a temporary loopback
+<p>Most users should start with <code>AuthWorkflow: pkce</code> because it is faster and more secure.
+With PKCE <code>aws-sso</code> opens the authorization URL in your browser, starts a temporary loopback
 listener on <code>127.0.0.1</code>, validates the returned <code>state</code>, and exchanges the code
 for tokens automatically.</p>
 <p><code>AuthWorkflow: device_code</code> is <strong>not recommended</strong> — its short verification
 code is not bound to the initiating session, making it vulnerable to
-device code phishing and requires more human involvement.</p>
+<a href="https://blog.christophetd.fr/pkce-aws-sso/">device code phishing</a>
+and requires more human involvement.</p>
 <p>However, <code>device_code</code> is the correct choice for remote or headless environments where
 <code>aws-sso</code> does not run on the same machine as the browser, since PKCE relies
 on a loopback redirect that is not reachable in those environments.</p>
