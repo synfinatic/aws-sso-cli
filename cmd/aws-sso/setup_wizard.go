@@ -20,11 +20,12 @@ package main
 
 import (
 	"fmt"
-	"net"
+	"net/http"
 	"os"
 	"regexp"
 	"runtime"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -35,8 +36,6 @@ import (
 )
 
 const (
-	START_URL_FORMAT       = "https://%s/start"
-	START_FQDN_SUFFIX      = ".awsapps.com"
 	NICE_PROFILE_FORMAT    = "{{ FirstItem .AccountName (.AccountAlias | nospace) }}:{{ .RoleName }}"
 	DEFAULT_PROFILE_FORMAT = "{{ .AccountIdPad }}:{{ .RoleName }}"
 )
@@ -55,14 +54,38 @@ var awsPartitions = []awsPartition{
 		Value:      "aws",
 		FqdnSuffix: ".awsapps.com",
 		SSORegions: []string{
+			// US
 			"us-east-1", "us-east-2", "us-west-1", "us-west-2",
-			"af-south-1", "ap-east-1", "ap-south-1",
+
+			// Mexico
+			"mx-central-1",
+
+			// Africa
+			"af-south-1",
+
+			// Israel
+			"il-central-1",
+
+			// Asia Pacific
+			"ap-east-1", "ap-east-2",
 			"ap-northeast-1", "ap-northeast-2", "ap-northeast-3",
+			"ap-south-1", "ap-south-2",
 			"ap-southeast-1", "ap-southeast-2", "ap-southeast-3",
-			"ca-central-1",
-			"eu-central-1", "eu-west-1", "eu-west-2", "eu-west-3",
-			"eu-south-1", "eu-north-1",
-			"sa-east-1", "me-south-1",
+			"ap-southeast-4", "ap-southeast-5", "ap-southeast-6", "ap-southeast-7",
+
+			// Canada
+			"ca-central-1", "ca-west-1",
+
+			// EU
+			"eu-central-1", "eu-central-2",
+			"eu-west-1", "eu-west-2", "eu-west-3",
+			"eu-south-1", "eu-south-2", "eu-north-1",
+
+			// South America
+			"sa-east-1",
+
+			// Middle East
+			"me-central-1", "me-south-1",
 		},
 	},
 	{
@@ -84,6 +107,12 @@ var awsPartitions = []awsPartition{
 		FqdnSuffix: ".eusc-de-east-1.portal.amazonaws.eu",
 		SSORegions: []string{"eusc-de-east-1"},
 	},
+}
+
+func init() {
+	for i := range awsPartitions {
+		sort.Strings(awsPartitions[i].SSORegions)
+	}
 }
 
 func partitionByValue(value string) awsPartition {
@@ -208,8 +237,6 @@ func promptSsoInstance(defaultValue string) string {
 	return strings.TrimSpace(val)
 }
 
-var ssoHostnameRegexp *regexp.Regexp
-
 func checkPromptError(err error) {
 	switch err.Error() {
 	case "^D":
@@ -231,31 +258,26 @@ func checkSelectError(err error) {
 	}
 }
 
-func promptStartUrl(defaultValue string, fqdnSuffix string) string {
+func promptStartUrl(defaultValue string) string {
 	var val string
 	var err error
-	validFQDN := false
+	validURL := false
+	var ssoUrlRegexp *regexp.Regexp
+	ssoUrlRegexp, _ = regexp.Compile(`https://([a-zA-Z0-9-.]+)/start/?`)
 
 	fmt.Printf("\n")
 
-	for !validFQDN {
+	for !validURL {
 		// Get the hostname of the AWS SSO start URL
-		label := fmt.Sprintf("SSO Start URL Hostname (XXXXXXX%s)", fqdnSuffix)
-		regexpFQDNSuffix := strings.ReplaceAll(fqdnSuffix, ".", "\\.")
+		label := "SSO Start URL"
 		// Reset cached regexp so it reflects the current partition's suffix
-		ssoHostnameRegexp = nil
 		prompt := promptui.Prompt{
 			Label: label,
 			Validate: func(input string) error {
-				if ssoHostnameRegexp == nil {
-					// users can specify the FQDN or just Hostname
-					regex := fmt.Sprintf(`([a-zA-Z0-9-]+)(%s)?`, regexpFQDNSuffix)
-					ssoHostnameRegexp, _ = regexp.Compile(regex)
-				}
-				if len(input) > 0 && len(input) < 64 && ssoHostnameRegexp.Match([]byte(input)) {
+				if len(input) > 0 && ssoUrlRegexp.Match([]byte(input)) {
 					return nil
 				}
-				return fmt.Errorf("invalid DNS hostname: %s", input)
+				return fmt.Errorf("invalid SSO Start URL: %s", input)
 			},
 			Default:   defaultValue,
 			Stdout:    &prompt.BellSkipper{},
@@ -266,36 +288,43 @@ func promptStartUrl(defaultValue string, fqdnSuffix string) string {
 			checkPromptError(err)
 		}
 
-		val = strings.TrimSpace(val)
-		// User input value is either the hostname or full FQDN and
-		// we need the full FQDN
-		if !strings.Contains(val, ".") {
-			val = val + fqdnSuffix
-		}
+		defaultValue = strings.TrimSpace(val)
 
-		if _, err := net.LookupHost(val); err == nil {
-			validFQDN = true
-		} else if err != nil {
-			log.Error("unable to resolve", "host", val)
+		resp, err := http.Head(defaultValue) // nolint:gosec
+		if err != nil {
+			log.Error("unable to connect to URL", "url", defaultValue, "error", err.Error())
+			continue
 		}
+		resp.Body.Close()
+		if resp.StatusCode != 200 {
+			log.Error("URL did not return 200 OK", "url", defaultValue, "status", resp.Status)
+			continue
+		}
+		validURL = true
 	}
-	log.Info(fmt.Sprintf("Using %s", val))
-
-	return val
+	return defaultValue
 }
 
-func promptAwsSsoRegion(defaultValue string, regions []string) string {
+func promptAwsSsoRegion(defaultValue string, partition awsPartition) string {
 	var i int
 	var err error
 
 	fmt.Printf("\n")
 
 	items := []selectOptions{}
-	for _, x := range regions {
+	for _, x := range partition.SSORegions {
 		items = append(items, selectOptions{
 			Value: x,
 			Name:  x,
 		})
+	}
+
+	searcher := func(input string, index int) bool {
+		item := items[index]
+		name := strings.ReplaceAll(strings.ToLower(item.Name), " ", "")
+		input = strings.ReplaceAll(strings.ToLower(input), " ", "")
+
+		return strings.Contains(name, input)
 	}
 
 	// Pick our AWS SSO region
@@ -307,6 +336,7 @@ func promptAwsSsoRegion(defaultValue string, regions []string) string {
 		CursorPos:    defaultSelect(items, defaultValue),
 		Stdout:       &prompt.BellSkipper{},
 		Templates:    makeSelectTemplate(label),
+		Searcher:     searcher,
 	}
 	if i, _, err = sel.Run(); err != nil {
 		log.Error(err.Error())

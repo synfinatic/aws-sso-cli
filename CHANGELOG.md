@@ -18,6 +18,7 @@
 ### Changes
 
 * Massive refactor of internal/sso for long term maintainability and improved testing
+* Setup Wizard now prompts for partition and start URL #1235
 
 ## [v2.1.0] - 2025-09-03
 
