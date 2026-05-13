@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	"github.com/stretchr/testify/assert"
+	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
 
 func TestStartPKCEAuthCodeFlow(t *testing.T) {
@@ -120,7 +121,7 @@ func TestExchangePKCEAuthCode(t *testing.T) {
 		assert.Equal(t, "access-token", out.AccessToken)
 		if assert.Len(t, api.createTokenInputs, 1) {
 			in := api.createTokenInputs[0]
-			assert.Equal(t, GrantTypeAuthorizationCode, aws.ToString(in.GrantType))
+			assert.Equal(t, string(storage.GrantTypeAuthorizationCode), aws.ToString(in.GrantType))
 			assert.Equal(t, "auth-code", aws.ToString(in.Code))
 			assert.Equal(t, "pkce-verifier", aws.ToString(in.CodeVerifier))
 			assert.Equal(t, "http://localhost:12345/callback", aws.ToString(in.RedirectUri))

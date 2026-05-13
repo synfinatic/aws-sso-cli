@@ -51,6 +51,21 @@ const (
 // ValidAuthToken returns true if we have a valid AWS SSO authentication token
 // or false if we need to authenticate.
 func (as *AWSSSO) ValidAuthToken() bool {
+	log.Trace("ValidAuthToken()", "storeKey", as.StoreKey())
+	// First verify the stored registration supports refresh tokens. Old
+	// registrations (or those written before GrantTypes was persisted) won't
+	// have "refresh_token" and must re-register to get a refresh-capable token.
+	clientData := storage.RegisterClientData{}
+	if err := as.store.GetRegisterClientData(as.StoreKey(), &clientData); err != nil || !clientData.SupportsAuthorizationCode() {
+		// always add refresh token support, even if we are using device_code
+		log.Debug("Cached SSO registration lacks PKCE authorization_code support. Forcing device authentication...")
+		err = as.store.DeleteRegisterClientData(as.StoreKey())
+		if err != nil {
+			log.Error("unable to delete RegisterClientData from secure store", "storeKey", as.StoreKey(), "error", err.Error())
+		}
+		return false
+	}
+
 	// check our cache
 	token := storage.CreateTokenResponse{}
 	err := as.store.GetCreateTokenResponse(as.StoreKey(), &token)
@@ -59,6 +74,7 @@ func (as *AWSSSO) ValidAuthToken() bool {
 		return false
 	}
 
+	// happy path
 	if !token.Expired() {
 		as.tokenLock.Lock()
 		as.Token = token
@@ -127,7 +143,7 @@ func (as *AWSSSO) registerClient(force bool) error {
 		log.Trace("Checking cache for RegisterClientData", "storeKey", as.StoreKey())
 		err := as.store.GetRegisterClientData(as.StoreKey(), &as.ClientData)
 		if err == nil && !as.ClientData.Expired() {
-			log.Debug("Using RegisterClient cache", "storeKey", as.StoreKey())
+			log.Debug("Using RegisterClient from secure store", "storeKey", as.StoreKey())
 			return nil
 		}
 	}
@@ -150,6 +166,9 @@ func (as *AWSSSO) registerClient(force bool) error {
 	log.Trace("Registered new client with AWS SSO", "ClientId", resp.ClientId, "ClientSecretExpiresAt", resp.ClientSecretExpiresAt)
 
 	as.ClientData = resp
+	// AWS does not echo back the grant types we registered with, so we record
+	// them ourselves so ValidAuthToken() can check for refresh_token support.
+	as.ClientData.GrantTypes = as.GrantTypes()
 	log.Trace("SaveRegisterClientData start", "storeKey", as.StoreKey())
 	err = as.store.SaveRegisterClientData(as.StoreKey(), as.ClientData)
 	if err != nil {
@@ -216,7 +235,7 @@ func (as *AWSSSO) createToken() error {
 			ClientID:     as.ClientData.ClientId,
 			ClientSecret: as.ClientData.ClientSecret,
 			DeviceCode:   as.DeviceAuth.DeviceCode,
-			GrantType:    oidc.GrantTypeDeviceCode,
+			GrantType:    storage.GrantTypeDeviceCode,
 		},
 		RetryInterval: retryInterval,
 		SlowDown:      slowDown,
@@ -239,6 +258,8 @@ func (as *AWSSSO) saveToken(token storage.CreateTokenResponse) error {
 	return nil
 }
 
+// getAuthWorkflow returns the AuthWorkflow to use for this AWSSSO instance, defaulting
+// to PKCE if not set.
 func (as *AWSSSO) getAuthWorkflow() oidc.AuthWorkflow {
 	if as.SSOConfig == nil {
 		return oidc.AuthWorkflowPKCE
@@ -246,11 +267,29 @@ func (as *AWSSSO) getAuthWorkflow() oidc.AuthWorkflow {
 	return as.SSOConfig.AuthWorkflow.OrDefault()
 }
 
+// GrantTypes returns the list of GrantTypes to request in our OIDC client registration, based
+// on the AuthWorkflow.
+func (as *AWSSSO) GrantTypes() []storage.GrantType {
+	log.Debug("GrantTypes()", "authWorkflow", as.getAuthWorkflow())
+	// for now we always return both grant types.
+	return []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeDeviceCode}
+	/*
+		if as.getAuthWorkflow() == oidc.AuthWorkflowDeviceCode {
+			// Device code flow uses device_code to get the initial token; also include
+			// authorization_code so subsequent calls can renew without re-authenticating.
+		}
+		// Default code flow only needs authorization_code support.
+		return []storage.GrantType{storage.GrantTypeAuthorizationCode}
+	*/
+}
+
 func (as *AWSSSO) authGrantTypes() []string {
-	if as.getAuthWorkflow() == oidc.AuthWorkflowPKCE {
-		return []string{"refresh_token", oidc.GrantTypeAuthorizationCode}
+	grantTypes := []string{}
+	for _, gt := range as.GrantTypes() {
+		grantTypes = append(grantTypes, string(gt))
 	}
-	return []string{"refresh_token"}
+	log.Debug("authGrantTypes()", "grantTypes", grantTypes)
+	return grantTypes
 }
 
 // pkceRedirectURIBase is used in RegisterClient (no port, no path per RFC 8252 §7.3)

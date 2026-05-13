@@ -29,8 +29,6 @@ type Client interface {
 }
 
 const (
-	GrantTypeDeviceCode         = "urn:ietf:params:oauth:grant-type:device_code"
-	GrantTypeAuthorizationCode  = "authorization_code"
 	PKCECodeChallengeMethodS256 = "S256"
 
 	defaultCodeVerifierBytes = 48
@@ -86,7 +84,7 @@ type StartDeviceAuthorizationInput struct {
 type CreateTokenInput struct {
 	ClientID     string
 	ClientSecret string // nolint:gosec
-	GrantType    string
+	GrantType    storage.GrantType
 	DeviceCode   string
 	Code         string
 	CodeVerifier string

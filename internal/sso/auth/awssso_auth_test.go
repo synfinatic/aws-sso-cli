@@ -106,12 +106,14 @@ func TestStoreKey(t *testing.T) {
 
 func TestAuthWorkflowSelection(t *testing.T) {
 	as := &AWSSSO{}
-	assert.Equal(t, oidc.AuthWorkflowPKCE, as.getAuthWorkflow())
-	assert.Equal(t, []string{"refresh_token", oidc.GrantTypeAuthorizationCode}, as.authGrantTypes())
+	assert.Equal(t, as.getAuthWorkflow(), oidc.AuthWorkflowPKCE)
+	assert.Equal(t, as.authGrantTypes(), []string{string(storage.GrantTypeAuthorizationCode), string(storage.GrantTypeDeviceCode)})
+	assert.Equal(t, as.GrantTypes(), []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeDeviceCode})
 
 	as.SSOConfig = &ssoconfig.SSOConfig{AuthWorkflow: oidc.AuthWorkflowDeviceCode}
-	assert.Equal(t, oidc.AuthWorkflowDeviceCode, as.getAuthWorkflow())
-	assert.Equal(t, []string{"refresh_token"}, as.authGrantTypes())
+	assert.Equal(t, as.getAuthWorkflow(), oidc.AuthWorkflowDeviceCode)
+	assert.Equal(t, as.authGrantTypes(), []string{string(storage.GrantTypeAuthorizationCode), string(storage.GrantTypeDeviceCode)})
+	assert.Equal(t, as.GrantTypes(), []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeDeviceCode})
 }
 
 func TestAuthenticateSteps(t *testing.T) {
@@ -320,6 +322,7 @@ func TestAuthenticate(t *testing.T) {
 		},
 	})
 
+	as.ValidAuthToken()
 	assert.False(t, as.ValidAuthToken())
 
 	err = as.Authenticate("print", "fake-browser")
@@ -398,6 +401,16 @@ func TestValidAuthToken(t *testing.T) {
 	token.ExpiresIn = int32(^int(0) >> 1)
 	token.ExpiresAt = 99999999999
 	err = jstore.SaveCreateTokenResponse(key, token)
+	assert.NoError(t, err)
+
+	// ValidAuthToken also requires a stored RegisterClientData with refresh_token support.
+	clientData := storage.RegisterClientData{
+		ClientId:              "test-client-id",
+		ClientSecret:          "test-client-secret",
+		ClientSecretExpiresAt: 99999999999,
+		GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode},
+	}
+	err = jstore.SaveRegisterClientData(key, clientData)
 	assert.NoError(t, err)
 	assert.True(t, as.ValidAuthToken())
 }
@@ -861,7 +874,7 @@ func TestRegisterClientPKCE(t *testing.T) {
 		in := mock.registerClientInputs[0]
 		assert.Equal(t, []string{"sso:account:access"}, in.Scopes)
 		assert.Equal(t, []string{"http://127.0.0.1"}, in.RedirectUris)
-		assert.Contains(t, in.GrantTypes, oidc.GrantTypeAuthorizationCode)
+		assert.Contains(t, in.GrantTypes, string(storage.GrantTypeAuthorizationCode))
 	}
 }
 

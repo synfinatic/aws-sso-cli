@@ -20,6 +20,7 @@ package storage
 
 import (
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"reflect"
@@ -37,14 +38,51 @@ func init() {
 	log = logger.GetLogger()
 }
 
+type GrantType string
+
+const (
+	GrantTypeDeviceCode        GrantType = "urn:ietf:params:oauth:grant-type:device_code"
+	GrantTypeAuthorizationCode GrantType = "authorization_code" // aka PKCE
+	GrantTypeRefreshToken      GrantType = "refresh_token"      // unused
+)
+
 // this struct should be cached for long term if possible
 type RegisterClientData struct {
-	AuthorizationEndpoint string `json:"authorizationEndpoint,omitempty"`
-	ClientId              string `json:"clientId"`
-	ClientIdIssuedAt      int64  `json:"clientIdIssuedAt"`
-	ClientSecret          string `json:"clientSecret"` // nolint:gosec
-	ClientSecretExpiresAt int64  `json:"clientSecretExpiresAt"`
-	TokenEndpoint         string `json:"tokenEndpoint,omitempty"`
+	AuthorizationEndpoint string      `json:"authorizationEndpoint,omitempty"`
+	ClientId              string      `json:"clientId"`
+	ClientIdIssuedAt      int64       `json:"clientIdIssuedAt"`
+	ClientSecret          string      `json:"clientSecret"` // nolint:gosec
+	ClientSecretExpiresAt int64       `json:"clientSecretExpiresAt"`
+	TokenEndpoint         string      `json:"tokenEndpoint,omitempty"`
+	GrantTypes            []GrantType `json:"grantTypes,omitempty"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler. If GrantTypes is absent or empty
+// in stored JSON (written by older versions of aws-sso-cli), it defaults to
+// ["device_code"] — which does NOT include "authorization_code", so stale
+// registrations will trigger a transparent one-time re-auth.
+func (r *RegisterClientData) UnmarshalJSON(b []byte) error {
+	type plain RegisterClientData // break recursion
+	var tmp plain
+	if err := json.Unmarshal(b, &tmp); err != nil {
+		return err
+	}
+	*r = RegisterClientData(tmp)
+	if len(r.GrantTypes) == 0 {
+		r.GrantTypes = []GrantType{GrantTypeDeviceCode}
+	}
+	return nil
+}
+
+// SupportsAuthorizationCode returns true if the registration includes the
+// "authorization_code" grant type.
+func (r *RegisterClientData) SupportsAuthorizationCode() bool {
+	for _, gt := range r.GrantTypes {
+		if gt == GrantTypeAuthorizationCode {
+			return true
+		}
+	}
+	return false
 }
 
 // Expired returns true if it has expired or will in the next hour
