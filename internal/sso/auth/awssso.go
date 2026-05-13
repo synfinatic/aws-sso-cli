@@ -190,7 +190,8 @@ func (as *AWSSSO) ListAccounts(input *awssso.ListAccountsInput) (*awssso.ListAcc
 				// sometimes our AccessToken is invalid so try a new one once?
 				// if we have to re-auth, hold everyone else up since that will reduce other failures
 				as.rolesLock.Lock()
-				log.Error("AccessToken Unauthorized Error; refreshing", "error", err.Error())
+				log.Warn("AccessToken Unauthorized Error; forcing re-authentication")
+				log.Debug("AccessToken Unauthorized Error; refreshing", "error", err.Error())
 
 				if err2 := as.reauthenticate(); err2 != nil {
 					// fail hard now
@@ -227,7 +228,8 @@ func (as *AWSSSO) ListAccountRoles(input *awssso.ListAccountRolesInput) (*awssso
 				// sometimes our AccessToken is invalid so try a new one once?
 				// if we have to re-auth, hold everyone else up since that will reduce other failures
 				as.rolesLock.Lock()
-				log.Error("AccessToken Unauthorized Error; refreshing", "error", err.Error())
+				log.Warn("AccessToken Unauthorized Error; forcing re-authentication")
+				log.Debug("AccessToken Unauthorized Error; refreshing", "error", err.Error())
 
 				if err = as.reauthenticate(); err != nil {
 					// fail hard now
