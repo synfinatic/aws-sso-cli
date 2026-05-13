@@ -20,6 +20,7 @@
 
 * Massive refactor of internal/sso for long term maintainability and improved testing
 * Setup Wizard now prompts for partition and start URL, not just hostname #1235
+* Generate a friendly warning instead of confusing error when authentication expires
 
 ## [v2.1.0] - 2025-09-03
 
