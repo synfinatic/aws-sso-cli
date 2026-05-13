@@ -25,7 +25,6 @@ import (
 	"regexp"
 	"runtime"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -40,98 +39,23 @@ const (
 	DEFAULT_PROFILE_FORMAT = "{{ .AccountIdPad }}:{{ .RoleName }}"
 )
 
-// awsPartition describes an AWS partition relevant to IAM Identity Center setup.
-type awsPartition struct {
-	Name       string // human-readable label
-	Value      string // partition identifier (e.g. "aws", "aws-cn")
-	FqdnSuffix string // domain suffix for the SSO start URL hostname
-	SSORegions []string
-}
-
-var awsPartitions = []awsPartition{
-	{
-		Name:       "Commercial",
-		Value:      "aws",
-		FqdnSuffix: ".awsapps.com",
-		SSORegions: []string{
-			// US
-			"us-east-1", "us-east-2", "us-west-1", "us-west-2",
-
-			// Mexico
-			"mx-central-1",
-
-			// Africa
-			"af-south-1",
-
-			// Israel
-			"il-central-1",
-
-			// Asia Pacific
-			"ap-east-1", "ap-east-2",
-			"ap-northeast-1", "ap-northeast-2", "ap-northeast-3",
-			"ap-south-1", "ap-south-2",
-			"ap-southeast-1", "ap-southeast-2", "ap-southeast-3",
-			"ap-southeast-4", "ap-southeast-5", "ap-southeast-6", "ap-southeast-7",
-
-			// Canada
-			"ca-central-1", "ca-west-1",
-
-			// EU
-			"eu-central-1", "eu-central-2",
-			"eu-west-1", "eu-west-2", "eu-west-3",
-			"eu-south-1", "eu-south-2", "eu-north-1",
-
-			// South America
-			"sa-east-1",
-
-			// Middle East
-			"me-central-1", "me-south-1",
-		},
-	},
-	{
-		Name:       "US GovCloud",
-		Value:      "aws-us-gov",
-		FqdnSuffix: ".signin.amazonaws-us-gov.com",
-		SSORegions: []string{"us-gov-east-1", "us-gov-west-1"},
-	},
-	{
-		Name:       "China",
-		Value:      "aws-cn",
-		FqdnSuffix: ".awsapps.cn",
-		SSORegions: []string{"cn-north-1", "cn-northwest-1"},
-	},
-	// EU doesn't have global endpoints, instead they are region specific
-	{
-		Name:       "EU Digital Sovereignty (Brandenburg, Germany)",
-		Value:      "aws-eusc",
-		FqdnSuffix: ".eusc-de-east-1.portal.amazonaws.eu",
-		SSORegions: []string{"eusc-de-east-1"},
-	},
-}
-
-func init() {
-	for i := range awsPartitions {
-		sort.Strings(awsPartitions[i].SSORegions)
-	}
-}
-
-func partitionByValue(value string) awsPartition {
-	for _, p := range awsPartitions {
+func partitionByValue(value string) predictor.AWSPartition {
+	for _, p := range predictor.AWSPartitions {
 		if p.Value == value {
 			return p
 		}
 	}
-	return awsPartitions[0] // default to commercial
+	return predictor.AWSPartitions[0] // default to commercial
 }
 
-func promptAwsPartition(defaultValue string) awsPartition {
+func promptAwsPartition(defaultValue string) predictor.AWSPartition {
 	var i = -1
 	var err error
 
 	fmt.Printf("\n")
 
-	items := make([]selectOptions, len(awsPartitions))
-	for j, p := range awsPartitions {
+	items := make([]selectOptions, len(predictor.AWSPartitions))
+	for j, p := range predictor.AWSPartitions {
 		items[j] = selectOptions{Name: p.Name, Value: p.Value}
 	}
 
@@ -305,7 +229,7 @@ func promptStartUrl(defaultValue string) string {
 	return defaultValue
 }
 
-func promptAwsSsoRegion(defaultValue string, partition awsPartition) string {
+func promptAwsSsoRegion(defaultValue string, partition predictor.AWSPartition) string {
 	var i int
 	var err error
 
