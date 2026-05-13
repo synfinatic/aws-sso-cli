@@ -66,7 +66,7 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 	fmt.Printf(`
 **********************************************************************
 * Do you have questions?  Do you like reading docs?  We've got docs! *
-*            https://synfinatic.github.io/aws-sso-cli/               *
+*      https://synfinatic.github.io/aws-sso-cli/latest/wizard        *
 **********************************************************************
 
 `)
@@ -93,8 +93,8 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 			instanceName = promptSsoInstance("")
 		}
 		partition := promptAwsPartition("")
-		startHostname := promptStartUrl("", partition.FqdnSuffix)
-		ssoRegion := promptAwsSsoRegion("", partition.SSORegions)
+		startUrl := promptStartUrl("")
+		ssoRegion := promptAwsSsoRegion("", partition)
 
 		defaultRegion := ""
 		if advanced {
@@ -118,7 +118,7 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 
 		s.SSO[instanceName] = &ssoconfig.SSOConfig{
 			SSORegion:     ssoRegion,
-			StartUrl:      fmt.Sprintf(START_URL_FORMAT, startHostname),
+			StartUrl:      startUrl,
 			DefaultRegion: defaultRegion,
 		}
 	}
