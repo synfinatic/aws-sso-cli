@@ -569,10 +569,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#how-does-aws-sso-cli-manage-the-aws_default_region" class="md-nav__link">
+  <a href="#how-does-aws-sso-cli-manage-the-aws_default_region-aws_region" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How does AWS SSO CLI manage the $AWS_DEFAULT_REGION?
+        How does AWS SSO CLI manage the $AWS_DEFAULT_REGION / $AWS_REGION?
       
     </span>
   </a>
@@ -1655,10 +1655,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#how-does-aws-sso-cli-manage-the-aws_default_region" class="md-nav__link">
+  <a href="#how-does-aws-sso-cli-manage-the-aws_default_region-aws_region" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How does AWS SSO CLI manage the $AWS_DEFAULT_REGION?
+        How does AWS SSO CLI manage the $AWS_DEFAULT_REGION / $AWS_REGION?
       
     </span>
   </a>
@@ -2102,25 +2102,26 @@ source_profile = NameOfAwsSsoCliProfile
 </code></pre>
 <p>And generate the necessary AWS SSO CLI profile entries via
 <a href="../commands/#config-profiles">aws-sso config-profiles</a> command.</p>
-<h3 id="how-does-aws-sso-cli-manage-the-aws_default_region">How does AWS SSO CLI manage the $AWS_DEFAULT_REGION?</h3>
-<p>AWS SSO will leave the <code>$AWS_DEFAULT_REGION</code> environment variable alone
+<h3 id="how-does-aws-sso-cli-manage-the-aws_default_region-aws_region">How does AWS SSO CLI manage the $AWS_DEFAULT_REGION / $AWS_REGION?</h3>
+<p>AWS SSO will leave the <code>$AWS_DEFAULT_REGION</code> and <code>$AWS_REGION</code> environment variables alone
 unless the following are all true:</p>
 <ul>
-<li>The <code>$AWS_DEFAULT_REGION</code> is not already defined in your shell</li>
+<li>The <code>$AWS_DEFAULT_REGION</code> and <code>$AWS_REGION</code> is not already defined in your shell</li>
 <li>You have specified the region in the <code>config.yaml</code> via <code>DefaultRegion</code></li>
 <li>You have not set the <code>--no-region</code> flag on the CLI</li>
-<li>If <code>$AWS_SSO_DEFAULT_REGION</code> is set, does it match <code>$AWS_DEFAULT_REGION?</code></li>
+<li>If <code>$AWS_SSO_DEFAULT_REGION</code> is set, does it match <code>$AWS_DEFAULT_REGION</code> or <code>$AWS_REGION</code>?</li>
 </ul>
-<p>If the above are true, then AWS SSO will define both:</p>
+<p>If the above are true, then AWS SSO will define:</p>
 <ul>
+<li><code>$AWS_REGION</code></li>
 <li><code>$AWS_DEFAULT_REGION</code></li>
 <li><code>$AWS_SSO_DEFAULT_REGION</code></li>
 </ul>
 <p>to the default region as defined by <code>config.yaml</code>.  If the user changes
 roles and the two variables are set to the same region, then AWS SSO will
 update the region.   If the user ever overrides the <code>$AWS_DEFAULT_REGION</code>
-value or deletes the <code>$AWS_SSO_DEFAULT_REGION</code> then AWS SSO will no longer
-manage the variable.</p>
+or <code>$AWS_REGION</code> value or deletes the <code>$AWS_SSO_DEFAULT_REGION</code> then AWS
+SSO will no longer manage the variable.</p>
 <!-- https://github.com/synfinatic/aws-sso-cli/issues/166 -->
 <p><img alt="graph" src="https://user-images.githubusercontent.com/1075352/143502947-1465f68f-0ef5-4de7-a997-ea716facc637.png" /></p>
 <h3 id="example-of-multiple-aws-sso-instances">Example of multiple AWS SSO instances</h3>
