@@ -35,7 +35,7 @@ type EvalCmd struct {
 	Profile   string `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile'"`
 
 	Clear    bool   `kong:"short='c',help='Generate \"unset XXXX\" commands to clear environment'"`
-	NoRegion bool   `kong:"short='n',help='Do not set/clear AWS_DEFAULT_REGION from config.yaml'"`
+	NoRegion bool   `kong:"short='n',help='Do not set/clear AWS_DEFAULT_REGION/AWS_REGION from config.yaml'"`
 	Refresh  bool   `kong:"short='r',help='Refresh current IAM credentials'"`
 	EnvArn   string `kong:"hidden,env='AWS_SSO_ROLE_ARN'"` // used for refresh
 }
@@ -126,11 +126,15 @@ func unsetEnvVars(ctx *RunContext) error {
 
 	// clear the region if
 	// 1. User did not specify --no-region AND
-	// 2. The AWS_DEFAULT_REGION is managed by us (tracks AWS_SSO_DEFAULT_REGION)
+	// 2. The AWS_DEFAULT_REGION/AWS_REGION is managed by us (tracks AWS_SSO_DEFAULT_REGION)
 	if !ctx.Cli.Eval.NoRegion && os.Getenv("AWS_DEFAULT_REGION") == os.Getenv("AWS_SSO_DEFAULT_REGION") {
 		envs = append(envs, "AWS_DEFAULT_REGION")
+		envs = append(envs, "AWS_REGION")
 		envs = append(envs, "AWS_SSO_DEFAULT_REGION")
 	} else if os.Getenv("AWS_DEFAULT_REGION") != os.Getenv("AWS_SSO_DEFAULT_REGION") {
+		// clear the tracking variable if we don't match
+		envs = append(envs, "AWS_SSO_DEFAULT_REGION")
+	} else if os.Getenv("AWS_REGION") != os.Getenv("AWS_SSO_DEFAULT_REGION") {
 		// clear the tracking variable if we don't match
 		envs = append(envs, "AWS_SSO_DEFAULT_REGION")
 	}

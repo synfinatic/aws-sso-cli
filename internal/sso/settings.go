@@ -94,10 +94,13 @@ func (s *Settings) GetDefaultRegion(id int64, roleName string, noRegion bool) st
 	}
 
 	currentRegion := os.Getenv("AWS_DEFAULT_REGION")
+	if len(currentRegion) == 0 {
+		currentRegion = os.Getenv("AWS_REGION")
+	}
 	ssoManagedRegion := os.Getenv("AWS_SSO_DEFAULT_REGION")
 
 	if len(currentRegion) > 0 && currentRegion != ssoManagedRegion {
-		log.Debug("Will not override current AWS_DEFAULT_REGION", "region", currentRegion)
+		log.Debug("Will not override current AWS_DEFAULT_REGION/AWS_REGION", "region", currentRegion)
 		return ""
 	}
 

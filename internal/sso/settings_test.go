@@ -235,6 +235,7 @@ func (suite *SettingsTestSuite) TestSave() {
 
 func clearEnv() {
 	os.Setenv("AWS_DEFAULT_REGION", "")
+	os.Setenv("AWS_REGION", "")
 	os.Setenv("AWS_SSO_DEFAULT_REGION", "")
 }
 
@@ -253,6 +254,12 @@ func (suite *SettingsTestSuite) TestGetDefaultRegion() {
 	assert.Equal(t, "", suite.settings.GetDefaultRegion(833365043586, "AWSAdministratorAccess:", true))
 
 	os.Setenv("AWS_DEFAULT_REGION", "us-east-1")
+	assert.Equal(t, "", suite.settings.GetDefaultRegion(258234615182, "AWSAdministratorAccess", false))
+	assert.Equal(t, "", suite.settings.GetDefaultRegion(258234615182, "LimitedAccess", false))
+	assert.Equal(t, "", suite.settings.GetDefaultRegion(833365043586, "AWSAdministratorAccess:", false))
+
+	clearEnv()
+	os.Setenv("AWS_REGION", "us-east-1")
 	assert.Equal(t, "", suite.settings.GetDefaultRegion(258234615182, "AWSAdministratorAccess", false))
 	assert.Equal(t, "", suite.settings.GetDefaultRegion(258234615182, "LimitedAccess", false))
 	assert.Equal(t, "", suite.settings.GetDefaultRegion(833365043586, "AWSAdministratorAccess:", false))

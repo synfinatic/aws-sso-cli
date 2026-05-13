@@ -130,8 +130,8 @@ The `SSORegion` is required.
 ### DefaultRegion
 
 The `DefaultRegion` allows you to define a value for the `$AWS_DEFAULT_REGION`
-when switching to a role.  Note that, aws-sso will NEVER change an existing
-`$AWS_DEFAULT_REGION` set by the user.
+and `$AWS_REGION` when switching to a role.  Note that, aws-sso will NEVER change an existing
+`$AWS_DEFAULT_REGION` or `$AWS_REGION` set by the user.
 
 `DefaultRegion` can be specified at the following levels and the first match is
 selected (most specific to most generic):
