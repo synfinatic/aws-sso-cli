@@ -236,6 +236,7 @@ func (as *AWSSSO) createToken() error {
 			ClientSecret: as.ClientData.ClientSecret,
 			DeviceCode:   as.DeviceAuth.DeviceCode,
 			GrantType:    storage.GrantTypeDeviceCode,
+			RefreshToken: as.Token.RefreshToken,
 		},
 		RetryInterval: retryInterval,
 		SlowDown:      slowDown,

@@ -89,6 +89,7 @@ type CreateTokenInput struct {
 	Code         string
 	CodeVerifier string
 	RedirectURI  string
+	RefreshToken string
 }
 
 type PollDeviceCodeTokenInput struct {
