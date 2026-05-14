@@ -11,6 +11,10 @@
       
       
       
+        <link rel="prev" href="../demos/">
+      
+      
+        <link rel="next" href="../config/">
       
       
         
@@ -21,7 +25,7 @@
     
     
       
-        <title>Setup Wizard - AWS SSO CLI</title>
+        <title>Wizard - AWS SSO CLI</title>
       
     
     
@@ -104,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Setup Wizard
+              Wizard
             
           </span>
         </div>
@@ -302,18 +306,20 @@
       
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
           <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
@@ -334,7 +340,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -344,6 +350,136 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Wizard
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Wizard
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#aws-partition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AWS Partition
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sso-start-url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSO Start URL
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aws-sso-region" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AWS SSO Region
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#profile-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Profile Format
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced (Optional)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
             
               
                 
@@ -1085,6 +1221,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#advanced-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced (Optional)
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1119,19 +1266,23 @@ separated from each other:</p>
 <h2 id="sso-start-url">SSO Start URL</h2>
 <p>This is the URL your administrator <a href="https://docs.aws.amazon.com/signin/latest/userguide/sign-in-urls-defined.html#access-portal-url">should have given you</a>.
 Most likely this is of the format of <code>https://d-XXXXXXXXXX.awsapps.com/start</code> or
-<code>https://subdomain.awsapps.com/start</code> but the domain name will depend on the partition.</p>
+<code>https://&lt;subdomain&gt;.awsapps.com/start</code> but the domain name will depend on the partition.</p>
 <h2 id="aws-sso-region">AWS SSO Region</h2>
 <p>This is the AWS Region that the AWS SSO / Identity Center is located in.
 The options available to you is determined by the partition you selected
 above.</p>
 <h2 id="profile-format">Profile Format</h2>
 <p>This is the default template used to generate the <code>AWS_PROFILE</code> values
-for your roles.  See <a href="../config/#profileformat">Config -- ProfileFormat</a> for
+for your roles.  See <a href="../config/#profileformat">Config:ProfileFormat</a> for
 more information.</p>
 <ul>
-<li>Default: {{ .AccountIdPad }}:{{ .RoleName }}</li>
-<li>Friendly:   {{ FirstItem .AccountName (.AccountAlias | nospace) }}:{{ .RoleName }}</li>
+<li>Default: <code>{{ .AccountIdPad }}:{{ .RoleName }}</code></li>
+<li>Friendly: <code>{{ FirstItem .AccountName (.AccountAlias | nospace) }}:{{ .RoleName }}</code></li>
 </ul>
+<h2 id="advanced-optional">Advanced (Optional)</h2>
+<p>You can re-run through the configuration wizard at any time by running
+<code>aws-sso setup wizard</code>.  By default, this only does a very basic setup; for a more
+advanced setup (more questions), use <code>aws-sso setup wizard --advanced</code>.</p>
 
 
 
