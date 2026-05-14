@@ -41,15 +41,11 @@ binaries themselves.
 
 ## Guided Configuration
 
-AWS SSO CLI includes a simple setup wizard to aid in a basic configuration.
+AWS SSO CLI includes a simple [setup wizard](wizard.md) to aid in a basic configuration.
 This wizard will automatically run the first time you run `aws-sso`.
 
 For more information about configuring `aws-sso` read the
 [configuration guide](config.md).
-
-You can re-run through the configuration wizard at any time by running
-`aws-sso setup wizard`.  By default, this only does a very basic setup; for a more
-advanced setup, use `aws-sso setup wizard --advanced`.
 
 ## Enabling auto-completion in your shell
 
