@@ -16,6 +16,7 @@
 ### Bugs
 
 * Unique profile name vailation now honors SSO instance #1306
+* Clamp `sso:ListAccounts` and `sso:ListAccountRoles` `MaxResults` to the AWS API limit of 100; values above this are rejected server-side with `InvalidRequestException` #1342
 
 ### Changes
 

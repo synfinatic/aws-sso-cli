@@ -37,7 +37,9 @@ import (
 
 // mock sso
 type mockSsoAPI struct {
-	Results []mockSsoAPIResults
+	Results               []mockSsoAPIResults
+	ListAccountsCalls     []*awssso.ListAccountsInput
+	ListAccountRolesCalls []*awssso.ListAccountRolesInput
 }
 
 type mockSsoAPIResults struct {
@@ -49,6 +51,7 @@ type mockSsoAPIResults struct {
 }
 
 func (m *mockSsoAPI) ListAccountRoles(ctx context.Context, params *awssso.ListAccountRolesInput, optFns ...func(*awssso.Options)) (*awssso.ListAccountRolesOutput, error) {
+	m.ListAccountRolesCalls = append(m.ListAccountRolesCalls, params)
 	var x mockSsoAPIResults
 	if len(m.Results) == 0 {
 		return &awssso.ListAccountRolesOutput{}, fmt.Errorf("calling mocked ListAccountRoles too many times")
@@ -58,6 +61,7 @@ func (m *mockSsoAPI) ListAccountRoles(ctx context.Context, params *awssso.ListAc
 }
 
 func (m *mockSsoAPI) ListAccounts(ctx context.Context, params *awssso.ListAccountsInput, optFns ...func(*awssso.Options)) (*awssso.ListAccountsOutput, error) {
+	m.ListAccountsCalls = append(m.ListAccountsCalls, params)
 	var x mockSsoAPIResults
 	if len(m.Results) == 0 {
 		return &awssso.ListAccountsOutput{}, fmt.Errorf("calling mocked ListAccounts too many times")
@@ -846,4 +850,109 @@ func TestGetAccountId64(t *testing.T) {
 
 	ri.AccountId = "InvalidAccountId"
 	assert.Panics(t, func() { ri.GetAccountId64() })
+}
+
+// The IAM Identity Center portal API (sso:ListAccounts, sso:ListAccountRoles)
+// rejects MaxResults values outside [1, 100] server-side with
+// InvalidRequestException. Any request we issue must respect that contract.
+// Refs: https://docs.aws.amazon.com/singlesignon/latest/PortalAPIReference/API_ListAccounts.html
+//
+//	https://docs.aws.amazon.com/singlesignon/latest/PortalAPIReference/API_ListAccountRoles.html
+const ssoPortalMaxResultsLimit = int32(100)
+
+func TestListAccountsMaxResultsWithinAPILimit(t *testing.T) {
+	tfile, err := os.CreateTemp("", "*storage.json")
+	assert.NoError(t, err)
+	defer os.Remove(tfile.Name())
+
+	jstore, err := storage.OpenJsonStore(tfile.Name())
+	assert.NoError(t, err)
+
+	duration, _ := time.ParseDuration("10s")
+	as := &AWSSSO{
+		SsoRegion: "us-west-1",
+		StartUrl:  "https://testing.awsapps.com/start",
+		store:     jstore,
+		Roles:     map[string][]ssoconfig.RoleInfo{},
+		SSOConfig: &ssoconfig.SSOConfig{},
+		Token: storage.CreateTokenResponse{
+			AccessToken: "access-token",
+			ExpiresAt:   time.Now().Add(duration).Unix(),
+		},
+		urlAction: "print",
+	}
+
+	mock := &mockSsoAPI{
+		Results: []mockSsoAPIResults{
+			{
+				ListAccounts: &awssso.ListAccountsOutput{
+					NextToken:   aws.String(""),
+					AccountList: []ssotypes.AccountInfo{},
+				},
+			},
+		},
+	}
+	as.sso = mock
+
+	_, err = as.GetAccounts()
+	assert.NoError(t, err)
+	assert.NotEmpty(t, mock.ListAccountsCalls, "expected GetAccounts to call ListAccounts at least once")
+	for i, in := range mock.ListAccountsCalls {
+		if assert.NotNil(t, in.MaxResults, "call[%d]: MaxResults must be set", i) {
+			assert.LessOrEqual(t, *in.MaxResults, ssoPortalMaxResultsLimit,
+				"call[%d]: sso:ListAccounts MaxResults must be in [1,100]; AWS rejects values above 100", i)
+			assert.GreaterOrEqual(t, *in.MaxResults, int32(1),
+				"call[%d]: sso:ListAccounts MaxResults must be in [1,100]", i)
+		}
+	}
+}
+
+func TestListAccountRolesMaxResultsWithinAPILimit(t *testing.T) {
+	tfile, err := os.CreateTemp("", "*storage.json")
+	assert.NoError(t, err)
+	defer os.Remove(tfile.Name())
+
+	jstore, err := storage.OpenJsonStore(tfile.Name())
+	assert.NoError(t, err)
+
+	duration, _ := time.ParseDuration("10s")
+	as := &AWSSSO{
+		SsoRegion:  "us-west-1",
+		StartUrl:   "https://testing.awsapps.com/start",
+		oidcClient: oidc.NewAWSWithAPI(&mockSsoOidcAPI{}),
+		store:      jstore,
+		Roles:      map[string][]ssoconfig.RoleInfo{},
+		SSOConfig: &ssoconfig.SSOConfig{
+			Accounts: map[string]*ssoconfig.SSOAccount{},
+		},
+		Token: storage.CreateTokenResponse{
+			AccessToken: "access-token",
+			ExpiresAt:   time.Now().Add(duration).Unix(),
+		},
+		urlAction: "print",
+	}
+
+	mock := &mockSsoAPI{
+		Results: []mockSsoAPIResults{
+			{
+				ListAccountRoles: &awssso.ListAccountRolesOutput{
+					NextToken: aws.String(""),
+					RoleList:  []ssotypes.RoleInfo{},
+				},
+			},
+		},
+	}
+	as.sso = mock
+
+	_, err = as.GetRoles(ssoconfig.AccountInfo{AccountId: "000001111111", AccountName: "Test"})
+	assert.NoError(t, err)
+	assert.NotEmpty(t, mock.ListAccountRolesCalls, "expected GetRoles to call ListAccountRoles at least once")
+	for i, in := range mock.ListAccountRolesCalls {
+		if assert.NotNil(t, in.MaxResults, "call[%d]: MaxResults must be set", i) {
+			assert.LessOrEqual(t, *in.MaxResults, ssoPortalMaxResultsLimit,
+				"call[%d]: sso:ListAccountRoles MaxResults must be in [1,100]; AWS rejects values above 100", i)
+			assert.GreaterOrEqual(t, *in.MaxResults, int32(1),
+				"call[%d]: sso:ListAccountRoles MaxResults must be in [1,100]", i)
+		}
+	}
 }
