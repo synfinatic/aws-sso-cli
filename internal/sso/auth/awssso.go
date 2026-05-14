@@ -135,7 +135,7 @@ func (as *AWSSSO) GetRoles(account ssoconfig.AccountInfo) ([]ssoconfig.RoleInfo,
 	input := awssso.ListAccountRolesInput{
 		AccessToken: aws.String(as.Token.AccessToken),
 		AccountId:   aws.String(account.AccountId),
-		MaxResults:  aws.Int32(1000),
+		MaxResults:  aws.Int32(100),
 	}
 	as.tokenLock.Unlock()
 
@@ -284,7 +284,7 @@ func (as *AWSSSO) GetAccounts() ([]ssoconfig.AccountInfo, error) {
 
 	input := awssso.ListAccountsInput{
 		AccessToken: aws.String(as.Token.AccessToken),
-		MaxResults:  aws.Int32(1000),
+		MaxResults:  aws.Int32(100),
 	}
 	output, err := as.ListAccounts(&input)
 	if err != nil {
