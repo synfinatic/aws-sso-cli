@@ -858,7 +858,7 @@ func TestGetAccountId64(t *testing.T) {
 // Refs: https://docs.aws.amazon.com/singlesignon/latest/PortalAPIReference/API_ListAccounts.html
 //
 //	https://docs.aws.amazon.com/singlesignon/latest/PortalAPIReference/API_ListAccountRoles.html
-const ssoPortalMaxResultsLimit = int32(100)
+const ssoPortalMaxResultsLimit = int32(SSO_MAX_RESULTS)
 
 func TestListAccountsMaxResultsWithinAPILimit(t *testing.T) {
 	tfile, err := os.CreateTemp("", "*storage.json")
