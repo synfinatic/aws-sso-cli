@@ -61,8 +61,10 @@ func (cc *CacheCmd) Run(ctx *RunContext) error {
 	}
 
 	if len(added) > 0 || len(deleted) > 0 {
-		log.Info("Updated cache", "added", len(added), "deleted", len(deleted))
-		if !ctx.Cli.Cache.Silent {
+		if ctx.Cli.Cache.Silent {
+			log.Info("Cache updated", "added", len(added), "deleted", len(deleted))
+		} else {
+			fmt.Printf("Updated cache: added=%d, deleted=%d\n", len(added), len(deleted))
 			sort.Strings(added)
 			sort.Strings(deleted)
 			for _, arn := range added {
@@ -72,6 +74,7 @@ func (cc *CacheCmd) Run(ctx *RunContext) error {
 				fmt.Printf("- %s\n", arn)
 			}
 		}
+
 		// should we update our config??
 		if !ctx.Cli.Cache.NoConfigCheck && ctx.Settings.AutoConfigCheck {
 			if ctx.Settings.ConfigProfilesUrlAction != uri.ConfigProfilesUndef {
