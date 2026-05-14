@@ -17,7 +17,7 @@ separated from each other:
 This is the URL your administrator [should have given you](
 https://docs.aws.amazon.com/signin/latest/userguide/sign-in-urls-defined.html#access-portal-url).
 Most likely this is of the format of `https://d-XXXXXXXXXX.awsapps.com/start` or
-`https://subdomain.awsapps.com/start` but the domain name will depend on the partition.
+`https://<subdomain>.awsapps.com/start` but the domain name will depend on the partition.
 
 ## AWS SSO Region
 
@@ -28,8 +28,14 @@ above.
 ## Profile Format
 
 This is the default template used to generate the `AWS_PROFILE` values
-for your roles.  See [Config -- ProfileFormat](config.md#profileformat) for
+for your roles.  See [Config:ProfileFormat](config.md#profileformat) for
 more information.
 
-* Default: {{ .AccountIdPad }}:{{ .RoleName }}
-* Friendly:   {{ FirstItem .AccountName (.AccountAlias | nospace) }}:{{ .RoleName }}
+* Default: `{{ .AccountIdPad }}:{{ .RoleName }}`
+* Friendly: `{{ FirstItem .AccountName (.AccountAlias | nospace) }}:{{ .RoleName }}`
+
+## Advanced (Optional)
+
+You can re-run through the configuration wizard at any time by running
+`aws-sso setup wizard`.  By default, this only does a very basic setup; for a more
+advanced setup (more questions), use `aws-sso setup wizard --advanced`.

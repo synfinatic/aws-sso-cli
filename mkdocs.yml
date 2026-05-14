@@ -36,6 +36,7 @@ nav:
   - 'Quickstart': quickstart.md
   - 'Demos': demos.md
   - 'User Guide':
+    - 'Wizard': wizard.md
     - 'Configuration': config.md
     - 'Commands & Usage': commands.md 
     - 'Frequently Asked Questions': FAQ.md
