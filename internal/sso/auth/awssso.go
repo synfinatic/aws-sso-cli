@@ -44,6 +44,10 @@ import (
 var MAX_RETRY_ATTEMPTS int = 10
 var MAX_BACKOFF_SECONDS int = 5
 
+const (
+	SSO_MAX_RESULTS = 100
+)
+
 type SsoAPI interface {
 	ListAccountRoles(context.Context, *awssso.ListAccountRolesInput, ...func(*awssso.Options)) (*awssso.ListAccountRolesOutput, error)
 	ListAccounts(context.Context, *awssso.ListAccountsInput, ...func(*awssso.Options)) (*awssso.ListAccountsOutput, error)
@@ -135,7 +139,7 @@ func (as *AWSSSO) GetRoles(account ssoconfig.AccountInfo) ([]ssoconfig.RoleInfo,
 	input := awssso.ListAccountRolesInput{
 		AccessToken: aws.String(as.Token.AccessToken),
 		AccountId:   aws.String(account.AccountId),
-		MaxResults:  aws.Int32(100),
+		MaxResults:  aws.Int32(SSO_MAX_RESULTS),
 	}
 	as.tokenLock.Unlock()
 
@@ -284,7 +288,7 @@ func (as *AWSSSO) GetAccounts() ([]ssoconfig.AccountInfo, error) {
 
 	input := awssso.ListAccountsInput{
 		AccessToken: aws.String(as.Token.AccessToken),
-		MaxResults:  aws.Int32(100),
+		MaxResults:  aws.Int32(SSO_MAX_RESULTS),
 	}
 	output, err := as.ListAccounts(&input)
 	if err != nil {
