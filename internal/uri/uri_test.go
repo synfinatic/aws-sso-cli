@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -316,39 +317,64 @@ func TestAWSFederatedUrl(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestAWSConsoleUrl(t *testing.T) {
+// retryLookupIP is a helper function that retries net.LookupIP
+// for a given hostname a specified number of times with a simple backoff.
+// Deals with the fact that DNS for international AWS regions can be unreliable and cause test failures.
+func retryLookupIP(hostname string, retries int) error {
+	var err error
+	for i := 0; i < retries; i++ {
+		_, err = net.LookupIP(hostname)
+		if err == nil {
+			return nil
+		}
+		if i < retries-1 {
+			// backoff before retrying
+			time.Sleep(time.Duration(i+1) * 500 * time.Millisecond)
+		}
+	}
+	return err
+}
+
+func TestAWSConsoleUrlUSEast(t *testing.T) {
 	t.Parallel()
 	u := AWSConsoleUrl("us-east-1", "us-west-2")
 	assert.Equal(t, u, "https://console.aws.amazon.com/console/home?region=us-west-2")
 	pUrl, err := url.Parse(u)
 	assert.NoError(t, err)
-	_, err = net.LookupIP(pUrl.Hostname())
+	err = retryLookupIP(pUrl.Hostname(), 3)
 	assert.NoError(t, err)
+}
 
-	u = AWSConsoleUrl("us-gov-east-1", "us-gov-west-1")
+func TestAWSConsoleUrlUSGov(t *testing.T) {
+	t.Parallel()
+	u := AWSConsoleUrl("us-gov-east-1", "us-gov-west-1")
 	assert.Equal(t, u, "https://console.amazonaws-us-gov.com/console/home?region=us-gov-west-1")
-	pUrl, err = url.Parse(u)
+	pUrl, err := url.Parse(u)
 	assert.NoError(t, err)
-	_, err = net.LookupIP(pUrl.Hostname())
+	err = retryLookupIP(pUrl.Hostname(), 3)
 	assert.NoError(t, err)
+}
 
+func TestAWSConsoleUrlEU(t *testing.T) {
+	t.Parallel()
 	// currently only Brandenburg, Germany is supported by AWS
-	u = AWSConsoleUrl("eusc-de-east-1", "eusc-de-east-1")
+	u := AWSConsoleUrl("eusc-de-east-1", "eusc-de-east-1")
 	assert.Equal(t, u, "https://console.amazonaws-eusc.eu/console/home?region=eusc-de-east-1")
-	pUrl, err = url.Parse(u)
+	pUrl, err := url.Parse(u)
 	assert.NoError(t, err)
-	_, err = net.LookupIP(pUrl.Hostname())
+	err = retryLookupIP(pUrl.Hostname(), 3)
 	assert.NoError(t, err)
+}
 
+func TestAWSConsoleUrlChina(t *testing.T) {
+	t.Parallel()
 	// DNS for amazonaws.cn is reliably unreliable and so disabled
-	/*
-		u = AWSConsoleUrl("cn-north-1", "cn-northwest-1")
-		assert.Equal(t, u, "https://console.amazonaws.cn/console/home?region=cn-northwest-1")
-		pUrl, err = url.Parse(u)
-		assert.NoError(t, err)
-		_, err = net.LookupIP(pUrl.Hostname())
-		assert.NoError(t, err)
-	*/
+	u := AWSConsoleUrl("cn-north-1", "cn-northwest-1")
+	assert.Equal(t, u, "https://console.amazonaws.cn/console/home?region=cn-northwest-1")
+	pUrl, err := url.Parse(u)
+	assert.NoError(t, err)
+	err = retryLookupIP(pUrl.Hostname(), 3)
+	assert.NoError(t, err)
 }
 
 func TestGetConfigProfilesAction(t *testing.T) {
