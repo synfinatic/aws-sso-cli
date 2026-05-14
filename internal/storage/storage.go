@@ -43,7 +43,7 @@ type GrantType string
 const (
 	GrantTypeDeviceCode        GrantType = "urn:ietf:params:oauth:grant-type:device_code"
 	GrantTypeAuthorizationCode GrantType = "authorization_code" // aka PKCE
-	GrantTypeRefreshToken      GrantType = "refresh_token"      // unused
+	GrantTypeRefreshToken      GrantType = "refresh_token"
 )
 
 // this struct should be cached for long term if possible
@@ -85,6 +85,28 @@ func (r *RegisterClientData) SupportsAuthorizationCode() bool {
 	return false
 }
 
+// SupportsRefreshToken returns true if the registration includes the
+// "refresh_token" grant type.
+func (r *RegisterClientData) SupportsRefreshToken() bool {
+	for _, gt := range r.GrantTypes {
+		if gt == GrantTypeRefreshToken {
+			return true
+		}
+	}
+	return false
+}
+
+// SupportsDeviceCode returns true if the registration includes the
+// "device_code" grant type.
+func (r *RegisterClientData) SupportsDeviceCode() bool {
+	for _, gt := range r.GrantTypes {
+		if gt == GrantTypeDeviceCode {
+			return true
+		}
+	}
+	return false
+}
+
 // Expired returns true if it has expired or will in the next hour
 func (r *RegisterClientData) Expired() bool {
 	// XXX: I think an hour buffer here is fine?
@@ -102,12 +124,12 @@ type StartDeviceAuthData struct {
 
 type CreateTokenResponse struct {
 	// should be cached to issue new creds
-	AccessToken  string `json:"accessToken"` // nolint:gosec
-	ExpiresIn    int32  `json:"expiresIn"`   // number of seconds it expires in (from AWS)
-	ExpiresAt    int64  `json:"expiresAt"`   // Unix time when it expires
-	IdToken      string `json:"IdToken"`
+	AccessToken  string `json:"accessToken"`  // nolint:gosec
+	ExpiresIn    int32  `json:"expiresIn"`    // number of seconds it expires in (from AWS)
+	ExpiresAt    int64  `json:"expiresAt"`    // Unix time when it expires
+	IdToken      string `json:"IdToken"`      // not implemented by AWS
 	RefreshToken string `json:"RefreshToken"` // nolint:gosec
-	TokenType    string `json:"tokenType"`
+	TokenType    string `json:"tokenType"`    // should be "Bearer"
 }
 
 // Expired returns true if it has expired or will in the next minute

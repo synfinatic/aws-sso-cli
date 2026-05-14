@@ -99,6 +99,34 @@ func TestRegisterClientDataSupportsAuthorizationCode(t *testing.T) {
 	assert.True(t, r.SupportsAuthorizationCode())
 }
 
+func TestRegisterClientDataSupportsRefreshToken(t *testing.T) {
+	r := &RegisterClientData{}
+	assert.False(t, r.SupportsRefreshToken())
+
+	r.GrantTypes = []GrantType{GrantTypeRefreshToken}
+	assert.True(t, r.SupportsRefreshToken())
+
+	r.GrantTypes = []GrantType{GrantTypeDeviceCode}
+	assert.False(t, r.SupportsRefreshToken())
+
+	r.GrantTypes = []GrantType{GrantTypeDeviceCode, GrantTypeRefreshToken}
+	assert.True(t, r.SupportsRefreshToken())
+}
+
+func TestRegisterClientDataSupportsDeviceCode(t *testing.T) {
+	r := &RegisterClientData{}
+	assert.False(t, r.SupportsDeviceCode())
+
+	r.GrantTypes = []GrantType{GrantTypeDeviceCode}
+	assert.True(t, r.SupportsDeviceCode())
+
+	r.GrantTypes = []GrantType{GrantTypeRefreshToken}
+	assert.False(t, r.SupportsDeviceCode())
+
+	r.GrantTypes = []GrantType{GrantTypeDeviceCode, GrantTypeRefreshToken}
+	assert.True(t, r.SupportsDeviceCode())
+}
+
 func TestRoleCredentialsExpired(t *testing.T) {
 	x := RoleCredentials{
 		Expiration: 0,

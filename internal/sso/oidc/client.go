@@ -88,6 +88,9 @@ func (c *AWSClient) CreateToken(ctx context.Context, in CreateTokenInput) (stora
 	if in.RedirectURI != "" {
 		input.RedirectUri = aws.String(in.RedirectURI)
 	}
+	if in.RefreshToken != "" {
+		input.RefreshToken = aws.String(in.RefreshToken)
+	}
 	out, err := c.api.CreateToken(ctx, input)
 	if err != nil {
 		return storage.CreateTokenResponse{}, err
@@ -102,4 +105,20 @@ func (c *AWSClient) CreateToken(ctx context.Context, in CreateTokenInput) (stora
 		RefreshToken: aws.ToString(out.RefreshToken),
 		TokenType:    aws.ToString(out.TokenType),
 	}, nil
+}
+
+func (c *AWSClient) ExchangeRefreshToken(ctx context.Context, in ExchangeRefreshTokenInput) (storage.CreateTokenResponse, error) {
+	if in.ClientID == "" {
+		return storage.CreateTokenResponse{}, fmt.Errorf("client id is required")
+	}
+	if in.RefreshToken == "" {
+		return storage.CreateTokenResponse{}, fmt.Errorf("refresh token is required")
+	}
+
+	return c.CreateToken(ctx, CreateTokenInput{
+		ClientID:     in.ClientID,
+		ClientSecret: in.ClientSecret,
+		GrantType:    storage.GrantTypeRefreshToken,
+		RefreshToken: in.RefreshToken,
+	})
 }

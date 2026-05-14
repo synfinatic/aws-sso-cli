@@ -96,6 +96,7 @@ func (c *AWSClient) ExchangePKCEAuthCode(ctx context.Context, in ExchangePKCEAut
 		Code:         in.Code,
 		CodeVerifier: in.CodeVerifier,
 		RedirectURI:  in.RedirectURI,
+		RefreshToken: in.RefreshToken,
 	})
 }
 

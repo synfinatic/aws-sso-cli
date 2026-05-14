@@ -107,13 +107,13 @@ func TestStoreKey(t *testing.T) {
 func TestAuthWorkflowSelection(t *testing.T) {
 	as := &AWSSSO{}
 	assert.Equal(t, as.getAuthWorkflow(), oidc.AuthWorkflowPKCE)
-	assert.Equal(t, as.authGrantTypes(), []string{string(storage.GrantTypeAuthorizationCode), string(storage.GrantTypeDeviceCode)})
-	assert.Equal(t, as.GrantTypes(), []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeDeviceCode})
+	assert.Equal(t, as.authGrantTypes(), []string{string(storage.GrantTypeAuthorizationCode), string(storage.GrantTypeDeviceCode), string(storage.GrantTypeRefreshToken)})
+	assert.Equal(t, as.GrantTypes(), []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken})
 
 	as.SSOConfig = &ssoconfig.SSOConfig{AuthWorkflow: oidc.AuthWorkflowDeviceCode}
 	assert.Equal(t, as.getAuthWorkflow(), oidc.AuthWorkflowDeviceCode)
-	assert.Equal(t, as.authGrantTypes(), []string{string(storage.GrantTypeAuthorizationCode), string(storage.GrantTypeDeviceCode)})
-	assert.Equal(t, as.GrantTypes(), []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeDeviceCode})
+	assert.Equal(t, as.authGrantTypes(), []string{string(storage.GrantTypeAuthorizationCode), string(storage.GrantTypeDeviceCode), string(storage.GrantTypeRefreshToken)})
+	assert.Equal(t, as.GrantTypes(), []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken})
 }
 
 func TestAuthenticateSteps(t *testing.T) {
@@ -371,10 +371,13 @@ func TestValidAuthToken(t *testing.T) {
 
 	defer os.Remove(tfile.Name())
 
+	// Use a mock oidcClient that always fails the refresh so that expired-token
+	// test cases correctly return false without panicking on a nil pointer.
 	as := &AWSSSO{
-		SsoRegion: "us-west-1",
-		StartUrl:  "https://testing.awsapps.com/start",
-		store:     jstore,
+		SsoRegion:  "us-west-1",
+		StartUrl:   "https://testing.awsapps.com/start",
+		store:      jstore,
+		oidcClient: &mockOIDCClient{exchangeRefreshErr: fmt.Errorf("test: refresh not available")},
 		SSOConfig: &ssoconfig.SSOConfig{
 			AuthWorkflow: oidc.AuthWorkflowDeviceCode,
 		},
@@ -403,12 +406,13 @@ func TestValidAuthToken(t *testing.T) {
 	err = jstore.SaveCreateTokenResponse(key, token)
 	assert.NoError(t, err)
 
-	// ValidAuthToken also requires a stored RegisterClientData with refresh_token support.
+	// ValidAuthToken requires a stored RegisterClientData with both
+	// authorization_code and refresh_token grant type support.
 	clientData := storage.RegisterClientData{
 		ClientId:              "test-client-id",
 		ClientSecret:          "test-client-secret",
 		ClientSecretExpiresAt: 99999999999,
-		GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode},
+		GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken},
 	}
 	err = jstore.SaveRegisterClientData(key, clientData)
 	assert.NoError(t, err)
@@ -733,11 +737,14 @@ type mockOIDCClient struct {
 	waitForCallbackErr    error
 	exchangePKCEResult    storage.CreateTokenResponse
 	exchangePKCEErr       error
+	exchangeRefreshResult storage.CreateTokenResponse
+	exchangeRefreshErr    error
 
 	// captured inputs for assertions
 	startPKCEFlowInputs   []oidc.StartPKCEAuthCodeInput
 	waitForCallbackInputs []oidc.WaitForPKCECallbackInput
 	exchangePKCEInputs    []oidc.ExchangePKCEAuthCodeInput
+	exchangeRefreshInputs []oidc.ExchangeRefreshTokenInput
 	registerClientInputs  []oidc.RegisterClientInput
 }
 
@@ -767,6 +774,11 @@ func (m *mockOIDCClient) WaitForPKCECallback(_ context.Context, in oidc.WaitForP
 func (m *mockOIDCClient) ExchangePKCEAuthCode(_ context.Context, in oidc.ExchangePKCEAuthCodeInput) (storage.CreateTokenResponse, error) {
 	m.exchangePKCEInputs = append(m.exchangePKCEInputs, in)
 	return m.exchangePKCEResult, m.exchangePKCEErr
+}
+
+func (m *mockOIDCClient) ExchangeRefreshToken(_ context.Context, in oidc.ExchangeRefreshTokenInput) (storage.CreateTokenResponse, error) {
+	m.exchangeRefreshInputs = append(m.exchangeRefreshInputs, in)
+	return m.exchangeRefreshResult, m.exchangeRefreshErr
 }
 
 func TestPkceAuthorizationEndpoint(t *testing.T) {
@@ -1027,5 +1039,224 @@ func TestReauthenticatePKCE(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "unable to exchange pkce authorization code")
 		assert.Contains(t, err.Error(), "token exchange failed")
+	})
+}
+
+func TestTryRefreshToken(t *testing.T) {
+	clientData := storage.RegisterClientData{
+		ClientId:              "refresh-client-id",
+		ClientSecret:          "refresh-client-secret",
+		ClientSecretExpiresAt: time.Now().Add(time.Hour).Unix(),
+		GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode},
+	}
+	expiredToken := storage.CreateTokenResponse{
+		AccessToken:  "old-access-token",
+		ExpiresAt:    1, // expired
+		RefreshToken: "stored-refresh-token",
+	}
+
+	t.Run("success", func(t *testing.T) {
+		tfile, err := os.CreateTemp("", "*storage.json")
+		assert.NoError(t, err)
+		defer os.Remove(tfile.Name())
+
+		jstore, err := storage.OpenJsonStore(tfile.Name())
+		assert.NoError(t, err)
+
+		newToken := storage.CreateTokenResponse{
+			AccessToken:  "new-access-token",
+			ExpiresIn:    3600,
+			ExpiresAt:    time.Now().Add(time.Hour).Unix(),
+			RefreshToken: "new-refresh-token",
+			TokenType:    "Bearer",
+		}
+		mock := &mockOIDCClient{
+			exchangeRefreshResult: newToken,
+		}
+
+		as := &AWSSSO{
+			key:        "test",
+			store:      jstore,
+			oidcClient: mock,
+		}
+
+		ok := as.tryRefreshToken(expiredToken, clientData)
+		assert.True(t, ok)
+		assert.Equal(t, "new-access-token", as.Token.AccessToken)
+		assert.Equal(t, "new-refresh-token", as.Token.RefreshToken)
+
+		// verify inputs forwarded to ExchangeRefreshToken
+		if assert.Len(t, mock.exchangeRefreshInputs, 1) {
+			in := mock.exchangeRefreshInputs[0]
+			assert.Equal(t, "refresh-client-id", in.ClientID)
+			assert.Equal(t, "refresh-client-secret", in.ClientSecret)
+			assert.Equal(t, "stored-refresh-token", in.RefreshToken)
+		}
+
+		// verify the new token was persisted in the store
+		var got storage.CreateTokenResponse
+		err = jstore.GetCreateTokenResponse("test", &got)
+		assert.NoError(t, err)
+		assert.Equal(t, "new-access-token", got.AccessToken)
+	})
+
+	t.Run("exchange error falls back", func(t *testing.T) {
+		tfile, err := os.CreateTemp("", "*storage.json")
+		assert.NoError(t, err)
+		defer os.Remove(tfile.Name())
+
+		jstore, err := storage.OpenJsonStore(tfile.Name())
+		assert.NoError(t, err)
+
+		mock := &mockOIDCClient{
+			exchangeRefreshErr: fmt.Errorf("token expired"),
+		}
+
+		as := &AWSSSO{
+			key:        "test",
+			store:      jstore,
+			oidcClient: mock,
+		}
+
+		ok := as.tryRefreshToken(expiredToken, clientData)
+		assert.False(t, ok)
+		// Token in memory should be unchanged (zero value)
+		assert.Equal(t, "", as.Token.AccessToken)
+	})
+}
+
+func TestValidAuthTokenRefresh(t *testing.T) {
+	t.Run("expired token with refresh token is silently renewed", func(t *testing.T) {
+		tfile, err := os.CreateTemp("", "*storage.json")
+		assert.NoError(t, err)
+		defer os.Remove(tfile.Name())
+
+		jstore, err := storage.OpenJsonStore(tfile.Name())
+		assert.NoError(t, err)
+
+		newToken := storage.CreateTokenResponse{
+			AccessToken:  "refreshed-access-token",
+			ExpiresIn:    3600,
+			ExpiresAt:    time.Now().Add(time.Hour).Unix(),
+			RefreshToken: "new-refresh-token",
+			TokenType:    "Bearer",
+		}
+		mock := &mockOIDCClient{
+			exchangeRefreshResult: newToken,
+		}
+
+		as := &AWSSSO{
+			key:        "test-sso",
+			store:      jstore,
+			oidcClient: mock,
+			SSOConfig:  &ssoconfig.SSOConfig{},
+		}
+
+		// Save a valid client registration
+		clientData := storage.RegisterClientData{
+			ClientId:              "cid",
+			ClientSecret:          "csecret",
+			ClientSecretExpiresAt: time.Now().Add(time.Hour).Unix(),
+			GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken},
+		}
+		err = jstore.SaveRegisterClientData(as.StoreKey(), clientData)
+		assert.NoError(t, err)
+
+		// Save an expired token that has a refresh token
+		expiredToken := storage.CreateTokenResponse{
+			AccessToken:  "old-access-token",
+			ExpiresAt:    1, // expired
+			RefreshToken: "stored-refresh-token",
+		}
+		err = jstore.SaveCreateTokenResponse(as.StoreKey(), expiredToken)
+		assert.NoError(t, err)
+
+		// ValidAuthToken should silently refresh and return true
+		assert.True(t, as.ValidAuthToken())
+		assert.Equal(t, "refreshed-access-token", as.Token.AccessToken)
+		assert.Equal(t, "new-refresh-token", as.Token.RefreshToken)
+
+		// The new token must be persisted so the next call also succeeds
+		assert.True(t, as.ValidAuthToken())
+		assert.Len(t, mock.exchangeRefreshInputs, 1) // only refreshed once
+	})
+
+	t.Run("expired token with refresh token — refresh fails — returns false", func(t *testing.T) {
+		tfile, err := os.CreateTemp("", "*storage.json")
+		assert.NoError(t, err)
+		defer os.Remove(tfile.Name())
+
+		jstore, err := storage.OpenJsonStore(tfile.Name())
+		assert.NoError(t, err)
+
+		mock := &mockOIDCClient{
+			exchangeRefreshErr: fmt.Errorf("invalid_grant"),
+		}
+
+		as := &AWSSSO{
+			key:        "test-sso",
+			store:      jstore,
+			oidcClient: mock,
+			SSOConfig:  &ssoconfig.SSOConfig{},
+		}
+
+		clientData := storage.RegisterClientData{
+			ClientId:              "cid",
+			ClientSecret:          "csecret",
+			ClientSecretExpiresAt: time.Now().Add(time.Hour).Unix(),
+			GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken},
+		}
+		err = jstore.SaveRegisterClientData(as.StoreKey(), clientData)
+		assert.NoError(t, err)
+
+		expiredToken := storage.CreateTokenResponse{
+			AccessToken:  "old-access-token",
+			ExpiresAt:    1,
+			RefreshToken: "bad-refresh-token",
+		}
+		err = jstore.SaveCreateTokenResponse(as.StoreKey(), expiredToken)
+		assert.NoError(t, err)
+
+		assert.False(t, as.ValidAuthToken())
+		assert.Equal(t, "", as.Token.AccessToken)
+	})
+
+	t.Run("expired token without refresh token returns false", func(t *testing.T) {
+		tfile, err := os.CreateTemp("", "*storage.json")
+		assert.NoError(t, err)
+		defer os.Remove(tfile.Name())
+
+		jstore, err := storage.OpenJsonStore(tfile.Name())
+		assert.NoError(t, err)
+
+		mock := &mockOIDCClient{}
+
+		as := &AWSSSO{
+			key:        "test-sso",
+			store:      jstore,
+			oidcClient: mock,
+			SSOConfig:  &ssoconfig.SSOConfig{},
+		}
+
+		clientData := storage.RegisterClientData{
+			ClientId:              "cid",
+			ClientSecret:          "csecret",
+			ClientSecretExpiresAt: time.Now().Add(time.Hour).Unix(),
+			GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken},
+		}
+		err = jstore.SaveRegisterClientData(as.StoreKey(), clientData)
+		assert.NoError(t, err)
+
+		expiredToken := storage.CreateTokenResponse{
+			AccessToken:  "old-access-token",
+			ExpiresAt:    1,
+			RefreshToken: "", // no refresh token
+		}
+		err = jstore.SaveCreateTokenResponse(as.StoreKey(), expiredToken)
+		assert.NoError(t, err)
+
+		assert.False(t, as.ValidAuthToken())
+		// ExchangeRefreshToken should never have been called
+		assert.Len(t, mock.exchangeRefreshInputs, 0)
 	})
 }
