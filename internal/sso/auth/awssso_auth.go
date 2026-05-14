@@ -56,10 +56,10 @@ func (as *AWSSSO) ValidAuthToken() bool {
 	// registrations (or those written before GrantTypes was persisted) won't
 	// have "refresh_token" and must re-register to get a refresh-capable token.
 	clientData := storage.RegisterClientData{}
-	if err := as.store.GetRegisterClientData(as.StoreKey(), &clientData); err != nil {
+	if err := as.store.GetRegisterClientData(as.StoreKey(), &clientData); err == nil {
 		if !clientData.SupportsAuthorizationCode() || !clientData.SupportsRefreshToken() {
 			// always add refresh token support, even if we are using device_code
-			log.Debug("Cached SSO registration lacks PKCE authorization_code support. Forcing device authentication...")
+			log.Debug("client registration lacks necessary grant types; forcing new registration", "storeKey", as.StoreKey())
 			err = as.store.DeleteRegisterClientData(as.StoreKey())
 			if err != nil {
 				log.Error("unable to delete RegisterClientData from secure store", "storeKey", as.StoreKey(), "error", err.Error())
@@ -114,6 +114,10 @@ func (as *AWSSSO) tryRefreshToken(expiredToken storage.CreateTokenResponse, clie
 	if err != nil {
 		log.Debug("Token refresh failed, falling back to full re-authentication", "error", err.Error())
 		return false
+	}
+	if newToken.RefreshToken == "" {
+		// AWS may choose not to return a new refresh token; if so, reuse the old one.
+		newToken.RefreshToken = expiredToken.RefreshToken
 	}
 	_ = as.saveToken(newToken)
 	log.Debug("Token successfully refreshed", "storeKey", as.StoreKey())
@@ -258,17 +262,17 @@ func (as *AWSSSO) createToken() error {
 		retryInterval = time.Duration(as.DeviceAuth.Interval) * time.Second
 	}
 
-	token, err := as.oidcClient.PollDeviceCodeToken(context.TODO(), oidc.PollDeviceCodeTokenInput{
+	input := oidc.PollDeviceCodeTokenInput{
 		CreateTokenInput: oidc.CreateTokenInput{
 			ClientID:     as.ClientData.ClientId,
 			ClientSecret: as.ClientData.ClientSecret,
 			DeviceCode:   as.DeviceAuth.DeviceCode,
 			GrantType:    storage.GrantTypeDeviceCode,
-			RefreshToken: as.Token.RefreshToken,
 		},
 		RetryInterval: retryInterval,
 		SlowDown:      slowDown,
-	})
+	}
+	token, err := as.oidcClient.PollDeviceCodeToken(context.TODO(), input)
 	if err != nil {
 		return err
 	}
@@ -415,13 +419,14 @@ func (as *AWSSSO) reauthenticatePKCE() error {
 		return fmt.Errorf("unable to receive pkce callback: %w", err)
 	}
 
-	token, err := as.oidcClient.ExchangePKCEAuthCode(context.TODO(), oidc.ExchangePKCEAuthCodeInput{
+	input := oidc.ExchangePKCEAuthCodeInput{
 		ClientID:     as.ClientData.ClientId,
 		ClientSecret: as.ClientData.ClientSecret,
 		Code:         callback.Code,
 		CodeVerifier: flow.CodeVerifier,
 		RedirectURI:  redirectURI,
-	})
+	}
+	token, err := as.oidcClient.ExchangePKCEAuthCode(context.TODO(), input)
 	if err != nil {
 		return fmt.Errorf("unable to exchange pkce authorization code: %w", err)
 	}

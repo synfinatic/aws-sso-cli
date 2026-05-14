@@ -124,12 +124,12 @@ type StartDeviceAuthData struct {
 
 type CreateTokenResponse struct {
 	// should be cached to issue new creds
-	AccessToken  string `json:"accessToken"` // nolint:gosec
-	ExpiresIn    int32  `json:"expiresIn"`   // number of seconds it expires in (from AWS)
-	ExpiresAt    int64  `json:"expiresAt"`   // Unix time when it expires
-	IdToken      string `json:"IdToken"`
+	AccessToken  string `json:"accessToken"`  // nolint:gosec
+	ExpiresIn    int32  `json:"expiresIn"`    // number of seconds it expires in (from AWS)
+	ExpiresAt    int64  `json:"expiresAt"`    // Unix time when it expires
+	IdToken      string `json:"IdToken"`      // not implemented by AWS
 	RefreshToken string `json:"RefreshToken"` // nolint:gosec
-	TokenType    string `json:"tokenType"`
+	TokenType    string `json:"tokenType"`    // should be "Bearer"
 }
 
 // Expired returns true if it has expired or will in the next minute

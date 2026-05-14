@@ -59,7 +59,6 @@ func (c *AWSClient) RegisterClient(ctx context.Context, in RegisterClientInput) 
 	if err != nil {
 		return storage.RegisterClientData{}, fmt.Errorf("registerClient: %w", err)
 	}
-	log.Error("register client response: %v", out)
 
 	return storage.RegisterClientData{
 		AuthorizationEndpoint: aws.ToString(out.AuthorizationEndpoint),

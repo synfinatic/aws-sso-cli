@@ -131,6 +131,7 @@ type ExchangePKCEAuthCodeInput struct {
 	Code         string
 	CodeVerifier string
 	RedirectURI  string
+	RefreshToken string // nolint:gosec
 }
 
 type ExchangeRefreshTokenInput struct {

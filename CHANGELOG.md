@@ -6,6 +6,7 @@
 ### New Features
 
 * Add support for `AuthWorkflow` and PKCE authorization_code workflow (default) #1233
+* Add support for OIDC RefreshToken to allow sessions > 8hrs without reauth #1232
 * Add support for AWS European Sovereign Cloud (EUSC) #1309
 * Update SSO and AWS Region support
 * Add SecretServiceCollection to override the default name #1293

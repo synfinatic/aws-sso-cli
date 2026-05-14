@@ -107,13 +107,13 @@ func TestStoreKey(t *testing.T) {
 func TestAuthWorkflowSelection(t *testing.T) {
 	as := &AWSSSO{}
 	assert.Equal(t, as.getAuthWorkflow(), oidc.AuthWorkflowPKCE)
-	assert.Equal(t, as.authGrantTypes(), []string{string(storage.GrantTypeAuthorizationCode), string(storage.GrantTypeDeviceCode)})
-	assert.Equal(t, as.GrantTypes(), []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeDeviceCode})
+	assert.Equal(t, as.authGrantTypes(), []string{string(storage.GrantTypeAuthorizationCode), string(storage.GrantTypeDeviceCode), string(storage.GrantTypeRefreshToken)})
+	assert.Equal(t, as.GrantTypes(), []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken})
 
 	as.SSOConfig = &ssoconfig.SSOConfig{AuthWorkflow: oidc.AuthWorkflowDeviceCode}
 	assert.Equal(t, as.getAuthWorkflow(), oidc.AuthWorkflowDeviceCode)
-	assert.Equal(t, as.authGrantTypes(), []string{string(storage.GrantTypeAuthorizationCode), string(storage.GrantTypeDeviceCode)})
-	assert.Equal(t, as.GrantTypes(), []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeDeviceCode})
+	assert.Equal(t, as.authGrantTypes(), []string{string(storage.GrantTypeAuthorizationCode), string(storage.GrantTypeDeviceCode), string(storage.GrantTypeRefreshToken)})
+	assert.Equal(t, as.GrantTypes(), []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken})
 }
 
 func TestAuthenticateSteps(t *testing.T) {
@@ -371,10 +371,13 @@ func TestValidAuthToken(t *testing.T) {
 
 	defer os.Remove(tfile.Name())
 
+	// Use a mock oidcClient that always fails the refresh so that expired-token
+	// test cases correctly return false without panicking on a nil pointer.
 	as := &AWSSSO{
-		SsoRegion: "us-west-1",
-		StartUrl:  "https://testing.awsapps.com/start",
-		store:     jstore,
+		SsoRegion:  "us-west-1",
+		StartUrl:   "https://testing.awsapps.com/start",
+		store:      jstore,
+		oidcClient: &mockOIDCClient{exchangeRefreshErr: fmt.Errorf("test: refresh not available")},
 		SSOConfig: &ssoconfig.SSOConfig{
 			AuthWorkflow: oidc.AuthWorkflowDeviceCode,
 		},
@@ -403,12 +406,13 @@ func TestValidAuthToken(t *testing.T) {
 	err = jstore.SaveCreateTokenResponse(key, token)
 	assert.NoError(t, err)
 
-	// ValidAuthToken also requires a stored RegisterClientData with refresh_token support.
+	// ValidAuthToken requires a stored RegisterClientData with both
+	// authorization_code and refresh_token grant type support.
 	clientData := storage.RegisterClientData{
 		ClientId:              "test-client-id",
 		ClientSecret:          "test-client-secret",
 		ClientSecretExpiresAt: 99999999999,
-		GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode},
+		GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken},
 	}
 	err = jstore.SaveRegisterClientData(key, clientData)
 	assert.NoError(t, err)
@@ -1153,7 +1157,7 @@ func TestValidAuthTokenRefresh(t *testing.T) {
 			ClientId:              "cid",
 			ClientSecret:          "csecret",
 			ClientSecretExpiresAt: time.Now().Add(time.Hour).Unix(),
-			GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode},
+			GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken},
 		}
 		err = jstore.SaveRegisterClientData(as.StoreKey(), clientData)
 		assert.NoError(t, err)
@@ -1200,7 +1204,7 @@ func TestValidAuthTokenRefresh(t *testing.T) {
 			ClientId:              "cid",
 			ClientSecret:          "csecret",
 			ClientSecretExpiresAt: time.Now().Add(time.Hour).Unix(),
-			GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode},
+			GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken},
 		}
 		err = jstore.SaveRegisterClientData(as.StoreKey(), clientData)
 		assert.NoError(t, err)
@@ -1238,7 +1242,7 @@ func TestValidAuthTokenRefresh(t *testing.T) {
 			ClientId:              "cid",
 			ClientSecret:          "csecret",
 			ClientSecretExpiresAt: time.Now().Add(time.Hour).Unix(),
-			GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode},
+			GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken},
 		}
 		err = jstore.SaveRegisterClientData(as.StoreKey(), clientData)
 		assert.NoError(t, err)
