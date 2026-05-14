@@ -3,6 +3,8 @@
 
 ## [Unreleased]
 
+## [v2.2.0] - 2026-05-14
+
 ### New Features
 
 * Add support for `AuthWorkflow` and PKCE authorization_code workflow (default) #1233
@@ -873,7 +875,8 @@
 Initial release
 
 <!-- markdownlint-disable-next-line MD053 -->
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.1.0...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.2.0...main
+[v2.2.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.0
 [v2.1.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.1.0
 [v2.0.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.0.3
 [v2.0.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.0.2
