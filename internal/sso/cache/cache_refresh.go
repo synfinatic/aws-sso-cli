@@ -40,10 +40,43 @@ func (c *Cache) Refresh(sso ssoconfig.RoleProvider, config *ssoconfig.SSOConfig,
 	}
 	c.refreshed = true
 	log.Debug("refreshing SSO cache", "SSOname", ssoName)
+	cache := c.GetSSOByName(ssoName)
 
-	// save role creds expires time
+	expires, historyTags := c.GetExpirationAndHistory(ssoName)
+
+	// zero out our current roles cache entries so they don't get merged
+	oldRoles := cache.Roles.GetAllRoles()
+	oldRoleSet := make(map[string]struct{}, len(oldRoles))
+	for _, role := range oldRoles {
+		oldRoleSet[role.Arn] = struct{}{}
+	}
+
+	cache.Roles = &Roles{}
+	cache.ConfigHash = config.GetConfigHash(s.GetProfileFormat())
+
+	// load our AWSSSO & Config
+	r, err := c.NewRoles(sso, config, ssoName, threads, s)
+	if err != nil {
+		return nil, nil, err
+	}
+	cache.Roles = r
+
+	added, deleted := c.CalculateDiff(config, oldRoleSet, cache.Roles)
+
+	if err := c.RestoreManualRoles(config, ssoName); err != nil {
+		return nil, nil, err
+	}
+
+	c.RestoreMetadata(ssoName, expires, historyTags)
+
+	c.ConfigCreatedAt = config.CreatedAt()
+	return added, deleted, nil
+}
+
+// getExpirationAndHistory returns any non-expired role expiration times and history tags
+func (c *Cache) GetExpirationAndHistory(ssoName string) (map[string]int64, map[string]string) {
 	expires := map[string]int64{}
-	cache := c.GetSSO()
+	cache := c.GetSSOByName(ssoName)
 	now := time.Now().Unix()
 	for _, account := range cache.Roles.Accounts {
 		for _, role := range account.Roles {
@@ -53,10 +86,13 @@ func (c *Cache) Refresh(sso ssoconfig.RoleProvider, config *ssoconfig.SSOConfig,
 		}
 	}
 
-	// save existing History tags
 	historyTags := map[string]string{}
-	for _, arn := range c.SSO[ssoName].History {
-		roleFlat, err := c.GetRole(arn)
+	for _, arn := range cache.History {
+		accountID, roleName, err := awsparse.ParseRoleARN(arn)
+		if err != nil {
+			continue
+		}
+		roleFlat, err := cache.Roles.GetRole(accountID, roleName)
 		if err != nil {
 			continue
 		}
@@ -64,32 +100,34 @@ func (c *Cache) Refresh(sso ssoconfig.RoleProvider, config *ssoconfig.SSOConfig,
 			historyTags[arn] = value
 		}
 	}
+	return expires, historyTags
+}
 
-	// zero out our current roles cache entries so they don't get merged
-	oldRoles := cache.Roles.GetAllRoles()
-	oldRoleSet := make(map[string]struct{}, len(oldRoles))
-	for _, role := range oldRoles {
-		oldRoleSet[role.Arn] = struct{}{}
-	}
-
-	c.SSO[ssoName].Roles = &Roles{}
-	c.SSO[ssoName].ConfigHash = config.GetConfigHash(s.GetProfileFormat())
-
-	// load our AWSSSO & Config
-	r, err := c.NewRoles(sso, config, threads, s)
-	if err != nil {
-		return nil, nil, err
-	}
-	c.SSO[ssoName].Roles = r
-
-	// figure out what roles were added/deleted
-	newRoles := c.SSO[ssoName].Roles.GetAllRoles()
+// calculateDiff figures out what roles were added/deleted with the caveat that
+// manually-defined roles (those with Via field) are NOT managed by AWS SSO
+// and should never be considered deleted unless removed from config.yaml
+func (c *Cache) CalculateDiff(config *ssoconfig.SSOConfig, oldRoleSet map[string]struct{}, roles *Roles) ([]string, []string) {
+	newRoles := roles.GetAllRoles()
 	newRoleSet := make(map[string]struct{}, len(newRoles))
 	for _, role := range newRoles {
 		newRoleSet[role.Arn] = struct{}{}
 	}
 
-	// build slices of added/deleted ARNs using set lookups (O(n) vs O(n²))
+	// exclude manually-defined roles (those with Via field) from oldRoleSet
+	for aId, account := range config.Accounts {
+		accountId, err := awsparse.AccountIdToInt64(aId)
+		if err != nil {
+			log.Debug("unable to parse accountId from config.yaml", "accountId", aId, "error", err.Error())
+			continue
+		}
+		for rName, role := range account.Roles {
+			if role.Via != "" {
+				arn := awsparse.MakeRoleARN(accountId, rName)
+				delete(oldRoleSet, arn)
+			}
+		}
+	}
+
 	var added, deleted []string
 	for arn := range newRoleSet {
 		if _, ok := oldRoleSet[arn]; !ok {
@@ -101,45 +139,55 @@ func (c *Cache) Refresh(sso ssoconfig.RoleProvider, config *ssoconfig.SSOConfig,
 			deleted = append(deleted, arn)
 		}
 	}
+	return added, deleted
+}
 
-	// restore any configured roles that are not in AWS SSO
+// restoreManualRoles adds any manually configured roles (role chaining) to the cache
+func (c *Cache) RestoreManualRoles(config *ssoconfig.SSOConfig, ssoName string) error {
+	cache := c.GetSSOByName(ssoName)
 	for aId, account := range config.Accounts {
 		accountId, err := awsparse.AccountIdToInt64(aId)
 		if err != nil {
-			return nil, nil, fmt.Errorf("unable to parse accountId from config.yaml %s: %s", aId, err.Error())
+			return fmt.Errorf("unable to parse accountId from config.yaml %s: %s", aId, err.Error())
 		}
-		// if aId is scientific notation, convert to int64 string
-		aId, _ := awsparse.AccountIdToString(accountId)
+		aId, _ = awsparse.AccountIdToString(accountId)
+
 		for rName, role := range account.Roles {
-			if role.Via != "" {
-				log.Info("restoring via role", "role", rName, "account", accountId)
-				if _, ok := cache.Roles.Accounts[accountId]; !ok {
-					c.SSO[ssoName].Roles.Accounts[accountId] = &AWSAccount{
-						Roles: map[string]*AWSRole{},
-						Tags:  map[string]string{},
-					}
+			if role.Via == "" {
+				continue
+			}
+
+			log.Info("restoring via role", "role", rName, "account", accountId)
+			if _, ok := cache.Roles.Accounts[accountId]; !ok {
+				cache.Roles.Accounts[accountId] = &AWSAccount{
+					Roles: map[string]*AWSRole{},
+					Tags:  map[string]string{},
 				}
-				if role.Tags == nil {
-					role.Tags = map[string]string{
-						"AccountAlias": c.SSO[ssoName].Roles.Accounts[accountId].Alias,
-						"AccountID":    aId,
-						"Email":        c.SSO[ssoName].Roles.Accounts[accountId].EmailAddress,
-						"Role":         rName,
-					}
+			}
+			if role.Tags == nil {
+				role.Tags = map[string]string{
+					"AccountAlias": cache.Roles.Accounts[accountId].Alias,
+					"AccountID":    aId,
+					"Email":        cache.Roles.Accounts[accountId].EmailAddress,
+					"Role":         rName,
 				}
-				c.SSO[ssoName].Roles.Accounts[accountId].Roles[rName] = &AWSRole{
-					Arn:           role.ARN,
-					DefaultRegion: role.DefaultRegion,
-					Profile:       role.Profile,
-					Tags:          role.Tags,
-					Via:           role.Via,
-				}
+			}
+			cache.Roles.Accounts[accountId].Roles[rName] = &AWSRole{
+				Arn:           role.ARN,
+				DefaultRegion: role.DefaultRegion,
+				Profile:       role.Profile,
+				Tags:          role.Tags,
+				Via:           role.Via,
 			}
 		}
 	}
+	return nil
+}
 
-	// restore our history tags & expires
-	for _, account := range c.SSO[ssoName].Roles.Accounts {
+// restoreMetadata applies saved expiration and history tags back to the cached roles
+func (c *Cache) RestoreMetadata(ssoName string, expires map[string]int64, historyTags map[string]string) {
+	cache := c.GetSSOByName(ssoName)
+	for _, account := range cache.Roles.Accounts {
 		for _, role := range account.Roles {
 			if value, ok := historyTags[role.Arn]; ok {
 				role.Tags["History"] = value
@@ -149,18 +197,16 @@ func (c *Cache) Refresh(sso ssoconfig.RoleProvider, config *ssoconfig.SSOConfig,
 			}
 		}
 	}
-	c.ConfigCreatedAt = config.CreatedAt()
-	return added, deleted, nil
 }
 
 // NewRoles merges data from AWS SSO and the config file into a fresh Roles struct.
-func (c *Cache) NewRoles(as ssoconfig.RoleProvider, config *ssoconfig.SSOConfig, threads int, s SettingsReader) (*Roles, error) {
+func (c *Cache) NewRoles(as ssoconfig.RoleProvider, config *ssoconfig.SSOConfig, ssoName string, threads int, s SettingsReader) (*Roles, error) {
 	r := Roles{
 		SSORegion:     config.SSORegion,
 		StartUrl:      config.StartUrl,
 		DefaultRegion: config.DefaultRegion,
 		Accounts:      map[int64]*AWSAccount{},
-		SSOName:       c.ssoName,
+		SSOName:       ssoName,
 	}
 
 	if err := c.addSSORoles(&r, as, threads, s); err != nil {
