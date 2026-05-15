@@ -3,6 +3,10 @@
 
 ## [Unreleased]
 
+### Bugs
+
+* Skip static roles from cache diff report #1349
+
 ## [v2.2.0] - 2026-05-14
 
 ### New Features

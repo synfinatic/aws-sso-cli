@@ -20,6 +20,7 @@ package cache
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	ssoconfig "github.com/synfinatic/aws-sso-cli/internal/sso/config"
@@ -260,7 +261,7 @@ func (suite *CacheTestSuite) TestNewRoles() {
 
 	// --- addSSORoles error propagated ---
 	provErr := &mockRoleProvider{accountErr: fmt.Errorf("AWS down")}
-	_, err := suite.cache.NewRoles(provErr, config, 1, mockSR)
+	_, err := suite.cache.NewRoles(provErr, config, "Default", 1, mockSR)
 	assert.Error(t, err)
 
 	// --- happy path: single account, single role ---
@@ -274,7 +275,7 @@ func (suite *CacheTestSuite) TestNewRoles() {
 			},
 		},
 	}
-	roles, err := suite.cache.NewRoles(prov, config, 1, mockSR)
+	roles, err := suite.cache.NewRoles(prov, config, "Default", 1, mockSR)
 	assert.NoError(t, err)
 	assert.NotNil(t, roles)
 	assert.Len(t, roles.Accounts, 1)
@@ -373,4 +374,330 @@ func (suite *CacheTestSuite) TestCacheRefreshMocked() {
 	assert.NoError(t, err)
 	assert.Empty(t, added)
 	assert.Contains(t, deleted, "arn:aws:iam::000001111111:role/OldRole")
+}
+
+func (suite *CacheTestSuite) TestRefreshUsesNamedSSOCache() {
+	t := suite.T()
+
+	ssoConf := &ssoconfig.SSOConfig{
+		SSORegion:     "us-east-1",
+		StartUrl:      "https://testing.awsapps.com/start",
+		DefaultRegion: "us-east-1",
+		Accounts:      map[string]*ssoconfig.SSOAccount{},
+	}
+	ssoConf.SetConfigFile(suite.cacheFile)
+
+	settings := &mockSettingsReader{
+		defaultSSO:     "Default",
+		historyLimit:   1,
+		historyMinutes: 90,
+		cacheFile:      suite.cacheFile,
+		profileFormat:  "{{ .AccountIdPad }}:{{ .RoleName }}",
+		ssoNames:       []string{"Default", "Other"},
+	}
+
+	origSSOName := suite.cache.ssoName
+	origDefault := suite.cache.SSO["Default"]
+	origOther := suite.cache.SSO["Other"]
+	origRefreshed := suite.cache.refreshed
+	defer func() {
+		suite.cache.ssoName = origSSOName
+		suite.cache.SSO["Default"] = origDefault
+		suite.cache.SSO["Other"] = origOther
+		suite.cache.refreshed = origRefreshed
+	}()
+
+	suite.cache.SSO["Default"] = &SSOCache{
+		name:    "Default",
+		History: []string{},
+		Roles: &Roles{Accounts: map[int64]*AWSAccount{
+			1111111: {
+				Roles: map[string]*AWSRole{
+					"OldDefault": {Arn: "arn:aws:iam::000001111111:role/OldDefault"},
+				},
+				Tags: map[string]string{},
+			},
+		}},
+	}
+	suite.cache.SSO["Other"] = &SSOCache{
+		name:    "Other",
+		History: []string{},
+		Roles: &Roles{Accounts: map[int64]*AWSAccount{
+			2222222: {
+				Roles: map[string]*AWSRole{
+					"OldOther": {Arn: "arn:aws:iam::000002222222:role/OldOther"},
+				},
+				Tags: map[string]string{},
+			},
+		}},
+	}
+
+	// Force a mismatch between active SSO and the named refresh target.
+	suite.cache.ssoName = "Other"
+	suite.cache.refreshed = false
+
+	prov := &mockRoleProvider{
+		accounts: []ssoconfig.AccountInfo{
+			{AccountId: "000001111111", AccountName: "Account-000001111111", EmailAddress: "000001111111@example.com"},
+		},
+		roles: map[string][]ssoconfig.RoleInfo{
+			"000001111111": {},
+		},
+	}
+
+	added, deleted, err := suite.cache.Refresh(prov, ssoConf, "Default", 1, settings)
+	assert.NoError(t, err)
+	assert.Empty(t, added)
+	assert.Contains(t, deleted, "arn:aws:iam::000001111111:role/OldDefault")
+	assert.NotContains(t, deleted, "arn:aws:iam::000002222222:role/OldOther")
+	assert.Contains(t, suite.cache.SSO["Other"].Roles.Accounts[2222222].Roles, "OldOther")
+}
+
+// TestRefreshWithManuallyDefinedRoles verifies that manually-defined roles
+// (those with a Via field for role chaining) are not incorrectly reported
+// as deleted on subsequent refresh operations. See issue #1349.
+func (suite *CacheTestSuite) TestRefreshWithManuallyDefinedRoles() {
+	t := suite.T()
+
+	// config.CreatedAt() requires a real file; use our test cache file as stand-in
+	ssoConf := &ssoconfig.SSOConfig{
+		SSORegion:     "us-east-1",
+		StartUrl:      "https://testing.awsapps.com/start",
+		DefaultRegion: "us-east-1",
+		Accounts: map[string]*ssoconfig.SSOAccount{
+			"000001111111": {
+				Roles: map[string]*ssoconfig.SSORole{
+					"SSORoleFromAWS": {}, // role that comes from AWS SSO
+					"ManualViaRole": { // manually-defined role that assumes another role
+						ARN:     "arn:aws:iam::000001111111:role/ManualViaRole",
+						Via:     "arn:aws:iam::000001111111:role/SSORoleFromAWS",
+						Profile: "custom-profile",
+					},
+				},
+			},
+		},
+	}
+	ssoConf.SetConfigFile(suite.cacheFile)
+
+	settings := &mockSettingsReader{
+		defaultSSO:     "Default",
+		historyLimit:   1,
+		historyMinutes: 90,
+		cacheFile:      suite.cacheFile,
+		profileFormat:  "{{ .AccountIdPad }}:{{ .RoleName }}",
+		ssoNames:       []string{"Default"},
+	}
+
+	// snapshot state that we'll mutate, restore at end
+	origRoles := suite.cache.SSO["Default"].Roles
+	origRefreshed := suite.cache.refreshed
+	defer func() {
+		suite.cache.SSO["Default"].Roles = origRoles
+		suite.cache.refreshed = origRefreshed
+	}()
+
+	// Mock AWS SSO provider that returns one role
+	prov := &mockRoleProvider{
+		accounts: []ssoconfig.AccountInfo{
+			{AccountId: "000001111111", AccountName: "TestAccount", EmailAddress: "test@example.com"},
+		},
+		roles: map[string][]ssoconfig.RoleInfo{
+			"000001111111": {
+				{RoleName: "SSORoleFromAWS", AccountId: "000001111111", AccountName: "TestAccount", EmailAddress: "test@example.com"},
+			},
+		},
+	}
+
+	// --- First refresh: populate cache with both SSO role and manually-defined role ---
+	suite.cache.SSO["Default"].Roles = &Roles{Accounts: map[int64]*AWSAccount{}}
+	suite.cache.refreshed = false
+
+	added1, deleted1, err := suite.cache.Refresh(prov, ssoConf, "Default", 1, settings)
+	assert.NoError(t, err)
+	// First refresh should report the SSO role as added
+	assert.Contains(t, added1, "arn:aws:iam::000001111111:role/SSORoleFromAWS")
+	// Manually-defined role is not reported in added (it's restored after diff calculation)
+	assert.NotContains(t, added1, "arn:aws:iam::000001111111:role/ManualViaRole")
+	assert.Empty(t, deleted1)
+
+	// Verify both roles are now in the cache
+	assert.Contains(t, suite.cache.SSO["Default"].Roles.Accounts[1111111].Roles, "SSORoleFromAWS")
+	assert.Contains(t, suite.cache.SSO["Default"].Roles.Accounts[1111111].Roles, "ManualViaRole")
+
+	// Verify the manually-defined role has the correct Via field
+	assert.Equal(t, "arn:aws:iam::000001111111:role/SSORoleFromAWS", suite.cache.SSO["Default"].Roles.Accounts[1111111].Roles["ManualViaRole"].Via)
+
+	// --- Second refresh: verify manually-defined role is NOT reported as deleted ---
+	suite.cache.refreshed = false
+
+	added2, deleted2, err := suite.cache.Refresh(prov, ssoConf, "Default", 1, settings)
+	assert.NoError(t, err)
+	// Second refresh should not report the SSO role as added (it already exists)
+	assert.Empty(t, added2)
+	// Second refresh should NOT report the manually-defined role as deleted (BUG FIX!)
+	assert.NotContains(t, deleted2, "arn:aws:iam::000001111111:role/ManualViaRole")
+	assert.Empty(t, deleted2)
+
+	// Verify both roles are still in the cache
+	assert.Contains(t, suite.cache.SSO["Default"].Roles.Accounts[1111111].Roles, "SSORoleFromAWS")
+	assert.Contains(t, suite.cache.SSO["Default"].Roles.Accounts[1111111].Roles, "ManualViaRole")
+}
+
+func (suite *CacheTestSuite) TestGetExpirationAndHistory() {
+	t := suite.T()
+
+	origHistory := suite.cache.SSO["Default"].History
+	origRoles := suite.cache.SSO["Default"].Roles
+	defer func() {
+		suite.cache.SSO["Default"].History = origHistory
+		suite.cache.SSO["Default"].Roles = origRoles
+	}()
+
+	// Seed some history and expires
+	arn1 := "arn:aws:iam::111111111111:role/Role1"
+	arn2 := "arn:aws:iam::111111111111:role/Role2"
+	now := time.Now().Unix()
+
+	suite.cache.SSO["Default"].History = []string{arn1}
+	suite.cache.SSO["Default"].Roles = &Roles{
+		Accounts: map[int64]*AWSAccount{
+			111111111111: {
+				Roles: map[string]*AWSRole{
+					"Role1": {
+						Arn:     arn1,
+						Expires: now + 3600,
+						Tags:    map[string]string{"History": "2021-01-01T00:00:00Z"},
+					},
+					"Role2": {
+						Arn:     arn2,
+						Expires: now + 7200,
+					},
+					"Expired": {
+						Arn:     "arn:aws:iam::111111111111:role/Expired",
+						Expires: now - 3600,
+					},
+				},
+			},
+		},
+	}
+
+	expires, history := suite.cache.GetExpirationAndHistory("Default")
+
+	assert.Equal(t, now+3600, expires[arn1])
+	assert.Equal(t, now+7200, expires[arn2])
+	assert.NotContains(t, expires, "arn:aws:iam::111111111111:role/Expired")
+	assert.Equal(t, "2021-01-01T00:00:00Z", history[arn1])
+}
+
+func (suite *CacheTestSuite) TestCalculateDiff() {
+	t := suite.T()
+
+	// Snapshot start state
+	origSSOName := suite.cache.ssoName
+	origRoles := suite.cache.SSO["Default"].Roles
+	defer func() {
+		suite.cache.ssoName = origSSOName
+		suite.cache.SSO["Default"].Roles = origRoles
+	}()
+
+	suite.cache.ssoName = "Default"
+	config := &ssoconfig.SSOConfig{
+		Accounts: map[string]*ssoconfig.SSOAccount{
+			"111111111111": {
+				Roles: map[string]*ssoconfig.SSORole{
+					"Manual": {Via: "arn:aws:iam::111111111111:role/Other"},
+				},
+			},
+		},
+	}
+
+	// Roles in old cache
+	oldRoleSet := map[string]struct{}{
+		"arn:aws:iam::111111111111:role/ToKeep":   {},
+		"arn:aws:iam::111111111111:role/ToDelete": {},
+		"arn:aws:iam::111111111111:role/Manual":   {}, // Should be ignored
+	}
+
+	// Roles in new cache (via suite.cache.GetSSO().Roles)
+	suite.cache.SSO["Default"].Roles = &Roles{
+		Accounts: map[int64]*AWSAccount{
+			111111111111: {
+				Roles: map[string]*AWSRole{
+					"ToKeep": {Arn: "arn:aws:iam::111111111111:role/ToKeep"},
+					"ToAdd":  {Arn: "arn:aws:iam::111111111111:role/ToAdd"},
+				},
+			},
+		},
+	}
+
+	added, deleted := suite.cache.CalculateDiff(config, oldRoleSet, suite.cache.SSO["Default"].Roles)
+
+	assert.ElementsMatch(t, []string{"arn:aws:iam::111111111111:role/ToAdd"}, added)
+	assert.ElementsMatch(t, []string{"arn:aws:iam::111111111111:role/ToDelete"}, deleted)
+	assert.NotContains(t, deleted, "arn:aws:iam::111111111111:role/Manual")
+}
+
+func (suite *CacheTestSuite) TestRestoreManualRoles() {
+	t := suite.T()
+
+	origRoles := suite.cache.SSO["Default"].Roles
+	defer func() {
+		suite.cache.SSO["Default"].Roles = origRoles
+	}()
+
+	config := &ssoconfig.SSOConfig{
+		Accounts: map[string]*ssoconfig.SSOAccount{
+			"111111111111": {
+				Roles: map[string]*ssoconfig.SSORole{
+					"Manual": {
+						ARN:     "arn:aws:iam::111111111111:role/Manual",
+						Via:     "arn:aws:iam::111111111111:role/Other",
+						Profile: "manual-profile",
+					},
+				},
+			},
+		},
+	}
+
+	suite.cache.SSO["Default"].Roles = &Roles{
+		Accounts: map[int64]*AWSAccount{},
+	}
+
+	err := suite.cache.RestoreManualRoles(config, "Default")
+	assert.NoError(t, err)
+
+	role, ok := suite.cache.SSO["Default"].Roles.Accounts[111111111111].Roles["Manual"]
+	assert.True(t, ok)
+	assert.Equal(t, "arn:aws:iam::111111111111:role/Other", role.Via)
+	assert.Equal(t, "manual-profile", role.Profile)
+}
+
+func (suite *CacheTestSuite) TestRestoreMetadata() {
+	t := suite.T()
+
+	// Snapshot start state
+	origRoles := suite.cache.SSO["Default"].Roles
+	defer func() {
+		suite.cache.SSO["Default"].Roles = origRoles
+	}()
+
+	arn := "arn:aws:iam::111111111111:role/Role"
+	expires := map[string]int64{arn: 12345678}
+	history := map[string]string{arn: "2021-01-01"}
+
+	suite.cache.SSO["Default"].Roles = &Roles{
+		Accounts: map[int64]*AWSAccount{
+			111111111111: {
+				Roles: map[string]*AWSRole{
+					"Role": {Arn: arn, Tags: map[string]string{}},
+				},
+			},
+		},
+	}
+
+	suite.cache.RestoreMetadata("Default", expires, history)
+
+	role := suite.cache.SSO["Default"].Roles.Accounts[111111111111].Roles["Role"]
+	assert.Equal(t, int64(12345678), role.Expires)
+	assert.Equal(t, "2021-01-01", role.Tags["History"])
 }
