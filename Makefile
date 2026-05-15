@@ -154,7 +154,7 @@ test-race: ## Run `go test -race` on the code
 .PHONY: vet
 vet: ## Run `go vet` on the code
 	@echo checking code is vetted...
-	for x in $(shell go list ./...); do echo $$x ; go vet $$x ; done
+	@for x in $(shell go list ./...); do echo $$x ; go vet $$x ; done
 
 test: vet unittest lint test-homebrew ## Run important tests
 
