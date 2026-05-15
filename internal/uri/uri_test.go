@@ -318,16 +318,18 @@ func TestAWSFederatedUrl(t *testing.T) {
 }
 
 // retryLookupIP is a helper function that retries net.LookupIP
-// for a given hostname a specified number of times with a simple backoff.
+// for a given hostname a fixed number of times with a simple backoff.
 // Deals with the fact that DNS for international AWS regions can be unreliable and cause test failures.
-func retryLookupIP(hostname string, retries int) error {
+const dnsLookupRetries = 5
+
+func retryLookupIP(hostname string) error {
 	var err error
-	for i := 0; i < retries; i++ {
+	for i := 0; i < dnsLookupRetries; i++ {
 		_, err = net.LookupIP(hostname)
 		if err == nil {
 			return nil
 		}
-		if i < retries-1 {
+		if i < dnsLookupRetries-1 {
 			// backoff before retrying
 			time.Sleep(time.Duration(i+1) * 500 * time.Millisecond)
 		}
@@ -341,7 +343,7 @@ func TestAWSConsoleUrlUSEast(t *testing.T) {
 	assert.Equal(t, u, "https://console.aws.amazon.com/console/home?region=us-west-2")
 	pUrl, err := url.Parse(u)
 	assert.NoError(t, err)
-	err = retryLookupIP(pUrl.Hostname(), 3)
+	err = retryLookupIP(pUrl.Hostname())
 	assert.NoError(t, err)
 }
 
@@ -351,7 +353,7 @@ func TestAWSConsoleUrlUSGov(t *testing.T) {
 	assert.Equal(t, u, "https://console.amazonaws-us-gov.com/console/home?region=us-gov-west-1")
 	pUrl, err := url.Parse(u)
 	assert.NoError(t, err)
-	err = retryLookupIP(pUrl.Hostname(), 3)
+	err = retryLookupIP(pUrl.Hostname())
 	assert.NoError(t, err)
 }
 
@@ -362,7 +364,7 @@ func TestAWSConsoleUrlEU(t *testing.T) {
 	assert.Equal(t, u, "https://console.amazonaws-eusc.eu/console/home?region=eusc-de-east-1")
 	pUrl, err := url.Parse(u)
 	assert.NoError(t, err)
-	err = retryLookupIP(pUrl.Hostname(), 3)
+	err = retryLookupIP(pUrl.Hostname())
 	assert.NoError(t, err)
 }
 
@@ -373,7 +375,7 @@ func TestAWSConsoleUrlChina(t *testing.T) {
 	assert.Equal(t, u, "https://console.amazonaws.cn/console/home?region=cn-northwest-1")
 	pUrl, err := url.Parse(u)
 	assert.NoError(t, err)
-	err = retryLookupIP(pUrl.Hostname(), 3)
+	err = retryLookupIP(pUrl.Hostname())
 	assert.NoError(t, err)
 }
 
