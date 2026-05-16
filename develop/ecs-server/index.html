@@ -595,6 +595,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#why" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#security-considerations" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -901,6 +912,34 @@
     
   
     ECS Server Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecs-server-example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ECS Server with Docker Compose Example
   
 
     
@@ -1428,6 +1467,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#why" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#security-considerations" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1743,6 +1793,19 @@ roles backed by AWS Identity Center/SSO.</p>
 <p>One important distinction between <code>aws-sso</code> and this ECS Server, is that the ECS Server
 <em>does not have access to the SecureStore</em>.  The only SSO or IAM credentials it has
 available to it are those you manually load into it's memory.</p>
+<h2 id="why">Why?</h2>
+<p>ECS Server emulation exists to aid software developers who wish to test their
+applications locally.  Modern software development has moved to containers, for
+deploying in Kubernetes (Amazon EKS, etc), Amazon ECS, or one of the <a href="https://docs.aws.amazon.com/decision-guides/latest/containers-on-aws-how-to-choose/choosing-aws-container-service.html">many other
+AWS container services</a>.</p>
+<p>However, managing multiple AWS API credentials across containers is not easy or
+standardized. The limited time usage aspect of AWS SSO/Identity Center managed
+credentials only makes it harder.</p>
+<p>AWS SSO ECS Server solves that problem by emulating the <a href="https://docs.aws.amazon.com/sdkref/latest/guide/feature-container-credentials.html">AWS ECS method of injecting
+API credentials</a>
+so the only thing you need to do is manage an environment variable in your container.</p>
+<p>And since AWS SSO ECS server can run in a container itself, it makes it trivial
+to add to your test harness, Docker compose file, etc.</p>
 <h2 id="security-considerations">Security Considerations</h2>
 <p>The <code>aws-sso</code> ECS Server is intended to run on hosts where a single user has access.
 The security of your IAM credentials is dependent on nobody else being able to talk

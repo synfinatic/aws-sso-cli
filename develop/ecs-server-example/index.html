@@ -11,23 +11,25 @@
       
       
       
+        <link rel="prev" href="../ecs-commands/">
       
-        <link rel="next" href="quickstart/">
+      
+        <link rel="next" href="../remote-ssh/">
       
       
         
       
       
-      <link rel="icon" href="assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>AWS SSO CLI</title>
+        <title>ECS Server with Docker Compose Example - AWS SSO CLI</title>
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
       
       
 
@@ -46,9 +48,9 @@
       
     
     
-      <link rel="stylesheet" href="css/asciinema-player.css">
+      <link rel="stylesheet" href="../css/asciinema-player.css">
     
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -66,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#about" class="md-skip">
+        <a href="#ecs-server-with-docker-compose-example" class="md-skip">
           Skip to content
         </a>
       
@@ -86,7 +88,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="AWS SSO CLI" class="md-header__button md-logo" aria-label="AWS SSO CLI" data-md-component="logo">
+    <a href=".." title="AWS SSO CLI" class="md-header__button md-logo" aria-label="AWS SSO CLI" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -106,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Home
+              ECS Server with Docker Compose Example
             
           </span>
         </div>
@@ -196,7 +198,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="AWS SSO CLI" class="md-nav__button md-logo" aria-label="AWS SSO CLI" data-md-component="logo">
+    <a href=".." title="AWS SSO CLI" class="md-nav__button md-logo" aria-label="AWS SSO CLI" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -223,35 +225,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Home
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="." class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -267,102 +244,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#about" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        About
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-does-aws-sso-cli-do" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What does AWS SSO CLI do?
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="What does AWS SSO CLI do?">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#key-features" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key Features
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#security" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Security
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Security">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#what-is-not-encrypted" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What is not encrypted?
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -374,7 +255,7 @@
   
   
     <li class="md-nav__item">
-      <a href="quickstart/" class="md-nav__link">
+      <a href="../quickstart/" class="md-nav__link">
         
   
   
@@ -401,7 +282,7 @@
   
   
     <li class="md-nav__item">
-      <a href="demos/" class="md-nav__link">
+      <a href="../demos/" class="md-nav__link">
         
   
   
@@ -475,7 +356,7 @@
   
   
     <li class="md-nav__item">
-      <a href="wizard/" class="md-nav__link">
+      <a href="../wizard/" class="md-nav__link">
         
   
   
@@ -503,7 +384,7 @@
   
   
     <li class="md-nav__item">
-      <a href="config/" class="md-nav__link">
+      <a href="../config/" class="md-nav__link">
         
   
   
@@ -531,7 +412,7 @@
   
   
     <li class="md-nav__item">
-      <a href="commands/" class="md-nav__link">
+      <a href="../commands/" class="md-nav__link">
         
   
   
@@ -559,7 +440,7 @@
   
   
     <li class="md-nav__item">
-      <a href="FAQ/" class="md-nav__link">
+      <a href="../FAQ/" class="md-nav__link">
         
   
   
@@ -591,18 +472,20 @@
       
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
           <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
@@ -623,7 +506,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -641,7 +524,7 @@
   
   
     <li class="md-nav__item">
-      <a href="ecs-server/" class="md-nav__link">
+      <a href="../ecs-server/" class="md-nav__link">
         
   
   
@@ -669,7 +552,7 @@
   
   
     <li class="md-nav__item">
-      <a href="ecs-commands/" class="md-nav__link">
+      <a href="../ecs-commands/" class="md-nav__link">
         
   
   
@@ -694,10 +577,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="ecs-server-example/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ECS Server with Docker Compose Example
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -713,6 +623,59 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#sample-docker-composeyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sample docker-compose.yaml
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sample-start-stopsh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sample start-stop.sh
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -725,7 +688,7 @@
   
   
     <li class="md-nav__item">
-      <a href="remote-ssh/" class="md-nav__link">
+      <a href="../remote-ssh/" class="md-nav__link">
         
   
   
@@ -753,7 +716,7 @@
   
   
     <li class="md-nav__item">
-      <a href="ecs-api/" class="md-nav__link">
+      <a href="../ecs-api/" class="md-nav__link">
         
   
   
@@ -835,7 +798,7 @@
   
   
     <li class="md-nav__item">
-      <a href="license/" class="md-nav__link">
+      <a href="../license/" class="md-nav__link">
         
   
   
@@ -863,7 +826,7 @@
   
   
     <li class="md-nav__item">
-      <a href="aws-vault/" class="md-nav__link">
+      <a href="../aws-vault/" class="md-nav__link">
         
   
   
@@ -945,7 +908,7 @@
   
   
     <li class="md-nav__item">
-      <a href="security/" class="md-nav__link">
+      <a href="../security/" class="md-nav__link">
         
   
   
@@ -1020,7 +983,7 @@
   
   
     <li class="md-nav__item">
-      <a href="code-sign-key.asc/" class="md-nav__link">
+      <a href="../code-sign-key.asc/" class="md-nav__link">
         
   
   
@@ -1048,7 +1011,7 @@
   
   
     <li class="md-nav__item">
-      <a href="commit-sign-key.asc/" class="md-nav__link">
+      <a href="../commit-sign-key.asc/" class="md-nav__link">
         
   
   
@@ -1138,7 +1101,7 @@
   
   
     <li class="md-nav__item">
-      <a href="release/" class="md-nav__link">
+      <a href="../release/" class="md-nav__link">
         
   
   
@@ -1166,7 +1129,7 @@
   
   
     <li class="md-nav__item">
-      <a href="ecs-threats/" class="md-nav__link">
+      <a href="../ecs-threats/" class="md-nav__link">
         
   
   
@@ -1211,6 +1174,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -1219,10 +1184,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#about" class="md-nav__link">
+  <a href="#sample-docker-composeyaml" class="md-nav__link">
     <span class="md-ellipsis">
       
-        About
+        Sample docker-compose.yaml
       
     </span>
   </a>
@@ -1230,69 +1195,24 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-does-aws-sso-cli-do" class="md-nav__link">
+  <a href="#sample-start-stopsh" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What does AWS SSO CLI do?
+        Sample start-stop.sh
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="What does AWS SSO CLI do?">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Overview
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#key-features" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key Features
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#security" class="md-nav__link">
+  <a href="#usage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Security
+        Usage
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Security">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#what-is-not-encrypted" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What is not encrypted?
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1316,74 +1236,111 @@
   
 
 
-  <h1>Home</h1>
+<h1 id="ecs-server-with-docker-compose-example">ECS Server with Docker Compose Example</h1>
+<p>This is a basic example shows how to run the ECS credential server alongside your own
+application container, then load AWS credentials into the server using
+<code>aws-sso ecs load</code>.   Note that this example does not include any support for
+authentication or encryption via (<a href="../commands/#setup-ecs">aws-sso setup ecs</a>).</p>
+<h2 id="sample-docker-composeyaml">Sample docker-compose.yaml</h2>
+<pre><code class="language-yaml">services:
+ aws-sso-cli-ecs-server:
+  image: synfinatic/aws-sso-cli-ecs-server:latest
+  container_name: aws-sso-cli-ecs-server
+  ports:
+    - &quot;127.0.0.1:4144:4144&quot;
+  volumes:
+    - type: bind
+      source: $HOME/.aws-sso/mnt
+      target: /app/.aws-sso/mnt
+      read_only: false
 
-<!-- markdownlint-disable-next-line MD041 -->
-<h2 id="about">About</h2>
-<p>AWS SSO CLI is a secure replacement for using the <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html">aws configure sso</a>
-wizard with a focus on security and ease of use for organizations with
-many AWS Accounts and/or users with many IAM Roles to assume. It shares
-a lot in common with <a href="https://github.com/99designs/aws-vault">aws-vault</a>,
-but is more focused on the AWS SSO use case instead of static API credentials.</p>
-<p>AWS SSO CLI requires your AWS account(s) to be setup with <a href="https://aws.amazon.com/iam/identity-center/">AWS IAM Identity Center</a>, which was previously known as
-AWS Single Sign-On.  If your organization is using the older SAML integration
-(typically you will have multiple tiles in OneLogin/Okta) then this won't work for you.</p>
-<h2 id="what-does-aws-sso-cli-do">What does AWS SSO CLI do?</h2>
-<h3 id="overview">Overview</h3>
-<p>AWS SSO CLI makes it easy to manage your shell environment variables allowing
-you to access the AWS API &amp; web console using CLI tools.  Unlike the official
-AWS tooling, the <code>aws-sso</code> command does not require manually creating named
-profiles in your <code>~/.aws/config</code> (or anywhere else for that matter) for each
-and every role you wish to assume and use.</p>
-<p><code>aws-sso</code> focuses on making it easy to select a role via CLI arguments or
-via an interactive auto-complete experience with automatic and user-defined
-metadata (tags) and exports the necessary <a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_use-resources.html#using-temp-creds-sdk-cli">AWS STS Token credentials</a>
-to your shell environment in a variety of ways.  It even supports sharing
-credentials via the <a href="ecs-server/">AWS ECS Task IAM Role</a>.</p>
-<p>As part of the goal of improving the end-user experience with AWS SSO, it also
-supports using <a href="quickstart/#aws-console-access">multiple AWS Web Console sessions</a>
-and many other quality of life improvements!</p>
-<h3 id="key-features">Key Features</h3>
-<ul>
-<li>Enhanced security over stock AWS tooling</li>
-<li>Auto-discover your AWS SSO roles and <a href="commands/#setup-profiles">manage</a>
-     your <code>~/.aws/config</code> file</li>
-<li>Support selecting an IAM role via <code>$AWS_PROFILE</code>, CLI (with auto-completion)
-    or interactive search</li>
-<li>Ability to select roles based on <a href="config/#tags">user-defined</a>
-    and auto-discovered tags</li>
-<li>Support for <a href="quickstart/#aws-console-access">multiple active AWS Console sessions</a></li>
-<li>Guided setup to help you configure <code>aws-sso</code> the first time you run</li>
-<li>Advanced configuration available to <a href="config/#promptcolors">adjust colors</a>
-    and generate <a href="config/#ProfileFormat">named profiles via templates</a></li>
-<li>Easily see how much longer your STS credentials <a href="commands/#time">are valid for</a></li>
-<li>Written in GoLang, so only need to install a single binary (no dependencies)</li>
-<li>Supports Linux, MacOS, and Windows</li>
-</ul>
-<h2 id="security">Security</h2>
-<p>Unlike the official <a href="https://aws.amazon.com/cli/">AWS cli tooling</a>, <em>all</em>
-authentication tokens and credentials used for accessing AWS and your SSO
-provider are encrypted on disk using your choice of secure storage solution.
-All encryption is handled by the <a href="https://github.com/99designs/keyring">99designs/keyring</a>
-library which is also used by <a href="https://github.com/99designs/aws-vault">aws-vault</a>.</p>
-<p>Credentials encrypted by <code>aws-sso</code> and not via the standard AWS CLI tool:</p>
-<ul>
-<li>AWS SSO ClientID/ClientSecret -- <code>~/.aws/sso/cache/botocore-client-id-&lt;region&gt;.json</code></li>
-<li>AWS SSO AccessToken -- <code>~/.aws/sso/cache/&lt;random&gt;.json</code></li>
-<li>AWS Profile Access Credentials -- <code>~/.aws/cli/cache/&lt;random&gt;.json</code></li>
-</ul>
-<p>As you can see, not only does the standard AWS CLI tool expose the temporary
-AWS access credentials to your IAM roles, but more importantly the SSO
-AccessToken which can be used to fetch IAM credentials for any role you have
-been granted access!</p>
-<h3 id="what-is-not-encrypted">What is not encrypted?</h3>
-<ul>
-<li>Contents of user defined <code>~/.aws-sso/config.yaml</code></li>
-<li>Metadata associated with the AWS Roles fetched via AWS SSO in <code>~/.aws-sso/cache.json</code></li>
-<li>Email address tied to the account (root user)</li>
-<li>AWS Account Alias</li>
-<li>AWS Role ARN</li>
-</ul>
+ app:
+  image: yourorg/your-custom-service:latest
+  build: .
+  container_name: custom-service
+  depends_on:
+    - aws-sso-cli-ecs-server
+  environment:
+    AWS_CONTAINER_CREDENTIALS_FULL_URI: http://aws-sso-cli-ecs-server:4144/
+</code></pre>
+<h2 id="sample-start-stopsh">Sample start-stop.sh</h2>
+<pre><code class="language-bash">#!/usr/bin/env bash
+set -euo pipefail
+
+COMPOSE_FILE=&quot;${COMPOSE_FILE:-docker-compose.yaml}&quot;
+
+usage() {
+  cat &lt;&lt;'EOF'
+Usage:
+  ./start-stop.sh start &lt;aws-profile&gt;
+  ./start-stop.sh stop
+
+Or set AWS_PROFILE and run:
+  AWS_PROFILE=&lt;aws-profile&gt; ./start-stop.sh start
+EOF
+}
+
+start() {
+  if [[ -z &quot;${PROFILE}&quot; &amp;&amp; $# -lt 1 ]]; then
+    echo &quot;ERROR: missing AWS profile&quot;
+    usage
+    exit 1
+  fi
+
+  local selected_profile=&quot;${PROFILE}&quot;
+  if [[ -z &quot;${selected_profile}&quot; ]]; then
+    selected_profile=&quot;$1&quot;
+  fi
+
+  echo &quot;Starting services...&quot;
+  docker compose -f &quot;${COMPOSE_FILE}&quot; up -d
+
+  echo &quot;Loading profile '${selected_profile}' into ECS server...&quot;
+  aws-sso ecs load --server localhost:4144 --profile &quot;${selected_profile}&quot;
+
+  echo &quot;Done. Containers are up and credentials are loaded.&quot;
+}
+
+stop() {
+  echo &quot;Stopping services...&quot;
+  docker compose -f &quot;${COMPOSE_FILE}&quot; down
+}
+
+main() {
+  if [[ $# -lt 1 ]]; then
+    usage
+    exit 1
+  fi
+
+  case &quot;$1&quot; in
+    start)
+      shift
+      start &quot;$@&quot;
+      ;;
+    stop)
+      stop
+      ;;
+    *)
+      usage
+      exit 1
+      ;;
+  esac
+}
+
+main &quot;$@&quot;
+</code></pre>
+<p>Make it executable:</p>
+<pre><code class="language-bash">chmod +x start-stop.sh
+</code></pre>
+<h2 id="usage">Usage</h2>
+<p>Start and load profile:</p>
+<pre><code class="language-bash">./start-stop.sh start my-dev-profile
+</code></pre>
+<p>Stop all services:</p>
+<pre><code class="language-bash">./start-stop.sh stop
+</code></pre>
+<p>After startup, your custom service should be able to call AWS APIs using
+credentials from the ECS server container.</p>
 
 
 
@@ -1437,12 +1394,12 @@ been granted access!</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": [], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": [], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
       
-        <script src="js/asciinema-player.min.js"></script>
+        <script src="../js/asciinema-player.min.js"></script>
       
     
   </body>
