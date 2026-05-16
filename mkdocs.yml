@@ -43,6 +43,7 @@ nav:
   - 'ECS Server/Remote Access':
     - 'ECS Server Mode': ecs-server.md
     - 'ECS Server Commands': ecs-commands.md 
+    - 'ECS Server with Docker Compose Example': ecs-server-example.md
     - 'Remote Access to IAM Roles': remote-ssh.md
     - 'ECS Server API': ecs-api.md
   - 'About':

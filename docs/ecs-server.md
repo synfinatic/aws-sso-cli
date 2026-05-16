@@ -19,6 +19,24 @@ One important distinction between `aws-sso` and this ECS Server, is that the ECS
 _does not have access to the SecureStore_.  The only SSO or IAM credentials it has
 available to it are those you manually load into it's memory.
 
+## Why?
+
+ECS Server emulation exists to aid software developers who wish to test their
+applications locally.  Modern software development has moved to containers, for
+deploying in Kubernetes (Amazon EKS, etc), Amazon ECS, or one of the [many other
+AWS container services](https://docs.aws.amazon.com/decision-guides/latest/containers-on-aws-how-to-choose/choosing-aws-container-service.html).
+
+However, managing multiple AWS API credentials across containers is not easy or
+standardized. The limited time usage aspect of AWS SSO/Identity Center managed
+credentials only makes it harder.
+
+AWS SSO ECS Server solves that problem by emulating the [AWS ECS method of injecting
+API credentials](https://docs.aws.amazon.com/sdkref/latest/guide/feature-container-credentials.html)
+so the only thing you need to do is manage an environment variable in your container.
+
+And since AWS SSO ECS server can run in a container itself, it makes it trivial
+to add to your test harness, Docker compose file, etc.
+
 ## Security Considerations
 
 The `aws-sso` ECS Server is intended to run on hosts where a single user has access.
