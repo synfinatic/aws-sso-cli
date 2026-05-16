@@ -32,7 +32,8 @@ via an interactive auto-complete experience with both automatic and user-defined
 metadata (tags) and exports the necessary [AWS STS Token credentials](
 https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_use-resources.html#using-temp-creds-sdk-cli)
 to your shell environment in a variety of ways.  It even supports sharing
-credentials via the [AWS ECS Task IAM Role](https://synfinatic.github.io/aws-sso-cli/latest/ecs-server/).
+credentials via the [AWS ECS Task IAM Role](https://synfinatic.github.io/aws-sso-cli/latest/ecs-server/)
+for containerized services.
 
 As part of the goal of improving the end-user experience with AWS SSO, it also
 supports using [multiple AWS Web Console sessions](https://synfinatic.github.io/aws-sso-cli/latest/quickstart/#aws-console-access)
@@ -53,7 +54,9 @@ and many other quality of life improvements!
     and generate [named profiles via templates](https://synfinatic.github.io/aws-sso-cli/latest/config/#ProfileFormat)
 * Easily see how much longer your STS credentials [are valid for](https://synfinatic.github.io/aws-sso-cli/latest/commands/#time)
 * Written in GoLang, so only need to install a single binary (no dependencies)
-* Supports Linux, MacOS, and Windows
+* Official prebuilt binaries are provided for Linux (amd64/arm64), MacOS (amd64/arm64), and Windows (amd64/386)
+* Other [OSes supported by Go](https://go.dev/wiki/MinimumRequirements#operating-systems),
+    including \*BSD, may work when building from source, but may not be covered by release CI/testing
 
 ## Security
 
