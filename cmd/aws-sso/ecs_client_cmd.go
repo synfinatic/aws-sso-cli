@@ -69,20 +69,21 @@ type EcsProfileCmd struct {
 
 // AfterApply determines if SSO auth token is required
 func (e EcsProfileCmd) AfterApply(runCtx *RunContext) error {
-	runCtx.Auth = AUTH_NO_CONFIG
+	runCtx.Auth = AUTH_SKIP
 	return nil
 }
 
 func (cc *EcsProfileCmd) Run(ctx *RunContext) error {
 	c := newClient(ctx.Cli.Ecs.Profile.Server, ctx)
 
+	// ignore the error because the 404 is not user friendly
 	profile, err := c.GetProfile()
 	if err != nil {
+		errMsg := strings.ToLower(err.Error())
+		if strings.Contains(errMsg, "404") || strings.Contains(errMsg, "not found") {
+			return fmt.Errorf("no profile loaded in ECS Server")
+		}
 		return err
-	}
-
-	if profile.ProfileName == "" {
-		return fmt.Errorf("no profile loaded in ECS Server")
 	}
 
 	profiles := []ecs.ListProfilesResponse{
@@ -125,7 +126,7 @@ type EcsListCmd struct {
 
 // AfterApply determines if SSO auth token is required
 func (e EcsListCmd) AfterApply(runCtx *RunContext) error {
-	runCtx.Auth = AUTH_NO_CONFIG
+	runCtx.Auth = AUTH_SKIP
 	return nil
 }
 

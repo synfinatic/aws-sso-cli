@@ -6,6 +6,10 @@
 ### Bugs
 
 * Skip static roles from cache diff report #1349
+* Fix crash in ecs profile/list commands
+* Incorrect version tag for the container image for ecs docker start
+* More friendly error when ecs profile is not loaded
+* Fix ecs docker start command causing container to crash with log level = debug or trace
 
 ## [v2.2.0] - 2026-05-14
 
