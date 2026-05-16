@@ -47,7 +47,7 @@ type EcsDockerStartCmd struct {
 	BindIP      string `kong:"help='Host IP address to bind to the ECS Server',default='127.0.0.1'"`
 	Port        string `kong:"help='Host port to bind to the ECS Server',default='4144'"`
 	Image       string `kong:"help='ECS Server docker image',default='synfinatic/aws-sso-cli-ecs-server'"`
-	Version     string `kong:"help='ECS Server docker image version',default='${VERSION}'"`
+	Version     string `kong:"help='ECS Server docker image version',default='v${VERSION}'"`
 }
 
 // AfterApply determines if SSO auth token is required
@@ -58,7 +58,7 @@ func (e EcsDockerStartCmd) AfterApply(runCtx *RunContext) error {
 
 func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 	// Start the ECS Server in a Docker container
-	cli, err := client.New(client.FromEnv)
+	dockerClient, err := client.New(client.FromEnv)
 	if err != nil {
 		return err
 	}
@@ -84,6 +84,11 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 	}
 
 	image := fmt.Sprintf("%s:%s", ctx.Cli.Ecs.Docker.Start.Image, ctx.Cli.Ecs.Docker.Start.Version)
+	_, err = dockerClient.ImageInspect(context.Background(), image)
+	if err != nil {
+		return fmt.Errorf("failed to find docker image %s. Please pull the image and try again. %s", image, err.Error())
+	}
+
 	port, err := network.ParsePort("4144/tcp")
 	if err != nil {
 		return err
@@ -106,7 +111,7 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 		User: fmt.Sprintf("%d:%d", os.Getuid(), os.Getgid()),
 	}
 	if ctx.Cli.LogLevel == "debug" || ctx.Cli.LogLevel == "trace" {
-		config.Entrypoint = []string{"./aws-sso", "ecs", "run", "--level", string(ctx.Cli.LogLevel), "--docker"}
+		config.Entrypoint = []string{"./aws-sso", "ecs", "server", "--level", string(ctx.Cli.LogLevel), "--docker"}
 	}
 
 	portBinding := network.PortBinding{
@@ -115,11 +120,11 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 	}
 
 	hostConfig := &container.HostConfig{
-		// AutoRemove:  true, // not valid for RestartPolicy
 		NetworkMode: "bridge",
 		PortBindings: network.PortMap{
 			port: []network.PortBinding{portBinding},
 		},
+		// AutoRemove:  true, // not valid for RestartPolicy
 		RestartPolicy: container.RestartPolicy{
 			Name:              container.RestartPolicyOnFailure,
 			MaximumRetryCount: 3, // only valid for on-failure
@@ -134,7 +139,7 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 		},
 	}
 
-	resp, err := cli.ContainerCreate(context.Background(), client.ContainerCreateOptions{
+	resp, err := dockerClient.ContainerCreate(context.Background(), client.ContainerCreateOptions{
 		Config:     config,
 		HostConfig: hostConfig,
 		Name:       CONTAINER_NAME,
@@ -153,7 +158,7 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 		return err
 	}
 
-	if _, err = cli.ContainerStart(context.Background(), resp.ID, client.ContainerStartOptions{}); err != nil {
+	if _, err = dockerClient.ContainerStart(context.Background(), resp.ID, client.ContainerStartOptions{}); err != nil {
 		os.Remove(ecs.SecurityFilePath(ecs.WRITE_ONLY)) // clean up on failure
 		return err
 	}
@@ -172,15 +177,15 @@ func (e EcsDockerStopCmd) AfterApply(runCtx *RunContext) error {
 
 func (cc *EcsDockerStopCmd) Run(ctx *RunContext) error {
 	// Stop the ECS Server in a Docker container
-	cli, err := client.New(client.FromEnv)
+	dockerClient, err := client.New(client.FromEnv)
 	if err != nil {
 		return err
 	}
 
-	if _, err = cli.ContainerStop(context.Background(), CONTAINER_NAME, client.ContainerStopOptions{}); err != nil {
+	if _, err = dockerClient.ContainerStop(context.Background(), CONTAINER_NAME, client.ContainerStopOptions{}); err != nil {
 		return err
 	}
 
-	_, err = cli.ContainerRemove(context.Background(), CONTAINER_NAME, client.ContainerRemoveOptions{})
+	_, err = dockerClient.ContainerRemove(context.Background(), CONTAINER_NAME, client.ContainerRemoveOptions{})
 	return err
 }
