@@ -103,16 +103,16 @@ func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 		bearerToken = ""
 	}
 
-	if bearerToken == "" {
-		log.Warn("HTTP Auth: disabled. Use 'aws-sso ecs bearer-token' to enable")
+	if bearerToken == "" && !ctx.Cli.Ecs.Server.DisableAuth {
+		log.Warn("HTTP Auth: disabled. Use 'aws-sso setup ecs auth' to enable")
 	} else {
 		log.Info("HTTP Auth: enabled")
 	}
 
 	if privateKey != "" && certChain != "" {
 		log.Info("SSL/TLS: enabled")
-	} else {
-		log.Warn("SSL/TLS: disabled.  Use 'aws-sso ecs cert' to enable")
+	} else if !ctx.Cli.Ecs.Server.DisableSSL {
+		log.Warn("SSL/TLS: disabled.  Use 'aws-sso setup ecs ssl' to enable")
 	}
 
 	s, err := server.NewEcsServer(context.TODO(), bearerToken, l, privateKey, certChain)

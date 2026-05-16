@@ -11,6 +11,10 @@
 * More friendly error when ecs profile is not loaded
 * Fix ecs docker start command causing container to crash with log level = debug or trace
 
+### Changes
+
+* Improve ECS Server documentation
+
 ## [v2.2.0] - 2026-05-14
 
 ### New Features
