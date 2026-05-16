@@ -3,6 +3,8 @@
 
 ## [Unreleased]
 
+## [v2.2.1] - 2026-05-16
+
 ### Bugs
 
 * Skip static roles from cache diff report #1349
@@ -887,7 +889,8 @@
 Initial release
 
 <!-- markdownlint-disable-next-line MD053 -->
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.2.0...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.2.1...main
+[v2.2.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.1
 [v2.2.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.0
 [v2.1.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.1.0
 [v2.0.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.0.3
