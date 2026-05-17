@@ -34,14 +34,12 @@ import (
 )
 
 const (
-	DEFAULT_AUTH_COLOR = "blue"
-	DEFAULT_AUTH_ICON  = "fingerprint"
-	VERIFY_MSG         = "\n\tVerify this code in your browser: %s\n"
-)
-
-const (
-	awsSSOClientName = "aws-sso-cli"
-	awsSSOClientType = "public"
+	DEFAULT_AUTH_COLOR       = "blue"
+	DEFAULT_AUTH_ICON        = "fingerprint"
+	VERIFY_MSG               = "\n\tVerify this code in your browser: %s\n"
+	SSO_ACCOUNT_ACCESS_SCOPE = "sso:account:access"
+	awsSSOClientName         = "aws-sso-cli"
+	awsSSOClientType         = "public"
 	// The default values for ODIC defined in:
 	// https://tools.ietf.org/html/draft-ietf-oauth-device-flow-15#section-3.5
 	SLOW_DOWN_SEC  = 5
@@ -57,14 +55,16 @@ func (as *AWSSSO) ValidAuthToken() bool {
 	// have "refresh_token" and must re-register to get a refresh-capable token.
 	clientData := storage.RegisterClientData{}
 	if err := as.store.GetRegisterClientData(as.StoreKey(), &clientData); err == nil {
-		if !clientData.SupportsAuthorizationCode() || !clientData.SupportsRefreshToken() {
-			// always add refresh token support, even if we are using device_code
-			log.Debug("client registration lacks necessary grant types; forcing new registration", "storeKey", as.StoreKey())
-			err = as.store.DeleteRegisterClientData(as.StoreKey())
-			if err != nil {
-				log.Error("unable to delete RegisterClientData from secure store", "storeKey", as.StoreKey(), "error", err.Error())
+		for _, gt := range as.GrantTypes() {
+			if !clientData.SupportsGrantType(gt) {
+				log.Debug("client registration lacks necessary grant types; forcing new registration",
+					"storeKey", as.StoreKey(), "missingGrantType", gt)
+				err = as.store.DeleteRegisterClientData(as.StoreKey())
+				if err != nil {
+					log.Error("unable to delete RegisterClientData from secure store", "storeKey", as.StoreKey(), "error", err.Error())
+				}
+				return false
 			}
-			return false
 		}
 	}
 
@@ -163,8 +163,9 @@ func (as *AWSSSO) reauthenticate() error {
 	case oidc.AuthWorkflowPKCE:
 		return as.reauthenticatePKCE()
 	default:
-		return fmt.Errorf("unsupported auth workflow: %s", as.getAuthWorkflow())
+		log.Fatal("unsupported auth workflow", "workflow", as.getAuthWorkflow())
 	}
+	return nil
 }
 
 // registerClient does the needful to talk to AWS or read our cache to get the
@@ -188,7 +189,7 @@ func (as *AWSSSO) registerClient(force bool) error {
 		IssuerUrl:  as.StartUrl,
 	}
 	if as.getAuthWorkflow() == oidc.AuthWorkflowPKCE {
-		input.Scopes = []string{"sso:account:access"}
+		input.Scopes = []string{SSO_ACCOUNT_ACCESS_SCOPE}
 		input.RedirectUris = []string{as.pkceRedirectURIBase()}
 	}
 	resp, err := as.oidcClient.RegisterClient(context.TODO(), input)
@@ -304,16 +305,15 @@ func (as *AWSSSO) getAuthWorkflow() oidc.AuthWorkflow {
 // on the AuthWorkflow.
 func (as *AWSSSO) GrantTypes() []storage.GrantType {
 	log.Debug("GrantTypes()", "authWorkflow", as.getAuthWorkflow())
-	// for now we always return both grant types.
-	return []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken}
-	/*
-		if as.getAuthWorkflow() == oidc.AuthWorkflowDeviceCode {
-			// Device code flow uses device_code to get the initial token; also include
-			// authorization_code so subsequent calls can renew without re-authenticating.
-		}
-		// Default code flow only needs authorization_code support.
-		return []storage.GrantType{storage.GrantTypeAuthorizationCode}
-	*/
+	switch as.getAuthWorkflow() {
+	case oidc.AuthWorkflowDeviceCode:
+		return []storage.GrantType{storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken}
+	case oidc.AuthWorkflowPKCE:
+		return []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken}
+	default:
+		log.Fatal("unsupported auth workflow", "workflow", as.getAuthWorkflow())
+	}
+	return nil
 }
 
 func (as *AWSSSO) authGrantTypes() []string {
@@ -395,7 +395,7 @@ func (as *AWSSSO) reauthenticatePKCE() error {
 		AuthorizationEndpoint: as.pkceAuthorizationEndpoint(),
 		ClientID:              as.ClientData.ClientId,
 		RedirectURI:           redirectURI,
-		Scopes:                []string{"sso:account:access"},
+		Scopes:                []string{SSO_ACCOUNT_ACCESS_SCOPE},
 	})
 	if err != nil {
 		return fmt.Errorf("unable to start pkce authorization with AWS SSO: %w", err)

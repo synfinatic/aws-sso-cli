@@ -107,13 +107,13 @@ func TestStoreKey(t *testing.T) {
 func TestAuthWorkflowSelection(t *testing.T) {
 	as := &AWSSSO{}
 	assert.Equal(t, as.getAuthWorkflow(), oidc.AuthWorkflowPKCE)
-	assert.Equal(t, as.authGrantTypes(), []string{string(storage.GrantTypeAuthorizationCode), string(storage.GrantTypeDeviceCode), string(storage.GrantTypeRefreshToken)})
-	assert.Equal(t, as.GrantTypes(), []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken})
+	assert.Equal(t, as.authGrantTypes(), []string{string(storage.GrantTypeAuthorizationCode), string(storage.GrantTypeRefreshToken)})
+	assert.Equal(t, as.GrantTypes(), []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken})
 
 	as.SSOConfig = &ssoconfig.SSOConfig{AuthWorkflow: oidc.AuthWorkflowDeviceCode}
 	assert.Equal(t, as.getAuthWorkflow(), oidc.AuthWorkflowDeviceCode)
-	assert.Equal(t, as.authGrantTypes(), []string{string(storage.GrantTypeAuthorizationCode), string(storage.GrantTypeDeviceCode), string(storage.GrantTypeRefreshToken)})
-	assert.Equal(t, as.GrantTypes(), []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken})
+	assert.Equal(t, as.authGrantTypes(), []string{string(storage.GrantTypeDeviceCode), string(storage.GrantTypeRefreshToken)})
+	assert.Equal(t, as.GrantTypes(), []storage.GrantType{storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken})
 }
 
 func TestAuthenticateSteps(t *testing.T) {
@@ -362,24 +362,26 @@ func TestAuthenticate(t *testing.T) {
 	_ = as.Authenticate(uri.Undef, "fake-browser")
 }
 
-func TestValidAuthToken(t *testing.T) {
+func authTokenSetup(t *testing.T, workflow oidc.AuthWorkflow) (as *AWSSSO, key string, jstore storage.SecureStorage) {
 	tfile, err := os.CreateTemp("", "*storage.json")
 	assert.NoError(t, err)
 
-	jstore, err := storage.OpenJsonStore(tfile.Name())
+	jstore, err = storage.OpenJsonStore(tfile.Name())
 	assert.NoError(t, err)
 
-	defer os.Remove(tfile.Name())
+	t.Cleanup(func() {
+		_ = os.Remove(tfile.Name()) // nolint:gosec
+	})
 
 	// Use a mock oidcClient that always fails the refresh so that expired-token
 	// test cases correctly return false without panicking on a nil pointer.
-	as := &AWSSSO{
+	as = &AWSSSO{
 		SsoRegion:  "us-west-1",
 		StartUrl:   "https://testing.awsapps.com/start",
 		store:      jstore,
 		oidcClient: &mockOIDCClient{exchangeRefreshErr: fmt.Errorf("test: refresh not available")},
 		SSOConfig: &ssoconfig.SSOConfig{
-			AuthWorkflow: oidc.AuthWorkflowDeviceCode,
+			AuthWorkflow: workflow,
 		},
 	}
 
@@ -391,7 +393,7 @@ func TestValidAuthToken(t *testing.T) {
 		RefreshToken: "refresh_token",
 		TokenType:    "token_type",
 	}
-	key := as.StoreKey()
+	key = as.StoreKey()
 	err = jstore.SaveCreateTokenResponse(key, token)
 	assert.NoError(t, err)
 	assert.False(t, as.ValidAuthToken())
@@ -405,6 +407,12 @@ func TestValidAuthToken(t *testing.T) {
 	token.ExpiresAt = 99999999999
 	err = jstore.SaveCreateTokenResponse(key, token)
 	assert.NoError(t, err)
+	return as, key, jstore
+}
+
+func TestValidAuthTokenPKCE(t *testing.T) { // nolint:dupl
+	var err error
+	as, key, jstore := authTokenSetup(t, oidc.AuthWorkflowPKCE)
 
 	// ValidAuthToken requires a stored RegisterClientData with both
 	// authorization_code and refresh_token grant type support.
@@ -417,6 +425,43 @@ func TestValidAuthToken(t *testing.T) {
 	err = jstore.SaveRegisterClientData(key, clientData)
 	assert.NoError(t, err)
 	assert.True(t, as.ValidAuthToken())
+
+	clientData.GrantTypes = []storage.GrantType{storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken}
+	err = jstore.SaveRegisterClientData(key, clientData)
+	assert.NoError(t, err)
+	assert.False(t, as.ValidAuthToken())
+
+	clientData.GrantTypes = []storage.GrantType{storage.GrantTypeAuthorizationCode}
+	err = jstore.SaveRegisterClientData(key, clientData)
+	assert.NoError(t, err)
+	assert.False(t, as.ValidAuthToken())
+}
+
+func TestValidAuthTokenDeviceCode(t *testing.T) { // nolint:dupl
+	var err error
+	as, key, jstore := authTokenSetup(t, oidc.AuthWorkflowDeviceCode)
+
+	// ValidAuthToken requires a stored RegisterClientData with both
+	// device_code and refresh_token grant type support.
+	clientData := storage.RegisterClientData{
+		ClientId:              "test-client-id",
+		ClientSecret:          "test-client-secret",
+		ClientSecretExpiresAt: 99999999999,
+		GrantTypes:            []storage.GrantType{storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken},
+	}
+	err = jstore.SaveRegisterClientData(key, clientData)
+	assert.NoError(t, err)
+	assert.True(t, as.ValidAuthToken())
+
+	clientData.GrantTypes = []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken}
+	err = jstore.SaveRegisterClientData(key, clientData)
+	assert.NoError(t, err)
+	assert.False(t, as.ValidAuthToken())
+
+	clientData.GrantTypes = []storage.GrantType{storage.GrantTypeDeviceCode}
+	err = jstore.SaveRegisterClientData(key, clientData)
+	assert.NoError(t, err)
+	assert.False(t, as.ValidAuthToken())
 }
 
 func TestAuthenticateFailure(t *testing.T) {

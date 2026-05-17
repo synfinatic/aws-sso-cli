@@ -85,6 +85,19 @@ func TestRegisterClientDataUnmarshalJSON(t *testing.T) {
 	assert.True(t, r3.SupportsAuthorizationCode())
 }
 
+func TestSupportsGrantType(t *testing.T) {
+	r := &RegisterClientData{
+		GrantTypes: []GrantType{GrantTypeDeviceCode, GrantTypeRefreshToken},
+	}
+	assert.True(t, r.SupportsGrantType(GrantTypeDeviceCode))
+	assert.True(t, r.SupportsGrantType(GrantTypeRefreshToken))
+	assert.False(t, r.SupportsGrantType(GrantTypeAuthorizationCode))
+
+	// adding the 3rd type should always return false
+	r.GrantTypes = append(r.GrantTypes, GrantTypeAuthorizationCode)
+	assert.False(t, r.SupportsGrantType(GrantTypeAuthorizationCode))
+}
+
 func TestRegisterClientDataSupportsAuthorizationCode(t *testing.T) {
 	r := &RegisterClientData{}
 	assert.False(t, r.SupportsAuthorizationCode())

@@ -74,37 +74,37 @@ func (r *RegisterClientData) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// SupportsAuthorizationCode returns true if the registration includes the
-// "authorization_code" grant type.
-func (r *RegisterClientData) SupportsAuthorizationCode() bool {
-	for _, gt := range r.GrantTypes {
-		if gt == GrantTypeAuthorizationCode {
+func (r *RegisterClientData) SupportsGrantType(gt GrantType) bool {
+	if len(r.GrantTypes) > 2 {
+		// Hack to deal with v2.2.0/2.2.1 bug where we supported all 3 grant types
+		// but some AWS SSO configs did not like authorization_code + device_code together
+		// see: https://github.com/synfinatic/aws-sso-cli/issues/1359
+		return false
+	}
+	for _, g := range r.GrantTypes {
+		if g == gt {
 			return true
 		}
 	}
 	return false
+}
+
+// SupportsAuthorizationCode returns true if the registration includes the
+// "authorization_code" grant type.
+func (r *RegisterClientData) SupportsAuthorizationCode() bool {
+	return r.SupportsGrantType(GrantTypeAuthorizationCode)
 }
 
 // SupportsRefreshToken returns true if the registration includes the
 // "refresh_token" grant type.
 func (r *RegisterClientData) SupportsRefreshToken() bool {
-	for _, gt := range r.GrantTypes {
-		if gt == GrantTypeRefreshToken {
-			return true
-		}
-	}
-	return false
+	return r.SupportsGrantType(GrantTypeRefreshToken)
 }
 
 // SupportsDeviceCode returns true if the registration includes the
 // "device_code" grant type.
 func (r *RegisterClientData) SupportsDeviceCode() bool {
-	for _, gt := range r.GrantTypes {
-		if gt == GrantTypeDeviceCode {
-			return true
-		}
-	}
-	return false
+	return r.SupportsGrantType(GrantTypeDeviceCode)
 }
 
 // Expired returns true if it has expired or will in the next hour

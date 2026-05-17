@@ -3,6 +3,12 @@
 
 ## [Unreleased]
 
+## [v2.2.2] - 2026-05-17
+
+### Bugs
+
+* Force device registration with device_code or authorization_code, not both #1359
+
 ## [v2.2.1] - 2026-05-16
 
 ### Bugs
@@ -889,7 +895,8 @@
 Initial release
 
 <!-- markdownlint-disable-next-line MD053 -->
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.2.1...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.2.2...main
+[v2.2.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.2
 [v2.2.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.1
 [v2.2.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.0
 [v2.1.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.1.0
