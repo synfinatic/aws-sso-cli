@@ -57,8 +57,8 @@ func (as *AWSSSO) ValidAuthToken() bool {
 	// have "refresh_token" and must re-register to get a refresh-capable token.
 	clientData := storage.RegisterClientData{}
 	if err := as.store.GetRegisterClientData(as.StoreKey(), &clientData); err == nil {
-		if !clientData.SupportsAuthorizationCode() || !clientData.SupportsRefreshToken() {
-			// always add refresh token support, even if we are using device_code
+		if as.getAuthWorkflow() == oidc.AuthWorkflowPKCE &&
+			(!clientData.SupportsAuthorizationCode() || !clientData.SupportsRefreshToken()) {
 			log.Debug("client registration lacks necessary grant types; forcing new registration", "storeKey", as.StoreKey())
 			err = as.store.DeleteRegisterClientData(as.StoreKey())
 			if err != nil {
@@ -304,16 +304,11 @@ func (as *AWSSSO) getAuthWorkflow() oidc.AuthWorkflow {
 // on the AuthWorkflow.
 func (as *AWSSSO) GrantTypes() []storage.GrantType {
 	log.Debug("GrantTypes()", "authWorkflow", as.getAuthWorkflow())
-	// for now we always return both grant types.
-	return []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken}
-	/*
-		if as.getAuthWorkflow() == oidc.AuthWorkflowDeviceCode {
-			// Device code flow uses device_code to get the initial token; also include
-			// authorization_code so subsequent calls can renew without re-authenticating.
-		}
-		// Default code flow only needs authorization_code support.
-		return []storage.GrantType{storage.GrantTypeAuthorizationCode}
-	*/
+	if as.getAuthWorkflow() == oidc.AuthWorkflowDeviceCode {
+		// device_code flow: match pre-2.2.0 behaviour — AWS SSO rejects authorization_code here
+		return []storage.GrantType{storage.GrantTypeRefreshToken}
+	}
+	return []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken}
 }
 
 func (as *AWSSSO) authGrantTypes() []string {
