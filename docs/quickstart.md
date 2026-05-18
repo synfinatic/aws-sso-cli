@@ -17,10 +17,9 @@
     1. Clone this repo
     1. Run `make` (or `gmake` for GNU Make)
     1. Your binary will be created in the `dist` directory
-    1. Run `make install` to install in /usr/local/bin
-* Option 5: `go install`:
-    1. Install [GoLang](https://golang.org) v1.22+ and GNU Make
-    1. `go install github.com/synfinatic/aws-sso-cli/cmd/aws-sso@latest`
+    1. Run `make install` to install in `/usr/local/bin` or manually copy it to the location of your choice
+
+Note: I do not recommend or support installing via `go install ...`
 
 Note: macOS binaries must be build on macOS to enable Keychain support.
 
