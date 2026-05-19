@@ -23,7 +23,7 @@ jobs:
     name: Check Changelog
     runs-on: ubuntu-latest
     steps:
-      - uses: tarides/changelog-check-action@v2
+      - uses: tarides/changelog-check-action@v3
         if: github.event_name == 'pull_request'
         with:
           changelog: CHANGELOG.md
