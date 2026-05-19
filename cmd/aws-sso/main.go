@@ -49,6 +49,19 @@ var VALID_LOG_LEVELS = []string{"error", "warn", "info", "debug", "trace"}
 
 var AwsSSO *ssoauth.AWSSSO // global
 
+// AccountID is a custom type that safely parses AWS account IDs from strings with leading zeros.
+type AccountID int64
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface for Kong.
+func (a *AccountID) UnmarshalText(text []byte) error {
+	parsed, err := awsparse.AccountIdToInt64(string(text))
+	if err != nil {
+		return fmt.Errorf("invalid account ID: %s", string(text))
+	}
+	*a = AccountID(parsed)
+	return nil
+}
+
 type CommandAuth int
 
 const (

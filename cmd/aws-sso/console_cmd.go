@@ -49,10 +49,10 @@ type ConsoleCmd struct {
 	STSRefresh bool   `kong:"help='Force refresh of STS Token Credentials'"`
 	UrlAction  string `kong:"short='u',help='How to handle URLs [clip|exec|open|print|printurl|granted-containers|open-url-in-container|ansi-osc52] (default: open)',predictor='urlAction'"`
 
-	Arn       string `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
-	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNT_ID',predictor='accountId'"`
-	Role      string `kong:"short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE_NAME',predictor='role'"`
-	Profile   string `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile'"`
+	Arn       string    `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
+	AccountId AccountID `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNT_ID',predictor='accountId'"`
+	Role      string    `kong:"short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE_NAME',predictor='role'"`
+	Profile   string    `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile'"`
 
 	AccessKeyId     string `kong:"env='AWS_ACCESS_KEY_ID',hidden"`
 	SecretAccessKey string `kong:"env='AWS_SECRET_ACCESS_KEY',hidden"`
@@ -81,7 +81,7 @@ func (cc *ConsoleCmd) Run(ctx *RunContext) error {
 	}
 
 	// Check our CLI args
-	sci := NewSelectCliArgs(ctx.Cli.Console.Arn, ctx.Cli.Console.AccountId, ctx.Cli.Console.Role, ctx.Cli.Console.Profile)
+	sci := NewSelectCliArgs(ctx.Cli.Console.Arn, int64(ctx.Cli.Console.AccountId), ctx.Cli.Console.Role, ctx.Cli.Console.Profile)
 	if err := sci.Update(ctx); err == nil {
 		// successful lookup?
 		return openConsole(ctx, sci.AccountId, sci.RoleName)
