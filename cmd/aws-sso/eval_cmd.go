@@ -29,10 +29,10 @@ import (
 
 type EvalCmd struct {
 	// AWS Params
-	Arn       string `kong:"short='a',help='ARN of role to assume',predictor='arn'"`
-	AccountId int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',predictor='accountId'"`
-	Role      string `kong:"short='R',help='Name of AWS Role to assume',predictor='role'"`
-	Profile   string `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile'"`
+	Arn       string    `kong:"short='a',help='ARN of role to assume',predictor='arn'"`
+	AccountId AccountID `kong:"name='account',short='A',help='AWS AccountID of role to assume',predictor='accountId'"`
+	Role      string    `kong:"short='R',help='Name of AWS Role to assume',predictor='role'"`
+	Profile   string    `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile'"`
 
 	Clear    bool   `kong:"short='c',help='Generate \"unset XXXX\" commands to clear environment'"`
 	NoRegion bool   `kong:"short='n',help='Do not set/clear AWS_DEFAULT_REGION/AWS_REGION from config.yaml'"`
@@ -83,10 +83,10 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 		if err != nil {
 			return err
 		}
-	} else if ctx.Cli.Eval.Role != "" && ctx.Cli.Eval.AccountId > 0 {
-		// if CLI args are speecified, use that
+	} else if ctx.Cli.Eval.Role != "" && ctx.Cli.Eval.AccountId != 0 {
+		// if CLI args are specified, use that
+		accountid = int64(ctx.Cli.Eval.AccountId)
 		role = ctx.Cli.Eval.Role
-		accountid = ctx.Cli.Eval.AccountId
 	} else {
 		return fmt.Errorf("please specify --refresh, --clear, --arn, or --account and --role")
 	}

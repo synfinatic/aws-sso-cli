@@ -26,8 +26,8 @@ import (
 )
 
 type TagsCmd struct {
-	AccountId int64  `kong:"name='account',short='A',help='Filter results based on AWS AccountID'"`
-	Role      string `kong:"short='R',help='Filter results based on AWS Role Name'"`
+	AccountId AccountID `kong:"name='account',short='A',help='Filter results based on AWS AccountID'"`
+	Role      string    `kong:"short='R',help='Filter results based on AWS Role Name'"`
 }
 
 // AfterApply determines if SSO auth token is required
@@ -39,6 +39,8 @@ func (t TagsCmd) AfterApply(runCtx *RunContext) error {
 func (cc *TagsCmd) Run(ctx *RunContext) error {
 	set := ctx.Settings
 	cache := ctx.Settings.Cache.GetSSO()
+	accountId := int64(ctx.Cli.Tags.AccountId)
+
 	s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
 	if err != nil {
 		return err
@@ -55,7 +57,7 @@ func (cc *TagsCmd) Run(ctx *RunContext) error {
 
 	// If user has specified an account (or account + role) then limit
 	if ctx.Cli.Tags.AccountId != 0 {
-		for _, fRole := range cache.Roles.GetAccountRoles(ctx.Cli.Tags.AccountId) {
+		for _, fRole := range cache.Roles.GetAccountRoles(accountId) {
 			if ctx.Cli.Tags.Role == "" {
 				roles = append(roles, fRole)
 			} else {

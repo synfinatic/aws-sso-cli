@@ -31,12 +31,12 @@ import (
 
 type ExecCmd struct {
 	// AWS Params
-	Arn        string `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
-	AccountId  int64  `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNT_ID',predictor='accountId'"`
-	Role       string `kong:"short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE_NAME',predictor='role'"`
-	Profile    string `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile'"`
-	NoRegion   bool   `kong:"short='n',help='Do not set AWS_DEFAULT_REGION from config.yaml'"`
-	STSRefresh bool   `kong:"help='Force refresh of STS Token Credentials'"`
+	Arn        string    `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
+	AccountId  AccountID `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNT_ID',predictor='accountId'"`
+	Role       string    `kong:"short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE_NAME',predictor='role'"`
+	Profile    string    `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile'"`
+	NoRegion   bool      `kong:"short='n',help='Do not set AWS_DEFAULT_REGION from config.yaml'"`
+	STSRefresh bool      `kong:"help='Force refresh of STS Token Credentials'"`
 
 	// Exec Params
 	Cmd  string   `kong:"arg,optional,name='command',help='Command to execute',env='SHELL'"`
@@ -65,7 +65,7 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 		}
 	}
 
-	sci := NewSelectCliArgs(ctx.Cli.Exec.Arn, ctx.Cli.Exec.AccountId, ctx.Cli.Exec.Role, ctx.Cli.Exec.Profile)
+	sci := NewSelectCliArgs(ctx.Cli.Exec.Arn, int64(ctx.Cli.Exec.AccountId), ctx.Cli.Exec.Role, ctx.Cli.Exec.Profile)
 	if err := sci.Update(ctx); err == nil {
 		// successful lookup?
 		return execCmd(ctx, sci.AccountId, sci.RoleName)

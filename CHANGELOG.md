@@ -3,6 +3,10 @@
 
 ## [Unreleased]
 
+### Bugs
+
+* Fix bugs parsing AccountId's with leading zero's on the command line #1366
+
 ## [v2.2.2] - 2026-05-17
 
 ### Bugs
