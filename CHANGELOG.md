@@ -7,6 +7,7 @@
 
 * Fix `$AWS_REGION` not set by `eval`/`exec` despite being documented #1277
 * Fix bugs parsing AccountId's with leading zero's on the command line #1366
+* Default to `AuthWorkflow: device_code` when SSH or WSL sessions are detected #1371
 
 ## [v2.2.2] - 2026-05-17
 

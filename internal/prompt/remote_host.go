@@ -29,3 +29,9 @@ func IsRemoteHost() bool {
 	_, inSSHSession := os.LookupEnv("SSH_TTY")
 	return inSSHSession
 }
+
+// IsWSL returns true when running in a WSL environment.
+func IsWSL() bool {
+	_, inWSLSession := os.LookupEnv("WSL_DISTRO_NAME")
+	return inWSLSession
+}
