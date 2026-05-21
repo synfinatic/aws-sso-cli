@@ -3,6 +3,12 @@
 
 ## [Unreleased]
 
+## [v2.2.4] - 2026-05-21
+
+### Bugs
+
+* Really fix `AuthWorkflow: device_code` when SSH or WSL sessions are detected #1371
+
 ## [v2.2.3] - 2026-05-21
 
 ### Bugs
@@ -903,7 +909,8 @@
 Initial release
 
 <!-- markdownlint-disable-next-line MD053 -->
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.2.3...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.2.4...main
+[v2.2.4]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.4
 [v2.2.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.3
 [v2.2.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.2
 [v2.2.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.1

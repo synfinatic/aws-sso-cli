@@ -294,10 +294,10 @@ func (as *AWSSSO) saveToken(token storage.CreateTokenResponse) error {
 }
 
 // getAuthWorkflow returns the AuthWorkflow to use for this AWSSSO instance.
-// In WSL/remote host sessions, we default to device_code when unset; otherwise
+// In remote host sessions (SSH/WSL), we default to device_code when unset; otherwise
 // we default to PKCE when unset.
 func (as *AWSSSO) getAuthWorkflow() oidc.AuthWorkflow {
-	if prompt.IsWSL() || prompt.IsRemoteHost() {
+	if prompt.IsRemoteHost() {
 		if as.SSOConfig == nil || as.SSOConfig.AuthWorkflow == "" {
 			return oidc.AuthWorkflowDeviceCode
 		}

@@ -35,6 +35,7 @@ import (
 	"github.com/knadh/koanf/providers/file"
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
+	"github.com/synfinatic/aws-sso-cli/internal/prompt"
 	ssocache "github.com/synfinatic/aws-sso-cli/internal/sso/cache"
 	ssoconfig "github.com/synfinatic/aws-sso-cli/internal/sso/config"
 	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
@@ -138,6 +139,13 @@ type OverrideSettings struct {
 	Threads    int
 }
 
+func defaultAuthWorkflow(workflow oidc.AuthWorkflow, configuredInConfig bool, remoteHost bool) oidc.AuthWorkflow {
+	if workflow == "" && !configuredInConfig && remoteHost {
+		return oidc.AuthWorkflowDeviceCode
+	}
+	return workflow.OrDefault()
+}
+
 // Loads our settings from config, cache and CLI args
 func LoadSettings(configFile, cacheFile string, defaults map[string]interface{}, override OverrideSettings) (*Settings, error) {
 	var err error
@@ -166,7 +174,7 @@ func LoadSettings(configFile, cacheFile string, defaults map[string]interface{},
 	}
 
 	s.setOverrides(override)
-	s.AuthWorkflow = s.AuthWorkflow.OrDefault()
+	s.AuthWorkflow = defaultAuthWorkflow(s.AuthWorkflow, konf.Exists("AuthWorkflow"), prompt.IsRemoteHost())
 
 	// set our SSO names
 	for k, v := range s.SSO {

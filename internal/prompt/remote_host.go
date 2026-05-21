@@ -22,16 +22,11 @@ import (
 	"os"
 )
 
-// IsRemoteHost returns if we are running on a remote host or not
+// IsRemoteHost returns if we are running on a remote host environment
+// (currently SSH or WSL).
 func IsRemoteHost() bool {
-	// right now we just look for the SSH_TTY env var which should be set
-	// anytime you ssh to a remote host
+	// SSH_TTY should be set during SSH sessions and WSL_DISTRO_NAME in WSL.
 	_, inSSHSession := os.LookupEnv("SSH_TTY")
-	return inSSHSession
-}
-
-// IsWSL returns true when running in a WSL environment.
-func IsWSL() bool {
 	_, inWSLSession := os.LookupEnv("WSL_DISTRO_NAME")
-	return inWSLSession
+	return inSSHSession || inWSLSession
 }

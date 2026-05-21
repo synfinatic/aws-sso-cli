@@ -48,7 +48,29 @@ type SettingsTestSuite struct {
 	settings *Settings
 }
 
+func unsetEnvWithCleanup(t *testing.T, key string) {
+	t.Helper()
+
+	oldValue, hadValue := os.LookupEnv(key)
+	t.Cleanup(func() {
+		var err error
+		if hadValue {
+			err = os.Setenv(key, oldValue)
+		} else {
+			err = os.Unsetenv(key)
+		}
+		if err != nil {
+			t.Errorf("failed to restore %s: %v", key, err)
+		}
+	})
+
+	assert.NoError(t, os.Unsetenv(key))
+}
+
 func TestSettingsTestSuite(t *testing.T) {
+	unsetEnvWithCleanup(t, "SSH_TTY")
+	unsetEnvWithCleanup(t, "WSL_DISTRO_NAME")
+
 	over := OverrideSettings{}
 	defaults := map[string]interface{}{}
 	settings, err := LoadSettings(TEST_SETTINGS_FILE, TEST_CACHE_FILE, defaults, over)
@@ -90,6 +112,68 @@ func TestConfigProfilesUrlAction(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, uri.ConfigProfilesOpenUrlContainer, settings.ConfigProfilesUrlAction)
+}
+
+func TestDefaultAuthWorkflow(t *testing.T) {
+	tests := []struct {
+		name               string
+		workflow           oidc.AuthWorkflow
+		configuredInConfig bool
+		remoteHost         bool
+		expected           oidc.AuthWorkflow
+	}{
+		{
+			name:               "unset_local_defaults_to_pkce",
+			workflow:           "",
+			configuredInConfig: false,
+			remoteHost:         false,
+			expected:           oidc.AuthWorkflowPKCE,
+		},
+		{
+			name:               "unset_remote_defaults_to_device_code",
+			workflow:           "",
+			configuredInConfig: false,
+			remoteHost:         true,
+			expected:           oidc.AuthWorkflowDeviceCode,
+		},
+		{
+			name:               "explicit_pkce_remote_remains_pkce",
+			workflow:           oidc.AuthWorkflowPKCE,
+			configuredInConfig: true,
+			remoteHost:         true,
+			expected:           oidc.AuthWorkflowPKCE,
+		},
+		{
+			name:               "explicit_device_code_local_remains_device_code",
+			workflow:           oidc.AuthWorkflowDeviceCode,
+			configuredInConfig: true,
+			remoteHost:         false,
+			expected:           oidc.AuthWorkflowDeviceCode,
+		},
+		{
+			name:               "configured_empty_local_still_pkce",
+			workflow:           "",
+			configuredInConfig: true,
+			remoteHost:         false,
+			expected:           oidc.AuthWorkflowPKCE,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := defaultAuthWorkflow(tc.workflow, tc.configuredInConfig, tc.remoteHost)
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
+}
+
+func TestLoadSettingsDefaultsDeviceCodeOnRemoteHost(t *testing.T) {
+	unsetEnvWithCleanup(t, "WSL_DISTRO_NAME")
+	t.Setenv("SSH_TTY", "/dev/pts/1")
+
+	settings, err := LoadSettings(TEST_SETTINGS_FILE, TEST_CACHE_FILE, map[string]interface{}{}, OverrideSettings{})
+	assert.NoError(t, err)
+	assert.Equal(t, oidc.AuthWorkflowDeviceCode, settings.AuthWorkflow)
 }
 
 // TestAllSSOInstancesRefreshed ensures that every configured SSO instance (not
