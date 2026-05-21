@@ -105,6 +105,9 @@ func TestStoreKey(t *testing.T) {
 }
 
 func TestAuthWorkflowSelection(t *testing.T) {
+	assert.NoError(t, os.Unsetenv("WSL_DISTRO_NAME"))
+	assert.NoError(t, os.Unsetenv("SSH_TTY"))
+
 	as := &AWSSSO{}
 	assert.Equal(t, as.getAuthWorkflow(), oidc.AuthWorkflowPKCE)
 	assert.Equal(t, as.authGrantTypes(), []string{string(storage.GrantTypeAuthorizationCode), string(storage.GrantTypeRefreshToken)})
@@ -114,6 +117,37 @@ func TestAuthWorkflowSelection(t *testing.T) {
 	assert.Equal(t, as.getAuthWorkflow(), oidc.AuthWorkflowDeviceCode)
 	assert.Equal(t, as.authGrantTypes(), []string{string(storage.GrantTypeDeviceCode), string(storage.GrantTypeRefreshToken)})
 	assert.Equal(t, as.GrantTypes(), []storage.GrantType{storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken})
+
+	t.Setenv("WSL_DISTRO_NAME", "Ubuntu")
+
+	as = &AWSSSO{}
+	assert.Equal(t, as.getAuthWorkflow(), oidc.AuthWorkflowDeviceCode)
+	assert.Equal(t, as.authGrantTypes(), []string{string(storage.GrantTypeDeviceCode), string(storage.GrantTypeRefreshToken)})
+	assert.Equal(t, as.GrantTypes(), []storage.GrantType{storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken})
+
+	as.SSOConfig = &ssoconfig.SSOConfig{}
+	assert.Equal(t, as.getAuthWorkflow(), oidc.AuthWorkflowDeviceCode)
+	assert.Equal(t, as.authGrantTypes(), []string{string(storage.GrantTypeDeviceCode), string(storage.GrantTypeRefreshToken)})
+	assert.Equal(t, as.GrantTypes(), []storage.GrantType{storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken})
+
+	as.SSOConfig = &ssoconfig.SSOConfig{AuthWorkflow: oidc.AuthWorkflowPKCE}
+	assert.Equal(t, as.getAuthWorkflow(), oidc.AuthWorkflowPKCE)
+	assert.Equal(t, as.authGrantTypes(), []string{string(storage.GrantTypeAuthorizationCode), string(storage.GrantTypeRefreshToken)})
+	assert.Equal(t, as.GrantTypes(), []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken})
+
+	assert.NoError(t, os.Unsetenv("WSL_DISTRO_NAME"))
+	t.Setenv("SSH_TTY", "/dev/pts/1")
+
+	as = &AWSSSO{}
+	assert.Equal(t, as.getAuthWorkflow(), oidc.AuthWorkflowDeviceCode)
+	assert.Equal(t, as.authGrantTypes(), []string{string(storage.GrantTypeDeviceCode), string(storage.GrantTypeRefreshToken)})
+	assert.Equal(t, as.GrantTypes(), []storage.GrantType{storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken})
+
+	as.SSOConfig = &ssoconfig.SSOConfig{}
+	assert.Equal(t, as.getAuthWorkflow(), oidc.AuthWorkflowDeviceCode)
+
+	as.SSOConfig = &ssoconfig.SSOConfig{AuthWorkflow: oidc.AuthWorkflowPKCE}
+	assert.Equal(t, as.getAuthWorkflow(), oidc.AuthWorkflowPKCE)
 }
 
 func TestAuthenticateSteps(t *testing.T) {

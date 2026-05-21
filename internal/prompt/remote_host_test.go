@@ -34,10 +34,19 @@ func TestUtilsSuite(t *testing.T) {
 	s := &UtilsTestSuite{}
 	suite.Run(t, s)
 }
+
 func TestIsRemoteHost(t *testing.T) {
-	os.Setenv("SSH_TTY", "FOOBAR")
+	t.Setenv("SSH_TTY", "FOOBAR")
 	assert.True(t, IsRemoteHost())
 
-	os.Unsetenv("SSH_TTY")
+	assert.NoError(t, os.Unsetenv("SSH_TTY"))
 	assert.False(t, IsRemoteHost())
+}
+
+func TestIsWSL(t *testing.T) {
+	t.Setenv("WSL_DISTRO_NAME", "Ubuntu")
+	assert.True(t, IsWSL())
+
+	assert.NoError(t, os.Unsetenv("WSL_DISTRO_NAME"))
+	assert.False(t, IsWSL())
 }

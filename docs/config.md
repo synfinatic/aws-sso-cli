@@ -158,7 +158,7 @@ Valid values:
         that `aws-sso` is running on the same machine as the browser.** It is not
         supported on remote/headless hosts; use `device_code` in those environments.
 
-If `AuthWorkflow` is omitted, `pkce` is used.
+If `AuthWorkflow` is omitted, `pkce` is used _unless_ a current SSH/WSL session are detected.
 
 ### Accounts
 

@@ -127,7 +127,7 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 
 	// check if we are in a ssh session or WSL2
 	promptedOpen := false
-	if prompt.IsRemoteHost() || os.Getenv("WSL_DISTRO_NAME") != "" {
+	if prompt.IsRemoteHost() || prompt.IsWSL() {
 		// users need to modify the default open action
 		promptOpen(s)
 		promptedOpen = true

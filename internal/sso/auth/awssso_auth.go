@@ -28,6 +28,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awssso "github.com/aws/aws-sdk-go-v2/service/sso"
+	"github.com/synfinatic/aws-sso-cli/internal/prompt"
 	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
@@ -292,9 +293,16 @@ func (as *AWSSSO) saveToken(token storage.CreateTokenResponse) error {
 	return nil
 }
 
-// getAuthWorkflow returns the AuthWorkflow to use for this AWSSSO instance, defaulting
-// to PKCE if not set.
+// getAuthWorkflow returns the AuthWorkflow to use for this AWSSSO instance.
+// In WSL/remote host sessions, we default to device_code when unset; otherwise
+// we default to PKCE when unset.
 func (as *AWSSSO) getAuthWorkflow() oidc.AuthWorkflow {
+	if prompt.IsWSL() || prompt.IsRemoteHost() {
+		if as.SSOConfig == nil || as.SSOConfig.AuthWorkflow == "" {
+			return oidc.AuthWorkflowDeviceCode
+		}
+	}
+
 	if as.SSOConfig == nil {
 		return oidc.AuthWorkflowPKCE
 	}
