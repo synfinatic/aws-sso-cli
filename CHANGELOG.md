@@ -3,6 +3,8 @@
 
 ## [Unreleased]
 
+## [v2.2.3] - 2026-05-21
+
 ### Bugs
 
 * Fix `$AWS_REGION` not set by `eval`/`exec` despite being documented #1277
@@ -901,7 +903,8 @@
 Initial release
 
 <!-- markdownlint-disable-next-line MD053 -->
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.2.2...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.2.3...main
+[v2.2.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.3
 [v2.2.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.2
 [v2.2.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.1
 [v2.2.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.0
