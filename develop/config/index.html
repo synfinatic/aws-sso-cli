@@ -2462,7 +2462,7 @@ instances.</p>
         that <code>aws-sso</code> is running on the same machine as the browser.</strong> It is not
         supported on remote/headless hosts; use <code>device_code</code> in those environments.</li>
 </ul>
-<p>If <code>AuthWorkflow</code> is omitted, <code>pkce</code> is used.</p>
+<p>If <code>AuthWorkflow</code> is omitted, <code>pkce</code> is used <em>unless</em> a current SSH/WSL session are detected.</p>
 <h3 id="accounts">Accounts</h3>
 <p>The <code>Accounts</code> block is completely optional!  The only purpose of this block
 is to allow you to add additional tags (key/value pairs) to your accounts/roles
