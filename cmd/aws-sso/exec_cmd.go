@@ -35,7 +35,7 @@ type ExecCmd struct {
 	AccountId  AccountID `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNT_ID',predictor='accountId'"`
 	Role       string    `kong:"short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE_NAME',predictor='role'"`
 	Profile    string    `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile'"`
-	NoRegion   bool      `kong:"short='n',help='Do not set AWS_DEFAULT_REGION from config.yaml'"`
+	NoRegion   bool      `kong:"short='n',help='Do not set AWS_DEFAULT_REGION/AWS_REGION from config.yaml'"`
 	STSRefresh bool      `kong:"help='Force refresh of STS Token Credentials'"`
 
 	// Exec Params
@@ -103,6 +103,21 @@ func execCmd(ctx *RunContext, accountid int64, role string) error {
 	return cmd.Run()
 }
 
+// setRegionVars populates region-related env vars in shellVars. When region is
+// non-empty it sets AWS_DEFAULT_REGION, AWS_REGION and the sentinel
+// AWS_SSO_DEFAULT_REGION to that value. When empty it clears the sentinel so
+// the region is no longer treated as aws-sso-managed.
+func setRegionVars(shellVars map[string]string, region string) {
+	if len(region) > 0 {
+		shellVars["AWS_DEFAULT_REGION"] = region
+		shellVars["AWS_REGION"] = region
+		shellVars["AWS_SSO_DEFAULT_REGION"] = region
+	} else {
+		// we no longer manage the region
+		shellVars["AWS_SSO_DEFAULT_REGION"] = ""
+	}
+}
+
 func execShellEnvs(ctx *RunContext, accountid int64, role, region string) map[string]string {
 	var err error
 	credsPtr := GetRoleCredentials(ctx, AwsSSO, ctx.Cli.Exec.STSRefresh, accountid, role)
@@ -120,13 +135,7 @@ func execShellEnvs(ctx *RunContext, accountid int64, role, region string) map[st
 		"AWS_SSO":                    ssoName,
 	}
 
-	if len(region) > 0 {
-		shellVars["AWS_DEFAULT_REGION"] = region
-		shellVars["AWS_SSO_DEFAULT_REGION"] = region
-	} else {
-		// we no longer manage the region
-		shellVars["AWS_SSO_DEFAULT_REGION"] = ""
-	}
+	setRegionVars(shellVars, region)
 
 	// Set the AWS_SSO_PROFILE env var using our template
 	cache := ctx.Settings.Cache.GetSSO()
