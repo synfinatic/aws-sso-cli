@@ -125,9 +125,9 @@ func setupWizard(ctx *RunContext, reconfig, addSSO, advanced bool) error {
 
 	s.ProfileFormat = promptProfileFormat(s.ProfileFormat)
 
-	// check if we are in a ssh session or WSL2
+	// check if we are on a remote host
 	promptedOpen := false
-	if prompt.IsRemoteHost() || prompt.IsWSL() {
+	if prompt.IsRemoteHost() {
 		// users need to modify the default open action
 		promptOpen(s)
 		promptedOpen = true

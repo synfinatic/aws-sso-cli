@@ -30,23 +30,44 @@ type UtilsTestSuite struct {
 	suite.Suite
 }
 
+func unsetEnvWithCleanup(t *testing.T, key string) {
+	t.Helper()
+
+	oldValue, hadValue := os.LookupEnv(key)
+	t.Cleanup(func() {
+		var err error
+		if hadValue {
+			err = os.Setenv(key, oldValue)
+		} else {
+			err = os.Unsetenv(key)
+		}
+		if err != nil {
+			t.Errorf("failed to restore %s: %v", key, err)
+		}
+	})
+
+	assert.NoError(t, os.Unsetenv(key))
+}
+
 func TestUtilsSuite(t *testing.T) {
 	s := &UtilsTestSuite{}
 	suite.Run(t, s)
 }
 
 func TestIsRemoteHost(t *testing.T) {
+	unsetEnvWithCleanup(t, "SSH_TTY")
+	unsetEnvWithCleanup(t, "WSL_DISTRO_NAME")
+	assert.False(t, IsRemoteHost())
+
 	t.Setenv("SSH_TTY", "FOOBAR")
 	assert.True(t, IsRemoteHost())
 
 	assert.NoError(t, os.Unsetenv("SSH_TTY"))
 	assert.False(t, IsRemoteHost())
-}
 
-func TestIsWSL(t *testing.T) {
 	t.Setenv("WSL_DISTRO_NAME", "Ubuntu")
-	assert.True(t, IsWSL())
+	assert.True(t, IsRemoteHost())
 
 	assert.NoError(t, os.Unsetenv("WSL_DISTRO_NAME"))
-	assert.False(t, IsWSL())
+	assert.False(t, IsRemoteHost())
 }
