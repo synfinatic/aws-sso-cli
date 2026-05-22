@@ -58,7 +58,7 @@ require (
 	github.com/spf13/cast v1.7.0 // indirect
 
 	// see: https://github.com/sirupsen/logrus/issues/1275
-	golang.org/x/sys v0.44.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
 
 	// see: https://github.com/go-yaml/yaml/issues/666
 	// imported via testify, but they haven't yet merged the PR
@@ -76,7 +76,7 @@ require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1
 	github.com/danjacques/gofslock v0.0.0-20240212154529-d899e02bfe22
 	github.com/jpillora/backoff v1.0.0
-	golang.org/x/net v0.54.0
+	golang.org/x/net v0.55.0
 )
 
 require (
