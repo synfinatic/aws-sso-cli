@@ -206,7 +206,7 @@ Some special tags:
 
 #### Roles
 
-The `Roles` block is optional, except for roles you which to assume via role chaining.
+The `Roles` block is optional, except for roles you wish to assume via role chaining.
 
 ##### Profile
 
