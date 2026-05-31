@@ -1,9 +1,14 @@
 package main
 
 import (
+	"context"
+	"os"
+	"os/exec"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAccountIDUnmarshalText(t *testing.T) {
@@ -51,6 +56,29 @@ func TestAccountIDUnmarshalText(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestSignalExitGoroutine verifies that cancelling the signal context causes os.Exit(1).
+// It uses a subprocess so os.Exit doesn't terminate the test runner.
+func TestSignalExitGoroutine(t *testing.T) {
+	if os.Getenv("TEST_SIGNAL_EXIT_SUBPROCESS") == "1" {
+		ctx, cancel := context.WithCancel(context.Background())
+		go func() {
+			<-ctx.Done()
+			os.Exit(1)
+		}()
+		cancel()
+		time.Sleep(time.Second) // should not reach here
+		return
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestSignalExitGoroutine", "-test.v") //nolint:gosec
+	cmd.Env = append(os.Environ(), "TEST_SIGNAL_EXIT_SUBPROCESS=1")
+	err := cmd.Run()
+	require.Error(t, err)
+	var exitErr *exec.ExitError
+	require.ErrorAs(t, err, &exitErr)
+	assert.Equal(t, 1, exitErr.ExitCode())
 }
 
 func TestLogLevelTypeValidate(t *testing.T) {

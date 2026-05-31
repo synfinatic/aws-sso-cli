@@ -19,6 +19,7 @@ package storage
  */
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -88,7 +89,7 @@ func (jc *JsonStore) save() error {
 }
 
 // SaveRegisterClientData saves the RegisterClientData in our JSON store
-func (jc *JsonStore) SaveRegisterClientData(key string, client RegisterClientData) error {
+func (jc *JsonStore) SaveRegisterClientData(_ context.Context, key string, client RegisterClientData) error {
 	jc.RegisterClient[key] = client
 	return jc.save()
 }
@@ -104,13 +105,13 @@ func (jc *JsonStore) GetRegisterClientData(key string, client *RegisterClientDat
 }
 
 // DeleteRegisterClientData deletes the RegisterClientData from the JSON store
-func (jc *JsonStore) DeleteRegisterClientData(key string) error {
+func (jc *JsonStore) DeleteRegisterClientData(_ context.Context, key string) error {
 	delete(jc.RegisterClient, key)
 	return jc.save()
 }
 
 // SaveCreateTokenResponse stores the token in the json file
-func (jc *JsonStore) SaveCreateTokenResponse(key string, token CreateTokenResponse) error {
+func (jc *JsonStore) SaveCreateTokenResponse(_ context.Context, key string, token CreateTokenResponse) error {
 	jc.CreateTokenResponse[key] = token
 	return jc.save()
 }
@@ -126,13 +127,13 @@ func (jc *JsonStore) GetCreateTokenResponse(key string, token *CreateTokenRespon
 }
 
 // DeleteCreateTokenResponse deletes the token from the json file
-func (jc *JsonStore) DeleteCreateTokenResponse(key string) error {
+func (jc *JsonStore) DeleteCreateTokenResponse(_ context.Context, key string) error {
 	delete(jc.CreateTokenResponse, key)
 	return jc.save()
 }
 
 // SaveRoleCredentials stores the token in the json file
-func (jc *JsonStore) SaveRoleCredentials(arn string, token RoleCredentials) error {
+func (jc *JsonStore) SaveRoleCredentials(_ context.Context, arn string, token RoleCredentials) error {
 	jc.RoleCredentials[arn] = token
 	return jc.save()
 }
@@ -148,13 +149,13 @@ func (jc *JsonStore) GetRoleCredentials(arn string, token *RoleCredentials) erro
 }
 
 // DeleteRoleCredentials deletes the token from the json file
-func (jc *JsonStore) DeleteRoleCredentials(arn string) error {
+func (jc *JsonStore) DeleteRoleCredentials(_ context.Context, arn string) error {
 	delete(jc.RoleCredentials, arn)
 	return jc.save()
 }
 
 // SaveStaticCredentials stores the token in the json file
-func (jc *JsonStore) SaveStaticCredentials(arn string, creds StaticCredentials) error {
+func (jc *JsonStore) SaveStaticCredentials(_ context.Context, arn string, creds StaticCredentials) error {
 	jc.StaticCredentials[arn] = creds
 	return jc.save()
 }
@@ -170,7 +171,7 @@ func (jc *JsonStore) GetStaticCredentials(arn string, creds *StaticCredentials) 
 }
 
 // DeleteStaticCredentials deletes the StaticCredentials from the json file
-func (jc *JsonStore) DeleteStaticCredentials(arn string) error {
+func (jc *JsonStore) DeleteStaticCredentials(_ context.Context, arn string) error {
 	if _, ok := jc.StaticCredentials[arn]; !ok {
 		// return error if key doesn't exist
 		return fmt.Errorf("no StaticCredentials for ARN: %s", arn)
@@ -192,7 +193,7 @@ func (jc *JsonStore) ListStaticCredentials() []string {
 }
 
 // SaveEcsBearerToken stores the token in the json file
-func (jc *JsonStore) SaveEcsBearerToken(token string) error {
+func (jc *JsonStore) SaveEcsBearerToken(_ context.Context, token string) error {
 	jc.EcsBearerToken = token
 	return jc.save()
 }
@@ -203,13 +204,13 @@ func (jc *JsonStore) GetEcsBearerToken() (string, error) {
 }
 
 // DeleteEcsBearerToken deletes the token from the json file
-func (jc *JsonStore) DeleteEcsBearerToken() error {
+func (jc *JsonStore) DeleteEcsBearerToken(_ context.Context) error {
 	jc.EcsBearerToken = ""
 	return jc.save()
 }
 
 // SaveEcsSslKeyPair stores the SSL private key and certificate chain in the json file
-func (jc *JsonStore) SaveEcsSslKeyPair(privateKey, certChain []byte) error {
+func (jc *JsonStore) SaveEcsSslKeyPair(_ context.Context, privateKey, certChain []byte) error {
 	if err := ValidateSSLCertificate(certChain); err != nil {
 		return err
 	}
@@ -233,7 +234,7 @@ func (jc *JsonStore) GetEcsSslKey() (string, error) {
 }
 
 // DeleteEcsSslKeyPair deletes the SSL private key and certificate chain from the json file
-func (jc *JsonStore) DeleteEcsSslKeyPair() error {
+func (jc *JsonStore) DeleteEcsSslKeyPair(_ context.Context) error {
 	jc.EcsPrivateKey = ""
 	jc.EcsCertChain = ""
 	return jc.save()

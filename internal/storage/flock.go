@@ -19,6 +19,7 @@ package storage
  */
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -55,8 +56,22 @@ func FlockBlockerReset() {
 	sleeper.Reset()
 }
 
-// Implments fslock.Blocker
+// FlockBlocker implements fslock.Blocker with exponential backoff.
 func FlockBlocker() error {
 	time.Sleep(sleeper.Duration())
 	return nil
+}
+
+// FlockBlockerWithCtx returns an fslock.Blocker that stops if ctx is cancelled.
+// Wrap ctx with context.WithTimeout before calling to enforce a lock-wait deadline.
+func FlockBlockerWithCtx(ctx context.Context) func() error {
+	return func() error {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("storage lock wait cancelled: %w", ctx.Err())
+		default:
+		}
+		time.Sleep(sleeper.Duration())
+		return nil
+	}
 }

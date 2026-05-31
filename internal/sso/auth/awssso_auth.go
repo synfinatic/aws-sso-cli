@@ -49,7 +49,7 @@ const (
 
 // ValidAuthToken returns true if we have a valid AWS SSO authentication token
 // or false if we need to authenticate.
-func (as *AWSSSO) ValidAuthToken() bool {
+func (as *AWSSSO) ValidAuthToken(ctx context.Context) bool {
 	log.Trace("ValidAuthToken()", "storeKey", as.StoreKey())
 	// First verify the stored registration supports refresh tokens. Old
 	// registrations (or those written before GrantTypes was persisted) won't
@@ -60,7 +60,7 @@ func (as *AWSSSO) ValidAuthToken() bool {
 			if !clientData.SupportsGrantType(gt) {
 				log.Debug("client registration lacks necessary grant types; forcing new registration",
 					"storeKey", as.StoreKey(), "missingGrantType", gt)
-				err = as.store.DeleteRegisterClientData(as.StoreKey())
+				err = as.store.DeleteRegisterClientData(ctx, as.StoreKey())
 				if err != nil {
 					log.Error("unable to delete RegisterClientData from secure store", "storeKey", as.StoreKey(), "error", err.Error())
 				}
@@ -95,7 +95,7 @@ func (as *AWSSSO) ValidAuthToken() bool {
 
 	// Attempt a silent renewal using the stored refresh token before
 	// falling back to a full browser-based re-authentication.
-	if token.RefreshToken != "" && as.tryRefreshToken(token, clientData) {
+	if token.RefreshToken != "" && as.tryRefreshToken(ctx, token, clientData) {
 		return true
 	}
 	return false
@@ -105,9 +105,9 @@ func (as *AWSSSO) ValidAuthToken() bool {
 // the stored refresh token.  It saves the new token and returns true on
 // success, or logs and returns false so the caller can fall back to a full
 // re-authentication flow.
-func (as *AWSSSO) tryRefreshToken(expiredToken storage.CreateTokenResponse, clientData storage.RegisterClientData) bool {
+func (as *AWSSSO) tryRefreshToken(ctx context.Context, expiredToken storage.CreateTokenResponse, clientData storage.RegisterClientData) bool {
 	log.Debug("Attempting silent token refresh", "storeKey", as.StoreKey())
-	newToken, err := as.oidcClient.ExchangeRefreshToken(context.Background(), oidc.ExchangeRefreshTokenInput{
+	newToken, err := as.oidcClient.ExchangeRefreshToken(ctx, oidc.ExchangeRefreshTokenInput{
 		ClientID:     clientData.ClientId,
 		ClientSecret: clientData.ClientSecret,
 		RefreshToken: expiredToken.RefreshToken,
@@ -120,14 +120,14 @@ func (as *AWSSSO) tryRefreshToken(expiredToken storage.CreateTokenResponse, clie
 		// AWS may choose not to return a new refresh token; if so, reuse the old one.
 		newToken.RefreshToken = expiredToken.RefreshToken
 	}
-	_ = as.saveToken(newToken)
+	_ = as.saveToken(ctx, newToken)
 	log.Debug("Token successfully refreshed", "storeKey", as.StoreKey())
 	return true
 }
 
 // Authenticate retrieves an AWS SSO AccessToken from our cache or by
 // making the necessary AWS SSO calls.
-func (as *AWSSSO) Authenticate(urlAction uri.Action, browser string) error {
+func (as *AWSSSO) Authenticate(ctx context.Context, urlAction uri.Action, browser string) error {
 	log.Trace("Authenticate", "urlAction", urlAction, "browser", browser)
 	// cache urlAction and browser for subsequent calls if necessary
 	// if action is still undefined, use the default action which is defined inside NewHandleUrl()
@@ -137,7 +137,7 @@ func (as *AWSSSO) Authenticate(urlAction uri.Action, browser string) error {
 		as.browser = browser
 	}
 
-	return as.reauthenticate()
+	return as.reauthenticate(ctx)
 }
 
 // StoreKey returns the key in the cache for this AWSSSO instance
@@ -146,13 +146,13 @@ func (as *AWSSSO) StoreKey() string {
 }
 
 // reauthenticate talks to AWS SSO to generate a new AWS SSO AccessToken
-func (as *AWSSSO) reauthenticate() error {
+func (as *AWSSSO) reauthenticate(ctx context.Context) error {
 	// This should only be happening one at a time!
 	as.authenticateLock.Lock()
 	defer as.authenticateLock.Unlock()
 
 	log.Trace("reauthenticate()", "storeKey", as.StoreKey())
-	err := as.registerClient(false)
+	err := as.registerClient(ctx, false)
 	if err != nil {
 		return fmt.Errorf("unable to register client with AWS SSO: %w", err)
 	}
@@ -160,9 +160,9 @@ func (as *AWSSSO) reauthenticate() error {
 
 	switch as.getAuthWorkflow() {
 	case oidc.AuthWorkflowDeviceCode:
-		return as.reauthenticateDeviceCode()
+		return as.reauthenticateDeviceCode(ctx)
 	case oidc.AuthWorkflowPKCE:
-		return as.reauthenticatePKCE()
+		return as.reauthenticatePKCE(ctx)
 	default:
 		log.Fatal("unsupported auth workflow", "workflow", as.getAuthWorkflow())
 	}
@@ -171,7 +171,7 @@ func (as *AWSSSO) reauthenticate() error {
 
 // registerClient does the needful to talk to AWS or read our cache to get the
 // RegisterClientData for later steps and saves it to our secret store
-func (as *AWSSSO) registerClient(force bool) error {
+func (as *AWSSSO) registerClient(ctx context.Context, force bool) error {
 	log.Trace("registerClient()")
 	if !force {
 		log.Trace("Checking cache for RegisterClientData", "storeKey", as.StoreKey())
@@ -193,7 +193,7 @@ func (as *AWSSSO) registerClient(force bool) error {
 		input.Scopes = []string{SSO_ACCOUNT_ACCESS_SCOPE}
 		input.RedirectUris = []string{as.pkceRedirectURIBase()}
 	}
-	resp, err := as.oidcClient.RegisterClient(context.TODO(), input)
+	resp, err := as.oidcClient.RegisterClient(ctx, input)
 	if err != nil {
 		return err
 	}
@@ -204,7 +204,7 @@ func (as *AWSSSO) registerClient(force bool) error {
 	// them ourselves so ValidAuthToken() can check for refresh_token support.
 	as.ClientData.GrantTypes = as.GrantTypes()
 	log.Trace("SaveRegisterClientData start", "storeKey", as.StoreKey())
-	err = as.store.SaveRegisterClientData(as.StoreKey(), as.ClientData)
+	err = as.store.SaveRegisterClientData(ctx, as.StoreKey(), as.ClientData)
 	if err != nil {
 		log.Error("unable to save RegisterClientData", "storeKey", as.StoreKey(), "error", err.Error())
 	}
@@ -214,9 +214,9 @@ func (as *AWSSSO) registerClient(force bool) error {
 
 // startDeviceAuthorization makes the call to AWS to initiate the OIDC auth
 // to the SSO provider.
-func (as *AWSSSO) startDeviceAuthorization() error {
+func (as *AWSSSO) startDeviceAuthorization(ctx context.Context) error {
 	log.Trace("startDeviceAuthorization()", "storeKey", as.StoreKey())
-	resp, err := as.oidcClient.StartDeviceAuthorization(context.TODO(), oidc.StartDeviceAuthorizationInput{
+	resp, err := as.oidcClient.StartDeviceAuthorization(ctx, oidc.StartDeviceAuthorizationInput{
 		StartURL:     as.StartUrl,
 		ClientID:     as.ClientData.ClientId,
 		ClientSecret: as.ClientData.ClientSecret,
@@ -256,7 +256,7 @@ func (as *AWSSSO) getDeviceAuthInfo() (DeviceAuthInfo, error) {
 
 // createToken blocks until we have a new SSO AccessToken and saves it
 // to our secret store
-func (as *AWSSSO) createToken() error {
+func (as *AWSSSO) createToken(ctx context.Context) error {
 	log.Trace("createToken()")
 	var slowDown = SLOW_DOWN_SEC * time.Second
 	var retryInterval = RETRY_INTERVAL * time.Second
@@ -274,20 +274,20 @@ func (as *AWSSSO) createToken() error {
 		RetryInterval: retryInterval,
 		SlowDown:      slowDown,
 	}
-	token, err := as.oidcClient.PollDeviceCodeToken(context.TODO(), input)
+	token, err := as.oidcClient.PollDeviceCodeToken(ctx, input)
 	if err != nil {
 		return err
 	}
 
-	return as.saveToken(token)
+	return as.saveToken(ctx, token)
 }
 
-func (as *AWSSSO) saveToken(token storage.CreateTokenResponse) error {
+func (as *AWSSSO) saveToken(ctx context.Context, token storage.CreateTokenResponse) error {
 	as.tokenLock.Lock()
 	as.Token = token
 	as.tokenLock.Unlock()
 	// use the local variable directly to avoid a lock gap
-	if err := as.store.SaveCreateTokenResponse(as.StoreKey(), token); err != nil {
+	if err := as.store.SaveCreateTokenResponse(ctx, as.StoreKey(), token); err != nil {
 		log.Error("unable to save CreateTokenResponse", "error", err.Error())
 	}
 	return nil
@@ -351,16 +351,16 @@ func (as *AWSSSO) pkceAuthorizationEndpoint() string {
 	return fmt.Sprintf("https://oidc.%s.amazonaws.com/authorize", as.SsoRegion)
 }
 
-func (as *AWSSSO) reauthenticateDeviceCode() error {
-	err := as.startDeviceAuthorization()
+func (as *AWSSSO) reauthenticateDeviceCode(ctx context.Context) error {
+	err := as.startDeviceAuthorization(ctx)
 	log.Trace("<- reauthenticate()")
 	if err != nil {
 		log.Debug("startDeviceAuthorization failed.  Forcing refresh of registerClient")
 		// startDeviceAuthorization can fail if our cached registerClient token is invalid
-		if err = as.registerClient(true); err != nil {
+		if err = as.registerClient(ctx, true); err != nil {
 			return fmt.Errorf("unable to register client with AWS SSO: %w", err)
 		}
-		if err = as.startDeviceAuthorization(); err != nil {
+		if err = as.startDeviceAuthorization(ctx); err != nil {
 			return fmt.Errorf("unable to start device authorization with AWS SSO: %w", err)
 		}
 	}
@@ -380,7 +380,7 @@ func (as *AWSSSO) reauthenticateDeviceCode() error {
 
 	log.Info("Waiting for SSO authentication...")
 
-	err = as.createToken()
+	err = as.createToken(ctx)
 	if err != nil {
 		return fmt.Errorf("unable to create new AWS SSO token: %w", err)
 	}
@@ -388,7 +388,7 @@ func (as *AWSSSO) reauthenticateDeviceCode() error {
 	return nil
 }
 
-func (as *AWSSSO) reauthenticatePKCE() error {
+func (as *AWSSSO) reauthenticatePKCE(ctx context.Context) error {
 	// Find a free loopback port for the callback listener. RFC 8252 §7.3 recommends
 	// any available port rather than a fixed one to avoid bind conflicts.
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
@@ -399,7 +399,7 @@ func (as *AWSSSO) reauthenticatePKCE() error {
 	_ = ln.Close()
 	redirectURI := fmt.Sprintf("http://127.0.0.1:%d", port)
 
-	flow, err := as.oidcClient.StartPKCEAuthCodeFlow(context.Background(), oidc.StartPKCEAuthCodeInput{
+	flow, err := as.oidcClient.StartPKCEAuthCodeFlow(ctx, oidc.StartPKCEAuthCodeInput{
 		AuthorizationEndpoint: as.pkceAuthorizationEndpoint(),
 		ClientID:              as.ClientData.ClientId,
 		RedirectURI:           redirectURI,
@@ -416,10 +416,10 @@ func (as *AWSSSO) reauthenticatePKCE() error {
 	}
 
 	// Give the user up to 5 minutes to complete the browser login.
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	pkceCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 
-	callback, err := as.oidcClient.WaitForPKCECallback(ctx, oidc.WaitForPKCECallbackInput{
+	callback, err := as.oidcClient.WaitForPKCECallback(pkceCtx, oidc.WaitForPKCECallbackInput{
 		RedirectURI:   redirectURI,
 		ExpectedState: flow.State,
 	})
@@ -434,16 +434,16 @@ func (as *AWSSSO) reauthenticatePKCE() error {
 		CodeVerifier: flow.CodeVerifier,
 		RedirectURI:  redirectURI,
 	}
-	token, err := as.oidcClient.ExchangePKCEAuthCode(context.TODO(), input)
+	token, err := as.oidcClient.ExchangePKCEAuthCode(ctx, input)
 	if err != nil {
 		return fmt.Errorf("unable to exchange pkce authorization code: %w", err)
 	}
 
-	return as.saveToken(token)
+	return as.saveToken(ctx, token)
 }
 
 // Logout performs an SSO logout with AWS and invalidates our SSO session
-func (as *AWSSSO) Logout() error {
+func (as *AWSSSO) Logout(ctx context.Context) error {
 	token := as.Token.AccessToken
 
 	if token == "" {
@@ -455,7 +455,7 @@ func (as *AWSSSO) Logout() error {
 		token = tr.AccessToken
 
 		// delete the value from the store so we don't think we have a valid token
-		if err := as.store.DeleteCreateTokenResponse(as.key); err != nil {
+		if err := as.store.DeleteCreateTokenResponse(ctx, as.key); err != nil {
 			log.Error("unable to delete AccessToken from secure store", "error", err.Error())
 		}
 	}
@@ -465,6 +465,6 @@ func (as *AWSSSO) Logout() error {
 	}
 
 	// do the needful
-	_, err := as.sso.Logout(context.TODO(), input)
+	_, err := as.sso.Logout(ctx, input)
 	return err
 }

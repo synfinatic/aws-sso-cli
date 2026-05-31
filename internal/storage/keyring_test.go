@@ -19,6 +19,7 @@ package storage
  */
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -54,7 +55,7 @@ func TestKeyringSuite(t *testing.T) {
 	assert.NoError(t, err)
 
 	s := KeyringSuite{}
-	s.store, err = OpenKeyring(c)
+	s.store, err = OpenKeyring(context.Background(), c)
 	assert.NoError(t, err)
 	suite.Run(t, &s)
 }
@@ -70,7 +71,7 @@ func (suite *KeyringSuite) TestRegisterClientData() {
 		ClientSecretExpiresAt: time.Now().Unix() + 1,
 		TokenEndpoint:         "IhavenoideawhatI'mdoing",
 	}
-	err := suite.store.SaveRegisterClientData("foo", rcd)
+	err := suite.store.SaveRegisterClientData(context.Background(), "foo", rcd)
 	assert.NoError(t, err)
 
 	rcd2 := RegisterClientData{}
@@ -78,7 +79,7 @@ func (suite *KeyringSuite) TestRegisterClientData() {
 	assert.NoError(t, err)
 	assert.Equal(t, rcd, rcd2)
 
-	err = suite.store.DeleteRegisterClientData("foo")
+	err = suite.store.DeleteRegisterClientData(context.Background(), "foo")
 	assert.NoError(t, err)
 
 	err = suite.store.GetRegisterClientData("foo", &rcd2)
@@ -87,7 +88,7 @@ func (suite *KeyringSuite) TestRegisterClientData() {
 	err = suite.store.GetRegisterClientData("cow", &rcd2)
 	assert.Error(t, err)
 
-	err = suite.store.DeleteRegisterClientData("cow")
+	err = suite.store.DeleteRegisterClientData(context.Background(), "cow")
 	assert.Error(t, err)
 }
 
@@ -102,7 +103,7 @@ func (suite *KeyringSuite) TestCreateTokenResponse() {
 		RefreshToken: "just another token",
 		TokenType:    "yes",
 	}
-	err := suite.store.SaveCreateTokenResponse("foo", ctr)
+	err := suite.store.SaveCreateTokenResponse(context.Background(), "foo", ctr)
 	assert.NoError(t, err)
 
 	ctr2 := CreateTokenResponse{}
@@ -110,13 +111,13 @@ func (suite *KeyringSuite) TestCreateTokenResponse() {
 	assert.NoError(t, err)
 	assert.Equal(t, ctr, ctr2)
 
-	err = suite.store.DeleteCreateTokenResponse("foo")
+	err = suite.store.DeleteCreateTokenResponse(context.Background(), "foo")
 	assert.NoError(t, err)
 
 	err = suite.store.GetCreateTokenResponse("cow", &ctr2)
 	assert.Error(t, err)
 
-	err = suite.store.DeleteCreateTokenResponse("cow")
+	err = suite.store.DeleteCreateTokenResponse(context.Background(), "cow")
 	assert.Error(t, err)
 }
 
@@ -131,7 +132,7 @@ func (suite *KeyringSuite) TestRoleCredentials() {
 		SessionToken:    "Another secret string",
 		Expiration:      time.Now().Unix(),
 	}
-	err := suite.store.SaveRoleCredentials("foo", rc)
+	err := suite.store.SaveRoleCredentials(context.Background(), "foo", rc)
 	assert.NoError(t, err)
 
 	rc2 := RoleCredentials{}
@@ -139,7 +140,7 @@ func (suite *KeyringSuite) TestRoleCredentials() {
 	assert.NoError(t, err)
 	assert.Equal(t, rc, rc2)
 
-	err = suite.store.DeleteRoleCredentials("foo")
+	err = suite.store.DeleteRoleCredentials(context.Background(), "foo")
 	assert.NoError(t, err)
 
 	err = suite.store.GetRoleCredentials("foo", &rc2)
@@ -148,7 +149,7 @@ func (suite *KeyringSuite) TestRoleCredentials() {
 	err = suite.store.GetRoleCredentials("cow", &rc2)
 	assert.Error(t, err)
 
-	err = suite.store.DeleteRoleCredentials("cow")
+	err = suite.store.DeleteRoleCredentials(context.Background(), "cow")
 	assert.Error(t, err)
 }
 
@@ -159,14 +160,14 @@ func (suite *KeyringSuite) TestEcsBearerToken() {
 	assert.NoError(t, err)
 	assert.Empty(t, token)
 
-	err = suite.store.SaveEcsBearerToken("not a real token")
+	err = suite.store.SaveEcsBearerToken(context.Background(), "not a real token")
 	assert.NoError(t, err)
 
 	token, err = suite.store.GetEcsBearerToken()
 	assert.NoError(t, err)
 	assert.Equal(t, "not a real token", token)
 
-	err = suite.store.DeleteEcsBearerToken()
+	err = suite.store.DeleteEcsBearerToken(context.Background())
 	assert.NoError(t, err)
 
 	token, err = suite.store.GetEcsBearerToken()
@@ -190,16 +191,16 @@ func (suite *KeyringSuite) TestEcsSslKeyPair() { // nolint: dupl
 	keyBytes, err := os.ReadFile("../ecs/server/testdata/localhost.key")
 	assert.NoError(t, err)
 
-	err = suite.store.SaveEcsSslKeyPair([]byte{}, certBytes)
+	err = suite.store.SaveEcsSslKeyPair(context.Background(), []byte{}, certBytes)
 	assert.NoError(t, err)
 
-	err = suite.store.SaveEcsSslKeyPair(keyBytes, certBytes)
+	err = suite.store.SaveEcsSslKeyPair(context.Background(), keyBytes, certBytes)
 	assert.NoError(t, err)
 
-	err = suite.store.SaveEcsSslKeyPair(keyBytes, keyBytes)
+	err = suite.store.SaveEcsSslKeyPair(context.Background(), keyBytes, keyBytes)
 	assert.Error(t, err)
 
-	err = suite.store.SaveEcsSslKeyPair(certBytes, certBytes)
+	err = suite.store.SaveEcsSslKeyPair(context.Background(), certBytes, certBytes)
 	assert.Error(t, err)
 
 	cert, err = suite.store.GetEcsSslCert()
@@ -210,7 +211,7 @@ func (suite *KeyringSuite) TestEcsSslKeyPair() { // nolint: dupl
 	assert.NoError(t, err)
 	assert.Equal(t, string(keyBytes), key)
 
-	err = suite.store.DeleteEcsSslKeyPair()
+	err = suite.store.DeleteEcsSslKeyPair(context.Background())
 	assert.NoError(t, err)
 
 	cert, err = suite.store.GetEcsSslCert()
@@ -270,7 +271,7 @@ func TestGetStorageData(t *testing.T) {
 	assert.NoError(t, err)
 
 	s := KeyringSuite{}
-	s.store, err = OpenKeyring(c)
+	s.store, err = OpenKeyring(context.Background(), c)
 	assert.NoError(t, err)
 	suite.Run(t, &s)
 }
@@ -305,40 +306,40 @@ func TestKeyringErrors(t *testing.T) {
 		cache:   NewStorageData(),
 	}
 
-	err = ks.getStorageData(&StorageData{})
+	err = ks.getStorageData(context.Background(), &StorageData{})
 	assert.NoError(t, err)
 
-	err = ks.saveStorageData()
+	err = ks.saveStorageData(context.Background())
 	assert.Error(t, err)
 
 	// RegisterClientData
 	err = ks.GetRegisterClientData("region", &RegisterClientData{})
 	assert.Error(t, err)
 
-	err = ks.SaveRegisterClientData("region", RegisterClientData{})
+	err = ks.SaveRegisterClientData(context.Background(), "region", RegisterClientData{})
 	assert.Error(t, err)
 
-	err = ks.DeleteRegisterClientData("region")
+	err = ks.DeleteRegisterClientData(context.Background(), "region")
 	assert.Error(t, err)
 
 	// RoleCredentials
 	err = ks.GetRoleCredentials("foo", &RoleCredentials{})
 	assert.Error(t, err)
 
-	err = ks.SaveRoleCredentials("foo", RoleCredentials{})
+	err = ks.SaveRoleCredentials(context.Background(), "foo", RoleCredentials{})
 	assert.Error(t, err)
 
-	err = ks.DeleteRoleCredentials("bar")
+	err = ks.DeleteRoleCredentials(context.Background(), "bar")
 	assert.Error(t, err)
 
 	// CreateTokenResponse
 	err = ks.GetCreateTokenResponse("key", &CreateTokenResponse{})
 	assert.Error(t, err)
 
-	err = ks.SaveCreateTokenResponse("key", CreateTokenResponse{})
+	err = ks.SaveCreateTokenResponse(context.Background(), "key", CreateTokenResponse{})
 	assert.Error(t, err)
 
-	err = ks.DeleteCreateTokenResponse("key")
+	err = ks.DeleteCreateTokenResponse(context.Background(), "key")
 	assert.Error(t, err)
 }
 
@@ -362,17 +363,17 @@ func (suite *KeyringSuite) TestStaticCredentials() {
 	}
 	assert.Empty(t, suite.store.ListStaticCredentials())
 
-	assert.NoError(t, suite.store.SaveStaticCredentials(arn, cr))
+	assert.NoError(t, suite.store.SaveStaticCredentials(context.Background(), arn, cr))
 	assert.Equal(t, []string{arn}, suite.store.ListStaticCredentials())
 
 	cr2 := StaticCredentials{}
 	assert.NoError(t, suite.store.GetStaticCredentials(arn, &cr2))
 	assert.Equal(t, cr, cr2)
 
-	assert.NoError(t, suite.store.DeleteStaticCredentials(arn))
+	assert.NoError(t, suite.store.DeleteStaticCredentials(context.Background(), arn))
 	assert.Empty(t, suite.store.ListStaticCredentials())
 	assert.Error(t, suite.store.GetStaticCredentials(arn, &cr2))
-	assert.Error(t, suite.store.DeleteStaticCredentials(arn))
+	assert.Error(t, suite.store.DeleteStaticCredentials(context.Background(), arn))
 }
 
 func TestNewStorageData(t *testing.T) {
@@ -505,11 +506,11 @@ func TestKeyringSuiteFails(t *testing.T) {
 	err = os.WriteFile(path.Join(d, "secure", "aws-sso-cli-records"), in, 0600)
 	assert.NoError(t, err)
 
-	err = kr.getStorageData(&kr.cache)
+	err = kr.getStorageData(context.Background(), &kr.cache)
 	assert.Error(t, err)
 	assert.Equal(t, "unmarshal failure", err.Error())
 
-	_, err = OpenKeyring(c)
+	_, err = OpenKeyring(context.Background(), c)
 	assert.Error(t, err)
 	assert.Equal(t, "unmarshal failure", err.Error())
 }
@@ -537,7 +538,7 @@ func TestSplitCredentials(t *testing.T) {
 	c, err := NewKeyringConfig("file", d, "")
 	assert.NoError(t, err)
 
-	store, err := OpenKeyring(c)
+	store, err := OpenKeyring(context.Background(), c)
 	assert.NoError(t, err)
 
 	rc := RoleCredentials{ // nolint:gosec
@@ -566,36 +567,36 @@ func TestSplitCredentials(t *testing.T) {
 	}
 
 	keyringGOOS = "linux"
-	err = store.SaveRoleCredentials("bar", largeRC)
+	err = store.SaveRoleCredentials(context.Background(), "bar", largeRC)
 	assert.NoError(t, err)
 	rc2 := RoleCredentials{}
 	err = store.GetRoleCredentials("bar", &rc2)
 	assert.NoError(t, err)
 	assert.Equal(t, largeRC, rc2)
-	err = store.DeleteRoleCredentials("bar")
+	err = store.DeleteRoleCredentials(context.Background(), "bar")
 	assert.NoError(t, err)
 
 	keyringGOOS = "windows"
-	err = store.SaveRoleCredentials("bar", largeRC)
+	err = store.SaveRoleCredentials(context.Background(), "bar", largeRC)
 	assert.NoError(t, err)
 	rc2 = RoleCredentials{}
 	err = store.GetRoleCredentials("bar", &rc2)
 	assert.NoError(t, err)
 	assert.Equal(t, largeRC, rc2)
-	err = store.DeleteRoleCredentials("bar")
+	err = store.DeleteRoleCredentials(context.Background(), "bar")
 	assert.NoError(t, err)
-	err = store.SaveRoleCredentials("bar", rc)
+	err = store.SaveRoleCredentials(context.Background(), "bar", rc)
 	assert.NoError(t, err)
 	rc2 = RoleCredentials{}
 
 	err = store.GetRoleCredentials("bar", &rc2)
 	assert.NoError(t, err)
 	assert.Equal(t, rc, rc2)
-	err = store.DeleteRoleCredentials("bar")
+	err = store.DeleteRoleCredentials(context.Background(), "bar")
 	assert.NoError(t, err)
 
 	// Replace a chunk with wrong data
-	err = store.SaveRoleCredentials("bar", largeRC)
+	err = store.SaveRoleCredentials(context.Background(), "bar", largeRC)
 	assert.NoError(t, err)
 
 	ks := store.(*KeyringStore)
@@ -606,6 +607,6 @@ func TestSplitCredentials(t *testing.T) {
 	assert.Error(t, err)
 
 	// but OpenKeyring is fine
-	_, err = OpenKeyring(c)
+	_, err = OpenKeyring(context.Background(), c)
 	assert.NoError(t, err)
 }

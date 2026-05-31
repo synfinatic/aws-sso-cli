@@ -197,7 +197,7 @@ func (as *AWSSSO) ListAccounts(input *awssso.ListAccountsInput) (*awssso.ListAcc
 				log.Warn("AccessToken Unauthorized Error; forcing re-authentication")
 				log.Debug("AccessToken Unauthorized Error; refreshing", "error", err.Error())
 
-				if err2 := as.reauthenticate(); err2 != nil {
+				if err2 := as.reauthenticate(context.Background()); err2 != nil {
 					// fail hard now
 					return output, err2
 				}
@@ -235,7 +235,7 @@ func (as *AWSSSO) ListAccountRoles(input *awssso.ListAccountRolesInput) (*awssso
 				log.Warn("AccessToken Unauthorized Error; forcing re-authentication")
 				log.Debug("AccessToken Unauthorized Error; refreshing", "error", err.Error())
 
-				if err = as.reauthenticate(); err != nil {
+				if err = as.reauthenticate(context.Background()); err != nil {
 					// fail hard now
 					panic(fmt.Sprintf("Unexpected auth failure: %s", err.Error()))
 				}

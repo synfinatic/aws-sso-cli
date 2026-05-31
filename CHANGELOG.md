@@ -3,6 +3,10 @@
 
 ## [Unreleased]
 
+### Bugs
+
+* Fix zombie processes holding storage.lock after SIGINT #1379
+
 ### Changes
 
 * Add unit tests for cmd/aws-sso

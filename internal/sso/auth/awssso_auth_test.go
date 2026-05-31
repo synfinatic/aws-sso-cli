@@ -205,14 +205,14 @@ func TestAuthenticateSteps(t *testing.T) {
 		},
 	})
 
-	err = as.registerClient(false)
+	err = as.registerClient(context.Background(), false)
 	assert.NoError(t, err)
 	assert.Equal(t, "this-is-my-client-id", as.ClientData.ClientId)
 	assert.Equal(t, "this-is-my-client-secret", as.ClientData.ClientSecret)
 	assert.Equal(t, int64(42), as.ClientData.ClientIdIssuedAt)
 	assert.Equal(t, int64(4200), as.ClientData.ClientSecretExpiresAt)
 
-	err = as.startDeviceAuthorization()
+	err = as.startDeviceAuthorization(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, "device-code", as.DeviceAuth.DeviceCode)
 	assert.Equal(t, "user-code", as.DeviceAuth.UserCode)
@@ -221,7 +221,7 @@ func TestAuthenticateSteps(t *testing.T) {
 	assert.Equal(t, int32(42), as.DeviceAuth.ExpiresIn)
 	assert.Equal(t, int32(5), as.DeviceAuth.Interval)
 
-	err = as.createToken()
+	err = as.createToken(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, "access-token", as.Token.AccessToken)
 	assert.Equal(t, int32(42), as.Token.ExpiresIn)
@@ -356,12 +356,12 @@ func TestAuthenticate(t *testing.T) {
 		},
 	})
 
-	as.ValidAuthToken()
-	assert.False(t, as.ValidAuthToken())
+	as.ValidAuthToken(context.Background())
+	assert.False(t, as.ValidAuthToken(context.Background()))
 
-	err = as.Authenticate("print", "fake-browser")
+	err = as.Authenticate(context.Background(), "print", "fake-browser")
 	assert.NoError(t, err)
-	assert.True(t, as.ValidAuthToken())
+	assert.True(t, as.ValidAuthToken(context.Background()))
 	assert.Equal(t, "access-token", as.Token.AccessToken)
 	assert.Equal(t, int32(expires), as.Token.ExpiresIn) // #nosec
 	assert.Equal(t, "id-token", as.Token.IdToken)
@@ -369,7 +369,7 @@ func TestAuthenticate(t *testing.T) {
 	assert.Equal(t, "token-type", as.Token.TokenType)
 
 	// We should now have a valid auth token
-	assert.True(t, as.ValidAuthToken())
+	assert.True(t, as.ValidAuthToken(context.Background()))
 	assert.Equal(t, "access-token", as.Token.AccessToken)
 	assert.Equal(t, int32(expires), as.Token.ExpiresIn) // #nosec
 	assert.Equal(t, "id-token", as.Token.IdToken)
@@ -378,11 +378,11 @@ func TestAuthenticate(t *testing.T) {
 
 	// verify CLI override
 	as.SSOConfig.AuthUrlAction = "invalid"
-	err = as.Authenticate("print", "fake-browser")
+	err = as.Authenticate(context.Background(), "print", "fake-browser")
 	assert.NoError(t, err)
 
 	// verify no override of CLI when not set
-	err = as.Authenticate(uri.Print, "fake-browser")
+	err = as.Authenticate(context.Background(), uri.Print, "fake-browser")
 	assert.NoError(t, err)
 
 	defer func() {
@@ -393,7 +393,7 @@ func TestAuthenticate(t *testing.T) {
 
 	// we can't exec with bad config
 	as.SSOConfig.AuthUrlAction = uri.Exec
-	_ = as.Authenticate(uri.Undef, "fake-browser")
+	_ = as.Authenticate(context.Background(), uri.Undef, "fake-browser")
 }
 
 func authTokenSetup(t *testing.T, workflow oidc.AuthWorkflow) (as *AWSSSO, key string, jstore storage.SecureStorage) {
@@ -428,18 +428,18 @@ func authTokenSetup(t *testing.T, workflow oidc.AuthWorkflow) (as *AWSSSO, key s
 		TokenType:    "token_type",
 	}
 	key = as.StoreKey()
-	err = jstore.SaveCreateTokenResponse(key, token)
+	err = jstore.SaveCreateTokenResponse(context.Background(), key, token)
 	assert.NoError(t, err)
-	assert.False(t, as.ValidAuthToken())
+	assert.False(t, as.ValidAuthToken(context.Background()))
 
 	token.ExpiresAt = 99999
-	err = jstore.SaveCreateTokenResponse(key, token)
+	err = jstore.SaveCreateTokenResponse(context.Background(), key, token)
 	assert.NoError(t, err)
-	assert.False(t, as.ValidAuthToken())
+	assert.False(t, as.ValidAuthToken(context.Background()))
 
 	token.ExpiresIn = int32(^int(0) >> 1)
 	token.ExpiresAt = 99999999999
-	err = jstore.SaveCreateTokenResponse(key, token)
+	err = jstore.SaveCreateTokenResponse(context.Background(), key, token)
 	assert.NoError(t, err)
 	return as, key, jstore
 }
@@ -456,19 +456,19 @@ func TestValidAuthTokenPKCE(t *testing.T) { // nolint:dupl
 		ClientSecretExpiresAt: 99999999999,
 		GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken},
 	}
-	err = jstore.SaveRegisterClientData(key, clientData)
+	err = jstore.SaveRegisterClientData(context.Background(), key, clientData)
 	assert.NoError(t, err)
-	assert.True(t, as.ValidAuthToken())
+	assert.True(t, as.ValidAuthToken(context.Background()))
 
 	clientData.GrantTypes = []storage.GrantType{storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken}
-	err = jstore.SaveRegisterClientData(key, clientData)
+	err = jstore.SaveRegisterClientData(context.Background(), key, clientData)
 	assert.NoError(t, err)
-	assert.False(t, as.ValidAuthToken())
+	assert.False(t, as.ValidAuthToken(context.Background()))
 
 	clientData.GrantTypes = []storage.GrantType{storage.GrantTypeAuthorizationCode}
-	err = jstore.SaveRegisterClientData(key, clientData)
+	err = jstore.SaveRegisterClientData(context.Background(), key, clientData)
 	assert.NoError(t, err)
-	assert.False(t, as.ValidAuthToken())
+	assert.False(t, as.ValidAuthToken(context.Background()))
 }
 
 func TestValidAuthTokenDeviceCode(t *testing.T) { // nolint:dupl
@@ -483,19 +483,19 @@ func TestValidAuthTokenDeviceCode(t *testing.T) { // nolint:dupl
 		ClientSecretExpiresAt: 99999999999,
 		GrantTypes:            []storage.GrantType{storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken},
 	}
-	err = jstore.SaveRegisterClientData(key, clientData)
+	err = jstore.SaveRegisterClientData(context.Background(), key, clientData)
 	assert.NoError(t, err)
-	assert.True(t, as.ValidAuthToken())
+	assert.True(t, as.ValidAuthToken(context.Background()))
 
 	clientData.GrantTypes = []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken}
-	err = jstore.SaveRegisterClientData(key, clientData)
+	err = jstore.SaveRegisterClientData(context.Background(), key, clientData)
 	assert.NoError(t, err)
-	assert.False(t, as.ValidAuthToken())
+	assert.False(t, as.ValidAuthToken(context.Background()))
 
 	clientData.GrantTypes = []storage.GrantType{storage.GrantTypeDeviceCode}
-	err = jstore.SaveRegisterClientData(key, clientData)
+	err = jstore.SaveRegisterClientData(context.Background(), key, clientData)
 	assert.NoError(t, err)
-	assert.False(t, as.ValidAuthToken())
+	assert.False(t, as.ValidAuthToken(context.Background()))
 }
 
 func TestAuthenticateFailure(t *testing.T) {
@@ -656,19 +656,19 @@ func TestAuthenticateFailure(t *testing.T) {
 		},
 	})
 
-	err = as.Authenticate("print", "fake-browser")
+	err = as.Authenticate(context.Background(), "print", "fake-browser")
 	assert.Contains(t, err.Error(), "unable to register client with AWS SSO")
 
-	err = as.Authenticate("print", "fake-browser")
+	err = as.Authenticate(context.Background(), "print", "fake-browser")
 	assert.Contains(t, err.Error(), "unable to start device authorization")
 
-	err = as.Authenticate("print", "fake-browser")
+	err = as.Authenticate(context.Background(), "print", "fake-browser")
 	assert.Contains(t, err.Error(), "createToken:")
 
-	err = as.Authenticate("print", "fake-browser")
+	err = as.Authenticate(context.Background(), "print", "fake-browser")
 	assert.Contains(t, err.Error(), "no valid verification url")
 
-	err = as.Authenticate("invalid", "fake-browser")
+	err = as.Authenticate(context.Background(), "invalid", "fake-browser")
 	assert.Contains(t, err.Error(), "unsupported Open action")
 }
 
@@ -729,7 +729,7 @@ func TestReauthenticate(t *testing.T) {
 		},
 	})
 
-	err = as.reauthenticate()
+	err = as.reauthenticate(context.Background())
 	assert.Contains(t, err.Error(), "unable to exec")
 }
 
@@ -769,7 +769,7 @@ func TestLogout(t *testing.T) {
 		},
 	}
 
-	err = as.Logout()
+	err = as.Logout(context.Background())
 	assert.NoError(t, err)
 	tr := storage.CreateTokenResponse{}
 	assert.Error(t, as.store.GetCreateTokenResponse(as.key, &tr))
@@ -784,10 +784,10 @@ func TestLogout(t *testing.T) {
 		},
 	}
 
-	err = as.Logout()
+	err = as.Logout(context.Background())
 	assert.Error(t, err)
 
-	err = jstore.SaveCreateTokenResponse("primary", storage.CreateTokenResponse{
+	err = jstore.SaveCreateTokenResponse(context.Background(), "primary", storage.CreateTokenResponse{
 		AccessToken:  "access-token",
 		ExpiresIn:    42,
 		ExpiresAt:    time.Now().Add(duration).Unix(),
@@ -796,7 +796,7 @@ func TestLogout(t *testing.T) {
 		TokenType:    "token-type",
 	})
 	assert.NoError(t, err)
-	err = as.Logout()
+	err = as.Logout(context.Background())
 	assert.NoError(t, err)
 	err = jstore.GetCreateTokenResponse("primary", &storage.CreateTokenResponse{})
 	assert.Error(t, err)
@@ -918,7 +918,7 @@ func TestSaveToken(t *testing.T) {
 		TokenType:    "Bearer",
 	}
 
-	err = as.saveToken(token)
+	err = as.saveToken(context.Background(), token)
 	assert.NoError(t, err)
 	assert.Equal(t, token.AccessToken, as.Token.AccessToken)
 	assert.Equal(t, token.IdToken, as.Token.IdToken)
@@ -957,7 +957,7 @@ func TestRegisterClientPKCE(t *testing.T) {
 		SSOConfig:  &ssoconfig.SSOConfig{AuthWorkflow: oidc.AuthWorkflowPKCE},
 	}
 
-	err = as.registerClient(true)
+	err = as.registerClient(context.Background(), true)
 	assert.NoError(t, err)
 	assert.Equal(t, "pkce-client-id", as.ClientData.ClientId)
 
@@ -1008,7 +1008,7 @@ func TestReauthenticatePKCE(t *testing.T) {
 			SSOConfig:  &ssoconfig.SSOConfig{AuthWorkflow: oidc.AuthWorkflowPKCE},
 		}
 
-		err = as.reauthenticatePKCE()
+		err = as.reauthenticatePKCE(context.Background())
 		assert.NoError(t, err)
 		assert.Equal(t, "pkce-access-token", as.Token.AccessToken)
 		assert.Equal(t, "pkce-id-token", as.Token.IdToken)
@@ -1049,7 +1049,7 @@ func TestReauthenticatePKCE(t *testing.T) {
 			SSOConfig:  &ssoconfig.SSOConfig{AuthWorkflow: oidc.AuthWorkflowPKCE},
 		}
 
-		err = as.reauthenticatePKCE()
+		err = as.reauthenticatePKCE(context.Background())
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "unable to start pkce authorization")
 		assert.Contains(t, err.Error(), "pkce start failed")
@@ -1081,7 +1081,7 @@ func TestReauthenticatePKCE(t *testing.T) {
 			SSOConfig:  &ssoconfig.SSOConfig{AuthWorkflow: oidc.AuthWorkflowPKCE},
 		}
 
-		err = as.reauthenticatePKCE()
+		err = as.reauthenticatePKCE(context.Background())
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "unable to receive pkce callback")
 		assert.Contains(t, err.Error(), "callback timed out")
@@ -1114,7 +1114,7 @@ func TestReauthenticatePKCE(t *testing.T) {
 			SSOConfig:  &ssoconfig.SSOConfig{AuthWorkflow: oidc.AuthWorkflowPKCE},
 		}
 
-		err = as.reauthenticatePKCE()
+		err = as.reauthenticatePKCE(context.Background())
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "unable to exchange pkce authorization code")
 		assert.Contains(t, err.Error(), "token exchange failed")
@@ -1159,7 +1159,7 @@ func TestTryRefreshToken(t *testing.T) {
 			oidcClient: mock,
 		}
 
-		ok := as.tryRefreshToken(expiredToken, clientData)
+		ok := as.tryRefreshToken(context.Background(), expiredToken, clientData)
 		assert.True(t, ok)
 		assert.Equal(t, "new-access-token", as.Token.AccessToken)
 		assert.Equal(t, "new-refresh-token", as.Token.RefreshToken)
@@ -1197,7 +1197,7 @@ func TestTryRefreshToken(t *testing.T) {
 			oidcClient: mock,
 		}
 
-		ok := as.tryRefreshToken(expiredToken, clientData)
+		ok := as.tryRefreshToken(context.Background(), expiredToken, clientData)
 		assert.False(t, ok)
 		// Token in memory should be unchanged (zero value)
 		assert.Equal(t, "", as.Token.AccessToken)
@@ -1238,7 +1238,7 @@ func TestValidAuthTokenRefresh(t *testing.T) {
 			ClientSecretExpiresAt: time.Now().Add(time.Hour).Unix(),
 			GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken},
 		}
-		err = jstore.SaveRegisterClientData(as.StoreKey(), clientData)
+		err = jstore.SaveRegisterClientData(context.Background(), as.StoreKey(), clientData)
 		assert.NoError(t, err)
 
 		// Save an expired token that has a refresh token
@@ -1247,16 +1247,16 @@ func TestValidAuthTokenRefresh(t *testing.T) {
 			ExpiresAt:    1, // expired
 			RefreshToken: "stored-refresh-token",
 		}
-		err = jstore.SaveCreateTokenResponse(as.StoreKey(), expiredToken)
+		err = jstore.SaveCreateTokenResponse(context.Background(), as.StoreKey(), expiredToken)
 		assert.NoError(t, err)
 
 		// ValidAuthToken should silently refresh and return true
-		assert.True(t, as.ValidAuthToken())
+		assert.True(t, as.ValidAuthToken(context.Background()))
 		assert.Equal(t, "refreshed-access-token", as.Token.AccessToken)
 		assert.Equal(t, "new-refresh-token", as.Token.RefreshToken)
 
 		// The new token must be persisted so the next call also succeeds
-		assert.True(t, as.ValidAuthToken())
+		assert.True(t, as.ValidAuthToken(context.Background()))
 		assert.Len(t, mock.exchangeRefreshInputs, 1) // only refreshed once
 	})
 
@@ -1285,7 +1285,7 @@ func TestValidAuthTokenRefresh(t *testing.T) {
 			ClientSecretExpiresAt: time.Now().Add(time.Hour).Unix(),
 			GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken},
 		}
-		err = jstore.SaveRegisterClientData(as.StoreKey(), clientData)
+		err = jstore.SaveRegisterClientData(context.Background(), as.StoreKey(), clientData)
 		assert.NoError(t, err)
 
 		expiredToken := storage.CreateTokenResponse{
@@ -1293,10 +1293,10 @@ func TestValidAuthTokenRefresh(t *testing.T) {
 			ExpiresAt:    1,
 			RefreshToken: "bad-refresh-token",
 		}
-		err = jstore.SaveCreateTokenResponse(as.StoreKey(), expiredToken)
+		err = jstore.SaveCreateTokenResponse(context.Background(), as.StoreKey(), expiredToken)
 		assert.NoError(t, err)
 
-		assert.False(t, as.ValidAuthToken())
+		assert.False(t, as.ValidAuthToken(context.Background()))
 		assert.Equal(t, "", as.Token.AccessToken)
 	})
 
@@ -1323,7 +1323,7 @@ func TestValidAuthTokenRefresh(t *testing.T) {
 			ClientSecretExpiresAt: time.Now().Add(time.Hour).Unix(),
 			GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken},
 		}
-		err = jstore.SaveRegisterClientData(as.StoreKey(), clientData)
+		err = jstore.SaveRegisterClientData(context.Background(), as.StoreKey(), clientData)
 		assert.NoError(t, err)
 
 		expiredToken := storage.CreateTokenResponse{
@@ -1331,10 +1331,10 @@ func TestValidAuthTokenRefresh(t *testing.T) {
 			ExpiresAt:    1,
 			RefreshToken: "", // no refresh token
 		}
-		err = jstore.SaveCreateTokenResponse(as.StoreKey(), expiredToken)
+		err = jstore.SaveCreateTokenResponse(context.Background(), as.StoreKey(), expiredToken)
 		assert.NoError(t, err)
 
-		assert.False(t, as.ValidAuthToken())
+		assert.False(t, as.ValidAuthToken(context.Background()))
 		// ExchangeRefreshToken should never have been called
 		assert.Len(t, mock.exchangeRefreshInputs, 0)
 	})

@@ -19,6 +19,7 @@ package storage
  */
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -104,18 +105,18 @@ func (s *JsonStoreTestSuite) TestRegisterClientData() {
 	}
 	assert.Equal(t, rcdTest, rcd)
 
-	err = s.json.SaveRegisterClientData(key, rcd)
+	err = s.json.SaveRegisterClientData(context.Background(), key, rcd)
 	assert.Nil(t, err)
 	assert.Equal(t, rcdTest, rcd)
 
-	err = s.json.DeleteRegisterClientData(key)
+	err = s.json.DeleteRegisterClientData(context.Background(), key)
 	assert.Nil(t, err)
 
 	err = s.json.GetRegisterClientData(key, &rcd)
 	assert.NotNil(t, err)
 }
 
-func (s *JsonStoreTestSuite) TestRoleCredentials() {
+func (s *JsonStoreTestSuite) TestRoleCredentials() { //nolint:dupl
 	t := s.T()
 	rc := RoleCredentials{}
 	arn := "arn:aws:iam::012344553243:role/AWSAdministratorAccess"
@@ -136,18 +137,18 @@ func (s *JsonStoreTestSuite) TestRoleCredentials() {
 	}
 	assert.Equal(t, rcTest, rc)
 
-	err = s.json.SaveRoleCredentials(arn, rc)
+	err = s.json.SaveRoleCredentials(context.Background(), arn, rc)
 	assert.Nil(t, err)
 	assert.Equal(t, rcTest, rc)
 
-	err = s.json.DeleteRoleCredentials(arn)
+	err = s.json.DeleteRoleCredentials(context.Background(), arn)
 	assert.Nil(t, err)
 
 	err = s.json.GetRoleCredentials(arn, &rc)
 	assert.NotNil(t, err)
 }
 
-func (s *JsonStoreTestSuite) TestCreateTokenResponse() {
+func (s *JsonStoreTestSuite) TestCreateTokenResponse() { //nolint:dupl
 	t := s.T()
 	tr := CreateTokenResponse{}
 	key := "us-east-1|https://d-xxxxxxx.awsapps.com/start"
@@ -168,11 +169,11 @@ func (s *JsonStoreTestSuite) TestCreateTokenResponse() {
 	}
 	assert.Equal(t, trTest, tr)
 
-	err = s.json.SaveCreateTokenResponse(key, tr)
+	err = s.json.SaveCreateTokenResponse(context.Background(), key, tr)
 	assert.Nil(t, err)
 	assert.Equal(t, trTest, tr)
 
-	err = s.json.DeleteCreateTokenResponse(key)
+	err = s.json.DeleteCreateTokenResponse(context.Background(), key)
 	assert.Nil(t, err)
 
 	err = s.json.GetCreateTokenResponse(key, &tr)
@@ -197,13 +198,13 @@ func (s *JsonStoreTestSuite) TestStaticCredentials() {
 	}
 	assert.Equal(t, cr2, cr)
 
-	assert.NoError(t, s.json.DeleteStaticCredentials(arn))
+	assert.NoError(t, s.json.DeleteStaticCredentials(context.Background(), arn))
 	assert.Empty(t, s.json.ListStaticCredentials())
 
 	assert.Error(t, s.json.GetStaticCredentials(arn, &cr))
-	assert.Error(t, s.json.DeleteStaticCredentials(arn))
+	assert.Error(t, s.json.DeleteStaticCredentials(context.Background(), arn))
 
-	assert.NoError(t, s.json.SaveStaticCredentials(arn, cr2))
+	assert.NoError(t, s.json.SaveStaticCredentials(context.Background(), arn, cr2))
 	assert.NoError(t, s.json.GetStaticCredentials("arn:aws:iam::123456789012:user/foobar", &cr))
 	assert.Equal(t, cr2, cr)
 }
@@ -215,14 +216,14 @@ func (s *JsonStoreTestSuite) TestEcsBearerToken() {
 	assert.NoError(t, err)
 	assert.Empty(t, token)
 
-	err = s.json.SaveEcsBearerToken("not a real token")
+	err = s.json.SaveEcsBearerToken(context.Background(), "not a real token")
 	assert.NoError(t, err)
 
 	token, err = s.json.GetEcsBearerToken()
 	assert.NoError(t, err)
 	assert.Equal(t, "not a real token", token)
 
-	err = s.json.DeleteEcsBearerToken()
+	err = s.json.DeleteEcsBearerToken(context.Background())
 	assert.NoError(t, err)
 
 	token, err = s.json.GetEcsBearerToken()
@@ -246,15 +247,15 @@ func (s *JsonStoreTestSuite) TestEcsSslKeyPair() { // nolint: dupl
 	keyBytes, err := os.ReadFile("../ecs/server/testdata/localhost.key")
 	assert.NoError(t, err)
 
-	err = s.json.SaveEcsSslKeyPair([]byte{}, certBytes)
+	err = s.json.SaveEcsSslKeyPair(context.Background(), []byte{}, certBytes)
 	assert.NoError(t, err)
 
-	err = s.json.SaveEcsSslKeyPair(keyBytes, certBytes)
+	err = s.json.SaveEcsSslKeyPair(context.Background(), keyBytes, certBytes)
 	assert.NoError(t, err)
 
-	err = s.json.SaveEcsSslKeyPair(keyBytes, keyBytes)
+	err = s.json.SaveEcsSslKeyPair(context.Background(), keyBytes, keyBytes)
 	assert.Error(t, err)
-	err = s.json.SaveEcsSslKeyPair(certBytes, certBytes)
+	err = s.json.SaveEcsSslKeyPair(context.Background(), certBytes, certBytes)
 	assert.Error(t, err)
 
 	cert, err = s.json.GetEcsSslCert()
@@ -265,7 +266,7 @@ func (s *JsonStoreTestSuite) TestEcsSslKeyPair() { // nolint: dupl
 	assert.NoError(t, err)
 	assert.Equal(t, string(keyBytes), key)
 
-	err = s.json.DeleteEcsSslKeyPair()
+	err = s.json.DeleteEcsSslKeyPair(context.Background())
 	assert.NoError(t, err)
 
 	cert, err = s.json.GetEcsSslCert()

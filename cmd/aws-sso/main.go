@@ -19,11 +19,14 @@ package main
  */
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
+	"os/signal"
 	"slices"
 	"strings"
+	"syscall"
 
 	"github.com/alecthomas/kong"
 
@@ -77,6 +80,7 @@ type RunContext struct {
 	Settings *sso.Settings // unified config & cache
 	Store    storage.SecureStorage
 	Auth     CommandAuth
+	Ctx      context.Context
 }
 
 const (
@@ -161,11 +165,22 @@ type CLI struct {
 }
 
 func main() {
+	appCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	// Exit on first signal even when blocked inside a keyring/D-Bus call.
+	// The OS then releases all fcntl locks held by this process.
+	go func() {
+		<-appCtx.Done()
+		os.Exit(1)
+	}()
+
 	cli := CLI{}
 	var err error
 	runCtx := RunContext{
 		Cli:  &cli,
 		Auth: AUTH_UNKNOWN,
+		Ctx:  appCtx,
 	}
 
 	override := parseArgs(&runCtx)
@@ -251,7 +266,7 @@ func loadSecureStore(ctx *RunContext) {
 		if err != nil {
 			log.Fatal("Unable to create SecureStore", "error", err.Error())
 		}
-		ctx.Store, err = storage.OpenKeyring(cfg)
+		ctx.Store, err = storage.OpenKeyring(ctx.Ctx, cfg)
 		if err != nil {
 			log.Fatal("Unable to open SecureStore", "file", ctx.Settings.SecureStore, "error", err.Error())
 		}
@@ -378,7 +393,7 @@ func GetRoleCredentials(ctx *RunContext, awssso *ssoauth.AWSSSO, refreshSTS bool
 	log.Debug("Retrieved role credentials from AWS SSO")
 
 	// Cache our creds
-	if err := ctx.Store.SaveRoleCredentials(arn, creds); err != nil {
+	if err := ctx.Store.SaveRoleCredentials(ctx.Ctx, arn, creds); err != nil {
 		log.Warn("Unable to cache role credentials in secure store", "error", err.Error())
 	}
 
