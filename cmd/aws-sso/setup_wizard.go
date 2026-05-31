@@ -831,7 +831,7 @@ func validateInteger(input string) error {
 // validateBinary ensures the input is a valid binary on the system
 func validateBinary(input string) error {
 	input = strings.TrimSpace(input)
-	s, err := os.Stat(input)
+	s, err := os.Stat(input) //nolint:gosec
 	if err != nil {
 		return err
 	}
@@ -858,7 +858,7 @@ func validateBinaryOrNone(input string) error {
 		return nil
 	}
 
-	s, err := os.Stat(input)
+	s, err := os.Stat(input) //nolint:gosec
 	if err != nil {
 		return err
 	}

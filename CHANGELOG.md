@@ -3,6 +3,10 @@
 
 ## [Unreleased]
 
+### Changes
+
+* Add unit tests for cmd/aws-sso
+
 ## [v2.2.4] - 2026-05-21
 
 ### Bugs
