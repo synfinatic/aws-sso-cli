@@ -39,7 +39,9 @@ jobs:
       with:
         go-version-file: 'go.mod'
         cache: false
-      id: go
+      id: go 
+    - name: Setup Environment
+      run: mkdir -p ${HOME}/.config/aws-sso
     - name: Tests
       run: make .build-tests
     - name: Upload to codecov

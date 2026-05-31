@@ -154,7 +154,7 @@ func TestAuthenticateSteps(t *testing.T) {
 	tfile, err := os.CreateTemp("", "*storage.json")
 	assert.NoError(t, err)
 
-	jstore, err := storage.OpenJsonStore(tfile.Name())
+	jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 	assert.NoError(t, err)
 
 	defer os.Remove(tfile.Name())
@@ -234,7 +234,7 @@ func TestAuthenticate(t *testing.T) {
 	tfile, err := os.CreateTemp("", "*storage.json")
 	assert.NoError(t, err)
 
-	jstore, err := storage.OpenJsonStore(tfile.Name())
+	jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 	assert.NoError(t, err)
 
 	defer os.Remove(tfile.Name())
@@ -400,7 +400,7 @@ func authTokenSetup(t *testing.T, workflow oidc.AuthWorkflow) (as *AWSSSO, key s
 	tfile, err := os.CreateTemp("", "*storage.json")
 	assert.NoError(t, err)
 
-	jstore, err = storage.OpenJsonStore(tfile.Name())
+	jstore, err = storage.OpenJsonStore(context.Background(), tfile.Name())
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -502,7 +502,7 @@ func TestAuthenticateFailure(t *testing.T) {
 	tfile, err := os.CreateTemp("", "*storage.json")
 	assert.NoError(t, err)
 
-	jstore, err := storage.OpenJsonStore(tfile.Name())
+	jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 	assert.NoError(t, err)
 
 	defer os.Remove(tfile.Name())
@@ -676,7 +676,7 @@ func TestReauthenticate(t *testing.T) {
 	tfile, err := os.CreateTemp("", "*storage.json")
 	assert.NoError(t, err)
 
-	jstore, err := storage.OpenJsonStore(tfile.Name())
+	jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 	assert.NoError(t, err)
 
 	defer os.Remove(tfile.Name())
@@ -737,7 +737,7 @@ func TestLogout(t *testing.T) {
 	tfile, err := os.CreateTemp("", "*storage.json")
 	assert.NoError(t, err)
 
-	jstore, err := storage.OpenJsonStore(tfile.Name())
+	jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 	assert.NoError(t, err)
 
 	defer os.Remove(tfile.Name())
@@ -901,7 +901,7 @@ func TestSaveToken(t *testing.T) {
 	assert.NoError(t, err)
 	defer os.Remove(tfile.Name())
 
-	jstore, err := storage.OpenJsonStore(tfile.Name())
+	jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 	assert.NoError(t, err)
 
 	as := &AWSSSO{
@@ -935,7 +935,7 @@ func TestRegisterClientPKCE(t *testing.T) {
 	assert.NoError(t, err)
 	defer os.Remove(tfile.Name())
 
-	jstore, err := storage.OpenJsonStore(tfile.Name())
+	jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 	assert.NoError(t, err)
 
 	mock := &mockOIDCClient{
@@ -975,7 +975,7 @@ func TestReauthenticatePKCE(t *testing.T) {
 		assert.NoError(t, err)
 		defer os.Remove(tfile.Name())
 
-		jstore, err := storage.OpenJsonStore(tfile.Name())
+		jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 		assert.NoError(t, err)
 
 		mock := &mockOIDCClient{
@@ -1033,7 +1033,7 @@ func TestReauthenticatePKCE(t *testing.T) {
 		assert.NoError(t, err)
 		defer os.Remove(tfile.Name())
 
-		jstore, err := storage.OpenJsonStore(tfile.Name())
+		jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 		assert.NoError(t, err)
 
 		mock := &mockOIDCClient{
@@ -1060,7 +1060,7 @@ func TestReauthenticatePKCE(t *testing.T) {
 		assert.NoError(t, err)
 		defer os.Remove(tfile.Name())
 
-		jstore, err := storage.OpenJsonStore(tfile.Name())
+		jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 		assert.NoError(t, err)
 
 		mock := &mockOIDCClient{
@@ -1092,7 +1092,7 @@ func TestReauthenticatePKCE(t *testing.T) {
 		assert.NoError(t, err)
 		defer os.Remove(tfile.Name())
 
-		jstore, err := storage.OpenJsonStore(tfile.Name())
+		jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 		assert.NoError(t, err)
 
 		mock := &mockOIDCClient{
@@ -1139,7 +1139,7 @@ func TestTryRefreshToken(t *testing.T) {
 		assert.NoError(t, err)
 		defer os.Remove(tfile.Name())
 
-		jstore, err := storage.OpenJsonStore(tfile.Name())
+		jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 		assert.NoError(t, err)
 
 		newToken := storage.CreateTokenResponse{
@@ -1184,7 +1184,7 @@ func TestTryRefreshToken(t *testing.T) {
 		assert.NoError(t, err)
 		defer os.Remove(tfile.Name())
 
-		jstore, err := storage.OpenJsonStore(tfile.Name())
+		jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 		assert.NoError(t, err)
 
 		mock := &mockOIDCClient{
@@ -1210,7 +1210,7 @@ func TestValidAuthTokenRefresh(t *testing.T) {
 		assert.NoError(t, err)
 		defer os.Remove(tfile.Name())
 
-		jstore, err := storage.OpenJsonStore(tfile.Name())
+		jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 		assert.NoError(t, err)
 
 		newToken := storage.CreateTokenResponse{
@@ -1265,7 +1265,7 @@ func TestValidAuthTokenRefresh(t *testing.T) {
 		assert.NoError(t, err)
 		defer os.Remove(tfile.Name())
 
-		jstore, err := storage.OpenJsonStore(tfile.Name())
+		jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 		assert.NoError(t, err)
 
 		mock := &mockOIDCClient{
@@ -1305,7 +1305,7 @@ func TestValidAuthTokenRefresh(t *testing.T) {
 		assert.NoError(t, err)
 		defer os.Remove(tfile.Name())
 
-		jstore, err := storage.OpenJsonStore(tfile.Name())
+		jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 		assert.NoError(t, err)
 
 		mock := &mockOIDCClient{}

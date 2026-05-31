@@ -93,7 +93,7 @@ func TestNewAWSSSO(t *testing.T) {
 	tfile, err := os.CreateTemp("", "*storage.json")
 	assert.NoError(t, err)
 
-	jstore, err = storage.OpenJsonStore(tfile.Name())
+	jstore, err = storage.OpenJsonStore(context.Background(), tfile.Name())
 	assert.NoError(t, err)
 
 	defer os.Remove(tfile.Name())
@@ -145,7 +145,7 @@ func TestGetRoles(t *testing.T) {
 	tfile, err := os.CreateTemp("", "*storage.json")
 	assert.NoError(t, err)
 
-	jstore, err := storage.OpenJsonStore(tfile.Name())
+	jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 	assert.NoError(t, err)
 
 	defer os.Remove(tfile.Name())
@@ -466,7 +466,7 @@ func TestGetAccounts(t *testing.T) {
 	tfile, err := os.CreateTemp("", "*storage.json")
 	assert.NoError(t, err)
 
-	jstore, err := storage.OpenJsonStore(tfile.Name())
+	jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 	assert.NoError(t, err)
 
 	defer os.Remove(tfile.Name())
@@ -645,7 +645,7 @@ func TestGetRoleCredentials(t *testing.T) {
 	tfile, err := os.CreateTemp("", "*storage.json")
 	assert.NoError(t, err)
 
-	jstore, err := storage.OpenJsonStore(tfile.Name())
+	jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 	assert.NoError(t, err)
 
 	defer os.Remove(tfile.Name())
@@ -736,7 +736,7 @@ func makeChainTestAWSSSOBase(t *testing.T) (*AWSSSO, func()) {
 	t.Helper()
 	tfile, err := os.CreateTemp("", "*storage.json")
 	assert.NoError(t, err)
-	jstore, err := storage.OpenJsonStore(tfile.Name())
+	jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 	assert.NoError(t, err)
 
 	duration, _ := time.ParseDuration("10s")
@@ -865,7 +865,7 @@ func TestListAccountsMaxResultsWithinAPILimit(t *testing.T) {
 	assert.NoError(t, err)
 	defer os.Remove(tfile.Name())
 
-	jstore, err := storage.OpenJsonStore(tfile.Name())
+	jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 	assert.NoError(t, err)
 
 	duration, _ := time.ParseDuration("10s")
@@ -912,7 +912,7 @@ func TestListAccountRolesMaxResultsWithinAPILimit(t *testing.T) {
 	assert.NoError(t, err)
 	defer os.Remove(tfile.Name())
 
-	jstore, err := storage.OpenJsonStore(tfile.Name())
+	jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 	assert.NoError(t, err)
 
 	duration, _ := time.ParseDuration("10s")

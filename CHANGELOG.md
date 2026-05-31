@@ -10,6 +10,7 @@
 ### Changes
 
 * Add unit tests for cmd/aws-sso
+* Add lock support for JSON SecureStore
 
 ## [v2.2.4] - 2026-05-21
 
