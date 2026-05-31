@@ -26,6 +26,7 @@ import (
 	"io/fs"
 	"os"
 
+	"github.com/danjacques/gofslock/fslock"
 	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
 	// "github.com/davecgh/go-spew/spew"
 )
@@ -44,7 +45,7 @@ type JsonStore struct {
 }
 
 // OpenJsonStore opens our insecure JSON storage backend
-func OpenJsonStore(filename string) (SecureStorage, error) {
+func OpenJsonStore(ctx context.Context, filename string) (SecureStorage, error) {
 	jstore := JsonStore{
 		filename:            filename,
 		RegisterClient:      map[string]RegisterClientData{},
@@ -57,22 +58,40 @@ func OpenJsonStore(filename string) (SecureStorage, error) {
 		EcsCertChain:        "",
 	}
 
-	cacheBytes, err := os.ReadFile(filename)
-	if errors.Is(err, fs.ErrNotExist) {
+	lockCtx, cancel := context.WithTimeout(ctx, flockWaitTimeout)
+	defer cancel()
+	blocker := FlockBlockerWithCtx(lockCtx)
+
+	var cacheBytes []byte
+	var notExist bool
+	lockErr := fslock.WithSharedBlocking(FlockFile(true), blocker, func() error {
+		var err error
+		cacheBytes, err = os.ReadFile(filename)
+		if errors.Is(err, fs.ErrNotExist) {
+			notExist = true
+			return nil
+		}
+		return err
+	})
+	FlockBlockerReset()
+
+	if lockErr != nil {
+		return &jstore, fmt.Errorf("unable to open %s: %w", filename, lockErr)
+	}
+	if notExist {
 		return &jstore, nil
-	} else if err != nil {
-		return &jstore, fmt.Errorf("unable to open %s: %s", filename, err.Error())
 	}
 
 	if len(cacheBytes) > 0 {
-		err = json.Unmarshal(cacheBytes, &jstore)
+		if err := json.Unmarshal(cacheBytes, &jstore); err != nil {
+			return &jstore, err
+		}
 	}
-
-	return &jstore, err
+	return &jstore, nil
 }
 
-// save writes the JSON store file, creating the directory if necessary
-func (jc *JsonStore) save() error {
+// save writes the JSON store file under an exclusive flock, creating the directory if necessary
+func (jc *JsonStore) save(ctx context.Context) error {
 	log.Debug("Saving JSON Cache")
 	jbytes, err := json.MarshalIndent(jc, "", "  ")
 	if err != nil {
@@ -80,18 +99,28 @@ func (jc *JsonStore) save() error {
 		return err
 	}
 
-	err = fileutils.EnsureDirExists(jc.filename)
-	if err != nil {
+	if err = fileutils.EnsureDirExists(jc.filename); err != nil {
 		return err
 	}
 
-	return os.WriteFile(jc.filename, jbytes, 0600)
+	lockCtx, cancel := context.WithTimeout(ctx, flockWaitTimeout)
+	defer cancel()
+	blocker := FlockBlockerWithCtx(lockCtx)
+
+	err = fslock.WithBlocking(FlockFile(true), blocker, func() error {
+		return os.WriteFile(jc.filename, jbytes, 0600)
+	})
+	FlockBlockerReset()
+	if err != nil {
+		return fmt.Errorf("%w (run 'lsof %s' to find blocking process)", err, FlockFile(false))
+	}
+	return nil
 }
 
 // SaveRegisterClientData saves the RegisterClientData in our JSON store
-func (jc *JsonStore) SaveRegisterClientData(_ context.Context, key string, client RegisterClientData) error {
+func (jc *JsonStore) SaveRegisterClientData(ctx context.Context, key string, client RegisterClientData) error {
 	jc.RegisterClient[key] = client
-	return jc.save()
+	return jc.save(ctx)
 }
 
 // GetRegisterClientData retrieves the RegisterClientData from our JSON store
@@ -105,15 +134,15 @@ func (jc *JsonStore) GetRegisterClientData(key string, client *RegisterClientDat
 }
 
 // DeleteRegisterClientData deletes the RegisterClientData from the JSON store
-func (jc *JsonStore) DeleteRegisterClientData(_ context.Context, key string) error {
+func (jc *JsonStore) DeleteRegisterClientData(ctx context.Context, key string) error {
 	delete(jc.RegisterClient, key)
-	return jc.save()
+	return jc.save(ctx)
 }
 
 // SaveCreateTokenResponse stores the token in the json file
-func (jc *JsonStore) SaveCreateTokenResponse(_ context.Context, key string, token CreateTokenResponse) error {
+func (jc *JsonStore) SaveCreateTokenResponse(ctx context.Context, key string, token CreateTokenResponse) error {
 	jc.CreateTokenResponse[key] = token
-	return jc.save()
+	return jc.save(ctx)
 }
 
 // GetCreateTokenResponse retrieves the CreateTokenResponse from the json file
@@ -127,15 +156,15 @@ func (jc *JsonStore) GetCreateTokenResponse(key string, token *CreateTokenRespon
 }
 
 // DeleteCreateTokenResponse deletes the token from the json file
-func (jc *JsonStore) DeleteCreateTokenResponse(_ context.Context, key string) error {
+func (jc *JsonStore) DeleteCreateTokenResponse(ctx context.Context, key string) error {
 	delete(jc.CreateTokenResponse, key)
-	return jc.save()
+	return jc.save(ctx)
 }
 
 // SaveRoleCredentials stores the token in the json file
-func (jc *JsonStore) SaveRoleCredentials(_ context.Context, arn string, token RoleCredentials) error {
+func (jc *JsonStore) SaveRoleCredentials(ctx context.Context, arn string, token RoleCredentials) error {
 	jc.RoleCredentials[arn] = token
-	return jc.save()
+	return jc.save(ctx)
 }
 
 // GetRoleCredentials retrieves the RoleCredentials from the json file
@@ -149,15 +178,15 @@ func (jc *JsonStore) GetRoleCredentials(arn string, token *RoleCredentials) erro
 }
 
 // DeleteRoleCredentials deletes the token from the json file
-func (jc *JsonStore) DeleteRoleCredentials(_ context.Context, arn string) error {
+func (jc *JsonStore) DeleteRoleCredentials(ctx context.Context, arn string) error {
 	delete(jc.RoleCredentials, arn)
-	return jc.save()
+	return jc.save(ctx)
 }
 
 // SaveStaticCredentials stores the token in the json file
-func (jc *JsonStore) SaveStaticCredentials(_ context.Context, arn string, creds StaticCredentials) error {
+func (jc *JsonStore) SaveStaticCredentials(ctx context.Context, arn string, creds StaticCredentials) error {
 	jc.StaticCredentials[arn] = creds
-	return jc.save()
+	return jc.save(ctx)
 }
 
 // GetStaticCredentials retrieves the StaticCredentials from the json file
@@ -171,14 +200,14 @@ func (jc *JsonStore) GetStaticCredentials(arn string, creds *StaticCredentials) 
 }
 
 // DeleteStaticCredentials deletes the StaticCredentials from the json file
-func (jc *JsonStore) DeleteStaticCredentials(_ context.Context, arn string) error {
+func (jc *JsonStore) DeleteStaticCredentials(ctx context.Context, arn string) error {
 	if _, ok := jc.StaticCredentials[arn]; !ok {
 		// return error if key doesn't exist
 		return fmt.Errorf("no StaticCredentials for ARN: %s", arn)
 	}
 
 	delete(jc.StaticCredentials, arn)
-	return jc.save()
+	return jc.save(ctx)
 }
 
 // ListStaticCredentials returns all the ARN's of static credentials
@@ -193,9 +222,9 @@ func (jc *JsonStore) ListStaticCredentials() []string {
 }
 
 // SaveEcsBearerToken stores the token in the json file
-func (jc *JsonStore) SaveEcsBearerToken(_ context.Context, token string) error {
+func (jc *JsonStore) SaveEcsBearerToken(ctx context.Context, token string) error {
 	jc.EcsBearerToken = token
-	return jc.save()
+	return jc.save(ctx)
 }
 
 // GetEcsBearerToken retrieves the token from the json file
@@ -204,13 +233,13 @@ func (jc *JsonStore) GetEcsBearerToken() (string, error) {
 }
 
 // DeleteEcsBearerToken deletes the token from the json file
-func (jc *JsonStore) DeleteEcsBearerToken(_ context.Context) error {
+func (jc *JsonStore) DeleteEcsBearerToken(ctx context.Context) error {
 	jc.EcsBearerToken = ""
-	return jc.save()
+	return jc.save(ctx)
 }
 
 // SaveEcsSslKeyPair stores the SSL private key and certificate chain in the json file
-func (jc *JsonStore) SaveEcsSslKeyPair(_ context.Context, privateKey, certChain []byte) error {
+func (jc *JsonStore) SaveEcsSslKeyPair(ctx context.Context, privateKey, certChain []byte) error {
 	if err := ValidateSSLCertificate(certChain); err != nil {
 		return err
 	}
@@ -220,7 +249,7 @@ func (jc *JsonStore) SaveEcsSslKeyPair(_ context.Context, privateKey, certChain 
 		return err
 	}
 	jc.EcsPrivateKey = string(privateKey)
-	return jc.save()
+	return jc.save(ctx)
 }
 
 // GetEcsSslCert retrieves the SSL certificate chain from the json file
@@ -234,8 +263,8 @@ func (jc *JsonStore) GetEcsSslKey() (string, error) {
 }
 
 // DeleteEcsSslKeyPair deletes the SSL private key and certificate chain from the json file
-func (jc *JsonStore) DeleteEcsSslKeyPair(_ context.Context) error {
+func (jc *JsonStore) DeleteEcsSslKeyPair(ctx context.Context) error {
 	jc.EcsPrivateKey = ""
 	jc.EcsCertChain = ""
-	return jc.save()
+	return jc.save(ctx)
 }

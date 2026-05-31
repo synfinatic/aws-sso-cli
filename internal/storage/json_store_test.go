@@ -33,12 +33,12 @@ const TEST_JSON_STORE_FILE = "./testdata/store.json"
 func TestNewFile(t *testing.T) {
 	fname := "./testdata/new-store.json"
 	defer os.Remove(fname)
-	s, err := OpenJsonStore(fname)
+	s, err := OpenJsonStore(context.Background(), fname)
 	assert.Nil(t, err)
 
 	assert.Error(t, s.GetRegisterClientData("foobar", &RegisterClientData{}))
 
-	err = s.(*JsonStore).save()
+	err = s.(*JsonStore).save(context.Background())
 	assert.Nil(t, err)
 }
 
@@ -48,7 +48,7 @@ func TestBadFilePerms(t *testing.T) {
 	err := os.WriteFile(fname, []byte{}, 0000)
 	assert.NoError(t, err)
 
-	_, err = OpenJsonStore(fname)
+	_, err = OpenJsonStore(context.Background(), fname)
 	assert.Error(t, err)
 }
 
@@ -78,7 +78,7 @@ func (s *JsonStoreTestSuite) SetupTest() {
 	err = os.WriteFile(s.jsonFile, input, 0600)
 	assert.Nil(t, err)
 
-	s.json, err = OpenJsonStore(s.jsonFile)
+	s.json, err = OpenJsonStore(context.Background(), s.jsonFile)
 	assert.Nil(t, err)
 }
 

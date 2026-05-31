@@ -19,6 +19,7 @@ package sso
  */
 
 import (
+	"context"
 	"math"
 	"os"
 	"strings"
@@ -86,7 +87,7 @@ func TestCacheRolesTestSuite(t *testing.T) {
 	err = os.WriteFile(jsonFile, input, 0600) // nolint:gosec
 	assert.Nil(t, err)
 
-	sstore, err := storage.OpenJsonStore(jsonFile)
+	sstore, err := storage.OpenJsonStore(context.Background(), jsonFile)
 	assert.Nil(t, err)
 
 	defaults := map[string]interface{}{}

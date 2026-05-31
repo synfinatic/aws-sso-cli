@@ -256,7 +256,7 @@ func loadSecureStore(ctx *RunContext) {
 		if ctx.Settings.JsonStore != "" {
 			sfile = fileutils.GetHomePath(ctx.Settings.JsonStore)
 		}
-		ctx.Store, err = storage.OpenJsonStore(sfile)
+		ctx.Store, err = storage.OpenJsonStore(ctx.Ctx, sfile)
 		if err != nil {
 			log.Fatal("Unable to open JsonStore", "file", sfile, "error", err.Error())
 		}
