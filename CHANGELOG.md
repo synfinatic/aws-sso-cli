@@ -27,6 +27,10 @@
 
 * Add unit tests for cmd/aws-sso
 
+### Bugs
+
+* Fix zombie processes holding storage.lock after SIGINT #1379
+
 ## [v2.2.4] - 2026-05-21
 
 ### Bugs
