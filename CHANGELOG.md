@@ -19,6 +19,10 @@
 
 * Add aws-sso exec --overwrite-env flag to allow overriding AWS_ env variables #1095
 
+### Changes
+
+* Add unit tests for cmd/aws-sso
+
 ## [v2.2.4] - 2026-05-21
 
 ### Bugs
