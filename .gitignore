@@ -6,4 +6,3 @@ coverage.out
 aws-ssl-test
 *.crt
 *.key
-aws-sso

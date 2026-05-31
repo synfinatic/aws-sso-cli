@@ -124,20 +124,12 @@ func unsetEnvVars(ctx *RunContext) error {
 		"AWS_SSO",
 	}
 
-	// clear the region if
-	// 1. User did not specify --no-region AND
-	// 2. The AWS_DEFAULT_REGION/AWS_REGION is managed by us (tracks AWS_SSO_DEFAULT_REGION)
-	if !ctx.Cli.Eval.NoRegion && os.Getenv("AWS_DEFAULT_REGION") == os.Getenv("AWS_SSO_DEFAULT_REGION") {
-		envs = append(envs, "AWS_DEFAULT_REGION")
-		envs = append(envs, "AWS_REGION")
-		envs = append(envs, "AWS_SSO_DEFAULT_REGION")
-	} else if os.Getenv("AWS_DEFAULT_REGION") != os.Getenv("AWS_SSO_DEFAULT_REGION") {
-		// clear the tracking variable if we don't match
-		envs = append(envs, "AWS_SSO_DEFAULT_REGION")
-	} else if os.Getenv("AWS_REGION") != os.Getenv("AWS_SSO_DEFAULT_REGION") {
-		// clear the tracking variable if we don't match
-		envs = append(envs, "AWS_SSO_DEFAULT_REGION")
-	}
+	envs = append(envs, regionEnvVarsToUnset(
+		ctx.Cli.Eval.NoRegion,
+		os.Getenv("AWS_DEFAULT_REGION"),
+		os.Getenv("AWS_REGION"),
+		os.Getenv("AWS_SSO_DEFAULT_REGION"),
+	)...)
 
 	for _, env := range ctx.Settings.GetEnvVarTags() {
 		envs = append(envs, env)
@@ -175,4 +167,22 @@ func isBashLike() bool {
 	}
 
 	return false
+}
+
+// regionEnvVarsToUnset returns the region-related env var names to clear.
+// It mirrors the logic that was previously inlined in unsetEnvVars.
+func regionEnvVarsToUnset(noRegion bool, awsDefaultRegion, awsRegion, ssoDefaultRegion string) []string {
+	// clear the region if
+	// 1. User did not specify --no-region AND
+	// 2. The AWS_DEFAULT_REGION is managed by us (tracks AWS_SSO_DEFAULT_REGION)
+	if !noRegion && awsDefaultRegion == ssoDefaultRegion {
+		return []string{"AWS_DEFAULT_REGION", "AWS_REGION", "AWS_SSO_DEFAULT_REGION"}
+	} else if awsDefaultRegion != ssoDefaultRegion {
+		// clear the tracking variable if we don't match
+		return []string{"AWS_SSO_DEFAULT_REGION"}
+	} else if awsRegion != ssoDefaultRegion {
+		// clear the tracking variable if we don't match
+		return []string{"AWS_SSO_DEFAULT_REGION"}
+	}
+	return []string{}
 }
