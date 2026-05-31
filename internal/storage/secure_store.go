@@ -18,35 +18,40 @@ package storage
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Define the interface for storing our AWS SSO data
-type SecureStorage interface {
-	SaveRegisterClientData(string, RegisterClientData) error
-	GetRegisterClientData(string, *RegisterClientData) error
-	DeleteRegisterClientData(string) error
+import "context"
 
-	SaveCreateTokenResponse(string, CreateTokenResponse) error
-	GetCreateTokenResponse(string, *CreateTokenResponse) error
-	DeleteCreateTokenResponse(string) error
+// Define the interface for storing our AWS SSO data.
+// Save* and Delete* methods accept a context for cancellation and timeout
+// during file-lock acquisition. Get* methods read from an in-memory cache
+// and do not need a context.
+type SecureStorage interface {
+	SaveRegisterClientData(ctx context.Context, region string, client RegisterClientData) error
+	GetRegisterClientData(region string, client *RegisterClientData) error
+	DeleteRegisterClientData(ctx context.Context, region string) error
+
+	SaveCreateTokenResponse(ctx context.Context, key string, token CreateTokenResponse) error
+	GetCreateTokenResponse(key string, token *CreateTokenResponse) error
+	DeleteCreateTokenResponse(ctx context.Context, key string) error
 
 	// Temporary STS creds
-	SaveRoleCredentials(string, RoleCredentials) error
-	GetRoleCredentials(string, *RoleCredentials) error
-	DeleteRoleCredentials(string) error
+	SaveRoleCredentials(ctx context.Context, arn string, token RoleCredentials) error
+	GetRoleCredentials(arn string, token *RoleCredentials) error
+	DeleteRoleCredentials(ctx context.Context, arn string) error
 
 	// Static API creds
-	SaveStaticCredentials(string, StaticCredentials) error
-	GetStaticCredentials(string, *StaticCredentials) error
-	DeleteStaticCredentials(string) error
+	SaveStaticCredentials(ctx context.Context, arn string, creds StaticCredentials) error
+	GetStaticCredentials(arn string, creds *StaticCredentials) error
+	DeleteStaticCredentials(ctx context.Context, arn string) error
 	ListStaticCredentials() []string
 
 	// ECS Server Bearer Token
-	SaveEcsBearerToken(string) error
+	SaveEcsBearerToken(ctx context.Context, token string) error
 	GetEcsBearerToken() (string, error)
-	DeleteEcsBearerToken() error
+	DeleteEcsBearerToken(ctx context.Context) error
 
 	// ECS Server SSL Cert
-	SaveEcsSslKeyPair([]byte, []byte) error
-	DeleteEcsSslKeyPair() error
+	SaveEcsSslKeyPair(ctx context.Context, privateKey []byte, certChain []byte) error
+	DeleteEcsSslKeyPair(ctx context.Context) error
 	GetEcsSslCert() (string, error)
 	GetEcsSslKey() (string, error)
 }

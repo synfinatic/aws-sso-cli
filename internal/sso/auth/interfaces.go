@@ -19,6 +19,8 @@ package auth
  */
 
 import (
+	"context"
+
 	ssoconfig "github.com/synfinatic/aws-sso-cli/internal/sso/config"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
 )
@@ -26,9 +28,9 @@ import (
 // Authenticator is the interface that wraps AWS SSO authentication operations.
 // *AWSSSO satisfies this interface.
 type Authenticator interface {
-	Authenticate(urlAction uri.Action, browser string) error
-	ValidAuthToken() bool
-	Logout() error
+	Authenticate(ctx context.Context, urlAction uri.Action, browser string) error
+	ValidAuthToken(ctx context.Context) bool
+	Logout(ctx context.Context) error
 }
 
 // Compile-time assertions that *AWSSSO satisfies both interfaces.

@@ -50,7 +50,7 @@ func (e EcsAuthCmd) AfterApply(runCtx *RunContext) error {
 func (cc *EcsAuthCmd) Run(ctx *RunContext) error {
 	// Delete the token
 	if ctx.Cli.Setup.Ecs.Auth.Delete {
-		return ctx.Store.DeleteEcsBearerToken()
+		return ctx.Store.DeleteEcsBearerToken(ctx.Ctx)
 	}
 
 	// Or store the token in the SecureStore
@@ -60,7 +60,7 @@ func (cc *EcsAuthCmd) Run(ctx *RunContext) error {
 	if strings.HasPrefix(ctx.Cli.Setup.Ecs.Auth.BearerToken, "Bearer ") {
 		return fmt.Errorf("token should not start with 'Bearer '")
 	}
-	return ctx.Store.SaveEcsBearerToken(ctx.Cli.Setup.Ecs.Auth.BearerToken)
+	return ctx.Store.SaveEcsBearerToken(ctx.Ctx, ctx.Cli.Setup.Ecs.Auth.BearerToken)
 }
 
 type EcsSSLCmd struct {
@@ -79,7 +79,7 @@ func (e EcsSSLCmd) AfterApply(runCtx *RunContext) error {
 
 func (cc *EcsSSLCmd) Run(ctx *RunContext) error {
 	if ctx.Cli.Setup.Ecs.SSL.Delete {
-		return ctx.Store.DeleteEcsSslKeyPair()
+		return ctx.Store.DeleteEcsSslKeyPair(ctx.Ctx)
 	} else if ctx.Cli.Setup.Ecs.SSL.Print {
 		cert, err := ctx.Store.GetEcsSslCert()
 		if err != nil {
@@ -113,5 +113,5 @@ func (cc *EcsSSLCmd) Run(ctx *RunContext) error {
 		}
 	}
 
-	return ctx.Store.SaveEcsSslKeyPair(privateKey, certChain)
+	return ctx.Store.SaveEcsSslKeyPair(ctx.Ctx, privateKey, certChain)
 }

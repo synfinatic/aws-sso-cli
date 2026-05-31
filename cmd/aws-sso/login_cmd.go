@@ -52,7 +52,7 @@ func checkAuth(ctx *RunContext) bool {
 		AwsSSO = ssoauth.NewAWSSSO(s, ctx.Store)
 	}
 
-	return AwsSSO.ValidAuthToken()
+	return AwsSSO.ValidAuthToken(ctx.Ctx)
 }
 
 // doAuth creates a singleton AWSSO object post authentication
@@ -75,7 +75,7 @@ func doAuth(ctx *RunContext) {
 		// Auth specific override
 		action = AwsSSO.SSOConfig.AuthUrlAction
 	}
-	err = AwsSSO.Authenticate(action, ctx.Settings.Browser)
+	err = AwsSSO.Authenticate(ctx.Ctx, action, ctx.Settings.Browser)
 	if err != nil {
 		log.Fatal("Unable to authenticate", "error", err.Error())
 	}

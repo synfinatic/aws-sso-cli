@@ -19,12 +19,14 @@ package storage
  */
 
 import (
+	"context"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path"
 	"runtime"
+	"time"
 
 	"github.com/99designs/keyring"
 	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
@@ -34,6 +36,8 @@ import (
 
 	"golang.org/x/term"
 )
+
+const flockWaitTimeout = 30 * time.Second
 
 const (
 	KEYRING_ID                   = "aws-sso-cli"
@@ -167,7 +171,7 @@ func fileKeyringPassword(prompt string) (string, error) {
 	return s, nil
 }
 
-func OpenKeyring(cfg *keyring.Config) (SecureStorage, error) {
+func OpenKeyring(ctx context.Context, cfg *keyring.Config) (SecureStorage, error) {
 	ring, err := keyring.Open(*cfg)
 	if err != nil {
 		return nil, err
@@ -178,13 +182,7 @@ func OpenKeyring(cfg *keyring.Config) (SecureStorage, error) {
 		cache:   NewStorageData(),
 	}
 
-	err = fslock.WithSharedBlocking(FlockFile(true), FlockBlocker,
-		func() error {
-			return kr.getStorageData(&kr.cache)
-		},
-	)
-	FlockBlockerReset()
-	if err != nil {
+	if err = kr.getStorageData(ctx, &kr.cache); err != nil {
 		return nil, err
 	}
 
@@ -200,13 +198,17 @@ type Unmarshaler func([]byte, interface{}) error
 var storageDataUnmarshal Unmarshaler = json.Unmarshal
 
 // loads the entire StorageData into memory
-func (kr *KeyringStore) getStorageData(s *StorageData) error {
+func (kr *KeyringStore) getStorageData(ctx context.Context, s *StorageData) error {
 	var data []byte
 	var err error
 
+	lockCtx, cancel := context.WithTimeout(ctx, flockWaitTimeout)
+	defer cancel()
+	blocker := FlockBlockerWithCtx(lockCtx)
+
 	switch keyringGOOS {
 	case "windows":
-		err = fslock.WithSharedBlocking(FlockFile(true), FlockBlocker,
+		err = fslock.WithSharedBlocking(FlockFile(true), blocker,
 			func() error {
 				data, err = kr.joinAndGetKeyringData(RECORD_KEY)
 				return err
@@ -214,7 +216,7 @@ func (kr *KeyringStore) getStorageData(s *StorageData) error {
 		)
 
 	default:
-		err = fslock.WithSharedBlocking(FlockFile(true), FlockBlocker,
+		err = fslock.WithSharedBlocking(FlockFile(true), blocker,
 			func() error {
 				data, err = kr.getKeyringData(RECORD_KEY)
 				return err
@@ -291,26 +293,33 @@ func (kr *KeyringStore) joinAndGetKeyringData(key string) ([]byte, error) {
 }
 
 // saves the entire StorageData into our KeyringStore
-func (kr *KeyringStore) saveStorageData() error {
+func (kr *KeyringStore) saveStorageData(ctx context.Context) error {
 	var err error
 	jdata, _ := json.Marshal(kr.cache)
 
+	lockCtx, cancel := context.WithTimeout(ctx, flockWaitTimeout)
+	defer cancel()
+	blocker := FlockBlockerWithCtx(lockCtx)
+
 	switch keyringGOOS {
 	case "windows":
-		err = fslock.WithBlocking(FlockFile(true), FlockBlocker,
+		err = fslock.WithBlocking(FlockFile(true), blocker,
 			func() error {
 				return kr.splitAndSetStorageData(jdata, RECORD_KEY, KEYRING_ID)
 			},
 		)
 	default:
-		err = fslock.WithBlocking(FlockFile(true), FlockBlocker,
+		err = fslock.WithBlocking(FlockFile(true), blocker,
 			func() error {
 				return kr.setStorageData(jdata, RECORD_KEY, KEYRING_ID)
 			},
 		)
 	}
 	FlockBlockerReset()
-	return err
+	if err != nil {
+		return fmt.Errorf("%w (run 'lsof %s' to find blocking process)", err, FlockFile(false))
+	}
+	return nil
 }
 
 // splitAndSetStorageData writes all the data in WINCRED_MAX_LENGTH length chunks
@@ -357,11 +366,11 @@ func (kr *KeyringStore) setStorageData(jdata []byte, key string, label string) e
 }
 
 // Save our RegisterClientData in the key chain
-func (kr *KeyringStore) SaveRegisterClientData(region string, client RegisterClientData) error {
+func (kr *KeyringStore) SaveRegisterClientData(ctx context.Context, region string, client RegisterClientData) error {
 	key := kr.RegisterClientKey(region)
 	kr.cache.RegisterClientData[key] = client
 
-	return kr.saveStorageData()
+	return kr.saveStorageData(ctx)
 }
 
 // Get our RegisterClientData from the key chain
@@ -375,7 +384,7 @@ func (kr *KeyringStore) GetRegisterClientData(region string, client *RegisterCli
 }
 
 // Delete the RegisterClientData from the keychain
-func (kr *KeyringStore) DeleteRegisterClientData(region string) error {
+func (kr *KeyringStore) DeleteRegisterClientData(ctx context.Context, region string) error {
 	key := kr.RegisterClientKey(region)
 	if _, ok := kr.cache.RegisterClientData[key]; !ok {
 		// return error if key doesn't exist
@@ -383,7 +392,7 @@ func (kr *KeyringStore) DeleteRegisterClientData(region string) error {
 	}
 
 	delete(kr.cache.RegisterClientData, key)
-	return kr.saveStorageData()
+	return kr.saveStorageData(ctx)
 }
 
 func (kr *KeyringStore) CreateTokenResponseKey(key string) string {
@@ -391,11 +400,11 @@ func (kr *KeyringStore) CreateTokenResponseKey(key string) string {
 }
 
 // SaveCreateTokenResponse stores the token in the keyring
-func (kr *KeyringStore) SaveCreateTokenResponse(key string, token CreateTokenResponse) error {
+func (kr *KeyringStore) SaveCreateTokenResponse(ctx context.Context, key string, token CreateTokenResponse) error {
 	k := kr.CreateTokenResponseKey(key)
 	kr.cache.CreateTokenResponse[k] = token
 
-	return kr.saveStorageData()
+	return kr.saveStorageData(ctx)
 }
 
 // GetCreateTokenResponse retrieves the CreateTokenResponse from the keyring
@@ -409,7 +418,7 @@ func (kr *KeyringStore) GetCreateTokenResponse(key string, token *CreateTokenRes
 }
 
 // DeleteCreateTokenResponse deletes the CreateTokenResponse from the keyring
-func (kr *KeyringStore) DeleteCreateTokenResponse(key string) error {
+func (kr *KeyringStore) DeleteCreateTokenResponse(ctx context.Context, key string) error {
 	k := kr.CreateTokenResponseKey(key)
 	if _, ok := kr.cache.CreateTokenResponse[k]; !ok {
 		// return error if key doesn't exist
@@ -417,13 +426,13 @@ func (kr *KeyringStore) DeleteCreateTokenResponse(key string) error {
 	}
 
 	delete(kr.cache.CreateTokenResponse, k)
-	return kr.saveStorageData()
+	return kr.saveStorageData(ctx)
 }
 
 // SaveRoleCredentials stores the token in the arnring
-func (kr *KeyringStore) SaveRoleCredentials(arn string, token RoleCredentials) error {
+func (kr *KeyringStore) SaveRoleCredentials(ctx context.Context, arn string, token RoleCredentials) error {
 	kr.cache.RoleCredentials[arn] = token
-	return kr.saveStorageData()
+	return kr.saveStorageData(ctx)
 }
 
 // GetRoleCredentials retrieves the RoleCredentials from the Keyring
@@ -436,20 +445,20 @@ func (kr *KeyringStore) GetRoleCredentials(arn string, token *RoleCredentials) e
 }
 
 // DeleteRoleCredentials deletes the RoleCredentials from the Keyring
-func (kr *KeyringStore) DeleteRoleCredentials(arn string) error {
+func (kr *KeyringStore) DeleteRoleCredentials(ctx context.Context, arn string) error {
 	if _, ok := kr.cache.RoleCredentials[arn]; !ok {
 		// return error if key doesn't exist
 		return fmt.Errorf("no RoleCredentials for ARN: %s", arn)
 	}
 
 	delete(kr.cache.RoleCredentials, arn)
-	return kr.saveStorageData()
+	return kr.saveStorageData(ctx)
 }
 
 // SaveStaticCredentials stores the token in the arnring
-func (kr *KeyringStore) SaveStaticCredentials(arn string, creds StaticCredentials) error {
+func (kr *KeyringStore) SaveStaticCredentials(ctx context.Context, arn string, creds StaticCredentials) error {
 	kr.cache.StaticCredentials[arn] = creds
-	return kr.saveStorageData()
+	return kr.saveStorageData(ctx)
 }
 
 // GetStaticCredentials retrieves the StaticCredentials from the Keyring
@@ -462,14 +471,14 @@ func (kr *KeyringStore) GetStaticCredentials(arn string, creds *StaticCredential
 }
 
 // DeleteStaticCredentials deletes the StaticCredentials from the Keyring
-func (kr *KeyringStore) DeleteStaticCredentials(arn string) error {
+func (kr *KeyringStore) DeleteStaticCredentials(ctx context.Context, arn string) error {
 	if _, ok := kr.cache.StaticCredentials[arn]; !ok {
 		// return error if key doesn't exist
 		return fmt.Errorf("no StaticCredentials for ARN: %s", arn)
 	}
 
 	delete(kr.cache.StaticCredentials, arn)
-	return kr.saveStorageData()
+	return kr.saveStorageData(ctx)
 }
 
 // ListStaticCredentials returns a list of all the ARNs in the keyring
@@ -484,9 +493,9 @@ func (kr *KeyringStore) ListStaticCredentials() []string {
 }
 
 // SaveEcsBearerToken stores the token in the keyring
-func (kr *KeyringStore) SaveEcsBearerToken(token string) error {
+func (kr *KeyringStore) SaveEcsBearerToken(ctx context.Context, token string) error {
 	kr.cache.EcsBearerToken = token
-	return kr.saveStorageData()
+	return kr.saveStorageData(ctx)
 }
 
 // GetEcsBearerToken retrieves the token from the keyring
@@ -495,13 +504,13 @@ func (kr *KeyringStore) GetEcsBearerToken() (string, error) {
 }
 
 // DeleteEcsBearerToken deletes the token from the keyring
-func (kr *KeyringStore) DeleteEcsBearerToken() error {
+func (kr *KeyringStore) DeleteEcsBearerToken(ctx context.Context) error {
 	kr.cache.EcsBearerToken = ""
-	return kr.saveStorageData()
+	return kr.saveStorageData(ctx)
 }
 
 // SaveEcsSslKeyPair stores the private key and certificate chain in the keyring
-func (kr *KeyringStore) SaveEcsSslKeyPair(privateKey, certChain []byte) error {
+func (kr *KeyringStore) SaveEcsSslKeyPair(ctx context.Context, privateKey, certChain []byte) error {
 	if err := ValidateSSLCertificate(certChain); err != nil {
 		return err
 	}
@@ -511,7 +520,7 @@ func (kr *KeyringStore) SaveEcsSslKeyPair(privateKey, certChain []byte) error {
 		return err
 	}
 	kr.cache.EcsPrivateKey = string(privateKey)
-	return kr.saveStorageData()
+	return kr.saveStorageData(ctx)
 }
 
 // GetEcsSslCert retrieves the private key and cert chain from the keyring
@@ -525,8 +534,8 @@ func (kr *KeyringStore) GetEcsSslKey() (string, error) {
 }
 
 // DeleteEcsSslKeyPair deletes the private key and cert chain from the keyring
-func (kr *KeyringStore) DeleteEcsSslKeyPair() error {
+func (kr *KeyringStore) DeleteEcsSslKeyPair(ctx context.Context) error {
 	kr.cache.EcsCertChain = ""
 	kr.cache.EcsPrivateKey = ""
-	return kr.saveStorageData()
+	return kr.saveStorageData(ctx)
 }

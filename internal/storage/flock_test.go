@@ -19,10 +19,12 @@ package storage
  */
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/synfinatic/aws-sso-cli/internal/config"
@@ -42,4 +44,31 @@ func TestFlockFile(t *testing.T) {
 func TestFlockBlocker(t *testing.T) {
 	FlockBlockerReset()
 	assert.NoError(t, FlockBlocker())
+}
+
+func TestFlockBlockerWithCtx(t *testing.T) {
+	t.Run("active context returns nil", func(t *testing.T) {
+		FlockBlockerReset()
+		blocker := FlockBlockerWithCtx(context.Background())
+		assert.NoError(t, blocker())
+	})
+
+	t.Run("cancelled context returns error wrapping context.Canceled", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		blocker := FlockBlockerWithCtx(ctx)
+		err := blocker()
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, context.Canceled)
+	})
+
+	t.Run("expired deadline returns error wrapping context.DeadlineExceeded", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+		defer cancel()
+		time.Sleep(5 * time.Millisecond)
+		blocker := FlockBlockerWithCtx(ctx)
+		err := blocker()
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, context.DeadlineExceeded)
+	})
 }
