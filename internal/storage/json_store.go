@@ -46,6 +46,7 @@ type JsonStore struct {
 
 // OpenJsonStore opens our insecure JSON storage backend
 func OpenJsonStore(ctx context.Context, filename string) (SecureStorage, error) {
+	log.Debug("SecureStore: Opening json store", "filename", filename)
 	jstore := JsonStore{
 		filename:            filename,
 		RegisterClient:      map[string]RegisterClientData{},

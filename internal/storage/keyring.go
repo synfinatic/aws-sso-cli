@@ -99,7 +99,7 @@ type getPassword func(string) (string, error)
 
 var getPasswordFunc getPassword = fileKeyringPassword
 
-func NewKeyringConfig(name, configDir, collectionName string) (*keyring.Config, error) {
+func NewKeyringConfig(backend, configDir, collectionName string) (*keyring.Config, error) {
 	securePath := path.Join(configDir, "secure")
 
 	if collectionName == "" {
@@ -121,11 +121,11 @@ func NewKeyringConfig(name, configDir, collectionName string) (*keyring.Config, 
 		KWalletFolder:           KEYRING_ID,
 		WinCredPrefix:           KEYRING_ID,
 	}
-	if name != "" {
-		c.AllowedBackends = []keyring.BackendType{keyring.BackendType(name)}
+	if backend != "" {
+		c.AllowedBackends = []keyring.BackendType{keyring.BackendType(backend)}
 		rolesFile := fileutils.GetHomePath(path.Join(securePath, RECORD_KEY))
 
-		if name == "file" {
+		if backend == "file" {
 			if _, err := os.Stat(rolesFile); os.IsNotExist(err) {
 				// new secure store, so we should prompt user twice for password
 				// if ENV var is not set
@@ -172,6 +172,7 @@ func fileKeyringPassword(prompt string) (string, error) {
 }
 
 func OpenKeyring(ctx context.Context, cfg *keyring.Config) (SecureStorage, error) {
+	log.Debug("SecureStore: Opening keyring", "backends", cfg.AllowedBackends)
 	ring, err := keyring.Open(*cfg)
 	if err != nil {
 		return nil, err
