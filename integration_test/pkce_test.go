@@ -64,6 +64,7 @@ func TestPKCEAuthFlow(t *testing.T) {
 	tfile, err := os.CreateTemp("", "*.pkce.integration.json")
 	assert.NoError(t, err)
 	defer os.Remove(tfile.Name())
+	tfile.Close()
 
 	store, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 	assert.NoError(t, err)
@@ -91,7 +92,9 @@ func TestPKCEAuthFlow(t *testing.T) {
 
 	as := auth.NewAWSSSOForTestWithOIDCClient(conf, store, server.URL(), pkceClient)
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	err = as.Authenticate(ctx, uri.Print, "")
 	assert.NoError(t, err)
 

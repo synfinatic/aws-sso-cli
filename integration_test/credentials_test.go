@@ -124,6 +124,7 @@ func TestCredentialFetchWithRoleChain(t *testing.T) {
 	tfile, err := os.CreateTemp("", "*.integration.json")
 	assert.NoError(t, err)
 	defer os.Remove(tfile.Name())
+	tfile.Close()
 
 	store, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 	assert.NoError(t, err)
