@@ -11,3 +11,4 @@ coverage:
 ignore:
   - "cmd/**/*"
   - "cmd"
+  - "internal/sso/auth/awssso_testing.go"

@@ -60,6 +60,7 @@ type AWSSSO struct {
 	sso              SsoAPI
 	oidcClient       oidc.Client
 	store            storage.SecureStorage
+	stsEndpoint      string                          // non-empty overrides the STS endpoint (for integration tests only)
 	ClientName       string                          `json:"ClientName"`
 	ClientType       string                          `json:"ClientType"`
 	SsoRegion        string                          `json:"ssoRegion"`
@@ -409,7 +410,11 @@ func (as *AWSSSO) getRoleCredentials(accountId int64, role string, chainMap map[
 	if err != nil {
 		return storage.RoleCredentials{}, err
 	}
-	stsSession := sts.NewFromConfig(cfg)
+	stsSession := sts.NewFromConfig(cfg, func(o *sts.Options) {
+		if as.stsEndpoint != "" {
+			o.BaseEndpoint = aws.String(as.stsEndpoint)
+		}
+	})
 
 	previousAccount, _ := awsparse.AccountIdToString(creds.AccountId)
 	previousRole := fmt.Sprintf("%s@%s", creds.RoleName, previousAccount)
