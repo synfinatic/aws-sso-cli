@@ -32,6 +32,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	awssso "github.com/aws/aws-sdk-go-v2/service/sso"
 	ssotypes "github.com/aws/aws-sdk-go-v2/service/sso/types"
+	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
@@ -60,6 +61,7 @@ type AWSSSO struct {
 	sso              SsoAPI
 	oidcClient       oidc.Client
 	store            storage.SecureStorage
+	stsEndpoint      string                          // non-empty overrides the STS endpoint (for integration tests only)
 	ClientName       string                          `json:"ClientName"`
 	ClientType       string                          `json:"ClientType"`
 	SsoRegion        string                          `json:"ssoRegion"`
@@ -117,6 +119,79 @@ func NewAWSSSO(s *ssoconfig.SSOConfig, store storage.SecureStorage) *AWSSSO {
 		urlExecCommand: s.UrlExecCommand,
 	}
 	return &as
+}
+
+// NewAWSSSOForTest creates an AWSSSO whose AWS SDK clients point to serverURL instead
+// of real AWS endpoints. Only for use in integration tests.
+func NewAWSSSOForTest(s *ssoconfig.SSOConfig, store storage.SecureStorage, serverURL string) *AWSSSO {
+	r := retry.NewStandard(func(o *retry.StandardOptions) {
+		o.MaxAttempts = 1
+		o.MaxBackoff = 0
+	})
+
+	oidcAPI := ssooidc.New(ssooidc.Options{
+		Region:       s.SSORegion,
+		Retryer:      r,
+		BaseEndpoint: aws.String(serverURL),
+		Credentials:  aws.AnonymousCredentials{},
+	})
+
+	ssoSession := awssso.New(awssso.Options{
+		Region:       s.SSORegion,
+		Retryer:      r,
+		BaseEndpoint: aws.String(serverURL),
+		Credentials:  aws.AnonymousCredentials{},
+	})
+
+	return &AWSSSO{
+		key:            s.GetKey(),
+		sso:            ssoSession,
+		oidcClient:     oidc.NewAWSWithAPI(oidcAPI),
+		store:          store,
+		ClientName:     awsSSOClientName,
+		ClientType:     awsSSOClientType,
+		SsoRegion:      s.SSORegion,
+		StartUrl:       s.StartUrl,
+		Roles:          map[string][]ssoconfig.RoleInfo{},
+		SSOConfig:      s,
+		urlAction:      s.UrlAction,
+		browser:        s.Browser,
+		urlExecCommand: s.UrlExecCommand,
+		stsEndpoint:    serverURL,
+	}
+}
+
+// NewAWSSSOForTestWithOIDCClient is like NewAWSSSOForTest but accepts a custom
+// oidcClient. Only for use in integration tests.
+func NewAWSSSOForTestWithOIDCClient(s *ssoconfig.SSOConfig, store storage.SecureStorage, serverURL string, oidcOverride oidc.Client) *AWSSSO {
+	r := retry.NewStandard(func(o *retry.StandardOptions) {
+		o.MaxAttempts = 1
+		o.MaxBackoff = 0
+	})
+
+	ssoSession := awssso.New(awssso.Options{
+		Region:       s.SSORegion,
+		Retryer:      r,
+		BaseEndpoint: aws.String(serverURL),
+		Credentials:  aws.AnonymousCredentials{},
+	})
+
+	return &AWSSSO{
+		key:            s.GetKey(),
+		sso:            ssoSession,
+		oidcClient:     oidcOverride,
+		store:          store,
+		ClientName:     awsSSOClientName,
+		ClientType:     awsSSOClientType,
+		SsoRegion:      s.SSORegion,
+		StartUrl:       s.StartUrl,
+		Roles:          map[string][]ssoconfig.RoleInfo{},
+		SSOConfig:      s,
+		urlAction:      s.UrlAction,
+		browser:        s.Browser,
+		urlExecCommand: s.UrlExecCommand,
+		stsEndpoint:    serverURL,
+	}
 }
 
 // GetRoles fetches all the AWS SSO IAM Roles for the given AWS Account
@@ -409,7 +484,11 @@ func (as *AWSSSO) getRoleCredentials(accountId int64, role string, chainMap map[
 	if err != nil {
 		return storage.RoleCredentials{}, err
 	}
-	stsSession := sts.NewFromConfig(cfg)
+	stsSession := sts.NewFromConfig(cfg, func(o *sts.Options) {
+		if as.stsEndpoint != "" {
+			o.BaseEndpoint = aws.String(as.stsEndpoint)
+		}
+	})
 
 	previousAccount, _ := awsparse.AccountIdToString(creds.AccountId)
 	previousRole := fmt.Sprintf("%s@%s", creds.RoleName, previousAccount)
