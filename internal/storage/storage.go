@@ -27,16 +27,8 @@ import (
 	"time"
 
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
-	"github.com/synfinatic/aws-sso-cli/internal/logger"
-	"github.com/synfinatic/flexlog"
 	"github.com/synfinatic/gotable"
 )
-
-var log flexlog.FlexLogger
-
-func init() {
-	log = logger.GetLogger()
-}
 
 type GrantType string
 
