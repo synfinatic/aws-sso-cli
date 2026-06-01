@@ -1,14 +1,13 @@
 package main
 
 import (
-	"context"
 	"os"
-	"os/exec"
+	"sync/atomic"
+	"syscall"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestAccountIDUnmarshalText(t *testing.T) {
@@ -58,27 +57,47 @@ func TestAccountIDUnmarshalText(t *testing.T) {
 	}
 }
 
-// TestSignalExitGoroutine verifies that cancelling the signal context causes os.Exit(1).
-// It uses a subprocess so os.Exit doesn't terminate the test runner.
-func TestSignalExitGoroutine(t *testing.T) {
-	if os.Getenv("TEST_SIGNAL_EXIT_SUBPROCESS") == "1" {
-		ctx, cancel := context.WithCancel(context.Background())
-		go func() {
-			<-ctx.Done()
-			os.Exit(1)
-		}()
-		cancel()
-		time.Sleep(time.Second) // should not reach here
-		return
-	}
+// TestWatchSignalsCleanStopDoesNotExit is the regression test for the credential_process
+// exit-code bug: a clean shutdown (the deferred stop() on a successful run) must NOT
+// trigger the hard-exit goroutine. Otherwise even successful commands exit non-zero and
+// `aws-sso process` becomes unusable as an AWS credential_process.
+//
+// With the buggy wiring (goroutine watching appCtx.Done()) stop() cancels the context and
+// the goroutine calls os.Exit(1); with the fix (goroutine watching a dedicated signal
+// channel) stop() is a no-op for the exit path.
+func TestWatchSignalsCleanStopDoesNotExit(t *testing.T) {
+	orig := osExit
+	var exited int32
+	osExit = func(int) { atomic.StoreInt32(&exited, 1) }
+	t.Cleanup(func() { osExit = orig })
 
-	cmd := exec.Command(os.Args[0], "-test.run=TestSignalExitGoroutine", "-test.v") //nolint:gosec
-	cmd.Env = append(os.Environ(), "TEST_SIGNAL_EXIT_SUBPROCESS=1")
-	err := cmd.Run()
-	require.Error(t, err)
-	var exitErr *exec.ExitError
-	require.ErrorAs(t, err, &exitErr)
-	assert.Equal(t, 1, exitErr.ExitCode())
+	_, stop := watchSignals()
+	stop()                             // normal, successful-exit path
+	time.Sleep(100 * time.Millisecond) // give the goroutine time to (wrongly) fire
+
+	assert.Equal(t, int32(0), atomic.LoadInt32(&exited),
+		"a clean stop() must not call os.Exit -- would break credential_process")
+}
+
+// TestHardExitOnSignalExitsOnSignal verifies the intended behaviour from #1379: an actual
+// signal forces os.Exit(1). It feeds the signal channel directly, so no real OS signal is
+// sent and the test never touches AWS, the keyring, or the network.
+func TestHardExitOnSignalExitsOnSignal(t *testing.T) {
+	orig := osExit
+	done := make(chan int, 1)
+	osExit = func(code int) { done <- code }
+	t.Cleanup(func() { osExit = orig })
+
+	sigCh := make(chan os.Signal, 1)
+	go hardExitOnSignal(sigCh)
+	sigCh <- syscall.SIGINT
+
+	select {
+	case code := <-done:
+		assert.Equal(t, 1, code)
+	case <-time.After(2 * time.Second):
+		t.Fatal("expected os.Exit(1) after receiving a signal")
+	}
 }
 
 func TestLogLevelTypeValidate(t *testing.T) {

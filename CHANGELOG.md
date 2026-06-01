@@ -5,6 +5,8 @@
 
 ### Bugs
 
+* Fix `aws-sso process` exiting non-zero on success, breaking its use as an AWS
+  credential_process (regression from the SIGINT handling in #1379)
 * Fix zombie processes holding storage.lock after SIGINT #1379
 
 ### Changes
