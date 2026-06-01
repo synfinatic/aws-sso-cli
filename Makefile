@@ -148,7 +148,7 @@ unittest: ## Run go unit tests
 
 .PHONY: integration
 integration: ## Run integration tests against mock AWS HTTP servers
-	go test -v -tags integration -ldflags='$(LDFLAGS)' ./integration_test/...
+	go test -tags integration -ldflags='$(LDFLAGS)' ./integration_test/... ./cmd/aws-sso/...
 
 .PHONY: test-race
 test-race: ## Run `go test -race` on the code
