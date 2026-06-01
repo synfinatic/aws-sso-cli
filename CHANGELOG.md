@@ -7,6 +7,9 @@
 
 * Fix `aws-sso process` exiting non-zero on success, breaking its use as an AWS
   credential_process (regression from the SIGINT handling in #1379)
+* Fix AWS European Sovereign Cloud (EUSC) login: derive the OIDC `/authorize`
+  endpoint and the federation sign-in URL from the region's partition
+  (`amazonaws.eu` / `amazonaws-eusc.eu`) instead of hardcoding `amazonaws.com`
 * Fix zombie processes holding storage.lock after SIGINT #1379
 
 ### Changes

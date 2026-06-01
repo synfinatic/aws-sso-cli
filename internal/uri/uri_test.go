@@ -315,6 +315,14 @@ func TestAWSFederatedUrl(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = net.LookupIP(pUrl.Hostname())
 	assert.NoError(t, err)
+
+	// AWS European Sovereign Cloud lives under amazonaws-eusc.eu
+	u = AWSFederatedUrl("eusc-de-east-1")
+	assert.Equal(t, u, "https://eusc-de-east-1.signin.amazonaws-eusc.eu/federation")
+	pUrl, err = url.Parse(u)
+	assert.NoError(t, err)
+	_, err = net.LookupIP(pUrl.Hostname())
+	assert.NoError(t, err)
 }
 
 // retryLookupIP is a helper function that retries net.LookupIP

@@ -339,7 +339,9 @@ func (as *AWSSSO) pkceRedirectURIBase() string {
 }
 
 // pkceAuthorizationEndpoint returns the OIDC /authorize endpoint URL.
-// AWS does not return this from RegisterClient, so we construct it from the region.
+// AWS does not return this from RegisterClient, so we construct it from the region
+// using the SDK's partition-aware endpoint rules (so e.g. the AWS European
+// Sovereign Cloud resolves to amazonaws.eu instead of amazonaws.com).
 func (as *AWSSSO) pkceAuthorizationEndpoint() string {
 	if as.ClientData.AuthorizationEndpoint != "" {
 		ep := strings.TrimSuffix(as.ClientData.AuthorizationEndpoint, "/")
@@ -348,7 +350,7 @@ func (as *AWSSSO) pkceAuthorizationEndpoint() string {
 		}
 		return ep
 	}
-	return fmt.Sprintf("https://oidc.%s.amazonaws.com/authorize", as.SsoRegion)
+	return oidc.AuthorizationEndpoint(as.SsoRegion)
 }
 
 func (as *AWSSSO) reauthenticateDeviceCode(ctx context.Context) error {
