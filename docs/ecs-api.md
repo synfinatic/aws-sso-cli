@@ -163,3 +163,58 @@ Delete all named credentials.
     "message": "<message>"
 }
 ```
+
+## Healthcheck
+
+Healthcheck routes do **not** require authentication, making them suitable for use as
+Kubernetes liveness/readiness probes or Docker Compose `healthcheck:` commands.
+
+### GET /healthcheck
+
+Returns whether the default credential slot has valid (non-expired) credentials loaded.
+
+Success reply (`200 OK`):
+
+```json
+{
+    "status": "ok",
+    "profile": "<aws-sso profile name>",
+    "expires": "<date in RFC3339 / ISO8601 format>"
+}
+```
+
+Failure reply (`503 Service Unavailable`) when no credentials are loaded:
+
+```json
+{"status": "no credentials loaded"}
+```
+
+Failure reply (`503 Service Unavailable`) when credentials are expired:
+
+```json
+{"status": "credentials expired"}
+```
+
+### GET /healthcheck/slot/&lt;profile&gt;
+
+Returns whether the named credential slot has valid (non-expired) credentials loaded.
+
+Success reply (`200 OK`):
+
+```json
+{
+    "status": "ok",
+    "profile": "<aws-sso profile name>",
+    "expires": "<date in RFC3339 / ISO8601 format>"
+}
+```
+
+Failure reply (`503 Service Unavailable`) when the slot is not found or credentials are expired:
+
+```json
+{"status": "slot not found"}
+```
+
+```json
+{"status": "credentials expired"}
+```
