@@ -29,8 +29,9 @@ import (
 )
 
 type EcsServerCmd struct {
-	BindIP string `kong:"help='Bind address for ECS Server',default='127.0.0.1'"`
-	Port   int    `kong:"help='TCP port to listen on',default=4144"`
+	BindIP  string `kong:"help='Bind address for ECS Server',default='127.0.0.1'"`
+	Port    int    `kong:"help='TCP port to listen on',default=4144"`
+	Default string `kong:"short='d',help='Profile name to load as default credentials on start',predictor='profile'"`
 	// hidden flags are for internal use only when running in a docker container
 	Docker      bool `kong:"hidden"`
 	DisableAuth bool `kong:"help='Disable HTTP Auth for the ECS Server'"`
@@ -41,6 +42,8 @@ type EcsServerCmd struct {
 func (e EcsServerCmd) AfterApply(runCtx *RunContext) error {
 	if e.Docker {
 		runCtx.Auth = AUTH_NO_CONFIG
+	} else if e.Default != "" {
+		runCtx.Auth = AUTH_REQUIRED
 	} else {
 		runCtx.Auth = AUTH_SKIP
 	}
@@ -119,5 +122,29 @@ func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 	if err != nil {
 		return err
 	}
+	if cc.Default != "" && !cc.Docker {
+		if err := setServerDefaultProfile(ctx, s, cc.Default); err != nil {
+			return err
+		}
+	}
 	return s.Serve()
+}
+
+// setServerDefaultProfile resolves a profile name to credentials and injects them
+// directly into the server's default slot before Serve() is called.
+func setServerDefaultProfile(ctx *RunContext, s *server.EcsServer, profileName string) error {
+	cache := ctx.Settings.Cache.GetSSO()
+	rFlat, err := cache.Roles.GetRoleByProfile(profileName, ctx.Settings)
+	if err != nil {
+		return fmt.Errorf("profile %q not found: %w", profileName, err)
+	}
+	creds := GetRoleCredentials(ctx, AwsSSO, false, rFlat.AccountId, rFlat.RoleName)
+	if p, err := rFlat.ProfileName(ctx.Settings); err == nil {
+		rFlat.Profile = p
+	}
+	s.DefaultCreds = &ecs.ECSClientRequest{
+		Creds:       creds,
+		ProfileName: rFlat.Profile,
+	}
+	return nil
 }
