@@ -19,8 +19,9 @@ package ecs
  */
 
 const (
-	SLOT_ROUTE    = "/slot"    // put/get/delete
-	PROFILE_ROUTE = "/profile" // get name of default creds
-	DEFAULT_ROUTE = "/"        // put/get/delete: default credentials
-	CHARSET_JSON  = "application/json; charset=utf-8"
+	SLOT_ROUTE        = "/slot"        // put/get/delete
+	PROFILE_ROUTE     = "/profile"     // get name of default creds
+	DEFAULT_ROUTE     = "/"            // put/get/delete: default credentials
+	HEALTHCHECK_ROUTE = "/healthcheck" // get: liveness/readiness probe (no auth required)
+	CHARSET_JSON      = "application/json; charset=utf-8"
 )
