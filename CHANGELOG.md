@@ -23,6 +23,8 @@
 
 * Add aws-sso exec --overwrite-env flag to allow overriding AWS_ env variables #1095
 * Add support for /healthcheck endpoint for ECS server #1356
+* Add `--default <profile>` flag to `ecs server` and `ecs docker start` to automatically load
+  a named profile as the default credential slot on startup
 
 ### Changes
 
