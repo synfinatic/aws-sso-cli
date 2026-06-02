@@ -180,18 +180,24 @@ type CLI struct {
 // which would otherwise make even successful commands exit non-zero -- breaking `process`
 // as an AWS credential_process.
 func watchSignals() (context.Context, context.CancelFunc) {
-	appCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	appCtx, ctxStop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	go hardExitOnSignal(sigCh)
-	return appCtx, stop
+	return appCtx, func() {
+		ctxStop()
+		signal.Stop(sigCh)
+		close(sigCh)
+	}
 }
 
-// hardExitOnSignal calls osExit(1) once a signal arrives on sigCh. Extracted so the
+// hardExitOnSignal calls osExit(1) once a real signal arrives on sigCh. Extracted so the
 // exit-on-signal behaviour can be unit tested without sending real OS signals.
+// It returns without calling osExit when sigCh is closed (clean stop path).
 func hardExitOnSignal(sigCh <-chan os.Signal) {
-	<-sigCh
-	osExit(1)
+	if _, ok := <-sigCh; ok {
+		osExit(1)
+	}
 }
 
 func main() {
