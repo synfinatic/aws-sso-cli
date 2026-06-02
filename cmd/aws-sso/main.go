@@ -52,6 +52,9 @@ var VALID_LOG_LEVELS = []string{"error", "warn", "info", "debug", "trace"}
 
 var AwsSSO *ssoauth.AWSSSO // global
 
+// osExit is a seam so tests can observe a hard exit without terminating the test binary.
+var osExit = os.Exit
+
 // AccountID is a custom type that safely parses AWS account IDs from strings with leading zeros.
 type AccountID int64
 
@@ -164,16 +167,36 @@ type CLI struct {
 	Process     ProcessCmd     `kong:"cmd,help='Generate JSON for AWS SDK credential_process command',group='login-required'"`
 }
 
-func main() {
+// watchSignals wires SIGINT/SIGTERM handling. It returns a context that is cancelled
+// when a signal arrives (so lock-wait loops can honour cancellation) plus a stop func
+// to release the handler on a clean exit.
+//
+// It also force-exits via osExit(1) on an actual signal, so the process terminates even
+// when the main goroutine is blocked inside an uninterruptible keyring/D-Bus call; the
+// OS then releases all fcntl locks (e.g. storage.lock). See #1379.
+//
+// The hard-exit goroutine deliberately watches a dedicated signal channel rather than the
+// context's Done(): NotifyContext also cancels on the deferred stop() of a normal exit,
+// which would otherwise make even successful commands exit non-zero -- breaking `process`
+// as an AWS credential_process.
+func watchSignals() (context.Context, context.CancelFunc) {
 	appCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	go hardExitOnSignal(sigCh)
+	return appCtx, stop
+}
 
-	// Exit on first signal even when blocked inside a keyring/D-Bus call.
-	// The OS then releases all fcntl locks held by this process.
-	go func() {
-		<-appCtx.Done()
-		os.Exit(1)
-	}()
+// hardExitOnSignal calls osExit(1) once a signal arrives on sigCh. Extracted so the
+// exit-on-signal behaviour can be unit tested without sending real OS signals.
+func hardExitOnSignal(sigCh <-chan os.Signal) {
+	<-sigCh
+	osExit(1)
+}
+
+func main() {
+	appCtx, stop := watchSignals()
+	defer stop()
 
 	cli := CLI{}
 	var err error
