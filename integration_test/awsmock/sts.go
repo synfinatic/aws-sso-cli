@@ -48,7 +48,7 @@ type stsAssumeRoleResponse struct {
 }
 
 type stsAssumeRoleResult struct {
-	Credentials     stsCredentials    `xml:"Credentials"`
+	Credentials     stsCredentials     `xml:"Credentials"`
 	AssumedRoleUser stsAssumedRoleUser `xml:"AssumedRoleUser"`
 }
 

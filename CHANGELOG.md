@@ -11,6 +11,7 @@
 
 * Add unit tests for cmd/aws-sso
 * Add lock support for JSON SecureStore
+* Add e2e integration tests for CLI commands (login, cache, list, credentials, eval, exec, process)
 
 ## [v2.2.4] - 2026-05-21
 
