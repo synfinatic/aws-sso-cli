@@ -66,11 +66,11 @@ type GetRoleCredentialsResponse struct {
 
 // SSOHandler handles SSO API endpoints.
 type SSOHandler struct {
-	mu                  sync.Mutex
-	listAccountsQ       []queueItem
-	listAccountRolesQ   []queueItem
-	getRoleCredsQ       []queueItem
-	logoutQ             []queueItem
+	mu                sync.Mutex
+	listAccountsQ     []queueItem
+	listAccountRolesQ []queueItem
+	getRoleCredsQ     []queueItem
+	logoutQ           []queueItem
 }
 
 // QueueListAccounts enqueues a ListAccounts response.
