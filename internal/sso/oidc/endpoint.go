@@ -35,15 +35,20 @@ import (
 // `amazonaws.com` suffix, so non-commercial partitions resolve correctly -- e.g.
 // the AWS European Sovereign Cloud (`eusc-de-east-1`) lives under `amazonaws.eu`
 // and China under `amazonaws.com.cn`.
-func AuthorizationEndpoint(region string) string {
+//
+// An empty region or a resolver failure returns an error rather than a guessed
+// URL, so a misconfigured region surfaces as a clear error instead of a request
+// to a non-existent host.
+func AuthorizationEndpoint(region string) (string, error) {
+	if region == "" {
+		return "", fmt.Errorf("cannot resolve authorization endpoint: empty region")
+	}
 	ep, err := ssooidc.NewDefaultEndpointResolverV2().ResolveEndpoint(
 		context.Background(),
 		ssooidc.EndpointParameters{Region: aws.String(region)},
 	)
 	if err != nil {
-		// Fall back to the commercial partition host if the region is unknown
-		// to the SDK's endpoint rules.
-		return fmt.Sprintf("https://oidc.%s.amazonaws.com/authorize", region)
+		return "", fmt.Errorf("resolve authorization endpoint for region %q: %w", region, err)
 	}
-	return strings.TrimSuffix(ep.URI.String(), "/") + "/authorize"
+	return strings.TrimSuffix(ep.URI.String(), "/") + "/authorize", nil
 }

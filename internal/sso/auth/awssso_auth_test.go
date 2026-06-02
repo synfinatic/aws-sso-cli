@@ -30,6 +30,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	ssoconfig "github.com/synfinatic/aws-sso-cli/internal/sso/config"
 	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
@@ -863,7 +864,9 @@ func (m *mockOIDCClient) ExchangeRefreshToken(_ context.Context, in oidc.Exchang
 func TestPkceAuthorizationEndpoint(t *testing.T) {
 	t.Run("default from region", func(t *testing.T) {
 		as := &AWSSSO{SsoRegion: "us-east-1"}
-		assert.Equal(t, "https://oidc.us-east-1.amazonaws.com/authorize", as.pkceAuthorizationEndpoint())
+		ep, err := as.pkceAuthorizationEndpoint()
+		require.NoError(t, err)
+		assert.Equal(t, "https://oidc.us-east-1.amazonaws.com/authorize", ep)
 	})
 
 	t.Run("custom endpoint without /authorize", func(t *testing.T) {
@@ -871,7 +874,9 @@ func TestPkceAuthorizationEndpoint(t *testing.T) {
 			SsoRegion:  "us-east-1",
 			ClientData: storage.RegisterClientData{AuthorizationEndpoint: "https://custom.example.com/oauth2"},
 		}
-		assert.Equal(t, "https://custom.example.com/oauth2/authorize", as.pkceAuthorizationEndpoint())
+		ep, err := as.pkceAuthorizationEndpoint()
+		require.NoError(t, err)
+		assert.Equal(t, "https://custom.example.com/oauth2/authorize", ep)
 	})
 
 	t.Run("custom endpoint already has /authorize", func(t *testing.T) {
@@ -879,7 +884,9 @@ func TestPkceAuthorizationEndpoint(t *testing.T) {
 			SsoRegion:  "us-east-1",
 			ClientData: storage.RegisterClientData{AuthorizationEndpoint: "https://custom.example.com/oauth2/authorize"},
 		}
-		assert.Equal(t, "https://custom.example.com/oauth2/authorize", as.pkceAuthorizationEndpoint())
+		ep, err := as.pkceAuthorizationEndpoint()
+		require.NoError(t, err)
+		assert.Equal(t, "https://custom.example.com/oauth2/authorize", ep)
 	})
 
 	t.Run("custom endpoint with trailing slash", func(t *testing.T) {
@@ -887,7 +894,16 @@ func TestPkceAuthorizationEndpoint(t *testing.T) {
 			SsoRegion:  "us-east-1",
 			ClientData: storage.RegisterClientData{AuthorizationEndpoint: "https://custom.example.com/oauth2/"},
 		}
-		assert.Equal(t, "https://custom.example.com/oauth2/authorize", as.pkceAuthorizationEndpoint())
+		ep, err := as.pkceAuthorizationEndpoint()
+		require.NoError(t, err)
+		assert.Equal(t, "https://custom.example.com/oauth2/authorize", ep)
+	})
+
+	t.Run("empty region without custom endpoint errors", func(t *testing.T) {
+		as := &AWSSSO{SsoRegion: ""}
+		ep, err := as.pkceAuthorizationEndpoint()
+		assert.Error(t, err)
+		assert.Empty(t, ep)
 	})
 }
 

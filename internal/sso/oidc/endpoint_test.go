@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAuthorizationEndpoint(t *testing.T) {
@@ -22,6 +23,16 @@ func TestAuthorizationEndpoint(t *testing.T) {
 	}
 
 	for region, expected := range tests {
-		assert.Equal(t, expected, AuthorizationEndpoint(region), "region %q", region)
+		ep, err := AuthorizationEndpoint(region)
+		require.NoError(t, err, "region %q", region)
+		assert.Equal(t, expected, ep, "region %q", region)
 	}
+}
+
+func TestAuthorizationEndpointEmptyRegion(t *testing.T) {
+	t.Parallel()
+
+	ep, err := AuthorizationEndpoint("")
+	assert.Error(t, err)
+	assert.Empty(t, ep)
 }
