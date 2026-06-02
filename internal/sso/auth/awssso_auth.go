@@ -339,16 +339,18 @@ func (as *AWSSSO) pkceRedirectURIBase() string {
 }
 
 // pkceAuthorizationEndpoint returns the OIDC /authorize endpoint URL.
-// AWS does not return this from RegisterClient, so we construct it from the region.
-func (as *AWSSSO) pkceAuthorizationEndpoint() string {
+// AWS does not return this from RegisterClient, so we construct it from the region
+// using the SDK's partition-aware endpoint rules (so e.g. the AWS European
+// Sovereign Cloud resolves to amazonaws.eu instead of amazonaws.com).
+func (as *AWSSSO) pkceAuthorizationEndpoint() (string, error) {
 	if as.ClientData.AuthorizationEndpoint != "" {
 		ep := strings.TrimSuffix(as.ClientData.AuthorizationEndpoint, "/")
 		if !strings.HasSuffix(ep, "/authorize") {
 			ep += "/authorize"
 		}
-		return ep
+		return ep, nil
 	}
-	return fmt.Sprintf("https://oidc.%s.amazonaws.com/authorize", as.SsoRegion)
+	return oidc.AuthorizationEndpoint(as.SsoRegion)
 }
 
 func (as *AWSSSO) reauthenticateDeviceCode(ctx context.Context) error {
@@ -399,8 +401,13 @@ func (as *AWSSSO) reauthenticatePKCE(ctx context.Context) error {
 	_ = ln.Close()
 	redirectURI := fmt.Sprintf("http://127.0.0.1:%d", port)
 
+	authEndpoint, err := as.pkceAuthorizationEndpoint()
+	if err != nil {
+		return fmt.Errorf("unable to determine pkce authorization endpoint: %w", err)
+	}
+
 	flow, err := as.oidcClient.StartPKCEAuthCodeFlow(ctx, oidc.StartPKCEAuthCodeInput{
-		AuthorizationEndpoint: as.pkceAuthorizationEndpoint(),
+		AuthorizationEndpoint: authEndpoint,
 		ClientID:              as.ClientData.ClientId,
 		RedirectURI:           redirectURI,
 		Scopes:                []string{SSO_ACCOUNT_ACCESS_SCOPE},

@@ -381,6 +381,9 @@ func AWSFederatedUrl(ssoRegion string) string {
 	} else if strings.HasPrefix(ssoRegion, "us-gov-") {
 		// US Gov
 		return fmt.Sprintf(AWS_FEDERATED_URL_FORMAT, ssoRegion, "amazonaws-us-gov.com")
+	} else if strings.HasPrefix(ssoRegion, "eusc-") {
+		// AWS European Sovereign Cloud
+		return fmt.Sprintf(AWS_FEDERATED_URL_FORMAT, ssoRegion, "amazonaws-eusc.eu")
 	}
 	// Default
 	return fmt.Sprintf(AWS_FEDERATED_URL_FORMAT, ssoRegion, "aws.amazon.com")
