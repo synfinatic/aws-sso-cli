@@ -109,6 +109,11 @@ update the region.   If the user ever overrides the `$AWS_DEFAULT_REGION`
 or `$AWS_REGION` value or deletes the `$AWS_SSO_DEFAULT_REGION` then AWS
 SSO will no longer manage the variable.
 
+You can bypass the "is `$AWS_DEFAULT_REGION` already defined?" check by passing `--overwrite-env`
+(`-O`) to the `eval` or `exec` command.  When set, the configured `DefaultRegion` is always
+written to `$AWS_DEFAULT_REGION`, `$AWS_REGION`, and `$AWS_SSO_DEFAULT_REGION`, regardless of
+whatever was previously in your shell.
+
 <!-- https://github.com/synfinatic/aws-sso-cli/issues/166 -->
 ![graph](https://user-images.githubusercontent.com/1075352/143502947-1465f68f-0ef5-4de7-a997-ea716facc637.png)
 

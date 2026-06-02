@@ -152,7 +152,7 @@ func consoleViaEnvVars(ctx *RunContext) error {
 	}
 
 	// now we know who we are, get our configured default region
-	region := ctx.Settings.GetDefaultRegion(accountid, role, false)
+	region := ctx.Settings.GetDefaultRegion(accountid, role, false, false)
 	if ctx.Cli.Console.Region != "" {
 		region = ctx.Cli.Console.Region
 	}
@@ -229,7 +229,7 @@ func haveAWSEnvVars(ctx *RunContext) bool {
 
 // opens the AWS console or just prints the URL
 func openConsole(ctx *RunContext, accountid int64, role string) error {
-	region := ctx.Settings.GetDefaultRegion(accountid, role, false)
+	region := ctx.Settings.GetDefaultRegion(accountid, role, false, false)
 	if ctx.Cli.Console.Region != "" {
 		region = ctx.Cli.Console.Region
 	}

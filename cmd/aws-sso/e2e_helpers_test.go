@@ -272,6 +272,70 @@ func populateCache(t *testing.T, setup *e2eSetup) {
 	require.NoError(t, setup.Settings.Cache.Save(false))
 }
 
+// writeTestConfigWithRegion is like writeTestConfig but adds a top-level DefaultRegion
+// so that GetDefaultRegion has a configured region to return.
+func writeTestConfigWithRegion(t *testing.T, tempDir, serverURL, defaultSSO, region string) string {
+	t.Helper()
+	content := fmt.Sprintf(`SSOConfig:
+  %s:
+    SSORegion: us-east-1
+    StartUrl: %s
+SecureStore: json
+JsonStore: %s
+DefaultSSO: %s
+DefaultRegion: %s
+UrlAction: print
+AuthWorkflow: device_code
+ProfileFormat: "{{.AccountIdPad}}:{{.RoleName}}"
+`,
+		defaultSSO,
+		serverURL,
+		filepath.Join(tempDir, "store.json"),
+		defaultSSO,
+		region,
+	)
+	configPath := filepath.Join(tempDir, "config.yaml")
+	require.NoError(t, os.WriteFile(configPath, []byte(content), 0600))
+	return configPath
+}
+
+// newE2ESetupWithRegion creates a full test environment with DefaultRegion set in
+// the config so that eval/exec region tests have a non-empty configured region.
+func newE2ESetupWithRegion(t *testing.T, region string) *e2eSetup {
+	t.Helper()
+
+	tempDir := t.TempDir()
+	server := awsmock.NewMockAWSServer()
+	t.Cleanup(server.Close)
+
+	configPath := writeTestConfigWithRegion(t, tempDir, server.URL(), "Default", region)
+	cachePath := filepath.Join(tempDir, "cache.json")
+
+	settings, err := sso.LoadSettings(configPath, cachePath, DEFAULT_CONFIG, sso.OverrideSettings{})
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	store, err := storage.OpenJsonStore(ctx, filepath.Join(tempDir, "store.json"))
+	require.NoError(t, err)
+
+	ssoConf, err := settings.GetSelectedSSO("Default")
+	require.NoError(t, err)
+	ssoName, err := settings.GetSelectedSSOName("Default")
+	require.NoError(t, err)
+
+	AwsSSO = ssoauth.NewAWSSSOForTest(ssoConf, store, server.URL())
+	t.Cleanup(func() { AwsSSO = nil })
+
+	return &e2eSetup{
+		Server:   server,
+		Settings: settings,
+		Store:    store,
+		SSOConf:  ssoConf,
+		SSOName:  ssoName,
+		TempDir:  tempDir,
+	}
+}
+
 // queueRoleCredentials enqueues a single GetRoleCredentials mock response with
 // predictable test credentials.
 func queueRoleCredentials(server *awsmock.MockAWSServer) {
