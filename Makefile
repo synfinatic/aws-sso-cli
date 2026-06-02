@@ -271,7 +271,7 @@ $(OUTPUT_NAME): $(wildcard */*.go) .prepare
 
 docs: docs/default-region.png  ## Build document files
 
-docs/default-region.png:
+docs/default-region.png: docs/default-region.dot
 	dot -o docs/default-region.png -Tpng docs/default-region.dot
 
 .PHONY: loc

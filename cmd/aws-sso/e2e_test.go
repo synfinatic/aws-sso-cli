@@ -446,6 +446,137 @@ func TestE2EMultipleSSO_Selection(t *testing.T) {
 	})
 }
 
+// TestE2EEvalRegion_DefaultNoOverwrite verifies that eval does NOT emit region exports
+// when $AWS_DEFAULT_REGION is already set to a user-defined value not managed by aws-sso.
+// The default behaviour must leave the user's region untouched.
+func TestE2EEvalRegion_DefaultNoOverwrite(t *testing.T) {
+	t.Setenv("SHELL", "/bin/bash")
+	t.Setenv("AWS_DEFAULT_REGION", "eu-west-1") // user-set; not tracked by aws-sso
+	t.Setenv("AWS_SSO_DEFAULT_REGION", "")      // sentinel absent → region is unmanaged
+
+	setup := newE2ESetupWithRegion(t, "us-east-1")
+	preAuth(t, setup)
+	populateCache(t, setup)
+	queueRoleCredentials(setup.Server)
+
+	ctx := newRunContext(setup, AUTH_REQUIRED)
+	ctx.Cli.Eval = EvalCmd{
+		AccountId: AccountID(123456789012),
+		Role:      "ReadOnly",
+	}
+
+	output := captureStdout(func() {
+		err := (&EvalCmd{}).Run(ctx)
+		require.NoError(t, err)
+	})
+
+	// eval must not emit region assignments because the user already has a region set.
+	assert.NotContains(t, output, "export AWS_DEFAULT_REGION=",
+		"eval must not override a user-set AWS_DEFAULT_REGION without --overwrite-env")
+	assert.NotContains(t, output, `export AWS_REGION="`,
+		"eval must not override a user-set AWS_REGION without --overwrite-env")
+}
+
+// TestE2EEvalRegion_OverwriteEnv verifies that --overwrite-env causes eval to emit
+// region exports from config.yaml even when $AWS_DEFAULT_REGION is already set by the user.
+func TestE2EEvalRegion_OverwriteEnv(t *testing.T) {
+	t.Setenv("SHELL", "/bin/bash")
+	t.Setenv("AWS_DEFAULT_REGION", "eu-west-1") // user-set region that should be overridden
+	t.Setenv("AWS_SSO_DEFAULT_REGION", "")
+
+	setup := newE2ESetupWithRegion(t, "us-east-1")
+	preAuth(t, setup)
+	populateCache(t, setup)
+	queueRoleCredentials(setup.Server)
+
+	ctx := newRunContext(setup, AUTH_REQUIRED)
+	ctx.Cli.Eval = EvalCmd{
+		AccountId:    AccountID(123456789012),
+		Role:         "ReadOnly",
+		OverwriteEnv: true,
+	}
+
+	output := captureStdout(func() {
+		err := (&EvalCmd{}).Run(ctx)
+		require.NoError(t, err)
+	})
+
+	// --overwrite-env must force eval to emit the configured region.
+	assert.Contains(t, output, `export AWS_DEFAULT_REGION="us-east-1"`,
+		"eval --overwrite-env must export the configured AWS_DEFAULT_REGION")
+	assert.Contains(t, output, `export AWS_REGION="us-east-1"`,
+		"eval --overwrite-env must export the configured AWS_REGION")
+}
+
+// TestE2EExecRegion_DefaultNoOverwrite verifies that exec does NOT override
+// $AWS_DEFAULT_REGION in the subprocess when the user has set it to a value
+// not managed by aws-sso (no --overwrite-env).
+func TestE2EExecRegion_DefaultNoOverwrite(t *testing.T) {
+	for _, v := range []string{"AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_PROFILE"} {
+		unsetEnvForTest(t, v)
+	}
+	t.Setenv("AWS_DEFAULT_REGION", "eu-west-1")
+	t.Setenv("AWS_SSO_DEFAULT_REGION", "")
+
+	setup := newE2ESetupWithRegion(t, "us-east-1")
+	preAuth(t, setup)
+	populateCache(t, setup)
+	queueRoleCredentials(setup.Server)
+
+	ctx := newRunContext(setup, AUTH_REQUIRED)
+	ctx.Cli.Exec = ExecCmd{
+		AccountId: AccountID(123456789012),
+		Role:      "ReadOnly",
+		Cmd:       "/bin/sh",
+		Args:      []string{"-c", "echo REGION=$AWS_DEFAULT_REGION"},
+	}
+
+	output := captureStdout(func() {
+		err := (&ctx.Cli.Exec).Run(ctx)
+		require.NoError(t, err)
+	})
+
+	// Subprocess must inherit the user's region; the configured us-east-1 must not appear.
+	assert.Contains(t, output, "REGION=eu-west-1",
+		"subprocess should see the user-set AWS_DEFAULT_REGION without --overwrite-env")
+	assert.NotContains(t, output, "REGION=us-east-1",
+		"subprocess must not receive the configured region without --overwrite-env")
+}
+
+// TestE2EExecRegion_OverwriteEnv verifies that --overwrite-env causes exec to inject
+// the configured region into the subprocess environment, replacing any user-set value.
+func TestE2EExecRegion_OverwriteEnv(t *testing.T) {
+	// --overwrite-env skips checkAwsEnvironment, so credential vars may be set.
+	t.Setenv("AWS_ACCESS_KEY_ID", "old-key")
+	t.Setenv("AWS_DEFAULT_REGION", "eu-west-1") // user-set region to be overridden
+	t.Setenv("AWS_SSO_DEFAULT_REGION", "")
+
+	setup := newE2ESetupWithRegion(t, "us-east-1")
+	preAuth(t, setup)
+	populateCache(t, setup)
+	queueRoleCredentials(setup.Server)
+
+	ctx := newRunContext(setup, AUTH_REQUIRED)
+	ctx.Cli.Exec = ExecCmd{
+		AccountId:    AccountID(123456789012),
+		Role:         "ReadOnly",
+		OverwriteEnv: true,
+		Cmd:          "/bin/sh",
+		Args:         []string{"-c", "echo REGION=$AWS_DEFAULT_REGION"},
+	}
+
+	output := captureStdout(func() {
+		err := (&ctx.Cli.Exec).Run(ctx)
+		require.NoError(t, err)
+	})
+
+	// Subprocess must receive the configured region; the user's eu-west-1 must be gone.
+	assert.Contains(t, output, "REGION=us-east-1",
+		"exec --overwrite-env must inject the configured AWS_DEFAULT_REGION into the subprocess")
+	assert.NotContains(t, output, "REGION=eu-west-1",
+		"exec --overwrite-env must strip the user-set AWS_DEFAULT_REGION from the subprocess")
+}
+
 // TestE2ESubprocessExitCodeRace is a subprocess regression test for the race
 // condition introduced in #1379: the goroutine watching appCtx.Done() fires when
 // the deferred stop() cancels the context on a normal return from main(), causing

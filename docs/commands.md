@@ -138,6 +138,8 @@ Flags:
 * `--profile <profile>`, `-p` -- Name of AWS Profile to assume
 * `--clear`, `-c` -- Generate "unset XXXX" commands to clear the environment
 * `--no-region` -- Do not set the [AWS_DEFAULT_REGION](config.md#defaultregion) from config.yaml
+* `--overwrite-env`, `-O` -- Force overwriting existing `$AWS_DEFAULT_REGION`/`$AWS_REGION` even
+    if they are already set in the shell
 * `--refresh` -- Refresh current IAM credentials
 
 Priority is given to:
@@ -185,8 +187,9 @@ Flags:
 * `--role <role>`, `-R` -- Name of AWS Role to assume (`$AWS_SSO_ROLE_NAME`)
 * `--profile <profile>`, `-p` -- Name of AWS Profile to assume
 * `--no-region` -- Do not set the [AWS_DEFAULT_REGION](config.md#defaultregion) from config.yaml
+* `--overwrite-env`, `-O` -- Force overwriting existing `AWS_*` environment variables, including
+    `$AWS_DEFAULT_REGION`/`$AWS_REGION`, even if they are already set in the shell
 * `--sts-refresh` -- Force refresh of STS Token Credentials
-* `--ignore-env`, `-i` -- Force execution even if AWS_* environment variables are set
 
 Arguments: `[<command>] [<args> ...]`
 
@@ -198,7 +201,7 @@ Priority is given to:
 * Prompt user interactively
 
 You can not run `exec` inside of another `exec` shell or when the `$AWS_*` environment
-variables are set unless you pass in `--ignore-env`.
+variables are set unless you pass in `--overwrite-env`.
 
 See [Environment Variables](#environment-variables) for more information about
 what varibles are set.

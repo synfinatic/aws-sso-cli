@@ -83,8 +83,9 @@ type Settings struct {
 }
 
 // GetDefaultRegion scans the config settings file to pick the most local DefaultRegion from the tree
-// for the given role
-func (s *Settings) GetDefaultRegion(id int64, roleName string, noRegion bool) string {
+// for the given role. When overwriteEnv is true, existing AWS_DEFAULT_REGION/AWS_REGION values are
+// ignored and the configured region is always returned.
+func (s *Settings) GetDefaultRegion(id int64, roleName string, noRegion bool, overwriteEnv bool) string {
 	if noRegion {
 		return ""
 	}
@@ -94,15 +95,17 @@ func (s *Settings) GetDefaultRegion(id int64, roleName string, noRegion bool) st
 		log.Fatal("Unable to GetDefaultRegion()", "error", err.Error())
 	}
 
-	currentRegion := os.Getenv("AWS_DEFAULT_REGION")
-	if len(currentRegion) == 0 {
-		currentRegion = os.Getenv("AWS_REGION")
-	}
-	ssoManagedRegion := os.Getenv("AWS_SSO_DEFAULT_REGION")
+	if !overwriteEnv {
+		currentRegion := os.Getenv("AWS_DEFAULT_REGION")
+		if len(currentRegion) == 0 {
+			currentRegion = os.Getenv("AWS_REGION")
+		}
+		ssoManagedRegion := os.Getenv("AWS_SSO_DEFAULT_REGION")
 
-	if len(currentRegion) > 0 && currentRegion != ssoManagedRegion {
-		log.Debug("Will not override current AWS_DEFAULT_REGION/AWS_REGION", "region", currentRegion)
-		return ""
+		if len(currentRegion) > 0 && currentRegion != ssoManagedRegion {
+			log.Debug("Will not override current AWS_DEFAULT_REGION/AWS_REGION", "region", currentRegion)
+			return ""
+		}
 	}
 
 	role := s.DefaultRegion
