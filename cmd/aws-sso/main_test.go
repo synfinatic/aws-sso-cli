@@ -100,6 +100,31 @@ func TestHardExitOnSignalExitsOnSignal(t *testing.T) {
 	}
 }
 
+// TestHardExitOnSignalDoesNotExitOnClose verifies that closing sigCh (the stop() path)
+// causes hardExitOnSignal to return without calling osExit — fixing the goroutine leak.
+func TestHardExitOnSignalDoesNotExitOnClose(t *testing.T) {
+	orig := osExit
+	var exited int32
+	osExit = func(int) { atomic.StoreInt32(&exited, 1) }
+	t.Cleanup(func() { osExit = orig })
+
+	sigCh := make(chan os.Signal, 1)
+	returned := make(chan struct{})
+	go func() {
+		hardExitOnSignal(sigCh)
+		close(returned)
+	}()
+	close(sigCh)
+
+	select {
+	case <-returned:
+		assert.Equal(t, int32(0), atomic.LoadInt32(&exited),
+			"closing the signal channel must not call os.Exit")
+	case <-time.After(2 * time.Second):
+		t.Fatal("hardExitOnSignal did not return after channel was closed")
+	}
+}
+
 func TestLogLevelTypeValidate(t *testing.T) {
 	tests := []struct {
 		level   string
