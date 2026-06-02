@@ -272,6 +272,63 @@ you can use:
 
 `aws-sso ecs unload --profile <profile>`
 
+## Kubernetes / Docker Compose Healthcheck
+
+The ECS server exposes a `/healthcheck` endpoint that does **not** require
+authentication, making it suitable for k8s probes and Docker Compose `healthcheck:`
+commands.
+
+- `GET /healthcheck` — returns `200 OK` when the default slot has valid credentials,
+  `503` otherwise.
+- `GET /healthcheck/slot/<profile>` — returns `200 OK` when the named slot has valid
+  credentials, `503` otherwise.
+
+### Kubernetes example
+
+```yaml
+livenessProbe:
+  httpGet:
+    path: /healthcheck
+    port: 4144
+  initialDelaySeconds: 5
+  periodSeconds: 30
+
+readinessProbe:
+  httpGet:
+    path: /healthcheck
+    port: 4144
+  initialDelaySeconds: 5
+  periodSeconds: 10
+```
+
+For a named slot replace the path with `/healthcheck/slot/<profile>` (URL-encode the
+profile name if it contains special characters).
+
+### Docker Compose example
+
+```yaml
+services:
+  aws-sso:
+    image: synfinatic/aws-sso-cli-ecs-server
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:4144/healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+```
+
+Other services that depend on valid credentials can declare `depends_on` with a
+`service_healthy` condition:
+
+```yaml
+  myapp:
+    image: myapp
+    depends_on:
+      aws-sso:
+        condition: service_healthy
+```
+
 ## Errors
 
 The ECS Server API endpoint generates errors with the following JSON format:
