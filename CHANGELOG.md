@@ -16,7 +16,8 @@
 
 * Add unit tests for cmd/aws-sso
 * Add lock support for JSON SecureStore
-* Add e2e integration tests for CLI commands (login, cache, list, credentials, eval, exec, process)
+* Add e2e integration tests for CLI commands
+* Security: Update to Go 1.26.4
 
 ## [v2.2.4] - 2026-05-21
 
