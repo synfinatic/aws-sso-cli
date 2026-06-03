@@ -21,14 +21,17 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/netip"
 	"os"
+	"time"
 
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/mount"
 	"github.com/moby/moby/api/types/network"
-	"github.com/moby/moby/client"
+	dockerclient "github.com/moby/moby/client"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
+	ecsclient "github.com/synfinatic/aws-sso-cli/internal/ecs/client"
 	// "github.com/davecgh/go-spew/spew"
 )
 
@@ -48,17 +51,22 @@ type EcsDockerStartCmd struct {
 	Port        string `kong:"help='Host port to bind to the ECS Server',default='4144'"`
 	Image       string `kong:"help='ECS Server docker image',default='synfinatic/aws-sso-cli-ecs-server'"`
 	Version     string `kong:"help='ECS Server docker image version',default='v${VERSION}'"`
+	Default     string `kong:"short='d',help='Profile name to load as default credentials on start',predictor='profile'"`
 }
 
 // AfterApply determines if SSO auth token is required
 func (e EcsDockerStartCmd) AfterApply(runCtx *RunContext) error {
-	runCtx.Auth = AUTH_SKIP
+	if e.Default != "" {
+		runCtx.Auth = AUTH_REQUIRED
+	} else {
+		runCtx.Auth = AUTH_SKIP
+	}
 	return nil
 }
 
 func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 	// Start the ECS Server in a Docker container
-	dockerClient, err := client.New(client.FromEnv)
+	dockerClient, err := dockerclient.New(dockerclient.FromEnv)
 	if err != nil {
 		return err
 	}
@@ -139,7 +147,7 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 		},
 	}
 
-	resp, err := dockerClient.ContainerCreate(context.Background(), client.ContainerCreateOptions{
+	resp, err := dockerClient.ContainerCreate(context.Background(), dockerclient.ContainerCreateOptions{
 		Config:     config,
 		HostConfig: hostConfig,
 		Name:       CONTAINER_NAME,
@@ -148,21 +156,141 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 		return err
 	}
 
-	// must create the named pipe before we start the container
+	// Write security config and close before starting the container so the
+	// file is fully flushed to the shared filesystem before the container reads it.
+	if err = writeAndCloseSecurityFile(privateKey, certChain, bearerToken); err != nil {
+		_, _ = dockerClient.ContainerRemove(context.Background(), resp.ID, dockerclient.ContainerRemoveOptions{})
+		return err
+	}
+
+	if _, err = dockerClient.ContainerStart(context.Background(), resp.ID, dockerclient.ContainerStartOptions{}); err != nil {
+		os.Remove(ecs.SecurityFilePath(ecs.WRITE_ONLY)) // clean up on failure
+		_, _ = dockerClient.ContainerRemove(context.Background(), resp.ID, dockerclient.ContainerRemoveOptions{})
+		return err
+	}
+
+	if cc.Default != "" {
+		// Use http when no cert chain is configured — the server requires both privateKey
+		// and certChain to enable TLS; certChain alone is not sufficient.
+		proto := "http"
+		if !cc.DisableSSL && privateKey != "" && certChain != "" {
+			proto = "https"
+		}
+		serverAddr := fmt.Sprintf("%s:%s", cc.BindIP, cc.Port)
+
+		stopAndRemove := func() {
+			_, _ = dockerClient.ContainerStop(context.Background(), resp.ID, dockerclient.ContainerStopOptions{})
+			_, _ = dockerClient.ContainerRemove(context.Background(), resp.ID, dockerclient.ContainerRemoveOptions{})
+		}
+
+		// Wait until the container is accepting connections (503 = up but no creds yet).
+		if err := waitForEcsServerUp(proto, serverAddr, certChain, 30*time.Second); err != nil {
+			stopAndRemove()
+			return err
+		}
+		if err := loadProfileToEcsServer(ctx, cc.Default, serverAddr); err != nil {
+			stopAndRemove()
+			return err
+		}
+		if err := waitForEcsHealthcheck(proto, serverAddr, certChain, 30*time.Second); err != nil {
+			stopAndRemove()
+			return err
+		}
+	}
+	return nil
+}
+
+// writeAndCloseSecurityFile writes the ECS security config and closes the file
+// synchronously before the container starts, ensuring the data is visible on the
+// shared filesystem (e.g. VirtioFS) before the container process reads it.
+func writeAndCloseSecurityFile(privateKey, certChain, bearerToken string) error {
 	f, err := ecs.OpenSecurityFile(ecs.WRITE_ONLY)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
 	if err = ecs.WriteSecurityConfig(f, privateKey, certChain, bearerToken); err != nil {
+		f.Close()
 		return err
 	}
+	return f.Close()
+}
 
-	if _, err = dockerClient.ContainerStart(context.Background(), resp.ID, client.ContainerStartOptions{}); err != nil {
-		os.Remove(ecs.SecurityFilePath(ecs.WRITE_ONLY)) // clean up on failure
-		return err
+// waitForEcsHealthcheck polls the ECS server healthcheck endpoint until it returns
+// HTTP 200 or the timeout elapses. certChain must be provided when the server uses TLS
+// so that the self-signed certificate is trusted.
+func waitForEcsHealthcheck(proto, serverAddr, certChain string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	url := fmt.Sprintf("%s://%s%s", proto, serverAddr, ecs.HEALTHCHECK_ROUTE)
+
+	var httpClient *http.Client
+	var err error
+	if certChain != "" {
+		httpClient, err = ecsclient.NewHTTPClient(certChain)
+		if err != nil {
+			return fmt.Errorf("failed to build TLS client for healthcheck: %w", err)
+		}
+	} else {
+		httpClient = &http.Client{}
 	}
-	return nil
+	httpClient.Timeout = 2 * time.Second
+
+	for time.Now().Before(deadline) {
+		resp, err := httpClient.Get(url) // nolint:gosec,noctx
+		if err == nil {
+			resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				return nil
+			}
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	return fmt.Errorf("ECS server at %s did not become healthy within %s", serverAddr, timeout)
+}
+
+// waitForEcsServerUp polls the ECS server healthcheck endpoint until the server
+// responds with any HTTP status code (including 503, which means running but no
+// credentials loaded yet) or the timeout elapses. Connection errors are retried.
+func waitForEcsServerUp(proto, serverAddr, certChain string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	url := fmt.Sprintf("%s://%s%s", proto, serverAddr, ecs.HEALTHCHECK_ROUTE)
+
+	var httpClient *http.Client
+	var err error
+	if certChain != "" {
+		httpClient, err = ecsclient.NewHTTPClient(certChain)
+		if err != nil {
+			return fmt.Errorf("failed to build TLS client for server-up check: %w", err)
+		}
+	} else {
+		httpClient = &http.Client{}
+	}
+	httpClient.Timeout = 2 * time.Second
+
+	for time.Now().Before(deadline) {
+		resp, err := httpClient.Get(url) // nolint:gosec,noctx
+		if err == nil {
+			resp.Body.Close()
+			return nil // any HTTP response means the server process is up
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	return fmt.Errorf("ECS server at %s did not start within %s", serverAddr, timeout)
+}
+
+// loadProfileToEcsServer resolves a profile name to credentials and PUTs them
+// into the default slot of the running ECS server.
+func loadProfileToEcsServer(ctx *RunContext, profileName, serverAddr string) error {
+	cache := ctx.Settings.Cache.GetSSO()
+	rFlat, err := cache.Roles.GetRoleByProfile(profileName, ctx.Settings)
+	if err != nil {
+		return fmt.Errorf("profile %q not found: %w", profileName, err)
+	}
+	creds := GetRoleCredentials(ctx, AwsSSO, false, rFlat.AccountId, rFlat.RoleName)
+	if p, err := rFlat.ProfileName(ctx.Settings); err == nil {
+		rFlat.Profile = p
+	}
+	c := newClient(serverAddr, ctx)
+	return c.SubmitCreds(creds, rFlat.Profile, false)
 }
 
 type EcsDockerStopCmd struct {
@@ -177,15 +305,15 @@ func (e EcsDockerStopCmd) AfterApply(runCtx *RunContext) error {
 
 func (cc *EcsDockerStopCmd) Run(ctx *RunContext) error {
 	// Stop the ECS Server in a Docker container
-	dockerClient, err := client.New(client.FromEnv)
+	dockerClient, err := dockerclient.New(dockerclient.FromEnv)
 	if err != nil {
 		return err
 	}
 
-	if _, err = dockerClient.ContainerStop(context.Background(), CONTAINER_NAME, client.ContainerStopOptions{}); err != nil {
+	if _, err = dockerClient.ContainerStop(context.Background(), CONTAINER_NAME, dockerclient.ContainerStopOptions{}); err != nil {
 		return err
 	}
 
-	_, err = dockerClient.ContainerRemove(context.Background(), CONTAINER_NAME, client.ContainerRemoveOptions{})
+	_, err = dockerClient.ContainerRemove(context.Background(), CONTAINER_NAME, dockerclient.ContainerRemoveOptions{})
 	return err
 }
