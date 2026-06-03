@@ -131,7 +131,7 @@ func (e EcsListCmd) AfterApply(runCtx *RunContext) error {
 }
 
 func (cc *EcsListCmd) Run(ctx *RunContext) error {
-	c := newClient(ctx.Cli.Ecs.Profile.Server, ctx)
+	c := newClient(ctx.Cli.Ecs.List.Server, ctx)
 
 	profiles, err := c.ListProfiles()
 	if err != nil {
