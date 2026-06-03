@@ -1,7 +1,7 @@
 digraph g {
     Start -> Overwrite_Env
 
-    Overwrite_Env [label="Is --overwrite-env set?"]
+    Overwrite_Env [label="Is --overwrite-region set?"]
     Overwrite_Env -> Have_DR [label="Yes"]
     Overwrite_Env -> ADR_SET [label="No"]
 
