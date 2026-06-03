@@ -1,4 +1,4 @@
-//go:build integration
+//go:build e2etests
 
 package main
 
@@ -34,7 +34,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/synfinatic/aws-sso-cli/integration_test/awsmock"
+	"github.com/synfinatic/aws-sso-cli/internal/awsmock"
 	sso "github.com/synfinatic/aws-sso-cli/internal/sso"
 	ssoauth "github.com/synfinatic/aws-sso-cli/internal/sso/auth"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
@@ -257,6 +257,65 @@ func TestE2EEval(t *testing.T) {
 		"eval output should export the session token")
 }
 
+// TestE2EEval_RoleChain verifies that EvalCmd resolves credentials for a role
+// configured with Via: (STS AssumeRole chaining), exercising the full
+// GetRoleCredentials(BaseRole) → AssumeRole(TargetRole) pipeline.
+func TestE2EEval_RoleChain(t *testing.T) {
+	t.Setenv("SHELL", "/bin/bash")
+
+	setup := newE2ESetupRoleChain(t)
+	preAuth(t, setup)
+
+	// Populate cache with both BaseRole and TargetRole.
+	setup.Server.SSO.QueueListAccounts(awsmock.ListAccountsResponse{
+		AccountList: []awsmock.AccountInfo{
+			{AccountID: "123456789012", AccountName: "TestAccount", EmailAddress: "admin@example.com"},
+		},
+	})
+	setup.Server.SSO.QueueListAccountRoles(awsmock.ListAccountRolesResponse{
+		RoleList: []awsmock.RoleInfo{
+			{AccountID: "123456789012", RoleName: "BaseRole"},
+			{AccountID: "123456789012", RoleName: "TargetRole"},
+		},
+	})
+	_, _, err := setup.Settings.Cache.Refresh(AwsSSO, setup.SSOConf, setup.SSOName, 1, setup.Settings)
+	require.NoError(t, err)
+	require.NoError(t, setup.Settings.Cache.Save(false))
+
+	// GetRoleCredentials(BaseRole) → AssumeRole(TargetRole).
+	setup.Server.SSO.QueueGetRoleCredentials(awsmock.GetRoleCredentialsResponse{
+		RoleCredentials: awsmock.RoleCredentials{
+			AccessKeyID:     "AKID-BASE",
+			SecretAccessKey: "SECRET-BASE",
+			SessionToken:    "TOKEN-BASE",
+			Expiration:      time.Now().Add(1 * time.Hour).UnixMilli(),
+		},
+	})
+	setup.Server.STS.QueueAssumeRole(awsmock.AssumeRoleResult{
+		AccessKeyID:     "AKID-TARGET",
+		SecretAccessKey: "SECRET-TARGET",
+		SessionToken:    "TOKEN-TARGET",
+		Expiration:      time.Now().Add(1 * time.Hour),
+		RoleARN:         "arn:aws:iam::123456789012:role/TargetRole",
+		SessionName:     "BaseRole@123456789012",
+	})
+
+	ctx := newRunContext(setup, AUTH_REQUIRED)
+	ctx.Cli.Eval = EvalCmd{
+		AccountId: AccountID(123456789012),
+		Role:      "TargetRole",
+	}
+
+	output := captureStdout(func() {
+		err := (&EvalCmd{}).Run(ctx)
+		require.NoError(t, err)
+	})
+
+	assert.Contains(t, output, `export AWS_ACCESS_KEY_ID="AKID-TARGET"`)
+	assert.Contains(t, output, `export AWS_SECRET_ACCESS_KEY="SECRET-TARGET"`)
+	assert.Contains(t, output, `export AWS_SESSION_TOKEN="TOKEN-TARGET"`)
+}
+
 // TestE2EExec verifies that ExecCmd.Run injects credentials into the subprocess
 // environment and runs it successfully.
 func TestE2EExec(t *testing.T) {
@@ -417,7 +476,7 @@ func TestE2ESubprocessExitCodeRace(t *testing.T) {
 	server := awsmock.NewMockAWSServer()
 	t.Cleanup(server.Close)
 
-	configPath := writeTestConfig(t, tempHome, server.URL(), "Default", nil, "device_code")
+	configPath := writeTestConfig(t, tempHome, server.URL(), "Default", nil, "device_code", "")
 	cachePath := filepath.Join(cacheDir, "cache.json")
 	storePath := filepath.Join(tempHome, "store.json")
 

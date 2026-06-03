@@ -146,9 +146,9 @@ debug: .prepare ## Run debug in dlv
 unittest: ## Run go unit tests
 	go test -ldflags='$(LDFLAGS)' -covermode=atomic -coverprofile=coverage.out  ./...
 
-.PHONY: integration
-integration: ## Run integration tests against mock AWS HTTP servers
-	go test -tags integration -ldflags='$(LDFLAGS)' ./integration_test/... ./cmd/aws-sso/...
+.PHONY: e2e
+e2e: ## Run end-to-end tests against mock AWS HTTP servers
+	go test -tags e2e-tests -ldflags='$(LDFLAGS)' ./cmd/aws-sso/...
 
 .PHONY: test-race
 test-race: ## Run `go test -race` on the code
@@ -168,7 +168,7 @@ govulncheck:  ## Run govulncheck
 	@govulncheck ./...
 
 # run everything but `lint`and govulncheck because they run seperately
-.build-tests: vet unittest test-tidy test-fmt test-homebrew integration
+.build-tests: vet unittest test-tidy test-fmt test-homebrew e2e
 
 $(DIST_DIR):
 	@if test ! -d $(DIST_DIR); then mkdir -p $(DIST_DIR) ; fi
