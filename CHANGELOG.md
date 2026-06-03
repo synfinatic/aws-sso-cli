@@ -3,6 +3,13 @@
 
 ## [Unreleased]
 
+### New Features
+
+* Add aws-sso [exec|eval] --overwrite-env flag to allow overriding AWS_ env variables #1095
+* Add support for /healthcheck endpoint for ECS server #1356
+* Add `--default <profile>` flag to `ecs server` and `ecs docker start` to automatically load
+  a named profile as the default credential slot on startup
+
 ### Bugs
 
 * Fix `aws-sso process` exiting non-zero on success, breaking its use as an AWS
@@ -11,33 +18,13 @@
   endpoint and the federation sign-in URL from the region's partition
   (`amazonaws.eu` / `amazonaws-eusc.eu`) instead of hardcoding `amazonaws.com`
 * Fix zombie processes holding storage.lock after SIGINT #1379
+* Security: Update to Go 1.26.4
 
 ### Changes
 
 * Add unit tests for cmd/aws-sso
 * Add lock support for JSON SecureStore
 * Add e2e integration tests for CLI commands
-* Security: Update to Go 1.26.4
-
-### New Features
-
-* Add aws-sso exec --overwrite-env flag to allow overriding AWS_ env variables #1095
-* Add support for /healthcheck endpoint for ECS server #1356
-* Add `--default <profile>` flag to `ecs server` and `ecs docker start` to automatically load
-  a named profile as the default credential slot on startup
-
-### Changes
-
-* Add unit tests for cmd/aws-sso
-* Add lock support for JSON SecureStore
-
-### Bugs
-
-* Fix zombie processes holding storage.lock after SIGINT #1379
-
-### New Features
-
-* Add aws-sso exec --overwrite-env flag to allow overriding AWS_ env variables #1095
 
 ## [v2.2.4] - 2026-05-21
 

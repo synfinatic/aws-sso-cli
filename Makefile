@@ -148,7 +148,7 @@ unittest: ## Run go unit tests
 
 .PHONY: e2e
 e2e: ## Run end-to-end tests against mock AWS HTTP servers
-	go test -tags e2e-tests -ldflags='$(LDFLAGS)' ./cmd/aws-sso/...
+	go test -tags e2etests -ldflags='$(LDFLAGS)' ./cmd/aws-sso/...
 
 .PHONY: test-race
 test-race: ## Run `go test -race` on the code
@@ -271,7 +271,7 @@ $(OUTPUT_NAME): $(wildcard */*.go) .prepare
 
 docs: docs/default-region.png  ## Build document files
 
-docs/default-region.png:
+docs/default-region.png: docs/default-region.dot
 	dot -o docs/default-region.png -Tpng docs/default-region.dot
 
 .PHONY: loc
