@@ -115,7 +115,7 @@ written to `$AWS_DEFAULT_REGION`, `$AWS_REGION`, and `$AWS_SSO_DEFAULT_REGION`, 
 whatever was previously in your shell.
 
 <!-- https://github.com/synfinatic/aws-sso-cli/issues/166 -->
-![graph](https://user-images.githubusercontent.com/1075352/143502947-1465f68f-0ef5-4de7-a997-ea716facc637.png)
+![graph](https://github.com/user-attachments/assets/1c94d1eb-e148-4da4-9e54-97a591a316e0)
 
 ### Example of multiple AWS SSO instances
 
