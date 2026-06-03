@@ -1,11 +1,13 @@
 package main
 
 import (
+	"errors"
 	"os"
 	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/synfinatic/aws-sso-cli/internal/predictor"
 )
 
@@ -176,4 +178,39 @@ func TestValidateBinaryOrNone(t *testing.T) {
 			assert.Error(t, validateBinaryOrNone(f.Name()))
 		})
 	}
+}
+
+func TestMakeSelectTemplate(t *testing.T) {
+	tmpl := makeSelectTemplate("Choose role")
+	require.NotNil(t, tmpl)
+	assert.NotEmpty(t, tmpl.Label)
+	assert.NotEmpty(t, tmpl.Active)
+	assert.NotEmpty(t, tmpl.Inactive)
+	assert.NotEmpty(t, tmpl.Selected)
+}
+
+func TestMakePromptTemplate(t *testing.T) {
+	tmpl := makePromptTemplate("Enter value")
+	require.NotNil(t, tmpl)
+	assert.NotEmpty(t, tmpl.Prompt)
+	assert.NotEmpty(t, tmpl.Success)
+}
+
+func TestCheckPromptError_Del(t *testing.T) {
+	// "^D" logs an error but does not call log.Fatal — must not panic.
+	assert.NotPanics(t, func() {
+		checkPromptError(errors.New("^D"))
+	})
+}
+
+func TestCheckPromptError_Default(t *testing.T) {
+	assert.NotPanics(t, func() {
+		checkPromptError(errors.New("some unexpected error"))
+	})
+}
+
+func TestCheckSelectError_Default(t *testing.T) {
+	assert.NotPanics(t, func() {
+		checkSelectError(errors.New("some select error"))
+	})
 }
