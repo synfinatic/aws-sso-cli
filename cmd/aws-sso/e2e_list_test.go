@@ -148,3 +148,145 @@ func TestE2ESubprocessExitCodeRace(t *testing.T) {
 			"before the runtime exits cleanly (regression: #1379); stderr: %s",
 		stderr.String())
 }
+
+// TestE2EListPrefix verifies that --prefix filters roles by field value prefix.
+func TestE2EListPrefix(t *testing.T) {
+	setup := newE2ESetup(t)
+	preAuth(t, setup)
+	populateCache(t, setup)
+
+	ctx := newRunContext(setup, AUTH_SKIP)
+	ctx.Cli.List = ListCmd{Sort: "AccountId", Prefix: "AccountId=123"}
+
+	output := captureStdout(func() {
+		err := (&ctx.Cli.List).Run(ctx)
+		require.NoError(t, err)
+	})
+
+	assert.Contains(t, output, "ReadOnly", "matching account should appear")
+}
+
+// TestE2EListPrefixMissingEquals verifies that a --prefix without '=' returns an error.
+func TestE2EListPrefixMissingEquals(t *testing.T) {
+	setup := newE2ESetup(t)
+	populateCache(t, setup)
+
+	ctx := newRunContext(setup, AUTH_SKIP)
+	ctx.Cli.List = ListCmd{Sort: "AccountId", Prefix: "AccountId"}
+
+	err := (&ctx.Cli.List).Run(ctx)
+	assert.ErrorContains(t, err, "format of <FieldName>=<Prefix>")
+}
+
+// TestE2EListPrefixInvalidField verifies that an unknown --prefix field name returns an error.
+func TestE2EListPrefixInvalidField(t *testing.T) {
+	setup := newE2ESetup(t)
+	populateCache(t, setup)
+
+	ctx := newRunContext(setup, AUTH_SKIP)
+	ctx.Cli.List = ListCmd{Sort: "AccountId", Prefix: "NoSuchField=x"}
+
+	err := (&ctx.Cli.List).Run(ctx)
+	assert.ErrorContains(t, err, "valid field")
+}
+
+// TestE2EListCSV verifies that the CSV flag produces comma-separated output.
+func TestE2EListCSV(t *testing.T) {
+	setup := newE2ESetup(t)
+	preAuth(t, setup)
+	populateCache(t, setup)
+
+	ctx := newRunContext(setup, AUTH_SKIP)
+	ctx.Cli.List = ListCmd{Sort: "AccountId", CSV: true, Fields: []string{"AccountId", "RoleName"}}
+
+	output := captureStdout(func() {
+		err := (&ctx.Cli.List).Run(ctx)
+		require.NoError(t, err)
+	})
+
+	assert.Contains(t, output, ",", "CSV output should contain commas")
+	assert.Contains(t, output, "ReadOnly")
+}
+
+// TestE2EListSort verifies ascending sort by RoleName puts PowerUser before ReadOnly.
+func TestE2EListSort(t *testing.T) {
+	setup := newE2ESetup(t)
+	preAuth(t, setup)
+	populateCache(t, setup)
+
+	ctx := newRunContext(setup, AUTH_SKIP)
+	ctx.Cli.List = ListCmd{Sort: "RoleName", Fields: []string{"RoleName"}}
+
+	output := captureStdout(func() {
+		err := (&ctx.Cli.List).Run(ctx)
+		require.NoError(t, err)
+	})
+
+	powerIdx := strings.Index(output, "PowerUser")
+	readOnlyIdx := strings.Index(output, "ReadOnly")
+	assert.True(t, powerIdx < readOnlyIdx, "ascending sort: PowerUser should appear before ReadOnly")
+}
+
+// TestE2EListSortReverse verifies descending sort by RoleName puts ReadOnly before PowerUser.
+func TestE2EListSortReverse(t *testing.T) {
+	setup := newE2ESetup(t)
+	preAuth(t, setup)
+	populateCache(t, setup)
+
+	ctx := newRunContext(setup, AUTH_SKIP)
+	ctx.Cli.List = ListCmd{Sort: "RoleName", Reverse: true, Fields: []string{"RoleName"}}
+
+	output := captureStdout(func() {
+		err := (&ctx.Cli.List).Run(ctx)
+		require.NoError(t, err)
+	})
+
+	readOnlyIdx := strings.Index(output, "ReadOnly")
+	powerIdx := strings.Index(output, "PowerUser")
+	assert.True(t, readOnlyIdx < powerIdx, "descending sort: ReadOnly should appear before PowerUser")
+}
+
+// TestE2EListUnsupportedField verifies that an unknown field name returns an error.
+func TestE2EListUnsupportedField(t *testing.T) {
+	setup := newE2ESetup(t)
+	populateCache(t, setup)
+
+	ctx := newRunContext(setup, AUTH_SKIP)
+	ctx.Cli.List = ListCmd{Sort: "AccountId", Fields: []string{"NoSuchField"}}
+
+	err := (&ctx.Cli.List).Run(ctx)
+	assert.ErrorContains(t, err, "unsupported field")
+}
+
+// TestE2EListFields verifies that the -f flag prints the available fields table.
+func TestE2EListFields(t *testing.T) {
+	setup := newE2ESetup(t)
+
+	ctx := newRunContext(setup, AUTH_SKIP)
+	ctx.Cli.List = ListCmd{ListFields: true}
+
+	output := captureStdout(func() {
+		err := (&ctx.Cli.List).Run(ctx)
+		require.NoError(t, err)
+	})
+
+	assert.Contains(t, output, "AccountId", "fields table should list AccountId")
+	assert.Contains(t, output, "RoleName", "fields table should list RoleName")
+}
+
+// TestE2EDefaultCmd verifies that DefaultCmd.Run prints the cached roles table.
+func TestE2EDefaultCmd(t *testing.T) {
+	setup := newE2ESetup(t)
+	preAuth(t, setup)
+	populateCache(t, setup)
+
+	ctx := newRunContext(setup, AUTH_SKIP)
+
+	output := captureStdout(func() {
+		err := (&DefaultCmd{}).Run(ctx)
+		require.NoError(t, err)
+	})
+
+	assert.Contains(t, output, "ReadOnly")
+	assert.Contains(t, output, "123456789012")
+}

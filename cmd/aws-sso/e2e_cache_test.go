@@ -66,3 +66,65 @@ func TestE2ECache(t *testing.T) {
 	assert.Contains(t, roleNames, "PowerUser")
 	_ = output // output goes to stdout but we don't assert on its format
 }
+
+// TestE2ECacheSilentFalse verifies that when Silent is false the diff lines are
+// printed to stdout.
+func TestE2ECacheSilentFalse(t *testing.T) {
+	setup := newE2ESetup(t)
+	preAuth(t, setup)
+
+	setup.Server.SSO.QueueListAccounts(awsmock.ListAccountsResponse{
+		AccountList: []awsmock.AccountInfo{
+			{AccountID: "123456789012", AccountName: "TestAccount", EmailAddress: "admin@example.com"},
+		},
+	})
+	setup.Server.SSO.QueueListAccountRoles(awsmock.ListAccountRolesResponse{
+		RoleList: []awsmock.RoleInfo{
+			{AccountID: "123456789012", RoleName: "ReadOnly"},
+		},
+	})
+
+	ctx := newRunContext(setup, AUTH_REQUIRED)
+	ctx.Cli.Cache = CacheCmd{Threads: 1, NoConfigCheck: true, Silent: false}
+
+	output := captureStdout(func() {
+		err := (&ctx.Cli.Cache).Run(ctx)
+		require.NoError(t, err)
+	})
+
+	assert.Contains(t, output, "+", "non-silent output should include '+' diff lines for added roles")
+}
+
+// TestE2ECacheNoRoleChange verifies that when the cache already contains the same
+// roles, no diff output is printed.
+func TestE2ECacheNoRoleChange(t *testing.T) {
+	setup := newE2ESetup(t)
+	preAuth(t, setup)
+
+	// Populate the cache with a known role first.
+	populateCache(t, setup)
+
+	// Queue the same accounts and roles for the second refresh.
+	setup.Server.SSO.QueueListAccounts(awsmock.ListAccountsResponse{
+		AccountList: []awsmock.AccountInfo{
+			{AccountID: "123456789012", AccountName: "TestAccount", EmailAddress: "admin@example.com"},
+		},
+	})
+	setup.Server.SSO.QueueListAccountRoles(awsmock.ListAccountRolesResponse{
+		RoleList: []awsmock.RoleInfo{
+			{AccountID: "123456789012", RoleName: "ReadOnly"},
+			{AccountID: "123456789012", RoleName: "PowerUser"},
+		},
+	})
+
+	ctx := newRunContext(setup, AUTH_REQUIRED)
+	ctx.Cli.Cache = CacheCmd{Threads: 1, NoConfigCheck: true, Silent: false}
+
+	output := captureStdout(func() {
+		err := (&ctx.Cli.Cache).Run(ctx)
+		require.NoError(t, err)
+	})
+
+	assert.NotContains(t, output, "+", "no diff output expected when roles are unchanged")
+	assert.NotContains(t, output, "-", "no diff output expected when roles are unchanged")
+}

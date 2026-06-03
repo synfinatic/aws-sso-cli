@@ -1,13 +1,18 @@
 package main
 
 import (
+	"context"
+	"io"
 	"os"
+	"path/filepath"
 	"sync/atomic"
 	"syscall"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/synfinatic/aws-sso-cli/internal/sso"
 )
 
 func TestAccountIDUnmarshalText(t *testing.T) {
@@ -150,4 +155,174 @@ func TestLogLevelTypeValidate(t *testing.T) {
 			}
 		})
 	}
+}
+
+// localCaptureOutput runs fn and returns everything written to os.Stdout during fn.
+func localCaptureOutput(fn func()) string {
+	r, w, err := os.Pipe()
+	if err != nil {
+		panic(err)
+	}
+	old := os.Stdout
+	os.Stdout = w
+	func() {
+		defer func() {
+			w.Close()
+			os.Stdout = old
+		}()
+		fn()
+	}()
+	buf, _ := io.ReadAll(r)
+	r.Close()
+	return string(buf)
+}
+
+func TestVersionCmdBeforeReset(t *testing.T) {
+	origOsExit := osExit
+	origDelta := Delta
+	origTag := Tag
+	t.Cleanup(func() {
+		osExit = origOsExit
+		Delta = origDelta
+		Tag = origTag
+	})
+
+	tests := []struct {
+		name      string
+		delta     string
+		wantDelta bool
+	}{
+		{name: "no delta", delta: ""},
+		{name: "with delta", delta: "42", wantDelta: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			exitCode := -1
+			osExit = func(code int) { exitCode = code }
+			Delta = tt.delta
+			Tag = "v1.0.0"
+
+			output := localCaptureOutput(func() {
+				_ = (VersionCmd{}).BeforeReset(&RunContext{})
+			})
+
+			assert.Equal(t, 0, exitCode)
+			assert.Contains(t, output, "AWS SSO CLI Version")
+			if tt.wantDelta {
+				assert.Contains(t, output, "delta")
+				assert.Equal(t, "Unknown", Tag)
+			} else {
+				assert.NotContains(t, output, "delta")
+			}
+		})
+	}
+}
+
+func TestVersionCmdRun(t *testing.T) {
+	v := &VersionCmd{}
+	err := v.Run(&RunContext{})
+	assert.NoError(t, err)
+}
+
+func TestParseArgsFrom(t *testing.T) {
+	tests := []struct {
+		name         string
+		args         []string
+		wantOverride sso.OverrideSettings
+		wantCommand  string
+	}{
+		{
+			name:        "default list command",
+			args:        []string{"list"},
+			wantCommand: "list",
+		},
+		{
+			name:         "debug log level",
+			args:         []string{"--level", "debug", "list"},
+			wantOverride: sso.OverrideSettings{LogLevel: "debug"},
+			wantCommand:  "list",
+		},
+		{
+			name:         "custom browser",
+			args:         []string{"--browser", "/usr/bin/firefox", "list"},
+			wantOverride: sso.OverrideSettings{Browser: "/usr/bin/firefox"},
+			wantCommand:  "list",
+		},
+		{
+			name:         "SSO override",
+			args:         []string{"-S", "mySSO", "list"},
+			wantOverride: sso.OverrideSettings{DefaultSSO: "mySSO"},
+			wantCommand:  "list",
+		},
+		{
+			name:         "log lines flag",
+			args:         []string{"--lines", "list"},
+			wantOverride: sso.OverrideSettings{LogLines: true},
+			wantCommand:  "list",
+		},
+		{
+			name:         "cache threads override",
+			args:         []string{"cache", "--threads", "10"},
+			wantOverride: sso.OverrideSettings{Threads: 10},
+			wantCommand:  "cache",
+		},
+		{
+			name:        "cache with default threads produces no override",
+			args:        []string{"cache"},
+			wantCommand: "cache",
+		},
+		{
+			name:         "login threads override",
+			args:         []string{"login", "--threads", "3"},
+			wantOverride: sso.OverrideSettings{Threads: 3},
+			wantCommand:  "login",
+		},
+		{
+			name:        "login with default threads produces no override",
+			args:        []string{"login"},
+			wantCommand: "login",
+		},
+		{
+			name: "multiple flags combined",
+			args: []string{"--level", "info", "-S", "prod", "--browser", "/opt/chrome", "list"},
+			wantOverride: sso.OverrideSettings{
+				LogLevel:   "info",
+				DefaultSSO: "prod",
+				Browser:    "/opt/chrome",
+			},
+			wantCommand: "list",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := &RunContext{
+				Cli:  &CLI{},
+				Auth: AUTH_UNKNOWN,
+			}
+			override := parseArgsFrom(ctx, tt.args)
+			assert.Equal(t, tt.wantOverride, override)
+			require.NotNil(t, ctx.Kctx)
+			assert.Equal(t, tt.wantCommand, ctx.Kctx.Command())
+		})
+	}
+}
+
+func TestLoadSecureStoreJSON(t *testing.T) {
+	tempDir := t.TempDir()
+	storePath := filepath.Join(tempDir, "store.json")
+
+	settings := &sso.Settings{
+		SecureStore: "json",
+		JsonStore:   storePath,
+	}
+	ctx := &RunContext{
+		Cli:      &CLI{},
+		Settings: settings,
+		Ctx:      context.Background(),
+	}
+
+	loadSecureStore(ctx)
+	assert.NotNil(t, ctx.Store)
 }

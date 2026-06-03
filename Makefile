@@ -156,6 +156,7 @@ e2e: ## Run end-to-end tests against mock AWS HTTP servers
 coverage: coverage.out
 coverage.out: .build_files
 	go test -tags e2etests -ldflags='$(LDFLAGS)' -covermode=atomic -coverprofile=coverage.out ./...
+	@echo "total coverage (all files): $$(go tool cover -func=coverage.out | grep ^total | sed -Ee 's/.*[^0-9]([0-9]+\.[0-9]%$$)/\1/')"
 
 .PHONY: test-race
 test-race: ## Run `go test -race` on the code
