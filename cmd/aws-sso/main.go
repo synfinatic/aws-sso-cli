@@ -92,7 +92,7 @@ const (
 	DEFAULT_THREADS = 5
 )
 
-var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
+var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{ // #nosec G101
 	"PromptColors.DescriptionBGColor":           "Turquoise",
 	"PromptColors.DescriptionTextColor":         "Black",
 	"PromptColors.InputBGColor":                 "DefaultColor",
@@ -127,6 +127,7 @@ var DEFAULT_CONFIG map[string]interface{} = map[string]interface{}{
 	"Threads":                                   DEFAULT_THREADS,
 	"MaxBackoff":                                5, // seconds
 	"MaxRetry":                                  10,
+	"OnePassword.AuthType":                      storage.OP_AUTH_DESKTOP,
 }
 
 type LogLevelType string
@@ -290,6 +291,12 @@ func loadSecureStore(ctx *RunContext) {
 			log.Fatal("Unable to open JsonStore", "file", sfile, "error", err.Error())
 		}
 		log.Warn("Using insecure json file for SecureStore", "file", sfile)
+	case "1password":
+		op := ctx.Settings.OnePassword
+		ctx.Store, err = storage.OpenOnePasswordStore(ctx.Ctx, op.AuthType, op.Vault, op.Account)
+		if err != nil {
+			log.Fatal("Unable to open 1Password SecureStore", "error", err.Error())
+		}
 	default:
 		cfg, err := storage.NewKeyringConfig(ctx.Settings.SecureStore, config.ConfigDir(true), ctx.Settings.SecretServiceCollection)
 		if err != nil {
