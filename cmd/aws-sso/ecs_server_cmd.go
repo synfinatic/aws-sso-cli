@@ -20,8 +20,10 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
@@ -127,7 +129,17 @@ func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 			return err
 		}
 	}
-	return s.Serve()
+
+	// Shut down gracefully when the context is cancelled (handles SIGINT/SIGTERM from main).
+	go func() {
+		<-ctx.Ctx.Done()
+		s.Close()
+	}()
+
+	if err := s.Serve(); !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+	return nil
 }
 
 // setServerDefaultProfile resolves a profile name to credentials and injects them

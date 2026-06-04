@@ -304,6 +304,11 @@ func loadSecureStore(ctx *RunContext) {
 
 // parseArgs parses our CLI arguments
 func parseArgs(ctx *RunContext) sso.OverrideSettings {
+	return parseArgsFrom(ctx, os.Args[1:])
+}
+
+// parseArgsFrom is the testable core of parseArgs.
+func parseArgsFrom(ctx *RunContext, args []string) sso.OverrideSettings {
 	var err error
 
 	// need to pass in the variables for defaults
@@ -349,7 +354,7 @@ func parseArgs(ctx *RunContext) sso.OverrideSettings {
 		kongplete.WithPredictors(p.KongpletePredictor()),
 	)
 
-	ctx.Kctx, err = parser.Parse(os.Args[1:])
+	ctx.Kctx, err = parser.Parse(args)
 	parser.FatalIfErrorf(err)
 
 	threads := 0
@@ -380,7 +385,7 @@ func (v VersionCmd) BeforeReset(ctx *RunContext) error {
 	}
 	fmt.Printf("AWS SSO CLI Version %s -- Copyright %s Aaron Turner\n", Version, COPYRIGHT_YEAR)
 	fmt.Printf("%s (%s)%s built at %s\n", CommitID, Tag, delta, Buildinfos)
-	os.Exit(0)
+	osExit(0)
 	return nil
 }
 

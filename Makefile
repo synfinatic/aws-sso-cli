@@ -58,7 +58,10 @@ ALL: $(DIST_DIR)$(PROJECT_NAME) ## Build binary for this platform
 
 include help.mk  # place after ALL target and before all other targets
 
-$(DIST_DIR)$(PROJECT_NAME):	$(wildcard */*.go) .prepare
+.PHONY: .build_files
+.build_files: $(wildcard */*.go */*/*.go */*/*/*.go) go.mod go.sum .prepare
+
+$(DIST_DIR)$(PROJECT_NAME): .build_files
 	go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(DIST_DIR)$(PROJECT_NAME) ./cmd/aws-sso/...
 	@echo "Created: $(DIST_DIR)$(PROJECT_NAME)"
 
@@ -144,11 +147,16 @@ debug: .prepare ## Run debug in dlv
 
 .PHONY: unittest
 unittest: ## Run go unit tests
-	go test -ldflags='$(LDFLAGS)' -covermode=atomic -coverprofile=coverage.out  ./...
+	go test -ldflags='$(LDFLAGS)' ./...
 
 .PHONY: e2e
 e2e: ## Run end-to-end tests against mock AWS HTTP servers
 	go test -tags e2etests -ldflags='$(LDFLAGS)' ./cmd/aws-sso/...
+
+coverage: coverage.out
+coverage.out: .build_files
+	go test -tags e2etests -ldflags='$(LDFLAGS)' -covermode=atomic -coverprofile=coverage.out ./...
+	@echo "total coverage (all files): $$(go tool cover -func=coverage.out | grep ^total | sed -Ee 's/.*[^0-9]([0-9]+\.[0-9]%$$)/\1/')"
 
 .PHONY: test-race
 test-race: ## Run `go test -race` on the code
@@ -168,7 +176,7 @@ govulncheck:  ## Run govulncheck
 	@govulncheck ./...
 
 # run everything but `lint`and govulncheck because they run seperately
-.build-tests: vet unittest test-tidy test-fmt test-homebrew e2e
+.build-tests: vet coverage test-tidy test-fmt test-homebrew
 
 $(DIST_DIR):
 	@if test ! -d $(DIST_DIR); then mkdir -p $(DIST_DIR) ; fi
@@ -219,25 +227,25 @@ test-homebrew: $(DIST_DIR)$(PROJECT_NAME)  ## Run the homebrew tests
 # Build targets for our supported plaforms
 windows: $(WINDOWS_BIN)  ## Build 64bit x86 Windows binary
 
-$(WINDOWS_BIN): $(wildcard */*.go) .prepare
+$(WINDOWS_BIN): .build_files
 	GOARCH=amd64 GOOS=windows go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(WINDOWS_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(WINDOWS_BIN)"
 
 windows32: $(WINDOWS32_BIN)  ## Build 32bit x86 Windows binary
 
-$(WINDOWS32_BIN): $(wildcard */*.go) .prepare
+$(WINDOWS32_BIN): .build_files
 	GOARCH=386 GOOS=windows go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(WINDOWS32_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(WINDOWS32_BIN)"
 
 linux: $(LINUX_BIN)  ## Build Linux/x86_64 binary
 
-$(LINUX_BIN): $(wildcard */*.go) .prepare
+$(LINUX_BIN): .build_files
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(LINUX_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(LINUX_BIN)"
 
 linux-arm64: $(LINUXARM64_BIN)  ## Build Linux/arm64 binary
 
-$(LINUXARM64_BIN): $(wildcard */*.go) .prepare
+$(LINUXARM64_BIN): .build_files
 	CGO_ENABLED=0 GOARCH=arm64 GOOS=linux go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(LINUXARM64_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(LINUXARM64_BIN)"
 
@@ -246,7 +254,7 @@ $(LINUXARM64_BIN): $(wildcard */*.go) .prepare
 
 darwin: $(DARWIN_BIN)  ## Build MacOS/x86_64 binary
 
-$(DARWIN_BIN): $(wildcard */*.go) .prepare
+$(DARWIN_BIN): .build_files
 ifeq ($(ARCH), x86_64)
 	CGO_ENABLED=1 GOARCH=amd64 GOOS=darwin go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) ./cmd/aws-sso/...
 else
@@ -257,7 +265,7 @@ endif
 
 darwin-arm64: $(DARWINARM64_BIN)  ## Build MacOS/ARM64 binary
 
-$(DARWINARM64_BIN): $(wildcard */*.go) .prepare
+$(DARWINARM64_BIN): .build_files
 ifeq ($(ARCH), arm64)
 	CGO_ENABLED=1 GOARCH=arm64 GOOS=darwin go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(DARWINARM64_BIN) ./cmd/aws-sso/...
 else
@@ -266,7 +274,7 @@ else
 endif
 	@echo "Created: $(DARWINARM64_BIN)"
 
-$(OUTPUT_NAME): $(wildcard */*.go) .prepare
+$(OUTPUT_NAME): .build_files
 	go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(OUTPUT_NAME) ./cmd/aws-sso/...
 
 docs: docs/default-region.png  ## Build document files
