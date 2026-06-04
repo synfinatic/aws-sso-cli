@@ -9,6 +9,7 @@
 * Add support for /healthcheck endpoint for ECS server #1356
 * Add `--default <profile>` flag to `ecs server` and `ecs docker start` to automatically load
   a named profile as the default credential slot on startup
+* Interactive mode now supports selecting by Profile name
 
 ### Bugs
 
@@ -22,8 +23,8 @@
 
 ### Changes
 
-* Add unit tests for cmd/aws-sso
 * Add lock support for JSON SecureStore
+* Add unit tests for cmd/aws-sso/*
 * Add e2e integration tests for CLI commands
 
 ## [v2.2.4] - 2026-05-21

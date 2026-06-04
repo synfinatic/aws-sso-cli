@@ -501,6 +501,11 @@ functions, but a few custom functions are available:
 single-quote (`'`) the value because because `ProfileFormat` values often start
 with a `{`.
 
+**Note:** Profile names that contain spaces cannot be used in the interactive role selection
+prompt (`exec`/`console` without explicit flags). The interactive prompt is space-delimited, so
+a profile name with spaces will not be selectable interactively. This applies both to
+`ProfileFormat` templates that produce spaces and to manually configured `Profile:` values.
+
 For more information, [see the FAQ](FAQ.md#profiles-and-tags).
 
 #### ConfigVariables

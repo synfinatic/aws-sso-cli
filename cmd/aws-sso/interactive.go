@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/c-bata/go-prompt"
@@ -76,6 +77,7 @@ type TagsCompleter struct {
 	suggest        []prompt.Suggest
 	exec           CompleterExec
 	fullTextSearch bool
+	profiles       map[string]string // ProfileName => ARN
 }
 
 // NewTagsCompleter creates our TagsCompleter
@@ -84,14 +86,28 @@ func NewTagsCompleter(ctx *RunContext, s *ssoconfig.SSOConfig, exec CompleterExe
 	roleTags := set.Cache.GetRoleTagsSelect()
 	allTags := set.Cache.GetAllTagsSelect()
 
+	profiles := map[string]string{}
+	if ssoCache := set.Cache.GetSSO(); ssoCache != nil && ssoCache.Roles != nil {
+		for aid := range ssoCache.Roles.Accounts {
+			for _, rFlat := range ssoCache.Roles.GetAccountRoles(aid) {
+				pName, err := rFlat.ProfileName(set)
+				if err != nil {
+					continue
+				}
+				profiles[pName] = rFlat.Arn
+			}
+		}
+	}
+
 	return &TagsCompleter{
 		ctx:            ctx,
 		sso:            s,
 		roleTags:       roleTags,
 		allTags:        allTags,
-		suggest:        completeTags(roleTags, allTags, set.AccountPrimaryTag, []string{}, set.FirstTag),
+		suggest:        completeTags(roleTags, allTags, set.AccountPrimaryTag, []string{}, set.FirstTag, profiles),
 		exec:           exec,
 		fullTextSearch: set.FullTextSearch,
+		profiles:       profiles,
 	}
 }
 
@@ -112,7 +128,7 @@ func (tc *TagsCompleter) Complete(d prompt.Document) []prompt.Suggest {
 	// remove any extra spaces
 	cleanArgs := CompleteSpaceReplace.ReplaceAllString(args, " ")
 	argsList := strings.Split(cleanArgs, " ")
-	suggest := completeTags(tc.roleTags, tc.allTags, tc.ctx.Settings.AccountPrimaryTag, argsList, tc.ctx.Settings.FirstTag)
+	suggest := completeTags(tc.roleTags, tc.allTags, tc.ctx.Settings.AccountPrimaryTag, argsList, tc.ctx.Settings.FirstTag, tc.profiles)
 	if tc.fullTextSearch {
 		return prompt.FilterContains(suggest, w, true)
 	} else {
@@ -133,9 +149,13 @@ func (tc *TagsCompleter) Executor(args string) {
 
 	var roleArn string
 	argsList := strings.Split(args, " ")
-	if isRoleARN.MatchString(argsList[len(argsList)-1]) {
+	lastArg := argsList[len(argsList)-1]
+	if arn, ok := tc.profiles[lastArg]; ok {
+		// last word is a profile name, resolve it to an ARN
+		roleArn = arn
+	} else if isRoleARN.MatchString(lastArg) {
 		// last word is our ARN, no need to filter
-		roleArn = argsList[len(argsList)-1]
+		roleArn = lastArg
 	} else {
 		// Use the filter map
 		argsMap, _, _ := argsToMap(strings.Split(args, " "))
@@ -165,11 +185,66 @@ func (tc *TagsCompleter) ExitChecker(in string, breakline bool) bool {
 	return breakline // exit our Run() loop after user selects something
 }
 
+// completeProfileValues returns profile name suggestions filtered by the partial nextValue string.
+// Only profiles whose roles match currentTags are included.
+func completeProfileValues(profiles map[string]string, currentTags map[string]string, roleTags *sso.RoleTags, nextValue string) []prompt.Suggest {
+	currentRoles := roleTags.GetMatchingRoles(currentTags)
+	roleSet := map[string]bool{}
+	for _, arn := range currentRoles {
+		roleSet[arn] = true
+	}
+	suggests := []prompt.Suggest{}
+	for pName, arn := range profiles {
+		if strings.Contains(strings.ToLower(pName), strings.ToLower(nextValue)) {
+			if len(currentTags) == 0 || roleSet[arn] {
+				suggests = append(suggests, prompt.Suggest{Text: pName, Description: arn})
+			}
+		}
+	}
+	sort.Slice(suggests, func(i, j int) bool { return suggests[i].Text < suggests[j].Text })
+	return suggests
+}
+
+// roleDescription returns a "tag:value" description for a role using the first matching accountPrimaryTag.
+func roleDescription(role string, args []string, accountPrimaryTags []string, roleTags *sso.RoleTags) string {
+	argSet := make(map[string]bool, len(args))
+	for _, v := range args {
+		argSet[v] = true
+	}
+	for _, tag := range accountPrimaryTags {
+		if argSet[tag] {
+			continue
+		}
+		if val, ok := roleTags.GetRoleTags(role)[tag]; ok && val != "" {
+			return fmt.Sprintf("%s:%s", tag, val)
+		}
+	}
+	return ""
+}
+
 // return a list of suggestions based on user selected []key:value
-func completeTags(roleTags *sso.RoleTags, allTags *tags.TagsList, accountPrimaryTags []string, args []string, firstTag string) []prompt.Suggest {
+func completeTags(roleTags *sso.RoleTags, allTags *tags.TagsList, accountPrimaryTags []string, args []string, firstTag string, profiles map[string]string) []prompt.Suggest {
 	suggestions := []prompt.Suggest{}
 
 	currentTags, nextKey, nextValue := argsToMap(args)
+
+	// "ProfileName" is a virtual tag key distinct from the real flat.Tags["Profile"] tag.
+	// argsToMap may store a partial profile value in currentTags, so strip it before
+	// real-tag processing.
+	_, profileSelected := currentTags["ProfileName"]
+	if profileSelected {
+		delete(currentTags, "ProfileName")
+	}
+
+	if nextKey == "ProfileName" {
+		return completeProfileValues(profiles, currentTags, roleTags, nextValue)
+	}
+
+	// A completed ProfileName selection uniquely identifies a role; no more suggestions needed.
+	if profileSelected && nextKey == "" {
+		return suggestions
+	}
+
 	if roleTags.GetMatchCount(currentTags) == 1 {
 		return suggestions // empty list if we have a single role
 	}
@@ -194,26 +269,9 @@ func completeTags(roleTags *sso.RoleTags, allTags *tags.TagsList, accountPrimary
 						// don't return the same role multiple times
 						continue
 					}
-
-					var description string
-					for _, tag := range accountPrimaryTags {
-						// don't re-use a tag that was alraedy specified by the user
-						for _, v := range args {
-							if v == tag {
-								continue
-							}
-						}
-						if val, ok := roleTags.GetRoleTags(role)[tag]; ok {
-							if val == "" { // ignore empty values
-								continue
-							}
-							description = fmt.Sprintf("%s:%s", tag, val)
-							break
-						}
-					}
 					suggestions = append(suggestions, prompt.Suggest{
 						Text:        role,
-						Description: description,
+						Description: roleDescription(role, args, accountPrimaryTags, roleTags),
 					})
 					returnedRoles[role] = true
 				}
@@ -227,6 +285,13 @@ func completeTags(roleTags *sso.RoleTags, allTags *tags.TagsList, accountPrimary
 				})
 			}
 		}
+		if len(profiles) > 0 && len(currentTags) == 0 {
+			suggestions = append(suggestions, prompt.Suggest{
+				Text:        "ProfileName",
+				Description: fmt.Sprintf("%d roles/%d choices", len(currentRoles), len(profiles)),
+			})
+		}
+		sort.Slice(suggestions, func(i, j int) bool { return suggestions[i].Text < suggestions[j].Text })
 	} else if nextValue == "" {
 		// We have a 'nextKey', so search for Tag values which match
 		values := (*allTags).UniqueValues(nextKey)
