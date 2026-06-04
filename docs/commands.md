@@ -22,6 +22,14 @@ You can then iterate in this manner to narrow the results via key/value pairs un
 make a selection that narrows down the results to a single IAM Role and the interactive selection
 interface disappears.  At this point the `<enter>` key will execute the command.
 
+Alternatively, you can select `ProfileName` from the top-level list to navigate directly to a
+role by its [profile name](config.md#profileformat) rather than filtering through tags.
+
+**Note:** Profile names containing spaces are not supported in the interactive prompt. The prompt
+uses spaces as delimiters between key/value tokens, so a profile name with a space cannot be
+entered or selected. Ensure your `ProfileFormat` and any manually configured `Profile:` values do
+not contain spaces if you intend to use interactive mode.
+
 ## Commands
 
 ### cache
