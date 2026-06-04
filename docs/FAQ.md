@@ -228,6 +228,12 @@ to keep typing in your password contantly.  Of course, you can also set the
 it in, but please make sure you are aware of the security implications of
 doing so.
 
+Another option is `1password` for people who wish to store the secrets there.
+Every access to the SecureStore will require biometrics when using
+`AuthType: desktop`.  `AuthType: service-account` requires no biometrics
+and allows multiple systems/users to share a single SecureStore. I strongly
+suggest you think carefully about the security ramifications of that.
+
 Lastly, there is the `json` storage backend which is _not_ secure.  It literally
 is a plain, clear text JSON file stored on disk and is no better than the
 official AWS tooling.  It is included here only for debug and development
@@ -261,7 +267,8 @@ Unfortunately, the `file` option requires you to enter your password pretty much
 every time you use `aws-sso`.  For that reason, I recommend using the [pass](
 https://www.passwordstore.org) option which uses GPG and optionally the `gpg-agent`
 for caching of your GPG passphrase.  Please note that configuring pass, GPG
-and the gpg-agent are outside of the scope of this documentation.
+and the gpg-agent are outside of the scope of this documentation. `1password`
+is another option for those who use it ([but see above](#which-securestore-should-i-use)).
 
 ### I'm now getting a warning in macOS after upgrading aws-sso-cli?
 
@@ -343,7 +350,7 @@ which will generate a value like `02345678901:MyRoleName`.  For a complete
 list of available variable names, see [ProfileFormat](config.md#profileformat).
 
 In my experience you can change the `ProfileFormat` to pretty much any valid
-ASCII string that does not include whitespace or special characters that would
+ASCII string _that does not include whitespace or special characters_ that would
 be evaluated by your shell (`$`, etc) or
 [the AWS configuration file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-using-profiles)
 such as `[`, `]`.  (Note: if you can find official AWS documentation on this

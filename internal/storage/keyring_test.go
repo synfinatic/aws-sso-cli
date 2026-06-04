@@ -351,7 +351,7 @@ func (suite *KeyringSuite) TestCreateKeys() {
 	assert.Equal(t, "client-data:mykey", ks.RegisterClientKey("mykey"))
 }
 
-func (suite *KeyringSuite) TestStaticCredentials() {
+func (suite *KeyringSuite) TestStaticCredentials() { //nolint:dupl
 	t := suite.T()
 
 	arn := "arn:aws:iam::123456789012:role/foobar"
