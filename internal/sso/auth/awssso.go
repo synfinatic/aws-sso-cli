@@ -22,6 +22,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -410,9 +411,15 @@ func (as *AWSSSO) getRoleCredentials(accountId int64, role string, chainMap map[
 	if err != nil {
 		return storage.RoleCredentials{}, err
 	}
+	_, useFips := os.LookupEnv("AWS_USE_FIPS_ENDPOINT")
 	stsSession := sts.NewFromConfig(cfg, func(o *sts.Options) {
 		if as.stsEndpoint != "" {
 			o.BaseEndpoint = aws.String(as.stsEndpoint)
+		}
+		if useFips {
+			o.EndpointOptions = sts.EndpointResolverOptions{
+				UseFIPSEndpoint: aws.FIPSEndpointStateEnabled,
+			}
 		}
 	})
 

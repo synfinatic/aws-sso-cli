@@ -21,6 +21,8 @@ package auth
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
@@ -30,6 +32,7 @@ import (
 	ssotypes "github.com/aws/aws-sdk-go-v2/service/sso/types"
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	ssoconfig "github.com/synfinatic/aws-sso-cli/internal/sso/config"
 	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
@@ -905,6 +908,91 @@ func TestListAccountsMaxResultsWithinAPILimit(t *testing.T) {
 				"call[%d]: sso:ListAccounts MaxResults must be in [1,100]", i)
 		}
 	}
+}
+
+// stsAssumeRoleXML is a minimal valid AssumeRole XML response for the mock STS server.
+const stsAssumeRoleXML = `<AssumeRoleResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
+  <AssumeRoleResult>
+    <Credentials>
+      <AccessKeyId>AKIACHAIN</AccessKeyId>
+      <SecretAccessKey>chain-secret</SecretAccessKey>
+      <SessionToken>chain-token</SessionToken>
+      <Expiration>2099-01-01T00:00:00Z</Expiration>
+    </Credentials>
+    <AssumedRoleUser>
+      <Arn>arn:aws:sts::000001111111:assumed-role/ChainRole/test</Arn>
+      <AssumedRoleId>AKIACHAIN:test</AssumedRoleId>
+    </AssumedRoleUser>
+  </AssumeRoleResult>
+  <ResponseMetadata><RequestId>test-req-id</RequestId></ResponseMetadata>
+</AssumeRoleResponse>`
+
+func newBaseRoleMockSSO() *mockSsoAPI {
+	return &mockSsoAPI{
+		Results: []mockSsoAPIResults{
+			{
+				GetRoleCredentials: &awssso.GetRoleCredentialsOutput{
+					RoleCredentials: &ssotypes.RoleCredentials{
+						AccessKeyId:     aws.String("base-key"),
+						Expiration:      42,
+						SecretAccessKey: aws.String("base-secret"),
+						SessionToken:    aws.String("base-token"),
+					},
+				},
+			},
+		},
+	}
+}
+
+// TestGetRoleCredentialsVia tests the happy path of role chaining through Via,
+// covering both the non-FIPS and FIPS code paths in getRoleCredentials.
+// A local httptest server stands in for STS so no network calls are made.
+func TestGetRoleCredentialsVia(t *testing.T) {
+	newSTS := func(t *testing.T) *httptest.Server {
+		t.Helper()
+		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/xml")
+			fmt.Fprint(w, stsAssumeRoleXML)
+		}))
+	}
+
+	t.Run("without FIPS", func(t *testing.T) {
+		srv := newSTS(t)
+		defer srv.Close()
+
+		as, cleanup := makeChainTestAWSSSOBase(t)
+		defer cleanup()
+		as.sso = newBaseRoleMockSSO()
+		as.stsEndpoint = srv.URL
+
+		creds, err := as.GetRoleCredentials(int64(1111111), "ChainRole")
+		require.NoError(t, err)
+		assert.Equal(t, "AKIACHAIN", creds.AccessKeyId)
+		assert.Equal(t, "chain-secret", creds.SecretAccessKey)
+		assert.Equal(t, "chain-token", creds.SessionToken)
+		assert.True(t, creds.RoleChaining)
+	})
+
+	// The AWS SDK v2 rejects the combination of a custom BaseEndpoint and
+	// UseFIPSEndpoint at call time with "FIPS and custom endpoint are not
+	// supported". We exploit this to prove the FIPS option is actually wired
+	// up: if the code omitted the FIPS flag the call would succeed (as in the
+	// non-FIPS sub-test above); the SDK-level rejection confirms it was set.
+	t.Run("with FIPS: FIPS option applied to STS client", func(t *testing.T) {
+		t.Setenv("AWS_USE_FIPS_ENDPOINT", "true")
+
+		srv := newSTS(t)
+		defer srv.Close()
+
+		as, cleanup := makeChainTestAWSSSOBase(t)
+		defer cleanup()
+		as.sso = newBaseRoleMockSSO()
+		as.stsEndpoint = srv.URL // FIPS + custom endpoint → SDK rejects, proving FIPS was set
+
+		_, err := as.GetRoleCredentials(int64(1111111), "ChainRole")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "FIPS")
+	})
 }
 
 func TestListAccountRolesMaxResultsWithinAPILimit(t *testing.T) {

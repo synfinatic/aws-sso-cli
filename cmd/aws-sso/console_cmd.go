@@ -26,6 +26,7 @@ import (
 	"io"
 	"net/http"
 	neturl "net/url"
+	"os"
 	"os/user"
 	"regexp"
 	"strings"
@@ -120,10 +121,16 @@ func stsSession(ctx *RunContext) (*sts.Client, error) {
 		return &sts.Client{}, err
 	}
 
+	_, useFips := os.LookupEnv("AWS_USE_FIPS_ENDPOINT")
+	fipsEndpoint := aws.FIPSEndpointStateDisabled
+	if useFips {
+		fipsEndpoint = aws.FIPSEndpointStateEnabled
+	}
 	ssoRegion := sso.SSORegion
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion(ssoRegion),
 		config.WithCredentialsProvider(cfgCreds),
+		config.WithUseFIPSEndpoint(fipsEndpoint),
 	)
 	if err != nil {
 		return &sts.Client{}, err

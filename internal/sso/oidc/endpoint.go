@@ -21,6 +21,7 @@ package oidc
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -43,11 +44,18 @@ func AuthorizationEndpoint(region string) (string, error) {
 	if region == "" {
 		return "", fmt.Errorf("cannot resolve authorization endpoint: empty region")
 	}
+	_, useFips := os.LookupEnv("AWS_USE_FIPS_ENDPOINT")
 	ep, err := ssooidc.NewDefaultEndpointResolverV2().ResolveEndpoint(
 		context.Background(),
-		ssooidc.EndpointParameters{Region: aws.String(region)},
+		ssooidc.EndpointParameters{
+			Region:  aws.String(region),
+			UseFIPS: aws.Bool(useFips),
+		},
 	)
 	if err != nil {
+		if useFips {
+			return "", fmt.Errorf("resolve FIPS authorization endpoint for region %q: %w", region, err)
+		}
 		return "", fmt.Errorf("resolve authorization endpoint for region %q: %w", region, err)
 	}
 	return strings.TrimSuffix(ep.URI.String(), "/") + "/authorize", nil

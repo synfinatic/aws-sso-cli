@@ -21,6 +21,7 @@
   endpoint and the federation sign-in URL from the region's partition
   (`amazonaws.eu` / `amazonaws-eusc.eu`) instead of hardcoding `amazonaws.com`
 * Fix zombie processes holding storage.lock after SIGINT #1379
+* Fix FIPS endpoint support #1395
 * Security: Update to Go 1.26.4
 
 ### Changes
