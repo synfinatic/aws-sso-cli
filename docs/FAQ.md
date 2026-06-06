@@ -246,10 +246,17 @@ and let me know!
 
 ### Does aws-sso support using AWS FIPS endpoints?
 
-Yes!  Please set the following environment variable and `aws-sso` will automatically
-select the appropriate AWS FIPS endpoints when communicating with AWS:
+Yes!  Please set the following environment variable and `aws-sso` will force the use
+of the appropriate OIDC or STS AWS FIPS endpoint when communicating with AWS:
 
 `AWS_USE_FIPS_ENDPOINT=true`
+
+Please note that some AWS regions only support FIPS if you use the dual-stack endpoint
+which requires also setting:
+
+`AWS_USE_DUALSTACK_ENDPOINT=true`
+
+Please refer to the [AWS FIPS documentation](https://aws.amazon.com/compliance/fips/) for more information.
 
 ### Are macOS Keychain items synced?
 

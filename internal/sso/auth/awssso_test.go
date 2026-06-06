@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -992,6 +993,46 @@ func TestGetRoleCredentialsVia(t *testing.T) {
 		_, err := as.GetRoleCredentials(int64(1111111), "ChainRole")
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "FIPS")
+	})
+
+	// Same proof technique for dual-stack: the SDK rejects BaseEndpoint +
+	// UseDualStackEndpoint, confirming the flag was applied.
+	t.Run("with dual-stack: dual-stack option applied to STS client", func(t *testing.T) {
+		t.Setenv("AWS_USE_DUALSTACK_ENDPOINT", "true")
+
+		srv := newSTS(t)
+		defer srv.Close()
+
+		as, cleanup := makeChainTestAWSSSOBase(t)
+		defer cleanup()
+		as.sso = newBaseRoleMockSSO()
+		as.stsEndpoint = srv.URL
+
+		_, err := as.GetRoleCredentials(int64(1111111), "ChainRole")
+		require.Error(t, err)
+		// SDK error text is "Dualstack and custom endpoint are not supported" (no hyphen, capital S)
+		assert.Contains(t, err.Error(), "Dualstack",
+			"error must mention Dualstack, confirming UseDualStackEndpoint was set on the STS client")
+	})
+
+	// With both FIPS and dual-stack set the SDK error mentions both.
+	t.Run("with FIPS+dual-stack: both options applied to STS client", func(t *testing.T) {
+		t.Setenv("AWS_USE_FIPS_ENDPOINT", "true")
+		t.Setenv("AWS_USE_DUALSTACK_ENDPOINT", "true")
+
+		srv := newSTS(t)
+		defer srv.Close()
+
+		as, cleanup := makeChainTestAWSSSOBase(t)
+		defer cleanup()
+		as.sso = newBaseRoleMockSSO()
+		as.stsEndpoint = srv.URL
+
+		_, err := as.GetRoleCredentials(int64(1111111), "ChainRole")
+		require.Error(t, err)
+		// SDK error text uses "FIPS" and/or "Dualstack" (no hyphen, capital S).
+		assert.True(t, strings.Contains(err.Error(), "FIPS") || strings.Contains(err.Error(), "Dualstack"),
+			"error %q must mention FIPS or Dualstack", err.Error())
 	})
 }
 

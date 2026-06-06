@@ -412,14 +412,16 @@ func (as *AWSSSO) getRoleCredentials(accountId int64, role string, chainMap map[
 		return storage.RoleCredentials{}, err
 	}
 	_, useFips := os.LookupEnv("AWS_USE_FIPS_ENDPOINT")
+	_, useDualStack := os.LookupEnv("AWS_USE_DUALSTACK_ENDPOINT")
 	stsSession := sts.NewFromConfig(cfg, func(o *sts.Options) {
 		if as.stsEndpoint != "" {
 			o.BaseEndpoint = aws.String(as.stsEndpoint)
 		}
 		if useFips {
-			o.EndpointOptions = sts.EndpointResolverOptions{
-				UseFIPSEndpoint: aws.FIPSEndpointStateEnabled,
-			}
+			o.EndpointOptions.UseFIPSEndpoint = aws.FIPSEndpointStateEnabled
+		}
+		if useDualStack {
+			o.EndpointOptions.UseDualStackEndpoint = aws.DualStackEndpointStateEnabled
 		}
 	})
 

@@ -74,3 +74,75 @@ func TestAuthorizationEndpointFIPSErrorMessage(t *testing.T) {
 	assert.Empty(t, ep)
 	assert.False(t, strings.Contains(err.Error(), "FIPS"), "empty-region error should not mention FIPS")
 }
+
+// TestAuthorizationEndpointDualStack verifies dual-stack endpoint resolution when
+// AWS_USE_DUALSTACK_ENDPOINT is set. Cannot run in parallel due to env var mutation.
+func TestAuthorizationEndpointDualStack(t *testing.T) {
+	t.Setenv("AWS_USE_DUALSTACK_ENDPOINT", "true")
+
+	tests := map[string]string{
+		// commercial partition dual-stack uses api.aws TLD
+		"us-east-1": "https://oidc.us-east-1.api.aws/authorize",
+		"eu-west-1": "https://oidc.eu-west-1.api.aws/authorize",
+		// GovCloud dual-stack also uses api.aws
+		"us-gov-east-1": "https://oidc.us-gov-east-1.api.aws/authorize",
+		// European Sovereign Cloud dual-stack uses api.amazonwebservices.eu
+		"eusc-de-east-1": "https://oidc.eusc-de-east-1.api.amazonwebservices.eu/authorize",
+		// China dual-stack uses api.amazonwebservices.com.cn
+		"cn-north-1": "https://oidc.cn-north-1.api.amazonwebservices.com.cn/authorize",
+	}
+
+	for region, expected := range tests {
+		ep, err := AuthorizationEndpoint(region)
+		require.NoError(t, err, "region %q", region)
+		assert.Equal(t, expected, ep, "region %q", region)
+	}
+}
+
+// TestAuthorizationEndpointFIPSDualStack verifies that setting both
+// AWS_USE_FIPS_ENDPOINT and AWS_USE_DUALSTACK_ENDPOINT resolves the combined
+// FIPS+dual-stack endpoint (oidc-fips.{region}.api.aws for commercial regions).
+func TestAuthorizationEndpointFIPSDualStack(t *testing.T) {
+	t.Setenv("AWS_USE_FIPS_ENDPOINT", "true")
+	t.Setenv("AWS_USE_DUALSTACK_ENDPOINT", "true")
+
+	tests := map[string]string{
+		"us-east-1":      "https://oidc-fips.us-east-1.api.aws/authorize",
+		"us-gov-east-1":  "https://oidc-fips.us-gov-east-1.api.aws/authorize",
+		"eusc-de-east-1": "https://oidc-fips.eusc-de-east-1.api.amazonwebservices.eu/authorize",
+		"cn-north-1":     "https://oidc-fips.cn-north-1.api.amazonwebservices.com.cn/authorize",
+	}
+
+	for region, expected := range tests {
+		ep, err := AuthorizationEndpoint(region)
+		require.NoError(t, err, "region %q", region)
+		assert.Equal(t, expected, ep, "region %q", region)
+	}
+}
+
+// TestAuthorizationEndpointDualStackErrorMessage verifies that the error message
+// mentions "dual-stack" when AWS_USE_DUALSTACK_ENDPOINT is set and the
+// pre-SDK empty-region check fires (which does not go through the resolver).
+func TestAuthorizationEndpointDualStackErrorMessage(t *testing.T) {
+	t.Setenv("AWS_USE_DUALSTACK_ENDPOINT", "true")
+
+	ep, err := AuthorizationEndpoint("")
+	assert.Error(t, err)
+	assert.Empty(t, ep)
+	assert.False(t, strings.Contains(err.Error(), "dual-stack"),
+		"empty-region error must not mention dual-stack (fires before resolver)")
+}
+
+// TestAuthorizationEndpointFIPSDualStackErrorMessage verifies the combined error
+// prefix when both FIPS and dual-stack are active and the SDK resolver fails.
+func TestAuthorizationEndpointFIPSDualStackErrorMessage(t *testing.T) {
+	t.Setenv("AWS_USE_FIPS_ENDPOINT", "true")
+	t.Setenv("AWS_USE_DUALSTACK_ENDPOINT", "true")
+
+	ep, err := AuthorizationEndpoint("")
+	assert.Error(t, err)
+	assert.Empty(t, ep)
+	// empty-region guard fires before the resolver, so neither flag appears
+	assert.False(t, strings.Contains(err.Error(), "FIPS"), "empty-region error must not mention FIPS")
+	assert.False(t, strings.Contains(err.Error(), "dual-stack"), "empty-region error must not mention dual-stack")
+}

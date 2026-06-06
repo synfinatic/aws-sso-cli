@@ -45,18 +45,26 @@ func AuthorizationEndpoint(region string) (string, error) {
 		return "", fmt.Errorf("cannot resolve authorization endpoint: empty region")
 	}
 	_, useFips := os.LookupEnv("AWS_USE_FIPS_ENDPOINT")
+	_, useDualStack := os.LookupEnv("AWS_USE_DUALSTACK_ENDPOINT")
 	ep, err := ssooidc.NewDefaultEndpointResolverV2().ResolveEndpoint(
 		context.Background(),
 		ssooidc.EndpointParameters{
-			Region:  aws.String(region),
-			UseFIPS: aws.Bool(useFips),
+			Region:       aws.String(region),
+			UseFIPS:      aws.Bool(useFips),
+			UseDualStack: aws.Bool(useDualStack),
 		},
 	)
 	if err != nil {
-		if useFips {
+		switch {
+		case useFips && useDualStack:
+			return "", fmt.Errorf("resolve FIPS dual-stack authorization endpoint for region %q: %w", region, err)
+		case useFips:
 			return "", fmt.Errorf("resolve FIPS authorization endpoint for region %q: %w", region, err)
+		case useDualStack:
+			return "", fmt.Errorf("resolve dual-stack authorization endpoint for region %q: %w", region, err)
+		default:
+			return "", fmt.Errorf("resolve authorization endpoint for region %q: %w", region, err)
 		}
-		return "", fmt.Errorf("resolve authorization endpoint for region %q: %w", region, err)
 	}
 	return strings.TrimSuffix(ep.URI.String(), "/") + "/authorize", nil
 }

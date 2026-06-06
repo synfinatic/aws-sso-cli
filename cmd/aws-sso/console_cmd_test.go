@@ -155,6 +155,21 @@ func TestStsSession(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotNil(t, client)
 	})
+
+	t.Run("with dual-stack: returns client", func(t *testing.T) {
+		t.Setenv("AWS_USE_DUALSTACK_ENDPOINT", "true")
+		client, err := stsSession(ctx)
+		require.NoError(t, err)
+		assert.NotNil(t, client)
+	})
+
+	t.Run("with FIPS and dual-stack: returns client", func(t *testing.T) {
+		t.Setenv("AWS_USE_FIPS_ENDPOINT", "true")
+		t.Setenv("AWS_USE_DUALSTACK_ENDPOINT", "true")
+		client, err := stsSession(ctx)
+		require.NoError(t, err)
+		assert.NotNil(t, client)
+	})
 }
 
 func TestLoginUrlParamsGetUrl(t *testing.T) {

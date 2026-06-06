@@ -126,11 +126,17 @@ func stsSession(ctx *RunContext) (*sts.Client, error) {
 	if useFips {
 		fipsEndpoint = aws.FIPSEndpointStateEnabled
 	}
+	_, useDualStack := os.LookupEnv("AWS_USE_DUALSTACK_ENDPOINT")
+	dualStackEndpoint := aws.DualStackEndpointStateDisabled
+	if useDualStack {
+		dualStackEndpoint = aws.DualStackEndpointStateEnabled
+	}
 	ssoRegion := sso.SSORegion
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion(ssoRegion),
 		config.WithCredentialsProvider(cfgCreds),
 		config.WithUseFIPSEndpoint(fipsEndpoint),
+		config.WithUseDualStackEndpoint(dualStackEndpoint),
 	)
 	if err != nil {
 		return &sts.Client{}, err
