@@ -21,11 +21,11 @@ package oidc
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
+	"github.com/synfinatic/aws-sso-cli/internal/awsendpoint"
 )
 
 // AuthorizationEndpoint returns the OIDC `/authorize` endpoint URL for the given
@@ -41,12 +41,16 @@ import (
 // URL, so a misconfigured region surfaces as a clear error instead of a request
 // to a non-existent host.
 func AuthorizationEndpoint(region string) (string, error) {
+	return authorizationEndpoint(region, ssooidc.NewDefaultEndpointResolverV2())
+}
+
+func authorizationEndpoint(region string, resolver ssooidc.EndpointResolverV2) (string, error) {
 	if region == "" {
 		return "", fmt.Errorf("cannot resolve authorization endpoint: empty region")
 	}
-	_, useFips := os.LookupEnv("AWS_USE_FIPS_ENDPOINT")
-	_, useDualStack := os.LookupEnv("AWS_USE_DUALSTACK_ENDPOINT")
-	ep, err := ssooidc.NewDefaultEndpointResolverV2().ResolveEndpoint(
+	useFips := awsendpoint.UseFipsEndpoint()
+	useDualStack := awsendpoint.UseDualStackEndpoint()
+	ep, err := resolver.ResolveEndpoint(
 		context.Background(),
 		ssooidc.EndpointParameters{
 			Region:       aws.String(region),

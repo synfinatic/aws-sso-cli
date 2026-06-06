@@ -26,7 +26,6 @@ import (
 	"io"
 	"net/http"
 	neturl "net/url"
-	"os"
 	"os/user"
 	"regexp"
 	"strings"
@@ -37,6 +36,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 
 	// "github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/awsendpoint"
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
@@ -121,16 +121,8 @@ func stsSession(ctx *RunContext) (*sts.Client, error) {
 		return &sts.Client{}, err
 	}
 
-	_, useFips := os.LookupEnv("AWS_USE_FIPS_ENDPOINT")
-	fipsEndpoint := aws.FIPSEndpointStateDisabled
-	if useFips {
-		fipsEndpoint = aws.FIPSEndpointStateEnabled
-	}
-	_, useDualStack := os.LookupEnv("AWS_USE_DUALSTACK_ENDPOINT")
-	dualStackEndpoint := aws.DualStackEndpointStateDisabled
-	if useDualStack {
-		dualStackEndpoint = aws.DualStackEndpointStateEnabled
-	}
+	fipsEndpoint := awsendpoint.FipsEndpointState()
+	dualStackEndpoint := awsendpoint.DualStackEndpointState()
 	ssoRegion := sso.SSORegion
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion(ssoRegion),

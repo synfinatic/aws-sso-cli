@@ -12,6 +12,7 @@
 * Add `--default <profile>` flag to `ecs server` and `ecs docker start` to automatically load
   a named profile as the default credential slot on startup
 * Interactive mode now supports selecting by Profile name
+* Add support for AWS Dual Stack API endpoints via `AWS_USE_DUALSTACK_ENDPOINT`
 
 ### Bugs
 

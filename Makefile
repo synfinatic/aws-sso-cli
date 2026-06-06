@@ -168,7 +168,7 @@ vet: ## Run `go vet` on the code
 	@echo checking code is vetted...
 	@for x in $(shell go list ./...); do echo $$x ; go vet $$x || exit $$?; done
 
-test: vet unittest lint test-homebrew ## Run important tests
+test: vet unittest lint test-homebrew test-tidy test-fmt ## Run important tests
 
 precheck: test test-fmt test-tidy ## Run all tests that happen in a PR
 

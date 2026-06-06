@@ -1,9 +1,13 @@
 package oidc
 
 import (
+	"context"
+	"errors"
 	"strings"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
+	smithyendpoints "github.com/aws/smithy-go/endpoints"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -63,16 +67,28 @@ func TestAuthorizationEndpointFIPS(t *testing.T) {
 	}
 }
 
-// TestAuthorizationEndpointFIPSErrorMessage verifies that error messages mention
-// "FIPS" when AWS_USE_FIPS_ENDPOINT is set and resolution fails.
-func TestAuthorizationEndpointFIPSErrorMessage(t *testing.T) {
+// TestAuthorizationEndpointFIPSEmptyRegion verifies that the empty-region guard
+// fires before the SDK resolver is consulted, so the error never mentions FIPS
+// even when AWS_USE_FIPS_ENDPOINT is set.
+func TestAuthorizationEndpointFIPSEmptyRegion(t *testing.T) {
 	t.Setenv("AWS_USE_FIPS_ENDPOINT", "true")
 
-	// Empty region fails before the SDK call; confirm the generic error still fires.
 	ep, err := AuthorizationEndpoint("")
 	assert.Error(t, err)
 	assert.Empty(t, ep)
 	assert.False(t, strings.Contains(err.Error(), "FIPS"), "empty-region error should not mention FIPS")
+}
+
+// TestAuthorizationEndpointFIPSResolverError verifies that when the SDK resolver
+// fails with FIPS enabled the error message contains "FIPS".
+func TestAuthorizationEndpointFIPSResolverError(t *testing.T) {
+	t.Setenv("AWS_USE_FIPS_ENDPOINT", "true")
+
+	ep, err := authorizationEndpoint("us-east-1", &errResolver{})
+	assert.Error(t, err)
+	assert.Empty(t, ep)
+	assert.True(t, strings.Contains(err.Error(), "FIPS"), "resolver error should mention FIPS")
+	assert.False(t, strings.Contains(err.Error(), "dual-stack"), "FIPS-only error should not mention dual-stack")
 }
 
 // TestAuthorizationEndpointDualStack verifies dual-stack endpoint resolution when
@@ -99,6 +115,31 @@ func TestAuthorizationEndpointDualStack(t *testing.T) {
 	}
 }
 
+// TestAuthorizationEndpointDualStackEmptyRegion verifies that the empty-region
+// guard fires before the SDK resolver is consulted, so the error never mentions
+// dual-stack even when AWS_USE_DUALSTACK_ENDPOINT is set.
+func TestAuthorizationEndpointDualStackEmptyRegion(t *testing.T) {
+	t.Setenv("AWS_USE_DUALSTACK_ENDPOINT", "true")
+
+	ep, err := AuthorizationEndpoint("")
+	assert.Error(t, err)
+	assert.Empty(t, ep)
+	assert.False(t, strings.Contains(err.Error(), "dual-stack"),
+		"empty-region error must not mention dual-stack (fires before resolver)")
+}
+
+// TestAuthorizationEndpointDualStackResolverError verifies that when the SDK
+// resolver fails with dual-stack enabled the error message contains "dual-stack".
+func TestAuthorizationEndpointDualStackResolverError(t *testing.T) {
+	t.Setenv("AWS_USE_DUALSTACK_ENDPOINT", "true")
+
+	ep, err := authorizationEndpoint("us-east-1", &errResolver{})
+	assert.Error(t, err)
+	assert.Empty(t, ep)
+	assert.True(t, strings.Contains(err.Error(), "dual-stack"), "resolver error should mention dual-stack")
+	assert.False(t, strings.Contains(err.Error(), "FIPS"), "dual-stack-only error should not mention FIPS")
+}
+
 // TestAuthorizationEndpointFIPSDualStack verifies that setting both
 // AWS_USE_FIPS_ENDPOINT and AWS_USE_DUALSTACK_ENDPOINT resolves the combined
 // FIPS+dual-stack endpoint (oidc-fips.{region}.api.aws for commercial regions).
@@ -120,29 +161,46 @@ func TestAuthorizationEndpointFIPSDualStack(t *testing.T) {
 	}
 }
 
-// TestAuthorizationEndpointDualStackErrorMessage verifies that the error message
-// mentions "dual-stack" when AWS_USE_DUALSTACK_ENDPOINT is set and the
-// pre-SDK empty-region check fires (which does not go through the resolver).
-func TestAuthorizationEndpointDualStackErrorMessage(t *testing.T) {
-	t.Setenv("AWS_USE_DUALSTACK_ENDPOINT", "true")
-
-	ep, err := AuthorizationEndpoint("")
-	assert.Error(t, err)
-	assert.Empty(t, ep)
-	assert.False(t, strings.Contains(err.Error(), "dual-stack"),
-		"empty-region error must not mention dual-stack (fires before resolver)")
-}
-
-// TestAuthorizationEndpointFIPSDualStackErrorMessage verifies the combined error
-// prefix when both FIPS and dual-stack are active and the SDK resolver fails.
-func TestAuthorizationEndpointFIPSDualStackErrorMessage(t *testing.T) {
+// TestAuthorizationEndpointFIPSDualStackEmptyRegion verifies that the empty-region
+// guard fires before the SDK resolver, so neither "FIPS" nor "dual-stack" appear
+// in the error even when both env vars are set.
+func TestAuthorizationEndpointFIPSDualStackEmptyRegion(t *testing.T) {
 	t.Setenv("AWS_USE_FIPS_ENDPOINT", "true")
 	t.Setenv("AWS_USE_DUALSTACK_ENDPOINT", "true")
 
 	ep, err := AuthorizationEndpoint("")
 	assert.Error(t, err)
 	assert.Empty(t, ep)
-	// empty-region guard fires before the resolver, so neither flag appears
 	assert.False(t, strings.Contains(err.Error(), "FIPS"), "empty-region error must not mention FIPS")
 	assert.False(t, strings.Contains(err.Error(), "dual-stack"), "empty-region error must not mention dual-stack")
+}
+
+// TestAuthorizationEndpointFIPSDualStackResolverError verifies that when the SDK
+// resolver fails with both FIPS and dual-stack enabled the error mentions both.
+func TestAuthorizationEndpointFIPSDualStackResolverError(t *testing.T) {
+	t.Setenv("AWS_USE_FIPS_ENDPOINT", "true")
+	t.Setenv("AWS_USE_DUALSTACK_ENDPOINT", "true")
+
+	ep, err := authorizationEndpoint("us-east-1", &errResolver{})
+	assert.Error(t, err)
+	assert.Empty(t, ep)
+	assert.True(t, strings.Contains(err.Error(), "FIPS"), "combined error should mention FIPS")
+	assert.True(t, strings.Contains(err.Error(), "dual-stack"), "combined error should mention dual-stack")
+}
+
+// TestAuthorizationEndpointResolverError verifies the plain (non-FIPS,
+// non-dual-stack) resolver error path.
+func TestAuthorizationEndpointResolverError(t *testing.T) {
+	ep, err := authorizationEndpoint("us-east-1", &errResolver{})
+	assert.Error(t, err)
+	assert.Empty(t, ep)
+	assert.False(t, strings.Contains(err.Error(), "FIPS"), "plain error should not mention FIPS")
+	assert.False(t, strings.Contains(err.Error(), "dual-stack"), "plain error should not mention dual-stack")
+}
+
+// errResolver is a test double that always returns an error from ResolveEndpoint.
+type errResolver struct{}
+
+func (r *errResolver) ResolveEndpoint(_ context.Context, _ ssooidc.EndpointParameters) (smithyendpoints.Endpoint, error) {
+	return smithyendpoints.Endpoint{}, errors.New("resolver error")
 }
