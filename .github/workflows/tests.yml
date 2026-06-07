@@ -45,7 +45,7 @@ jobs:
     - name: Tests
       run: make .build-tests
     - name: Upload to codecov
-      uses: codecov/codecov-action@v6
+      uses: codecov/codecov-action@v7
 
   govulncheck:
     name: Go Vuln Check
