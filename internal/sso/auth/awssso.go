@@ -34,6 +34,7 @@ import (
 	ssotypes "github.com/aws/aws-sdk-go-v2/service/sso/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/awsendpoint"
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	ssoconfig "github.com/synfinatic/aws-sso-cli/internal/sso/config"
 	"github.com/synfinatic/aws-sso-cli/internal/sso/oidc"
@@ -414,6 +415,8 @@ func (as *AWSSSO) getRoleCredentials(accountId int64, role string, chainMap map[
 		if as.stsEndpoint != "" {
 			o.BaseEndpoint = aws.String(as.stsEndpoint)
 		}
+		o.EndpointOptions.UseFIPSEndpoint = awsendpoint.FipsEndpointState()
+		o.EndpointOptions.UseDualStackEndpoint = awsendpoint.DualStackEndpointState()
 	})
 
 	previousAccount, _ := awsparse.AccountIdToString(creds.AccountId)

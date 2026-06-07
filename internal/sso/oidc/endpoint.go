@@ -25,6 +25,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
+	"github.com/synfinatic/aws-sso-cli/internal/awsendpoint"
 )
 
 // AuthorizationEndpoint returns the OIDC `/authorize` endpoint URL for the given
@@ -40,15 +41,34 @@ import (
 // URL, so a misconfigured region surfaces as a clear error instead of a request
 // to a non-existent host.
 func AuthorizationEndpoint(region string) (string, error) {
+	return authorizationEndpoint(region, ssooidc.NewDefaultEndpointResolverV2())
+}
+
+func authorizationEndpoint(region string, resolver ssooidc.EndpointResolverV2) (string, error) {
 	if region == "" {
 		return "", fmt.Errorf("cannot resolve authorization endpoint: empty region")
 	}
-	ep, err := ssooidc.NewDefaultEndpointResolverV2().ResolveEndpoint(
+	useFips := awsendpoint.UseFipsEndpoint()
+	useDualStack := awsendpoint.UseDualStackEndpoint()
+	ep, err := resolver.ResolveEndpoint(
 		context.Background(),
-		ssooidc.EndpointParameters{Region: aws.String(region)},
+		ssooidc.EndpointParameters{
+			Region:       aws.String(region),
+			UseFIPS:      aws.Bool(useFips),
+			UseDualStack: aws.Bool(useDualStack),
+		},
 	)
 	if err != nil {
-		return "", fmt.Errorf("resolve authorization endpoint for region %q: %w", region, err)
+		switch {
+		case useFips && useDualStack:
+			return "", fmt.Errorf("resolve FIPS dual-stack authorization endpoint for region %q: %w", region, err)
+		case useFips:
+			return "", fmt.Errorf("resolve FIPS authorization endpoint for region %q: %w", region, err)
+		case useDualStack:
+			return "", fmt.Errorf("resolve dual-stack authorization endpoint for region %q: %w", region, err)
+		default:
+			return "", fmt.Errorf("resolve authorization endpoint for region %q: %w", region, err)
+		}
 	}
 	return strings.TrimSuffix(ep.URI.String(), "/") + "/authorize", nil
 }

@@ -36,6 +36,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 
 	// "github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/awsendpoint"
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
@@ -120,10 +121,14 @@ func stsSession(ctx *RunContext) (*sts.Client, error) {
 		return &sts.Client{}, err
 	}
 
+	fipsEndpoint := awsendpoint.FipsEndpointState()
+	dualStackEndpoint := awsendpoint.DualStackEndpointState()
 	ssoRegion := sso.SSORegion
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion(ssoRegion),
 		config.WithCredentialsProvider(cfgCreds),
+		config.WithUseFIPSEndpoint(fipsEndpoint),
+		config.WithUseDualStackEndpoint(dualStackEndpoint),
 	)
 	if err != nil {
 		return &sts.Client{}, err

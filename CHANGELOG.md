@@ -12,6 +12,7 @@
 * Add `--default <profile>` flag to `ecs server` and `ecs docker start` to automatically load
   a named profile as the default credential slot on startup
 * Interactive mode now supports selecting by Profile name
+* Add support for AWS Dual Stack API endpoints via `AWS_USE_DUALSTACK_ENDPOINT`
 
 ### Bugs
 
@@ -21,6 +22,7 @@
   endpoint and the federation sign-in URL from the region's partition
   (`amazonaws.eu` / `amazonaws-eusc.eu`) instead of hardcoding `amazonaws.com`
 * Fix zombie processes holding storage.lock after SIGINT #1379
+* Fix FIPS endpoint support #1395
 * Security: Update to Go 1.26.4
 
 ### Changes
