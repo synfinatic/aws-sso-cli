@@ -27,7 +27,7 @@ require (
 require (
 	github.com/aws/aws-sdk-go-v2 v1.41.12
 	github.com/riywo/loginshell v0.0.0-20200815045211-7d26008be1ab
-	golang.org/x/term v0.43.0
+	golang.org/x/term v0.44.0
 )
 
 require (
@@ -58,7 +58,7 @@ require (
 	github.com/spf13/cast v1.7.0 // indirect
 
 	// see: https://github.com/sirupsen/logrus/issues/1275
-	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/sys v0.46.0 // indirect
 
 	// see: https://github.com/go-yaml/yaml/issues/666
 	// imported via testify, but they haven't yet merged the PR
