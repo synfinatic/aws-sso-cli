@@ -15,36 +15,35 @@ import (
 
 func TestSourceHelper(t *testing.T) {
 	testcases := []struct {
-		shell          string
-		expectedError  error
-		expectedOutput []byte
+		shell           string
+		expectedError   error
+		expectedOutputs [][]byte
 	}{
 		{
 			shell: "bash",
-			expectedOutput: []byte(`
+			expectedOutputs: [][]byte{[]byte(`
 complete -F __aws_sso_profile_complete aws-sso-profile
 complete -C /bin/aws-sso-cli aws-sso
-`),
+`)},
 		},
 		{
 			shell: "zsh",
-			expectedOutput: []byte(`
+			expectedOutputs: [][]byte{[]byte(`
 compdef __aws_sso_profile_complete aws-sso-profile
 complete -C /bin/aws-sso-cli aws-sso
-`),
+`)},
 		},
 		{
 			shell: "fish",
-			expectedOutput: []byte(`
-function __complete_aws-sso
-    set -lx COMP_LINE (commandline -cp)
-    test -z (commandline -ct)
-    and set COMP_LINE "$COMP_LINE "
-    export __NO_ESCAPE_COLONS=1
-    /bin/aws-sso-cli
-end
-complete -f -c aws-sso -a "(__complete_aws-sso)"
-`),
+			expectedOutputs: [][]byte{
+				[]byte(`function __complete_aws-sso`),
+				[]byte(`complete -f -c aws-sso -a "(__complete_aws-sso)"`),
+				[]byte(`function aws-sso-profile`),
+				[]byte(`function __aws_sso_profile_complete`),
+				[]byte(`complete -f -c aws-sso-profile`),
+				[]byte(`function aws-sso-clear`),
+				[]byte(`/bin/aws-sso-cli`),
+			},
 		},
 		{
 			shell:         "nushell",
@@ -53,8 +52,6 @@ complete -f -c aws-sso -a "(__complete_aws-sso)"
 	}
 
 	for _, tc := range testcases {
-		tc := tc
-
 		t.Run(tc.shell, func(t *testing.T) {
 			t.Parallel()
 			var (
@@ -69,7 +66,9 @@ complete -f -c aws-sso -a "(__complete_aws-sso)"
 
 			err := h.Generate(tc.shell)
 			require.Equal(t, tc.expectedError, err)
-			require.Contains(t, output.String(), string(bytes.TrimLeftFunc(tc.expectedOutput, unicode.IsSpace)))
+			for _, expected := range tc.expectedOutputs {
+				require.Contains(t, output.String(), string(bytes.TrimLeftFunc(expected, unicode.IsSpace)))
+			}
 		})
 	}
 }
@@ -77,7 +76,7 @@ complete -f -c aws-sso -a "(__complete_aws-sso)"
 func TestConfigFiles(t *testing.T) {
 	t.Parallel()
 	files := ConfigFiles()
-	require.Len(t, files, 3)
+	require.Len(t, files, 6)
 }
 
 func TestNewSourceHelper(t *testing.T) {
@@ -89,10 +88,10 @@ func TestNewSourceHelper(t *testing.T) {
 	assert.NotNil(t, h)
 }
 
-func TestGetFishScript(t *testing.T) {
+func TestGetFishPaths(t *testing.T) {
 	t.Parallel()
-	f := getFishScript()
-	assert.Contains(t, f, path.Join("fish", "completions", "aws-sso.fish"))
+	assert.Contains(t, getFishCompletionPath("aws-sso.fish"), path.Join("fish", "completions", "aws-sso.fish"))
+	assert.Contains(t, getFishFunctionPath("aws-sso-profile.fish"), path.Join("fish", "functions", "aws-sso-profile.fish"))
 }
 
 func TestDetectShellBash(t *testing.T) {
@@ -119,8 +118,11 @@ func TestGenerate(t *testing.T) {
 }
 func TestPrintConfig(t *testing.T) {
 	t.Parallel()
-	c, p, err := getScript("bash")
+	scripts, err := getScripts("bash")
 	assert.NoError(t, err)
+	require.Len(t, scripts, 1)
+	c := scripts[0].contents
+	p := scripts[0].path
 	assert.NotEmpty(t, c)
 	assert.NotEmpty(t, p)
 	assert.Contains(t, string(c), "{{ .Executable }}") // this is a template
@@ -155,4 +157,51 @@ func TestInstallHelper(t *testing.T) {
 
 	err = UninstallHelper("bash", tempFile.Name())
 	assert.NoError(t, err)
+}
+
+func TestInstallFish(t *testing.T) {
+	forceIt = true
+	defer func() { forceIt = false }()
+
+	tmpDir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
+
+	err := InstallHelper("fish", "")
+	require.NoError(t, err)
+
+	fishBase := getFishBase()
+	expectedFiles := []string{
+		path.Join(fishBase, "completions", "aws-sso.fish"),
+		path.Join(fishBase, "functions", "aws-sso-profile.fish"),
+		path.Join(fishBase, "completions", "aws-sso-profile.fish"),
+		path.Join(fishBase, "functions", "aws-sso-clear.fish"),
+	}
+	for _, f := range expectedFiles {
+		info, statErr := os.Stat(f)
+		require.NoError(t, statErr, "expected file to exist: %s", f)
+		assert.Greater(t, info.Size(), int64(0))
+	}
+
+	err = UninstallHelper("fish", "")
+	require.NoError(t, err)
+	for _, f := range expectedFiles {
+		_, statErr := os.Stat(f)
+		assert.True(t, os.IsNotExist(statErr), "expected file to be removed: %s", f)
+	}
+}
+
+func TestFishFilesContent(t *testing.T) {
+	t.Parallel()
+	scripts, err := getScripts("fish")
+	require.NoError(t, err)
+	require.Len(t, scripts, 4)
+
+	combined := ""
+	for _, s := range scripts {
+		combined += string(s.contents)
+	}
+	assert.Contains(t, combined, "function aws-sso-profile")
+	assert.Contains(t, combined, "function aws-sso-clear")
+	assert.Contains(t, combined, "function __complete_aws-sso")
+	assert.Contains(t, combined, "function __aws_sso_profile_complete")
 }

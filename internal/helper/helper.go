@@ -38,7 +38,7 @@ func init() {
 	log = logger.GetLogger()
 }
 
-//go:embed bash_profile.sh zshrc.sh aws-sso.fish
+//go:embed bash_profile.sh zshrc.sh fish
 var embedFiles embed.FS
 
 type fileMap struct {
@@ -46,7 +46,7 @@ type fileMap struct {
 	Path string
 }
 
-// map of shells to their file we edit by default
+// map of single-file shells to their config file
 var SHELL_SCRIPTS = map[string]fileMap{
 	"bash": {
 		Key:  "bash_profile.sh",
@@ -56,10 +56,28 @@ var SHELL_SCRIPTS = map[string]fileMap{
 		Key:  "zshrc.sh",
 		Path: "~/.zshrc",
 	},
-	"fish": {
-		Key:  "aws-sso.fish",
-		Path: getFishScript(),
-	},
+}
+
+type fishFileSpec struct {
+	Key  string // embedded path, e.g. "fish/aws-sso.fish"
+	Dir  string // "completions" or "functions"
+	Name string // target filename
+}
+
+// FISH_FILES defines the four files installed for fish shell support.
+// Paths are resolved lazily at call time via getFishBase() so that
+// XDG_CONFIG_HOME overrides work correctly in tests.
+var FISH_FILES = []fishFileSpec{
+	{Key: "fish/aws-sso.fish", Dir: "completions", Name: "aws-sso.fish"},
+	{Key: "fish/aws-sso-profile.fish", Dir: "functions", Name: "aws-sso-profile.fish"},
+	{Key: "fish/aws-sso-profile-comp.fish", Dir: "completions", Name: "aws-sso-profile.fish"},
+	{Key: "fish/aws-sso-clear.fish", Dir: "functions", Name: "aws-sso-clear.fish"},
+}
+
+// shellScript holds an embedded template's contents and its resolved target path.
+type shellScript struct {
+	contents []byte
+	path     string
 }
 
 // ConfigFiles returns a list of all the config files we might edit
@@ -69,33 +87,53 @@ func ConfigFiles() []string {
 	for _, v := range SHELL_SCRIPTS {
 		ret = append(ret, fileutils.GetHomePath(v.Path))
 	}
+
+	base := getFishBase()
+	for _, f := range FISH_FILES {
+		ret = append(ret, path.Join(base, f.Dir, f.Name))
+	}
+
 	return ret
 }
 
-// getScript takes a shell and returns the contents & path to the shell script
-func getScript(shell string) ([]byte, string, error) {
+// getScripts returns all (contents, resolved-path) pairs for a shell.
+// Handles shell auto-detection when shell == "".
+func getScripts(shell string) ([]shellScript, error) {
 	var err error
-	var bytes []byte
-	var shellFile fileMap
-	var ok bool
 
 	if shell == "" {
 		if shell, err = detectShell(); err != nil {
-			return bytes, "", err
+			return nil, err
 		}
 	}
 	log.Debug("detected our shell", "shell", shell)
 
-	if shellFile, ok = SHELL_SCRIPTS[shell]; !ok {
-		return bytes, "", fmt.Errorf("unsupported shell: %s", shell)
+	if shell == "fish" {
+		base := getFishBase()
+		var result []shellScript
+		for _, f := range FISH_FILES {
+			c, err := embedFiles.ReadFile(f.Key)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, shellScript{
+				contents: c,
+				path:     path.Join(base, f.Dir, f.Name),
+			})
+		}
+		return result, nil
 	}
 
-	path := fileutils.GetHomePath(shellFile.Path)
-	bytes, err = embedFiles.ReadFile(shellFile.Key)
-	if err != nil {
-		return bytes, "", err
+	shellFile, ok := SHELL_SCRIPTS[shell]
+	if !ok {
+		return nil, fmt.Errorf("unsupported shell: %s", shell)
 	}
-	return bytes, path, nil
+
+	c, err := embedFiles.ReadFile(shellFile.Key)
+	if err != nil {
+		return nil, err
+	}
+	return []shellScript{{contents: c, path: fileutils.GetHomePath(shellFile.Path)}}, nil
 }
 
 type SourceHelper struct {
@@ -114,7 +152,7 @@ func NewSourceHelper(getExe func() (string, error), output io.Writer) *SourceHel
 
 // SourceHelper can be used to generate the completions script for immediate sourcing in the active shell
 func (h SourceHelper) Generate(shell string) error {
-	c, _, err := getScript(shell)
+	scripts, err := getScripts(shell)
 	if err != nil {
 		return err
 	}
@@ -124,40 +162,66 @@ func (h SourceHelper) Generate(shell string) error {
 		return err
 	}
 
-	return printConfig(c, execPath, h.output)
+	for _, s := range scripts {
+		if err = printConfig(s.contents, execPath, h.output); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 var forceIt bool = false // used just for testing
 
 // InstallHelper installs any helper code into our shell startup script(s)
-func InstallHelper(shell string, path string) error {
-	c, defaultPath, err := getScript(shell)
+func InstallHelper(shell string, overridePath string) error {
+	scripts, err := getScripts(shell)
 	if err != nil {
 		return err
 	}
 
-	if path == "" {
-		err = installConfigFile(defaultPath, c, forceIt)
-	} else {
-		err = installConfigFile(path, c, forceIt)
+	for i, s := range scripts {
+		target := s.path
+		if overridePath != "" && i == 0 {
+			target = overridePath
+		}
+		if err = installConfigFile(target, s.contents, forceIt); err != nil {
+			return err
+		}
 	}
-
-	return err
+	return nil
 }
 
 // UninstallHelper removes any helper code from our shell startup script(s)
-func UninstallHelper(shell string, path string) error {
-	_, defaultPath, err := getScript(shell)
+func UninstallHelper(shell string, overridePath string) error {
+	resolved := shell
+	if resolved == "" {
+		var err error
+		if resolved, err = detectShell(); err != nil {
+			return err
+		}
+	}
+
+	scripts, err := getScripts(resolved)
 	if err != nil {
 		return err
 	}
 
-	if path == "" {
-		err = uninstallConfigFile(defaultPath)
-	} else {
-		err = uninstallConfigFile(path)
+	for i, s := range scripts {
+		target := s.path
+		if overridePath != "" && i == 0 {
+			target = overridePath
+		}
+		if resolved == "fish" {
+			if err := os.Remove(target); err != nil && !os.IsNotExist(err) { // nolint:gosec
+				log.Warn("unable to remove fish config", "file", target, "error", err.Error())
+			}
+		} else {
+			if err := uninstallConfigFile(target); err != nil {
+				log.Warn("unable to remove config", "file", target, "error", err.Error())
+			}
+		}
 	}
-	return err
+	return nil
 }
 
 // printConfig writes the given template to the output
@@ -242,12 +306,21 @@ func detectShell() (string, error) {
 	return shell, nil
 }
 
-// returns the location of our fish completion script
-func getFishScript() string {
+// getFishBase returns the base fish config directory, honouring XDG_CONFIG_HOME
+func getFishBase() string {
 	base := os.Getenv("XDG_CONFIG_HOME")
 	if base == "" {
 		base = fileutils.GetHomePath("~/.config")
 	}
+	return path.Join(base, "fish")
+}
 
-	return path.Join(base, "fish", "completions", "aws-sso.fish")
+// getFishCompletionPath returns the path for a fish completion file
+func getFishCompletionPath(name string) string {
+	return path.Join(getFishBase(), "completions", name)
+}
+
+// getFishFunctionPath returns the path for a fish function file
+func getFishFunctionPath(name string) string {
+	return path.Join(getFishBase(), "functions", name)
 }
