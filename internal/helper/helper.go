@@ -145,8 +145,8 @@ type SourceHelper struct {
 // to get the current executable path and an io.Writer to write the output to
 func NewSourceHelper(getExe func() (string, error), output io.Writer) *SourceHelper {
 	return &SourceHelper{
-		getExe: os.Executable,
-		output: os.Stdout,
+		getExe: getExe,
+		output: output,
 	}
 }
 
@@ -212,9 +212,7 @@ func UninstallHelper(shell string, overridePath string) error {
 			target = overridePath
 		}
 		if resolved == "fish" {
-			if err := os.Remove(target); err != nil && !os.IsNotExist(err) { // nolint:gosec
-				log.Warn("unable to remove fish config", "file", target, "error", err.Error())
-			}
+			removeFishFile(target)
 		} else {
 			if err := uninstallConfigFile(target); err != nil {
 				log.Warn("unable to remove config", "file", target, "error", err.Error())
@@ -323,4 +321,52 @@ func getFishCompletionPath(name string) string {
 // getFishFunctionPath returns the path for a fish function file
 func getFishFunctionPath(name string) string {
 	return path.Join(getFishBase(), "functions", name)
+}
+
+// removeFishFile removes the managed block from a fish config file.
+// If the file becomes empty after removal (normal case for dedicated fish
+// function/completion files), it is deleted. Any user content outside the
+// managed block is preserved by writing back the remainder.
+func removeFishFile(filePath string) {
+	content, err := os.ReadFile(filePath) // nolint:gosec
+	if err != nil {
+		if !os.IsNotExist(err) {
+			log.Warn("unable to read fish config", "file", filePath, "error", err.Error())
+		}
+		return
+	}
+
+	trimmed := removeBlock(content, fileutils.CONFIG_PREFIX, fileutils.CONFIG_SUFFIX)
+	if len(bytes.TrimSpace(trimmed)) == 0 {
+		if err := os.Remove(filePath); err != nil && !os.IsNotExist(err) { // nolint:gosec
+			log.Warn("unable to remove fish config", "file", filePath, "error", err.Error())
+		}
+		return
+	}
+
+	if err := os.WriteFile(filePath, trimmed, 0600); err != nil { // nolint:gosec
+		log.Warn("unable to update fish config", "file", filePath, "error", err.Error())
+	}
+}
+
+// removeBlock strips every line from prefix to suffix (inclusive) from content.
+func removeBlock(content []byte, prefix, suffix string) []byte {
+	lines := bytes.Split(content, []byte("\n"))
+	result := make([][]byte, 0, len(lines))
+	inBlock := false
+	for _, line := range lines {
+		s := string(bytes.TrimRight(line, "\r"))
+		if s == prefix {
+			inBlock = true
+			continue
+		}
+		if s == suffix {
+			inBlock = false
+			continue
+		}
+		if !inBlock {
+			result = append(result, line)
+		}
+	}
+	return bytes.Join(result, []byte("\n"))
 }
