@@ -5,6 +5,9 @@
 
 ### Bugs
 
+* Fix `aws-sso-profile` and `aws-sso-clear` fish functions not available on shell
+  start — split fish completions into separate files under `functions/` and
+  `completions/` so fish autoloads them correctly #1414
 * Fix `aws-sso process` exiting non-zero on success, breaking its use as an AWS
   credential_process (regression from the SIGINT handling in #1379)
 * Fix AWS European Sovereign Cloud (EUSC) login: derive the OIDC `/authorize`
