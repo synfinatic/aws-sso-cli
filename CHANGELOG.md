@@ -3,6 +3,8 @@
 
 ## [Unreleased]
 
+## [v2.2.5] - 2026-06-13
+
 ### Bugs
 
 * Fix `aws-sso-profile` and `aws-sso-clear` fish functions not available on shell
@@ -928,7 +930,8 @@
 Initial release
 
 <!-- markdownlint-disable-next-line MD053 -->
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.2.4...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.2.5...main
+[v2.2.5]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.4
 [v2.2.4]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.4
 [v2.2.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.3
 [v2.2.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.2
