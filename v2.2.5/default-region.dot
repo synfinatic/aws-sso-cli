@@ -1,0 +1,33 @@
+digraph g {
+    Start -> ADR_SET
+
+    ADR_SET [label="Is $AWS_DEFAULT_REGION defined?"]
+    ADR_SET -> Have_ASDR [label="Yes"]
+    ADR_SET -> Have_DR [label="No"]
+
+    Have_ASDR [label="Is $AWS_SSO_DEFAULT_REGION defined?"]
+    Have_ASDR -> No_Change [label="No"]
+    Have_ASDR -> Var_Match [label="Yes"] 
+
+    Var_Match [label="Does $AWS_DEFAULT_REGION match $AWS_SSO_DEFAULT_REGION?"]
+    Var_Match -> Delete_ADSR [label="No"]
+    Var_Match -> Have_DR [label="Yes"]
+
+    Have_DR [label="Is DefaultRegion defined in config.yaml?"]
+    Have_DR -> No_Change [label="No"]
+    Have_DR -> No_Region [label="Yes"]
+
+    No_Change [label="No changes to environment"]
+    No_Change -> End
+
+    No_Region [label="Is --no-region set?"]
+    No_Region -> No_Change [label="Yes"]
+    No_Region -> Set_ADR [label="No"]
+
+    Set_ADR [label="Set $AWS_DEFAULT_REGION"]
+
+    Delete_ADSR [label="Unset $AWS_SSO_DEFAULT_REGION"]
+
+    Delete_ADSR -> End
+    Set_ADR -> End
+}
