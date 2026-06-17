@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"text/template"
 
@@ -205,6 +206,67 @@ func TestGenerateNewFile(t *testing.T) {
 	fe, _ := NewFileEdit(template, "", vars)
 	_, err := fe.GenerateNewFile("/this/directory/really/should/not/exist")
 	assert.Error(t, err)
+}
+
+func TestGenerateNewFileNoTrailingNewline(t *testing.T) {
+	t.Parallel()
+	var tmpl = "{{ .Test }}"
+	var vars = map[string]string{"Test": "managed"}
+
+	fe, err := NewFileEdit(tmpl, "sso", vars)
+	require.NoError(t, err)
+
+	// File with content before the managed block and no trailing newline.
+	// The last line must survive, and the managed block must start on its own line.
+	t.Run("no managed block, no trailing newline", func(t *testing.T) {
+		t.Parallel()
+		tfile, err := os.CreateTemp("", "")
+		require.NoError(t, err)
+		defer os.Remove(tfile.Name())
+
+		_, err = tfile.WriteString("line one\nline two")
+		require.NoError(t, err)
+		tfile.Close()
+
+		out, err := fe.GenerateNewFile(tfile.Name())
+		require.NoError(t, err)
+
+		s := string(out)
+		assert.Contains(t, s, "line one\n")
+		// Managed block must start on a new line, not be concatenated onto "line two"
+		prefix := fmt.Sprintf("%s_%s", CONFIG_PREFIX, "sso")
+		assert.Contains(t, s, "line two\n"+prefix)
+		assert.Contains(t, s, "managed")
+	})
+
+	// File with a managed block followed by unmanaged content with no trailing newline.
+	// The final tail line must be preserved as the last bytes, with no trailing newline added.
+	t.Run("managed block present, unmanaged tail has no trailing newline", func(t *testing.T) {
+		t.Parallel()
+		tfile, err := os.CreateTemp("", "")
+		require.NoError(t, err)
+		defer os.Remove(tfile.Name())
+
+		prefix := fmt.Sprintf("%s_%s", CONFIG_PREFIX, "sso")
+		suffix := fmt.Sprintf("%s_%s", CONFIG_SUFFIX, "sso")
+		content := fmt.Sprintf("before\n%s\nold content\n%s\nafter no newline", prefix, suffix)
+		_, err = tfile.WriteString(content)
+		require.NoError(t, err)
+		tfile.Close()
+
+		out, err := fe.GenerateNewFile(tfile.Name())
+		require.NoError(t, err)
+
+		s := string(out)
+		assert.Contains(t, s, "before\n")
+		assert.Contains(t, s, "managed")
+		assert.NotContains(t, s, "old content")
+		// Tail line must be present and the output must not gain a trailing newline
+		assert.True(t, len(out) > 0 && out[len(out)-1] != '\n',
+			"output must not end with a newline")
+		assert.True(t, strings.HasSuffix(s, "after no newline"),
+			"output must end with the unmanaged tail line")
+	})
 }
 
 func promptYes(a, b string) (bool, error) {
