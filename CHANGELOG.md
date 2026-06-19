@@ -3,6 +3,10 @@
 
 ## [Unreleased]
 
+### Bugs
+
+* Preserve final line of config files lacking a trailing newline #1419
+
 ## [v2.2.5] - 2026-06-13
 
 ### Bugs
