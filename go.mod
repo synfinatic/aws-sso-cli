@@ -21,13 +21,13 @@ require (
 	github.com/synfinatic/flexlog v0.0.5
 	github.com/synfinatic/gotable v0.0.3
 	github.com/willabides/kongplete v0.2.0
-	golang.org/x/crypto v0.51.0 // indirect
+	golang.org/x/crypto v0.53.0 // indirect
 )
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.41.12
+	github.com/aws/aws-sdk-go-v2 v1.42.0
 	github.com/riywo/loginshell v0.0.0-20200815045211-7d26008be1ab
-	golang.org/x/term v0.43.0
+	golang.org/x/term v0.44.0
 )
 
 require (
@@ -58,7 +58,7 @@ require (
 	github.com/spf13/cast v1.7.0 // indirect
 
 	// see: https://github.com/sirupsen/logrus/issues/1275
-	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/sys v0.46.0 // indirect
 
 	// see: https://github.com/go-yaml/yaml/issues/666
 	// imported via testify, but they haven't yet merged the PR
@@ -77,7 +77,7 @@ require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1
 	github.com/danjacques/gofslock v0.0.0-20240212154529-d899e02bfe22
 	github.com/jpillora/backoff v1.0.0
-	golang.org/x/net v0.55.0
+	golang.org/x/net v0.56.0
 )
 
 require (
@@ -114,8 +114,8 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/lmittmann/tint v1.0.5 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
-	github.com/moby/moby/api v1.54.2
-	github.com/moby/moby/client v0.4.1
+	github.com/moby/moby/api v1.55.0
+	github.com/moby/moby/client v0.5.0
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/veqryn/slog-json v0.3.0 // indirect

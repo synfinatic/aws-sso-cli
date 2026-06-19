@@ -165,15 +165,36 @@ func (f *FileEdit) GenerateNewFile(configFile string) ([]byte, error) {
 	}
 
 	endOfFile := false
+	needsNewline := false // true when last unmanaged line had no trailing newline
 	if err != nil && err != io.EOF {
 		return []byte{}, err
 	} else if err == io.EOF {
-		// Reached EOF before finding our CONFIG_PREFIX
+		// Reached EOF before finding our CONFIG_PREFIX.
+		// ReadString returns the final partial line together with io.EOF when the
+		// file has no trailing newline. Write it unless it is the prefix marker
+		// (with or without a trailing newline) to avoid duplicating the marker.
+		if line != "" && line != fmt.Sprintf("%s\n", f.Prefix) && line != f.Prefix {
+			if _, wErr := output.WriteString(line); wErr != nil {
+				return []byte{}, wErr
+			}
+			needsNewline = true
+		}
 		endOfFile = true
 	}
 
-	// write our template out
-	if err = f.Template.Execute(&output, f.InputVars); err != nil {
+	// Buffer the template so we can insert a newline separator when the previous
+	// unmanaged content ended without a newline (which would otherwise cause the
+	// managed block to be concatenated onto the last unmanaged line).
+	var templateBuf bytes.Buffer
+	if err = f.Template.Execute(&templateBuf, f.InputVars); err != nil {
+		return []byte{}, err
+	}
+	if needsNewline && templateBuf.Len() > 0 {
+		if _, wErr := output.WriteString("\n"); wErr != nil {
+			return []byte{}, wErr
+		}
+	}
+	if _, err = output.Write(templateBuf.Bytes()); err != nil {
 		return []byte{}, err
 	}
 
@@ -194,7 +215,13 @@ func (f *FileEdit) GenerateNewFile(configFile string) ([]byte, error) {
 				}
 				line, err = r.ReadString('\n')
 			}
-			if err != io.EOF {
+			// If the file had no trailing newline, ReadString returns the final
+			// partial line together with io.EOF, so we must write it here.
+			if err == io.EOF && line != "" {
+				if _, wErr := output.WriteString(line); wErr != nil {
+					return []byte{}, wErr
+				}
+			} else if err != io.EOF {
 				return []byte{}, err
 			}
 		}
