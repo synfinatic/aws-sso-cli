@@ -3,6 +3,8 @@
 
 ## [Unreleased]
 
+## [v2.3.0] -- 2026-06-19
+
 ### New Features
 
 * Add 1Password SecureStorage backend (`SecureStore: 1password`) with service account and desktop
@@ -942,8 +944,9 @@
 Initial release
 
 <!-- markdownlint-disable-next-line MD053 -->
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.2.5...main
-[v2.2.5]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.4
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.3.0...main
+[v2.3.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.3.0
+[v2.2.5]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.5
 [v2.2.4]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.4
 [v2.2.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.3
 [v2.2.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.2
