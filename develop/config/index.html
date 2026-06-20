@@ -1002,6 +1002,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#onepassword" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OnePassword
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#envvartags" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2284,6 +2295,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#onepassword" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OnePassword
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#envvartags" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2387,9 +2409,13 @@ LogLines: [true|false]
 HistoryLimit: &lt;integer&gt;
 HistoryMinutes: &lt;integer&gt;
 
-SecureStore: [file|keychain|kwallet|pass|secret-service|wincred|json]
+SecureStore: [file|keychain|kwallet|pass|secret-service|wincred|json|1password]
 JsonStore: &lt;path to json file&gt;
 SecretServiceCollection: &lt;libsecret collection name&gt;
+OnePassword:
+    Vault: &lt;vault name&gt;
+    AuthType: [desktop|service-account]
+    Account: &lt;email address&gt;
 
 ProfileFormat: &quot;&lt;template&gt;&quot;
 ConfigVariables:
@@ -2715,6 +2741,10 @@ functions, but a few custom functions are available:</p>
 <p><strong>Note:</strong> Unlike most values stored in the <code>config.yaml</code>,  you will need to
 single-quote (<code>'</code>) the value because because <code>ProfileFormat</code> values often start
 with a <code>{</code>.</p>
+<p><strong>Note:</strong> Profile names that contain spaces cannot be used in the interactive role selection
+prompt (<code>exec</code>/<code>console</code> without explicit flags). The interactive prompt is space-delimited, so
+a profile name with spaces will not be selectable interactively. This applies both to
+<code>ProfileFormat</code> templates that produce spaces and to manually configured <code>Profile:</code> values.</p>
 <p>For more information, <a href="../FAQ/#profiles-and-tags">see the FAQ</a>.</p>
 <h4 id="configvariables">ConfigVariables</h4>
 <p>Define a set of <a href="https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html">config settings</a> for each
@@ -2861,12 +2891,34 @@ advanced debugging.</p>
     (default on Windows)</li>
 <li><code>json</code> - Cleartext JSON file (very insecure and not recommended).  Location
     can be overridden with <code>JsonStore</code></li>
+<li><code>1password</code> - <a href="https://1password.com">1Password</a> vault. See <a href="#onepassword">OnePassword</a> for
+    configuration options.</li>
 </ul>
 <p><strong>Note:</strong> The <code>file</code> option supports passing in the password via the <code>AWS_SSO_FILE_PASSWORD</code> environment variable.</p>
 <p><strong>Note:</strong> The <code>pass</code> option supports passing in the password via the <a href="https://www.gnupg.org/documentation/manuals/gnupg24/gpg-agent.1.html">gpg-agent</a>.</p>
 <h4 id="secretservicecollection">SecretServiceCollection</h4>
 <p>Overrides the libsecret collection name used by the <code>secret-service</code> backend.
 Defaults to <code>awsssocli</code>. Has no effect on other <code>SecureStore</code> backends.</p>
+<h4 id="onepassword">OnePassword</h4>
+<p>Configuration for the <code>1password</code> <code>SecureStore</code> backend. All credentials are stored
+as a single Secure Note item in a 1Password vault.</p>
+<pre><code class="language-yaml">SecureStore: 1password
+OnePassword:
+    Vault: my-vault          # required: name of an existing 1Password vault
+    AuthType: desktop        # optional: &quot;desktop&quot; (default) or &quot;service-account&quot;
+    Account: user@example.com  # required for desktop auth: your 1Password account ID
+</code></pre>
+<p><strong>Note:</strong> <code>AuthType: desktop</code> uses the 1Password desktop app for authentication. Requires the
+app to be installed with <strong>Settings → Developer → Integrate with other apps</strong> enabled.
+<code>Account</code> must be set to your 1Password account email address.</p>
+<p><strong>Note:</strong> <code>AuthType: service-account</code> uses a headless service account token — no biometrics or
+desktop app required. Create a service account at 1password.com/developer-tools and export
+the token as <code>AWS_SSO_OP_SERVICE_ACCOUNT_TOKEN</code>. <code>Account</code> is not used.</p>
+<p>See the <a href="https://www.1password.dev/sdks#step-1-decide-how-you-want-to-authenticate">1Password authentication guide</a>
+to help choose the right <code>AuthType</code> for your use case.</p>
+<p>I strongly recommend creating a dedicated vault for aws-sso to prevent accidentally sharing
+your AWS Identity Center/IAM secrets with others.  If using the <code>service-account</code> option,
+be sure to grant the token, read and write permissions.</p>
 <h4 id="envvartags">EnvVarTags</h4>
 <p>List of tag keys that should be set as a shell environment variable when
 using the <code>eval</code> or <code>exec</code> commands.</p>

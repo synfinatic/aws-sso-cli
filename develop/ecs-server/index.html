@@ -856,6 +856,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#kubernetes-docker-compose-healthcheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes / Docker Compose Healthcheck
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Kubernetes / Docker Compose Healthcheck">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docker-compose-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Compose example
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#errors" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1728,6 +1767,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#kubernetes-docker-compose-healthcheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes / Docker Compose Healthcheck
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Kubernetes / Docker Compose Healthcheck">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docker-compose-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Compose example
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#errors" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1966,6 +2044,52 @@ value in the URL must be <a href="https://www.w3schools.com/tags/ref_urlencode.A
 <p>To remove a specific IAM Role credential from a named slot in the ECS Server,
 you can use:</p>
 <p><code>aws-sso ecs unload --profile &lt;profile&gt;</code></p>
+<h2 id="kubernetes-docker-compose-healthcheck">Kubernetes / Docker Compose Healthcheck</h2>
+<p>The ECS server exposes a <code>/healthcheck</code> endpoint that does <strong>not</strong> require
+authentication, making it suitable for k8s probes and Docker Compose <code>healthcheck:</code>
+commands.</p>
+<ul>
+<li><code>GET /healthcheck</code> — returns <code>200 OK</code> when the default slot has valid credentials,
+  <code>503</code> otherwise.</li>
+<li><code>GET /healthcheck/slot/&lt;profile&gt;</code> — returns <code>200 OK</code> when the named slot has valid
+  credentials, <code>503</code> otherwise.</li>
+</ul>
+<h3 id="kubernetes-example">Kubernetes example</h3>
+<pre><code class="language-yaml">livenessProbe:
+  httpGet:
+    path: /healthcheck
+    port: 4144
+  initialDelaySeconds: 5
+  periodSeconds: 30
+
+readinessProbe:
+  httpGet:
+    path: /healthcheck
+    port: 4144
+  initialDelaySeconds: 5
+  periodSeconds: 10
+</code></pre>
+<p>For a named slot replace the path with <code>/healthcheck/slot/&lt;profile&gt;</code> (URL-encode the
+profile name if it contains special characters).</p>
+<h3 id="docker-compose-example">Docker Compose example</h3>
+<pre><code class="language-yaml">services:
+  aws-sso:
+    image: synfinatic/aws-sso-cli-ecs-server
+    healthcheck:
+      test: [&quot;CMD&quot;, &quot;curl&quot;, &quot;-sf&quot;, &quot;http://localhost:4144/healthcheck&quot;]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+</code></pre>
+<p>Other services that depend on valid credentials can declare <code>depends_on</code> with a
+<code>service_healthy</code> condition:</p>
+<pre><code class="language-yaml">  myapp:
+    image: myapp
+    depends_on:
+      aws-sso:
+        condition: service_healthy
+</code></pre>
 <h2 id="errors">Errors</h2>
 <p>The ECS Server API endpoint generates errors with the following JSON format:</p>
 <pre><code class="language-json">{

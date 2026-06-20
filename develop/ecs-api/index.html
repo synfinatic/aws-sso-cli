@@ -828,6 +828,45 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#healthcheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Healthcheck
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Healthcheck">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-healthcheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /healthcheck
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-healthcheckslotprofile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /healthcheck/slot/&lt;profile&gt;
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1416,6 +1455,45 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#healthcheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Healthcheck
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Healthcheck">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-healthcheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /healthcheck
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-healthcheckslotprofile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GET /healthcheck/slot/&lt;profile&gt;
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1550,6 +1628,38 @@ be over SSL/TLS.</p>
     &quot;code&quot;: &quot;&lt;HTTP error code&gt;&quot;,
     &quot;message&quot;: &quot;&lt;message&gt;&quot;
 }
+</code></pre>
+<h2 id="healthcheck">Healthcheck</h2>
+<p>Healthcheck routes do <strong>not</strong> require authentication, making them suitable for use as
+Kubernetes liveness/readiness probes or Docker Compose <code>healthcheck:</code> commands.</p>
+<h3 id="get-healthcheck">GET /healthcheck</h3>
+<p>Returns whether the default credential slot has valid (non-expired) credentials loaded.</p>
+<p>Success reply (<code>200 OK</code>):</p>
+<pre><code class="language-json">{
+    &quot;status&quot;: &quot;ok&quot;,
+    &quot;profile&quot;: &quot;&lt;aws-sso profile name&gt;&quot;,
+    &quot;expires&quot;: &quot;&lt;date in RFC3339 / ISO8601 format&gt;&quot;
+}
+</code></pre>
+<p>Failure reply (<code>503 Service Unavailable</code>) when no credentials are loaded:</p>
+<pre><code class="language-json">{&quot;status&quot;: &quot;no credentials loaded&quot;}
+</code></pre>
+<p>Failure reply (<code>503 Service Unavailable</code>) when credentials are expired:</p>
+<pre><code class="language-json">{&quot;status&quot;: &quot;credentials expired&quot;}
+</code></pre>
+<h3 id="get-healthcheckslotprofile">GET /healthcheck/slot/&lt;profile&gt;</h3>
+<p>Returns whether the named credential slot has valid (non-expired) credentials loaded.</p>
+<p>Success reply (<code>200 OK</code>):</p>
+<pre><code class="language-json">{
+    &quot;status&quot;: &quot;ok&quot;,
+    &quot;profile&quot;: &quot;&lt;aws-sso profile name&gt;&quot;,
+    &quot;expires&quot;: &quot;&lt;date in RFC3339 / ISO8601 format&gt;&quot;
+}
+</code></pre>
+<p>Failure reply (<code>503 Service Unavailable</code>) when the slot is not found or credentials are expired:</p>
+<pre><code class="language-json">{&quot;status&quot;: &quot;slot not found&quot;}
+</code></pre>
+<pre><code class="language-json">{&quot;status&quot;: &quot;credentials expired&quot;}
 </code></pre>
 
 

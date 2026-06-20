@@ -1,5 +1,9 @@
 digraph g {
-    Start -> ADR_SET
+    Start -> Overwrite_Env
+
+    Overwrite_Env [label="Is --overwrite-region set?"]
+    Overwrite_Env -> Have_DR [label="Yes"]
+    Overwrite_Env -> ADR_SET [label="No"]
 
     ADR_SET [label="Is $AWS_DEFAULT_REGION defined?"]
     ADR_SET -> Have_ASDR [label="Yes"]
@@ -7,7 +11,7 @@ digraph g {
 
     Have_ASDR [label="Is $AWS_SSO_DEFAULT_REGION defined?"]
     Have_ASDR -> No_Change [label="No"]
-    Have_ASDR -> Var_Match [label="Yes"] 
+    Have_ASDR -> Var_Match [label="Yes"]
 
     Var_Match [label="Does $AWS_DEFAULT_REGION match $AWS_SSO_DEFAULT_REGION?"]
     Var_Match -> Delete_ADSR [label="No"]

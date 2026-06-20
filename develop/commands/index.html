@@ -1810,6 +1810,12 @@ by their AccountID to select from.  Pressing <code>&lt;space&gt;</code> again wi
 <p>You can then iterate in this manner to narrow the results via key/value pairs until you
 make a selection that narrows down the results to a single IAM Role and the interactive selection
 interface disappears.  At this point the <code>&lt;enter&gt;</code> key will execute the command.</p>
+<p>Alternatively, you can select <code>ProfileName</code> from the top-level list to navigate directly to a
+role by its <a href="../config/#profileformat">profile name</a> rather than filtering through tags.</p>
+<p><strong>Note:</strong> Profile names containing spaces are not supported in the interactive prompt. The prompt
+uses spaces as delimiters between key/value tokens, so a profile name with a space cannot be
+entered or selected. Ensure your <code>ProfileFormat</code> and any manually configured <code>Profile:</code> values do
+not contain spaces if you intend to use interactive mode.</p>
 <h2 id="commands">Commands</h2>
 <h3 id="cache">cache</h3>
 <p>AWS SSO CLI caches information about your AWS Accounts, Roles and Tags for
@@ -1900,6 +1906,8 @@ you can write the variable to a file:</p>
 <li><code>--profile &lt;profile&gt;</code>, <code>-p</code> -- Name of AWS Profile to assume</li>
 <li><code>--clear</code>, <code>-c</code> -- Generate "unset XXXX" commands to clear the environment</li>
 <li><code>--no-region</code> -- Do not set the <a href="../config/#defaultregion">AWS_DEFAULT_REGION</a> from config.yaml</li>
+<li><code>--overwrite-region</code>, <code>-O</code> -- Force overwriting existing <code>$AWS_DEFAULT_REGION</code>/<code>$AWS_REGION</code> even
+    if they are already set in the shell</li>
 <li><code>--refresh</code> -- Refresh current IAM credentials</li>
 </ul>
 <p>Priority is given to:</p>
@@ -1935,8 +1943,8 @@ commands.</p>
 <li><code>--role &lt;role&gt;</code>, <code>-R</code> -- Name of AWS Role to assume (<code>$AWS_SSO_ROLE_NAME</code>)</li>
 <li><code>--profile &lt;profile&gt;</code>, <code>-p</code> -- Name of AWS Profile to assume</li>
 <li><code>--no-region</code> -- Do not set the <a href="../config/#defaultregion">AWS_DEFAULT_REGION</a> from config.yaml</li>
+<li><code>--overwrite-env</code>, <code>-O</code> -- Force overwriting existing <code>AWS_*</code> environment variables</li>
 <li><code>--sts-refresh</code> -- Force refresh of STS Token Credentials</li>
-<li><code>--ignore-env</code>, <code>-i</code> -- Force execution even if AWS_* environment variables are set</li>
 </ul>
 <p>Arguments: <code>[&lt;command&gt;] [&lt;args&gt; ...]</code></p>
 <p>Priority is given to:</p>
@@ -1946,8 +1954,9 @@ commands.</p>
 <li><code>--account</code> (<code>$AWS_SSO_ACCOUNT_ID</code>) and <code>--role</code> (<code>$AWS_SSO_ROLE_NAME</code>)</li>
 <li>Prompt user interactively</li>
 </ul>
-<p>You can not run <code>exec</code> inside of another <code>exec</code> shell or when the <code>$AWS_*</code> environment
-variables are set unless you pass in <code>--ignore-env</code>.</p>
+<p>You can not run <code>exec</code> inside of another <code>exec</code> shell or anytime the <code>$AWS_PROFILE</code>,
+<code>$AWS_SECRET_ACCESS_KEY</code>, or <code>$AWS_ACCESS_KEY_ID</code> environment
+variables are set unless you pass in <code>--overwrite-env</code>.</p>
 <p>See <a href="#environment-variables">Environment Variables</a> for more information about
 what varibles are set.</p>
 <hr />

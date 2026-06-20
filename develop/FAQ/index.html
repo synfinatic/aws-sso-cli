@@ -2178,8 +2178,12 @@ roles and the two variables are set to the same region, then AWS SSO will
 update the region.   If the user ever overrides the <code>$AWS_DEFAULT_REGION</code>
 or <code>$AWS_REGION</code> value or deletes the <code>$AWS_SSO_DEFAULT_REGION</code> then AWS
 SSO will no longer manage the variable.</p>
+<p>You can bypass the "is <code>$AWS_DEFAULT_REGION</code> already defined?" check by passing <code>--overwrite-env</code>
+(<code>-O</code>) to the <code>eval</code> or <code>exec</code> command.  When set, the configured <code>DefaultRegion</code> is always
+written to <code>$AWS_DEFAULT_REGION</code>, <code>$AWS_REGION</code>, and <code>$AWS_SSO_DEFAULT_REGION</code>, regardless of
+whatever was previously in your shell.</p>
 <!-- https://github.com/synfinatic/aws-sso-cli/issues/166 -->
-<p><img alt="graph" src="https://user-images.githubusercontent.com/1075352/143502947-1465f68f-0ef5-4de7-a997-ea716facc637.png" /></p>
+<p><img alt="graph" src="https://github.com/user-attachments/assets/1c94d1eb-e148-4da4-9e54-97a591a316e0" /></p>
 <h3 id="example-of-multiple-aws-sso-instances">Example of multiple AWS SSO instances</h3>
 <p>This is an example of how to configure two different AWS SSO instances:</p>
 <pre><code class="language-yaml">SSOConfig:
@@ -2260,6 +2264,11 @@ to keep typing in your password contantly.  Of course, you can also set the
 <code>$AWS_SSO_FILE_PASSWORD</code> environment variable in your shell to avoid typing
 it in, but please make sure you are aware of the security implications of
 doing so.</p>
+<p>Another option is <code>1password</code> for people who wish to store the secrets there.
+Every access to the SecureStore will require biometrics when using
+<code>AuthType: desktop</code>.  <code>AuthType: service-account</code> requires no biometrics
+and allows multiple systems/users to share a single SecureStore. I strongly
+suggest you think carefully about the security ramifications of that.</p>
 <p>Lastly, there is the <code>json</code> storage backend which is <em>not</em> secure.  It literally
 is a plain, clear text JSON file stored on disk and is no better than the
 official AWS tooling.  It is included here only for debug and development
@@ -2268,9 +2277,13 @@ purposes only.</p>
 support?  If so, please <a href="https://github.com/synfinatic/aws-sso-cli/issues/new?assignees=&amp;labels=enhancement&amp;template=feature_request.md">open a feature request</a>
 and let me know!</p>
 <h3 id="does-aws-sso-support-using-aws-fips-endpoints">Does aws-sso support using AWS FIPS endpoints?</h3>
-<p>Yes!  Please set the following environment variable and <code>aws-sso</code> will automatically
-select the appropriate AWS FIPS endpoints when communicating with AWS:</p>
+<p>Yes!  Please set the following environment variable and <code>aws-sso</code> will force the use
+of the appropriate OIDC or STS AWS FIPS endpoint when communicating with AWS:</p>
 <p><code>AWS_USE_FIPS_ENDPOINT=true</code></p>
+<p>Please note that some AWS regions only support FIPS if you use the dual-stack endpoint
+which requires also setting:</p>
+<p><code>AWS_USE_DUALSTACK_ENDPOINT=true</code></p>
+<p>Please refer to the <a href="https://aws.amazon.com/compliance/fips/">AWS FIPS documentation</a> for more information.</p>
 <h3 id="are-macos-keychain-items-synced">Are macOS Keychain items synced?</h3>
 <p>No. If you are using the macOS keychain, none of the secrets stored by <code>aws-sso</code>
 are synced via iCloud to your other Apple devices.</p>
@@ -2282,7 +2295,8 @@ sake.</p>
 <p>Unfortunately, the <code>file</code> option requires you to enter your password pretty much
 every time you use <code>aws-sso</code>.  For that reason, I recommend using the <a href="https://www.passwordstore.org">pass</a> option which uses GPG and optionally the <code>gpg-agent</code>
 for caching of your GPG passphrase.  Please note that configuring pass, GPG
-and the gpg-agent are outside of the scope of this documentation.</p>
+and the gpg-agent are outside of the scope of this documentation. <code>1password</code>
+is another option for those who use it (<a href="#which-securestore-should-i-use">but see above</a>).</p>
 <h3 id="im-now-getting-a-warning-in-macos-after-upgrading-aws-sso-cli">I'm now getting a warning in macOS after upgrading aws-sso-cli?</h3>
 <p>As of v1.9.10, <code>aws-sso-cli</code> is now distributed as a bottle in homebrew and
 these binaries are not signed and will generate a warning that the binary
@@ -2345,7 +2359,7 @@ purposes:</p>
 which will generate a value like <code>02345678901:MyRoleName</code>.  For a complete
 list of available variable names, see <a href="../config/#profileformat">ProfileFormat</a>.</p>
 <p>In my experience you can change the <code>ProfileFormat</code> to pretty much any valid
-ASCII string that does not include whitespace or special characters that would
+ASCII string <em>that does not include whitespace or special characters</em> that would
 be evaluated by your shell (<code>$</code>, etc) or
 <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-using-profiles">the AWS configuration file</a>
 such as <code>[</code>, <code>]</code>.  (Note: if you can find official AWS documentation on this
