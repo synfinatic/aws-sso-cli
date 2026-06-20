@@ -1,4 +1,4 @@
-PROJECT_VERSION        := 2.3.0
+PROJECT_VERSION        := 2.3.1
 DOCKER_REPO            := synfinatic
 PROJECT_NAME           := aws-sso
 DOCKER_PROJECT_NAME    := aws-sso-cli-ecs-server
@@ -18,6 +18,8 @@ PROJECT_DELTA             := $(shell DELTA_LINES=$$(git diff | wc -l); if [ $${D
 
 BUILDINFOSDET ?=
 PROGRAM_ARGS ?=
+# Set to 1 to enable CGO (required for 1Password support on Linux; produces glibc-linked binary)
+CGO_ENABLED ?= 0
 ifeq ($(PROJECT_TAG),)
 PROJECT_TAG               := NO-TAG
 endif
@@ -240,13 +242,13 @@ $(WINDOWS32_BIN): .build_files
 linux: $(LINUX_BIN)  ## Build Linux/x86_64 binary
 
 $(LINUX_BIN): .build_files
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(LINUX_BIN) ./cmd/aws-sso/...
+	CGO_ENABLED=$(CGO_ENABLED) GOARCH=amd64 GOOS=linux go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(LINUX_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(LINUX_BIN)"
 
 linux-arm64: $(LINUXARM64_BIN)  ## Build Linux/arm64 binary
 
 $(LINUXARM64_BIN): .build_files
-	CGO_ENABLED=0 GOARCH=arm64 GOOS=linux go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(LINUXARM64_BIN) ./cmd/aws-sso/...
+	CGO_ENABLED=$(CGO_ENABLED) GOARCH=arm64 GOOS=linux go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(LINUXARM64_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(LINUXARM64_BIN)"
 
 # macOS needs different build flags if you are cross-compiling because of the key chain

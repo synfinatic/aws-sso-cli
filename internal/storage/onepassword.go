@@ -1,3 +1,5 @@
+//go:build cgo || windows
+
 package storage
 
 /*
@@ -26,14 +28,6 @@ import (
 	"strings"
 
 	onepassword "github.com/1password/onepassword-sdk-go"
-)
-
-const (
-	OP_ITEM_TITLE   = "aws-sso-cli"
-	OP_FIELD_ID     = "data"
-	OP_AUTH_SERVICE = "service-account"
-	OP_AUTH_DESKTOP = "desktop"
-	ENV_OP_TOKEN    = "AWS_SSO_OP_SERVICE_ACCOUNT_TOKEN" // #nosec
 )
 
 // onePasswordItemsAPI is a subset of onepassword.ItemsAPI for testability.
