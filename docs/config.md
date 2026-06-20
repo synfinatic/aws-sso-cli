@@ -68,9 +68,13 @@ LogLines: [true|false]
 HistoryLimit: <integer>
 HistoryMinutes: <integer>
 
-SecureStore: [file|keychain|kwallet|pass|secret-service|wincred|json]
+SecureStore: [file|keychain|kwallet|pass|secret-service|wincred|json|1password]
 JsonStore: <path to json file>
 SecretServiceCollection: <libsecret collection name>
+OnePassword:
+    Vault: <vault name>
+    AuthType: [desktop|service-account]
+    Account: <email address>
 
 ProfileFormat: "<template>"
 ConfigVariables:
@@ -501,6 +505,11 @@ functions, but a few custom functions are available:
 single-quote (`'`) the value because because `ProfileFormat` values often start
 with a `{`.
 
+**Note:** Profile names that contain spaces cannot be used in the interactive role selection
+prompt (`exec`/`console` without explicit flags). The interactive prompt is space-delimited, so
+a profile name with spaces will not be selectable interactively. This applies both to
+`ProfileFormat` templates that produce spaces and to manually configured `Profile:` values.
+
 For more information, [see the FAQ](FAQ.md#profiles-and-tags).
 
 #### ConfigVariables
@@ -683,6 +692,8 @@ advanced debugging.
     (default on Windows)
 * `json` - Cleartext JSON file (very insecure and not recommended).  Location
     can be overridden with `JsonStore`
+* `1password` - [1Password](https://1password.com) vault. See [OnePassword](#onepassword) for
+    configuration options.
 
 **Note:** The `file` option supports passing in the password via the `AWS_SSO_FILE_PASSWORD` environment variable.
 
@@ -692,6 +703,34 @@ advanced debugging.
 
 Overrides the libsecret collection name used by the `secret-service` backend.
 Defaults to `awsssocli`. Has no effect on other `SecureStore` backends.
+
+#### OnePassword
+
+Configuration for the `1password` `SecureStore` backend. All credentials are stored
+as a single Secure Note item in a 1Password vault.
+
+```yaml
+SecureStore: 1password
+OnePassword:
+    Vault: my-vault          # required: name of an existing 1Password vault
+    AuthType: desktop        # optional: "desktop" (default) or "service-account"
+    Account: user@example.com  # required for desktop auth: your 1Password account ID
+```
+
+**Note:** `AuthType: desktop` uses the 1Password desktop app for authentication. Requires the
+app to be installed with **Settings → Developer → Integrate with other apps** enabled.
+`Account` must be set to your 1Password account email address.
+
+**Note:** `AuthType: service-account` uses a headless service account token — no biometrics or
+desktop app required. Create a service account at 1password.com/developer-tools and export
+the token as `AWS_SSO_OP_SERVICE_ACCOUNT_TOKEN`. `Account` is not used.
+
+See the [1Password authentication guide](https://www.1password.dev/sdks#step-1-decide-how-you-want-to-authenticate)
+to help choose the right `AuthType` for your use case.
+
+I strongly recommend creating a dedicated vault for aws-sso to prevent accidentally sharing
+your AWS Identity Center/IAM secrets with others.  If using the `service-account` option,
+be sure to grant the token, read and write permissions.
 
 #### EnvVarTags
 

@@ -36,6 +36,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 
 	// "github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/awsendpoint"
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/aws-sso-cli/internal/uri"
@@ -120,10 +121,14 @@ func stsSession(ctx *RunContext) (*sts.Client, error) {
 		return &sts.Client{}, err
 	}
 
+	fipsEndpoint := awsendpoint.FipsEndpointState()
+	dualStackEndpoint := awsendpoint.DualStackEndpointState()
 	ssoRegion := sso.SSORegion
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion(ssoRegion),
 		config.WithCredentialsProvider(cfgCreds),
+		config.WithUseFIPSEndpoint(fipsEndpoint),
+		config.WithUseDualStackEndpoint(dualStackEndpoint),
 	)
 	if err != nil {
 		return &sts.Client{}, err
@@ -152,7 +157,7 @@ func consoleViaEnvVars(ctx *RunContext) error {
 	}
 
 	// now we know who we are, get our configured default region
-	region := ctx.Settings.GetDefaultRegion(accountid, role, false)
+	region := ctx.Settings.GetDefaultRegion(accountid, role, false, false)
 	if ctx.Cli.Console.Region != "" {
 		region = ctx.Cli.Console.Region
 	}
@@ -229,7 +234,7 @@ func haveAWSEnvVars(ctx *RunContext) bool {
 
 // opens the AWS console or just prints the URL
 func openConsole(ctx *RunContext, accountid int64, role string) error {
-	region := ctx.Settings.GetDefaultRegion(accountid, role, false)
+	region := ctx.Settings.GetDefaultRegion(accountid, role, false, false)
 	if ctx.Cli.Console.Region != "" {
 		region = ctx.Cli.Console.Region
 	}

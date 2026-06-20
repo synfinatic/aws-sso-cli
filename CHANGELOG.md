@@ -3,6 +3,17 @@
 
 ## [Unreleased]
 
+### New Features
+
+* Add 1Password SecureStorage backend (`SecureStore: 1password`) with service account and desktop
+  app authentication support #1369
+* Add aws-sso [exec|eval] --overwrite-env flag to allow overriding AWS_ env variables #1095
+* Add support for /healthcheck endpoint for ECS server #1356
+* Add `--default <profile>` flag to `ecs server` and `ecs docker start` to automatically load
+  a named profile as the default credential slot on startup
+* Interactive mode now supports selecting by Profile name
+* Add support for AWS Dual Stack API endpoints via `AWS_USE_DUALSTACK_ENDPOINT`
+
 ### Bugs
 
 * Preserve final line of config files lacking a trailing newline #1419
@@ -20,13 +31,14 @@
   endpoint and the federation sign-in URL from the region's partition
   (`amazonaws.eu` / `amazonaws-eusc.eu`) instead of hardcoding `amazonaws.com`
 * Fix zombie processes holding storage.lock after SIGINT #1379
+* Fix FIPS endpoint support #1395
+* Security: Update to Go 1.26.4
 
 ### Changes
 
-* Add unit tests for cmd/aws-sso
 * Add lock support for JSON SecureStore
+* Add unit tests for cmd/aws-sso/*
 * Add e2e integration tests for CLI commands
-* Security: Update to Go 1.26.4
 
 ## [v2.2.4] - 2026-05-21
 
@@ -106,10 +118,6 @@
 ### Bugs
 
 * Fix regression for `aws-sso login` no longer honoring `AuthUrlAction` #1230
-
-### Changes
-
-* `aws-sso exec` now supports `--ignore-env` for nested executions #1095
 
 ## [v2.0.2] - 2025-05-28
 

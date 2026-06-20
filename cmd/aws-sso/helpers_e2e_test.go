@@ -1,4 +1,4 @@
-//go:build integration
+//go:build e2etests
 
 package main
 
@@ -26,6 +26,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,7 +34,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
 	"github.com/stretchr/testify/require"
-	"github.com/synfinatic/aws-sso-cli/integration_test/awsmock"
+	"github.com/synfinatic/aws-sso-cli/internal/awsmock"
 	sso "github.com/synfinatic/aws-sso-cli/internal/sso"
 	ssoauth "github.com/synfinatic/aws-sso-cli/internal/sso/auth"
 	ssoconfig "github.com/synfinatic/aws-sso-cli/internal/sso/config"
@@ -53,12 +54,20 @@ type e2eSetup struct {
 
 // writeTestConfig writes a minimal aws-sso config YAML to tempDir/config.yaml
 // and returns the path.  authWorkflow must be "device_code" or "pkce".
+// accountsYAML, when non-empty, is injected as an Accounts: block under the
+// default SSO entry (indented 4 spaces relative to the SSO key).
 func writeTestConfig(t *testing.T, tempDir, serverURL, defaultSSO string,
-	extraSSOs map[string]string, authWorkflow string) string {
+	extraSSOs map[string]string, authWorkflow string, accountsYAML string) string {
 	t.Helper()
 
 	ssoBlock := fmt.Sprintf("  %s:\n    SSORegion: us-east-1\n    StartUrl: %s\n",
 		defaultSSO, serverURL)
+	if accountsYAML != "" {
+		ssoBlock += "    Accounts:\n"
+		for _, line := range splitLines(accountsYAML) {
+			ssoBlock += "      " + line + "\n"
+		}
+	}
 	for name, url := range extraSSOs {
 		ssoBlock += fmt.Sprintf("  %s:\n    SSORegion: us-west-2\n    StartUrl: %s\n",
 			name, url)
@@ -84,11 +93,32 @@ ProfileFormat: "{{.AccountIdPad}}:{{.RoleName}}"
 	return configPath
 }
 
+// splitLines splits s on newlines, trimming a trailing empty element.
+func splitLines(s string) []string {
+	lines := strings.Split(s, "\n")
+	if len(lines) > 0 && lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
+	}
+	return lines
+}
+
 // newE2ESetup creates a full test environment with a single Default SSO instance
 // using the device_code authentication workflow.
 func newE2ESetup(t *testing.T) *e2eSetup {
 	t.Helper()
-	return newE2ESetupWithDefaults(t, "Default", nil, "device_code")
+	return newE2ESetupWithDefaults(t, "Default", nil, "device_code", "")
+}
+
+// newE2ESetupRoleChain creates a test environment where TargetRole is configured
+// to chain through BaseRole via STS AssumeRole (the Via: field in the config).
+func newE2ESetupRoleChain(t *testing.T) *e2eSetup {
+	t.Helper()
+	accountsYAML := `"123456789012":
+  Roles:
+    BaseRole: {}
+    TargetRole:
+      Via: arn:aws:iam::123456789012:role/BaseRole`
+	return newE2ESetupWithDefaults(t, "Default", nil, "device_code", accountsYAML)
 }
 
 // newE2ESetupMultiSSO creates a test environment with Default and Secondary SSO
@@ -100,17 +130,19 @@ func newE2ESetupMultiSSO(t *testing.T, defaultSSO string) *e2eSetup {
 	if defaultSSO == "Secondary" {
 		otherSSO = "Default"
 	}
-	return newE2ESetupWithDefaults(t, defaultSSO, map[string]string{otherSSO: ""}, "device_code")
+	return newE2ESetupWithDefaults(t, defaultSSO, map[string]string{otherSSO: ""}, "device_code", "")
 }
 
 // newE2ESetupWithDefaults is the shared constructor.  extraSSOs is a map of
 // SSO name → StartUrl; an empty string means "use the mock server URL".
-// authWorkflow must be "device_code" or "pkce".
+// authWorkflow must be "device_code" or "pkce".  accountsYAML, when non-empty,
+// is injected as an Accounts: block under the default SSO entry.
 func newE2ESetupWithDefaults(
 	t *testing.T,
 	defaultSSO string,
 	extraSSOs map[string]string,
 	authWorkflow string,
+	accountsYAML string,
 ) *e2eSetup {
 	t.Helper()
 
@@ -127,7 +159,7 @@ func newE2ESetupWithDefaults(
 		resolved[k] = v
 	}
 
-	configPath := writeTestConfig(t, tempDir, server.URL(), defaultSSO, resolved, authWorkflow)
+	configPath := writeTestConfig(t, tempDir, server.URL(), defaultSSO, resolved, authWorkflow, accountsYAML)
 	cachePath := filepath.Join(tempDir, "cache.json")
 
 	settings, err := sso.LoadSettings(configPath, cachePath, DEFAULT_CONFIG, sso.OverrideSettings{})
@@ -163,7 +195,7 @@ func newE2ESetupPKCE(t *testing.T) *e2eSetup {
 	t.Helper()
 
 	// Use "pkce" so LoadSettings propagates AuthWorkflowPKCE to the SSO config.
-	setup := newE2ESetupWithDefaults(t, "Default", nil, "pkce")
+	setup := newE2ESetupWithDefaults(t, "Default", nil, "pkce", "")
 
 	// Build a custom OIDC client that auto-delivers the PKCE callback.
 	r := retry.NewStandard(func(o *retry.StandardOptions) {
@@ -238,6 +270,70 @@ func populateCache(t *testing.T, setup *e2eSetup) {
 	)
 	require.NoError(t, err)
 	require.NoError(t, setup.Settings.Cache.Save(false))
+}
+
+// writeTestConfigWithRegion is like writeTestConfig but adds a top-level DefaultRegion
+// so that GetDefaultRegion has a configured region to return.
+func writeTestConfigWithRegion(t *testing.T, tempDir, serverURL, defaultSSO, region string) string {
+	t.Helper()
+	content := fmt.Sprintf(`SSOConfig:
+  %s:
+    SSORegion: us-east-1
+    StartUrl: %s
+SecureStore: json
+JsonStore: %s
+DefaultSSO: %s
+DefaultRegion: %s
+UrlAction: print
+AuthWorkflow: device_code
+ProfileFormat: "{{.AccountIdPad}}:{{.RoleName}}"
+`,
+		defaultSSO,
+		serverURL,
+		filepath.Join(tempDir, "store.json"),
+		defaultSSO,
+		region,
+	)
+	configPath := filepath.Join(tempDir, "config.yaml")
+	require.NoError(t, os.WriteFile(configPath, []byte(content), 0600))
+	return configPath
+}
+
+// newE2ESetupWithRegion creates a full test environment with DefaultRegion set in
+// the config so that eval/exec region tests have a non-empty configured region.
+func newE2ESetupWithRegion(t *testing.T, region string) *e2eSetup {
+	t.Helper()
+
+	tempDir := t.TempDir()
+	server := awsmock.NewMockAWSServer()
+	t.Cleanup(server.Close)
+
+	configPath := writeTestConfigWithRegion(t, tempDir, server.URL(), "Default", region)
+	cachePath := filepath.Join(tempDir, "cache.json")
+
+	settings, err := sso.LoadSettings(configPath, cachePath, DEFAULT_CONFIG, sso.OverrideSettings{})
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	store, err := storage.OpenJsonStore(ctx, filepath.Join(tempDir, "store.json"))
+	require.NoError(t, err)
+
+	ssoConf, err := settings.GetSelectedSSO("Default")
+	require.NoError(t, err)
+	ssoName, err := settings.GetSelectedSSOName("Default")
+	require.NoError(t, err)
+
+	AwsSSO = ssoauth.NewAWSSSOForTest(ssoConf, store, server.URL())
+	t.Cleanup(func() { AwsSSO = nil })
+
+	return &e2eSetup{
+		Server:   server,
+		Settings: settings,
+		Store:    store,
+		SSOConf:  ssoConf,
+		SSOName:  ssoName,
+		TempDir:  tempDir,
+	}
 }
 
 // queueRoleCredentials enqueues a single GetRoleCredentials mock response with

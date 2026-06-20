@@ -50,8 +50,9 @@ type Settings struct {
 	SSO                       map[string]*ssoconfig.SSOConfig `koanf:"SSOConfig" yaml:"SSOConfig,omitempty"`
 	AutoLogin                 bool                            `koanf:"AutoLogin" yaml:"AutoLogin,omitempty"`
 	DefaultSSO                string                          `koanf:"DefaultSSO" yaml:"DefaultSSO,omitempty"`                           // specify default SSO by key
-	SecureStore               string                          `koanf:"SecureStore" yaml:"SecureStore,omitempty"`                         // json or keyring
+	SecureStore               string                          `koanf:"SecureStore" yaml:"SecureStore,omitempty"`                         // file, keychain, kwallet, pass, secret-service, wincred, json, or 1password
 	SecretServiceCollection   string                          `koanf:"SecretServiceCollection" yaml:"SecretServiceCollection,omitempty"` // libsecret collection name; defaults to KEYRING_NAME
+	OnePassword               OnePasswordConfig               `koanf:"OnePassword" yaml:"OnePassword,omitempty"`
 	DefaultRegion             string                          `koanf:"DefaultRegion" yaml:"DefaultRegion,omitempty"`
 	AuthWorkflow              oidc.AuthWorkflow               `koanf:"AuthWorkflow" yaml:"AuthWorkflow,omitempty"`
 	ConsoleDuration           int32                           `koanf:"ConsoleDuration" yaml:"ConsoleDuration,omitempty"`
@@ -83,8 +84,9 @@ type Settings struct {
 }
 
 // GetDefaultRegion scans the config settings file to pick the most local DefaultRegion from the tree
-// for the given role
-func (s *Settings) GetDefaultRegion(id int64, roleName string, noRegion bool) string {
+// for the given role. When overwriteEnv is true, existing AWS_DEFAULT_REGION/AWS_REGION values are
+// ignored and the configured region is always returned.
+func (s *Settings) GetDefaultRegion(id int64, roleName string, noRegion bool, overwriteEnv bool) string {
 	if noRegion {
 		return ""
 	}
@@ -94,15 +96,17 @@ func (s *Settings) GetDefaultRegion(id int64, roleName string, noRegion bool) st
 		log.Fatal("Unable to GetDefaultRegion()", "error", err.Error())
 	}
 
-	currentRegion := os.Getenv("AWS_DEFAULT_REGION")
-	if len(currentRegion) == 0 {
-		currentRegion = os.Getenv("AWS_REGION")
-	}
-	ssoManagedRegion := os.Getenv("AWS_SSO_DEFAULT_REGION")
+	if !overwriteEnv {
+		currentRegion := os.Getenv("AWS_DEFAULT_REGION")
+		if len(currentRegion) == 0 {
+			currentRegion = os.Getenv("AWS_REGION")
+		}
+		ssoManagedRegion := os.Getenv("AWS_SSO_DEFAULT_REGION")
 
-	if len(currentRegion) > 0 && currentRegion != ssoManagedRegion {
-		log.Debug("Will not override current AWS_DEFAULT_REGION/AWS_REGION", "region", currentRegion)
-		return ""
+		if len(currentRegion) > 0 && currentRegion != ssoManagedRegion {
+			log.Debug("Will not override current AWS_DEFAULT_REGION/AWS_REGION", "region", currentRegion)
+			return ""
+		}
 	}
 
 	role := s.DefaultRegion
@@ -123,6 +127,13 @@ func (s *Settings) GetDefaultRegion(id int64, roleName string, noRegion bool) st
 		}
 	}
 	return role
+}
+
+// OnePasswordConfig holds settings for the 1Password SecureStorage backend.
+type OnePasswordConfig struct {
+	Vault    string `koanf:"Vault" yaml:"Vault,omitempty"`
+	AuthType string `koanf:"AuthType" yaml:"AuthType,omitempty"`
+	Account  string `koanf:"Account" yaml:"Account,omitempty"`
 }
 
 var DEFAULT_ACCOUNT_PRIMARY_TAGS []string = []string{

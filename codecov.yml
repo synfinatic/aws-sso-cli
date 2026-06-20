@@ -9,6 +9,15 @@ coverage:
         threshold: 0.25%
 
 ignore:
-  - "cmd/**/*"
-  - "cmd"
-  - "internal/sso/auth/awssso_testing.go"
+  # these files are not appropriate for code coverage reporting
+  - "cmd/aws-ssl-test/*"
+  - "internal/sso/auth/e2e_awssso.go"
+  - "internal/awsmock/*"
+  # these files are very difficult to have good coverage so ignore for now
+  - "cmd/aws-sso/completions_cmd.go"
+  - "cmd/aws-sso/console_cmd.go"
+  - "cmd/aws-sso/ecs_client_cmd.go"
+  - "cmd/aws-sso/ecs_docker_cmd.go"
+  - "cmd/aws-sso/setup_wizard.go"
+  - "cmd/aws-sso/setup_wizard_cmd.go"
+  - "cmd/aws-sso/interactive.go"

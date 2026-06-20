@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 	"github.com/synfinatic/aws-sso-cli/internal/sso"
@@ -31,12 +32,13 @@ import (
 
 type ExecCmd struct {
 	// AWS Params
-	Arn        string    `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
-	AccountId  AccountID `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNT_ID',predictor='accountId'"`
-	Role       string    `kong:"short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE_NAME',predictor='role'"`
-	Profile    string    `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile'"`
-	NoRegion   bool      `kong:"short='n',help='Do not set AWS_DEFAULT_REGION/AWS_REGION from config.yaml'"`
-	STSRefresh bool      `kong:"help='Force refresh of STS Token Credentials'"`
+	Arn          string    `kong:"short='a',help='ARN of role to assume',env='AWS_SSO_ROLE_ARN',predictor='arn'"`
+	AccountId    AccountID `kong:"name='account',short='A',help='AWS AccountID of role to assume',env='AWS_SSO_ACCOUNT_ID',predictor='accountId'"`
+	Role         string    `kong:"short='R',help='Name of AWS Role to assume',env='AWS_SSO_ROLE_NAME',predictor='role'"`
+	Profile      string    `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile'"`
+	NoRegion     bool      `kong:"short='n',help='Do not set AWS_DEFAULT_REGION/AWS_REGION from config.yaml'"`
+	STSRefresh   bool      `kong:"help='Force refresh of STS Token Credentials'"`
+	OverwriteEnv bool      `kong:"short='O',help='Force overwriting existing AWS_* environment variables'"`
 
 	// Exec Params
 	Cmd  string   `kong:"arg,optional,name='command',help='Command to execute',env='SHELL'"`
@@ -50,9 +52,11 @@ func (e ExecCmd) AfterApply(runCtx *RunContext) error {
 }
 
 func (cc *ExecCmd) Run(ctx *RunContext) error {
-	err := checkAwsEnvironment()
-	if err != nil {
-		log.Fatal("Unable to continue", "error", err.Error())
+	if !ctx.Cli.Exec.OverwriteEnv {
+		err := checkAwsEnvironment()
+		if err != nil {
+			log.Fatal("Unable to continue", "error", err.Error())
+		}
 	}
 
 	if ctx.Cli.Exec.Cmd == "" {
@@ -79,7 +83,7 @@ func (cc *ExecCmd) Run(ctx *RunContext) error {
 
 // Executes Cmd+Args in the context of the AWS Role creds
 func execCmd(ctx *RunContext, accountid int64, role string) error {
-	region := ctx.Settings.GetDefaultRegion(accountid, role, ctx.Cli.Exec.NoRegion)
+	region := ctx.Settings.GetDefaultRegion(accountid, role, ctx.Cli.Exec.NoRegion, ctx.Cli.Exec.OverwriteEnv)
 
 	ctx.Settings.Cache.AddHistory(ctx.Settings, awsparse.MakeRoleARN(accountid, role))
 	if err := ctx.Settings.Cache.Save(false); err != nil {
@@ -91,7 +95,19 @@ func execCmd(ctx *RunContext, accountid int64, role string) error {
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	cmd.Stdin = os.Stdin
-	cmd.Env = os.Environ() // copy our current environment to the executor
+
+	// Filter out the old AWS_ environment variables if IgnoreEnv is set,
+	// otherwise copy our current environment to the executor
+	if ctx.Cli.Exec.OverwriteEnv {
+		envVars := os.Environ()
+		for _, envVar := range envVars {
+			if !strings.HasPrefix(envVar, "AWS_") {
+				cmd.Env = append(cmd.Env, envVar)
+			}
+		}
+	} else {
+		cmd.Env = os.Environ() // copy our current environment to the executor
+	}
 
 	// add the variables we need for AWS to the executor without polluting our
 	// own process

@@ -109,8 +109,13 @@ update the region.   If the user ever overrides the `$AWS_DEFAULT_REGION`
 or `$AWS_REGION` value or deletes the `$AWS_SSO_DEFAULT_REGION` then AWS
 SSO will no longer manage the variable.
 
+You can bypass the "is `$AWS_DEFAULT_REGION` already defined?" check by passing `--overwrite-env`
+(`-O`) to the `eval` or `exec` command.  When set, the configured `DefaultRegion` is always
+written to `$AWS_DEFAULT_REGION`, `$AWS_REGION`, and `$AWS_SSO_DEFAULT_REGION`, regardless of
+whatever was previously in your shell.
+
 <!-- https://github.com/synfinatic/aws-sso-cli/issues/166 -->
-![graph](https://user-images.githubusercontent.com/1075352/143502947-1465f68f-0ef5-4de7-a997-ea716facc637.png)
+![graph](https://github.com/user-attachments/assets/1c94d1eb-e148-4da4-9e54-97a591a316e0)
 
 ### Example of multiple AWS SSO instances
 
@@ -223,6 +228,12 @@ to keep typing in your password contantly.  Of course, you can also set the
 it in, but please make sure you are aware of the security implications of
 doing so.
 
+Another option is `1password` for people who wish to store the secrets there.
+Every access to the SecureStore will require biometrics when using
+`AuthType: desktop`.  `AuthType: service-account` requires no biometrics
+and allows multiple systems/users to share a single SecureStore. I strongly
+suggest you think carefully about the security ramifications of that.
+
 Lastly, there is the `json` storage backend which is _not_ secure.  It literally
 is a plain, clear text JSON file stored on disk and is no better than the
 official AWS tooling.  It is included here only for debug and development
@@ -235,10 +246,17 @@ and let me know!
 
 ### Does aws-sso support using AWS FIPS endpoints?
 
-Yes!  Please set the following environment variable and `aws-sso` will automatically
-select the appropriate AWS FIPS endpoints when communicating with AWS:
+Yes!  Please set the following environment variable and `aws-sso` will force the use
+of the appropriate OIDC or STS AWS FIPS endpoint when communicating with AWS:
 
 `AWS_USE_FIPS_ENDPOINT=true`
+
+Please note that some AWS regions only support FIPS if you use the dual-stack endpoint
+which requires also setting:
+
+`AWS_USE_DUALSTACK_ENDPOINT=true`
+
+Please refer to the [AWS FIPS documentation](https://aws.amazon.com/compliance/fips/) for more information.
 
 ### Are macOS Keychain items synced?
 
@@ -256,7 +274,8 @@ Unfortunately, the `file` option requires you to enter your password pretty much
 every time you use `aws-sso`.  For that reason, I recommend using the [pass](
 https://www.passwordstore.org) option which uses GPG and optionally the `gpg-agent`
 for caching of your GPG passphrase.  Please note that configuring pass, GPG
-and the gpg-agent are outside of the scope of this documentation.
+and the gpg-agent are outside of the scope of this documentation. `1password`
+is another option for those who use it ([but see above](#which-securestore-should-i-use)).
 
 ### I'm now getting a warning in macOS after upgrading aws-sso-cli?
 
@@ -338,7 +357,7 @@ which will generate a value like `02345678901:MyRoleName`.  For a complete
 list of available variable names, see [ProfileFormat](config.md#profileformat).
 
 In my experience you can change the `ProfileFormat` to pretty much any valid
-ASCII string that does not include whitespace or special characters that would
+ASCII string _that does not include whitespace or special characters_ that would
 be evaluated by your shell (`$`, etc) or
 [the AWS configuration file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-using-profiles)
 such as `[`, `]`.  (Note: if you can find official AWS documentation on this

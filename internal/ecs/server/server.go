@@ -68,24 +68,33 @@ func NewEcsServer(ctx context.Context, authToken string, listen net.Listener, pr
 		certChain:    certChain,
 	}
 
-	router := http.NewServeMux()
-	router.Handle(ecs.SLOT_ROUTE, SlottedHandler{
+	// inner router: all auth-protected credential routes
+	innerRouter := http.NewServeMux()
+	innerRouter.Handle(ecs.SLOT_ROUTE, SlottedHandler{
 		ecs: e,
 	})
-	router.Handle(fmt.Sprintf("%s/", ecs.SLOT_ROUTE), SlottedHandler{
+	innerRouter.Handle(fmt.Sprintf("%s/", ecs.SLOT_ROUTE), SlottedHandler{
 		ecs: e,
 	})
-	router.Handle(ecs.PROFILE_ROUTE, ProfileHandler{
+	innerRouter.Handle(ecs.PROFILE_ROUTE, ProfileHandler{
 		ecs: e,
 	})
-	router.Handle(ecs.DEFAULT_ROUTE, DefaultHandler{
+	innerRouter.Handle(ecs.DEFAULT_ROUTE, DefaultHandler{
 		ecs: e,
 	})
 	authTokenHeader := ""
 	if e.authToken != "" {
 		authTokenHeader = "Bearer " + e.authToken
 	}
-	e.server.Handler = withLogging(WithAuthorizationCheck(authTokenHeader, router.ServeHTTP))
+
+	healthHandler := HealthCheckHandler{ecs: e}
+
+	// outer router: healthcheck bypasses auth; all other routes require auth
+	outerRouter := http.NewServeMux()
+	outerRouter.Handle(ecs.HEALTHCHECK_ROUTE, healthHandler)
+	outerRouter.Handle(fmt.Sprintf("%s/", ecs.HEALTHCHECK_ROUTE), healthHandler)
+	outerRouter.Handle(ecs.DEFAULT_ROUTE, WithAuthorizationCheck(authTokenHeader, innerRouter.ServeHTTP))
+	e.server.Handler = withLogging(outerRouter)
 
 	return e, nil
 }

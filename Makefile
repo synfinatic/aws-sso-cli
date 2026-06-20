@@ -1,4 +1,4 @@
-PROJECT_VERSION        := 2.2.5
+PROJECT_VERSION        := 2.3.0
 DOCKER_REPO            := synfinatic
 PROJECT_NAME           := aws-sso
 DOCKER_PROJECT_NAME    := aws-sso-cli-ecs-server
@@ -58,7 +58,10 @@ ALL: $(DIST_DIR)$(PROJECT_NAME) ## Build binary for this platform
 
 include help.mk  # place after ALL target and before all other targets
 
-$(DIST_DIR)$(PROJECT_NAME):	$(wildcard */*.go) .prepare
+.PHONY: .build_files
+.build_files: $(wildcard */*.go */*/*.go */*/*/*.go) go.mod go.sum .prepare
+
+$(DIST_DIR)$(PROJECT_NAME): .build_files
 	go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(DIST_DIR)$(PROJECT_NAME) ./cmd/aws-sso/...
 	@echo "Created: $(DIST_DIR)$(PROJECT_NAME)"
 
@@ -144,11 +147,16 @@ debug: .prepare ## Run debug in dlv
 
 .PHONY: unittest
 unittest: ## Run go unit tests
-	go test -ldflags='$(LDFLAGS)' -covermode=atomic -coverprofile=coverage.out  ./...
+	go test -ldflags='$(LDFLAGS)' ./...
 
-.PHONY: integration
-integration: ## Run integration tests against mock AWS HTTP servers
-	go test -tags integration -ldflags='$(LDFLAGS)' ./integration_test/... ./cmd/aws-sso/...
+.PHONY: e2e
+e2e: ## Run end-to-end tests against mock AWS HTTP servers
+	go test -tags e2etests -ldflags='$(LDFLAGS)' ./cmd/aws-sso/...
+
+coverage: coverage.out
+coverage.out: .build_files
+	go test -tags e2etests -ldflags='$(LDFLAGS)' -covermode=atomic -coverprofile=coverage.out ./...
+	@echo "total coverage (all files): $$(go tool cover -func=coverage.out | grep ^total | sed -Ee 's/.*[^0-9]([0-9]+\.[0-9]%$$)/\1/')"
 
 .PHONY: test-race
 test-race: ## Run `go test -race` on the code
@@ -160,7 +168,7 @@ vet: ## Run `go vet` on the code
 	@echo checking code is vetted...
 	@for x in $(shell go list ./...); do echo $$x ; go vet $$x || exit $$?; done
 
-test: vet unittest lint test-homebrew ## Run important tests
+test: vet unittest lint test-homebrew test-tidy test-fmt ## Run important tests
 
 precheck: test test-fmt test-tidy ## Run all tests that happen in a PR
 
@@ -168,7 +176,7 @@ govulncheck:  ## Run govulncheck
 	@govulncheck ./...
 
 # run everything but `lint`and govulncheck because they run seperately
-.build-tests: vet unittest test-tidy test-fmt test-homebrew integration
+.build-tests: vet coverage test-tidy test-fmt test-homebrew
 
 $(DIST_DIR):
 	@if test ! -d $(DIST_DIR); then mkdir -p $(DIST_DIR) ; fi
@@ -219,25 +227,25 @@ test-homebrew: $(DIST_DIR)$(PROJECT_NAME)  ## Run the homebrew tests
 # Build targets for our supported plaforms
 windows: $(WINDOWS_BIN)  ## Build 64bit x86 Windows binary
 
-$(WINDOWS_BIN): $(wildcard */*.go) .prepare
+$(WINDOWS_BIN): .build_files
 	GOARCH=amd64 GOOS=windows go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(WINDOWS_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(WINDOWS_BIN)"
 
 windows32: $(WINDOWS32_BIN)  ## Build 32bit x86 Windows binary
 
-$(WINDOWS32_BIN): $(wildcard */*.go) .prepare
+$(WINDOWS32_BIN): .build_files
 	GOARCH=386 GOOS=windows go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(WINDOWS32_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(WINDOWS32_BIN)"
 
 linux: $(LINUX_BIN)  ## Build Linux/x86_64 binary
 
-$(LINUX_BIN): $(wildcard */*.go) .prepare
+$(LINUX_BIN): .build_files
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(LINUX_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(LINUX_BIN)"
 
 linux-arm64: $(LINUXARM64_BIN)  ## Build Linux/arm64 binary
 
-$(LINUXARM64_BIN): $(wildcard */*.go) .prepare
+$(LINUXARM64_BIN): .build_files
 	CGO_ENABLED=0 GOARCH=arm64 GOOS=linux go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(LINUXARM64_BIN) ./cmd/aws-sso/...
 	@echo "Created: $(LINUXARM64_BIN)"
 
@@ -246,7 +254,7 @@ $(LINUXARM64_BIN): $(wildcard */*.go) .prepare
 
 darwin: $(DARWIN_BIN)  ## Build MacOS/x86_64 binary
 
-$(DARWIN_BIN): $(wildcard */*.go) .prepare
+$(DARWIN_BIN): .build_files
 ifeq ($(ARCH), x86_64)
 	CGO_ENABLED=1 GOARCH=amd64 GOOS=darwin go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(DARWIN_BIN) ./cmd/aws-sso/...
 else
@@ -257,7 +265,7 @@ endif
 
 darwin-arm64: $(DARWINARM64_BIN)  ## Build MacOS/ARM64 binary
 
-$(DARWINARM64_BIN): $(wildcard */*.go) .prepare
+$(DARWINARM64_BIN): .build_files
 ifeq ($(ARCH), arm64)
 	CGO_ENABLED=1 GOARCH=arm64 GOOS=darwin go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(DARWINARM64_BIN) ./cmd/aws-sso/...
 else
@@ -266,12 +274,12 @@ else
 endif
 	@echo "Created: $(DARWINARM64_BIN)"
 
-$(OUTPUT_NAME): $(wildcard */*.go) .prepare
+$(OUTPUT_NAME): .build_files
 	go build $(GOBFLAGS) -ldflags='$(LDFLAGS)' -o $(OUTPUT_NAME) ./cmd/aws-sso/...
 
 docs: docs/default-region.png  ## Build document files
 
-docs/default-region.png:
+docs/default-region.png: docs/default-region.dot
 	dot -o docs/default-region.png -Tpng docs/default-region.dot
 
 .PHONY: loc
@@ -293,5 +301,5 @@ serve-docs:  ## Run mkdocs server on localhost:8000
 		synfinatic/mkdocs-material:latest
 
 docker:  ## Build docker image
-	docker build -t $(DOCKER_REPO)/$(DOCKER_PROJECT_NAME):$(PROJECT_VERSION) \
+	docker build -t $(DOCKER_REPO)/$(DOCKER_PROJECT_NAME):v$(PROJECT_VERSION) \
 		-t $(DOCKER_REPO)/$(DOCKER_PROJECT_NAME):latest .

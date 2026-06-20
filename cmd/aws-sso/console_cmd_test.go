@@ -7,6 +7,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	sso "github.com/synfinatic/aws-sso-cli/internal/sso"
+	ssoconfig "github.com/synfinatic/aws-sso-cli/internal/sso/config"
 )
 
 func TestHaveAWSEnvVars(t *testing.T) {
@@ -118,6 +121,55 @@ func TestSessionUrlParamsEncode(t *testing.T) {
 	assert.Equal(t, "AKIATEST123", result["sessionId"])
 	assert.Equal(t, "MySecretKey", result["sessionKey"])
 	assert.Equal(t, "MySessionToken", result["sessionToken"])
+}
+
+// TestStsSession verifies that stsSession builds a valid STS client in both
+// non-FIPS and FIPS configurations. The client is constructed from a static
+// credentials provider, so no network call is made.
+func TestStsSession(t *testing.T) {
+	ctx := &RunContext{
+		Cli: &CLI{
+			Console: ConsoleCmd{
+				AccessKeyId:     "AKIATEST",
+				SecretAccessKey: "secretkey",
+				SessionToken:    "sessiontoken",
+			},
+		},
+		Settings: &sso.Settings{
+			SSO: map[string]*ssoconfig.SSOConfig{
+				"Default": {SSORegion: "us-east-1"},
+			},
+			DefaultSSO: "Default",
+		},
+	}
+
+	t.Run("without FIPS: returns client", func(t *testing.T) {
+		client, err := stsSession(ctx)
+		require.NoError(t, err)
+		assert.NotNil(t, client)
+	})
+
+	t.Run("with FIPS: returns client", func(t *testing.T) {
+		t.Setenv("AWS_USE_FIPS_ENDPOINT", "true")
+		client, err := stsSession(ctx)
+		require.NoError(t, err)
+		assert.NotNil(t, client)
+	})
+
+	t.Run("with dual-stack: returns client", func(t *testing.T) {
+		t.Setenv("AWS_USE_DUALSTACK_ENDPOINT", "true")
+		client, err := stsSession(ctx)
+		require.NoError(t, err)
+		assert.NotNil(t, client)
+	})
+
+	t.Run("with FIPS and dual-stack: returns client", func(t *testing.T) {
+		t.Setenv("AWS_USE_FIPS_ENDPOINT", "true")
+		t.Setenv("AWS_USE_DUALSTACK_ENDPOINT", "true")
+		client, err := stsSession(ctx)
+		require.NoError(t, err)
+		assert.NotNil(t, client)
+	})
 }
 
 func TestLoginUrlParamsGetUrl(t *testing.T) {

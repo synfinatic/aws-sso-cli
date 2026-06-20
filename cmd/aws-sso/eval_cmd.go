@@ -34,10 +34,11 @@ type EvalCmd struct {
 	Role      string    `kong:"short='R',help='Name of AWS Role to assume',predictor='role'"`
 	Profile   string    `kong:"short='p',help='Name of AWS Profile to assume',predictor='profile'"`
 
-	Clear    bool   `kong:"short='c',help='Generate \"unset XXXX\" commands to clear environment'"`
-	NoRegion bool   `kong:"short='n',help='Do not set/clear AWS_DEFAULT_REGION/AWS_REGION from config.yaml'"`
-	Refresh  bool   `kong:"short='r',help='Refresh current IAM credentials'"`
-	EnvArn   string `kong:"hidden,env='AWS_SSO_ROLE_ARN'"` // used for refresh
+	Clear           bool   `kong:"short='c',help='Generate \"unset XXXX\" commands to clear environment'"`
+	NoRegion        bool   `kong:"short='n',help='Do not set/clear AWS_DEFAULT_REGION/AWS_REGION from config.yaml'"`
+	OverwriteRegion bool   `kong:"short='O',help='Force overwriting existing AWS_DEFAULT_REGION/AWS_REGION environment variables'"`
+	Refresh         bool   `kong:"short='r',help='Refresh current IAM credentials'"`
+	EnvArn          string `kong:"hidden,env='AWS_SSO_ROLE_ARN'"` // used for refresh
 }
 
 // AfterApply determines if SSO auth token is required
@@ -90,7 +91,7 @@ func (cc *EvalCmd) Run(ctx *RunContext) error {
 	} else {
 		return fmt.Errorf("please specify --refresh, --clear, --arn, or --account and --role")
 	}
-	region := ctx.Settings.GetDefaultRegion(accountid, role, ctx.Cli.Eval.NoRegion)
+	region := ctx.Settings.GetDefaultRegion(accountid, role, ctx.Cli.Eval.NoRegion, ctx.Cli.Eval.OverwriteRegion)
 
 	for k, v := range execShellEnvs(ctx, accountid, role, region) {
 		if isBashLike() {
