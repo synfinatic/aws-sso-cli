@@ -3,6 +3,12 @@
 
 ## [Unreleased]
 
+## [v2.3.1] -- 2026-06-20
+
+### Bugs
+
+* Remove 1Password support from Linux release binaries due to CGO requirement
+
 ## [v2.3.0] -- 2026-06-19
 
 ### New Features
@@ -944,7 +950,8 @@
 Initial release
 
 <!-- markdownlint-disable-next-line MD053 -->
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.3.0...main
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.3.1...main
+[v2.3.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.3.1
 [v2.3.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.3.0
 [v2.2.5]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.5
 [v2.2.4]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.4

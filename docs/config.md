@@ -725,6 +725,19 @@ app to be installed with **Settings → Developer → Integrate with other apps*
 desktop app required. Create a service account at 1password.com/developer-tools and export
 the token as `AWS_SSO_OP_SERVICE_ACCOUNT_TOKEN`. `Account` is not used.
 
+**Linux users:** The official pre-built Linux binaries are compiled with `CGO_ENABLED=0` for
+maximum portability across distributions. The `1password` SecureStore backend requires CGO and
+is **not available** in those binaries. To use 1Password on Linux you must build from source
+with CGO enabled:
+
+```bash
+make linux CGO_ENABLED=1
+```
+
+Note that a CGO-enabled binary dynamically links against glibc and may not run on all
+distributions (e.g. Alpine Linux uses musl). For arm64 you will also need a cross-compiler
+(`gcc-aarch64-linux-gnu`) installed.
+
 See the [1Password authentication guide](https://www.1password.dev/sdks#step-1-decide-how-you-want-to-authenticate)
 to help choose the right `AuthType` for your use case.
 
