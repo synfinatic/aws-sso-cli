@@ -2914,6 +2914,15 @@ app to be installed with <strong>Settings → Developer → Integrate with other
 <p><strong>Note:</strong> <code>AuthType: service-account</code> uses a headless service account token — no biometrics or
 desktop app required. Create a service account at 1password.com/developer-tools and export
 the token as <code>AWS_SSO_OP_SERVICE_ACCOUNT_TOKEN</code>. <code>Account</code> is not used.</p>
+<p><strong>Linux users:</strong> The official pre-built Linux binaries are compiled with <code>CGO_ENABLED=0</code> for
+maximum portability across distributions. The <code>1password</code> SecureStore backend requires CGO and
+is <strong>not available</strong> in those binaries. To use 1Password on Linux you must build from source
+with CGO enabled:</p>
+<pre><code class="language-bash">make linux CGO_ENABLED=1
+</code></pre>
+<p>Note that a CGO-enabled binary dynamically links against glibc and may not run on all
+distributions (e.g. Alpine Linux uses musl). For arm64 you will also need a cross-compiler
+(<code>gcc-aarch64-linux-gnu</code>) installed.</p>
 <p>See the <a href="https://www.1password.dev/sdks#step-1-decide-how-you-want-to-authenticate">1Password authentication guide</a>
 to help choose the right <code>AuthType</code> for your use case.</p>
 <p>I strongly recommend creating a dedicated vault for aws-sso to prevent accidentally sharing
