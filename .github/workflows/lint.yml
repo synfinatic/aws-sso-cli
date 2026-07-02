@@ -6,7 +6,7 @@ jobs:
     name: Linkspector
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Run linkspector
         uses: umbrelladocs/action-linkspector@v1
         with:
@@ -17,7 +17,7 @@ jobs:
       name: MarkdownLint
       runs-on: ubuntu-22.04
       steps:
-        - uses: actions/checkout@v6
+        - uses: actions/checkout@v7
         - uses: DavidAnson/markdownlint-cli2-action@v23
           with:
             config: .markdownlint.yaml
