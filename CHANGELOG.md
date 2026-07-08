@@ -949,9 +949,11 @@
 
 Initial release
 
+<!-- linkspector-disable -->
 <!-- markdownlint-disable-next-line MD053 -->
 [Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.3.1...main
 [v2.3.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.3.1
+<!-- linkspector-enable -->
 [v2.3.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.3.0
 [v2.2.5]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.5
 [v2.2.4]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.4
