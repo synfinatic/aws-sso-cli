@@ -85,7 +85,7 @@ source_profile = NameOfAwsSsoCliProfile
 ```
 
 And generate the necessary AWS SSO CLI profile entries via
-[aws-sso config-profiles](commands.md#config-profiles) command.
+[aws-sso setup profiles](commands.md#setup-profiles) command.
 
 ### How does AWS SSO CLI manage the $AWS\_DEFAULT\_REGION / $AWS\_REGION?
 

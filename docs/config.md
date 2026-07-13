@@ -461,8 +461,8 @@ https://docs.aws.amazon.com/singlesignon/latest/userguide/howtosessionduration.h
 
 #### ConfigProfilesBinaryPath
 
-Override execution path for `aws-sso` when generating named AWS profiles via the
-[config-profiles](commands.md#config-profiles).
+Override execution path for `aws-sso` when generating named AWS profiles via
+[aws-sso setup profiles](commands.md#setup-profiles).
 
 #### ProfileFormat
 
