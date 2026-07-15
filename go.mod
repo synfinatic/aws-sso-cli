@@ -21,7 +21,7 @@ require (
 	github.com/synfinatic/flexlog v0.0.5
 	github.com/synfinatic/gotable v0.0.3
 	github.com/willabides/kongplete v0.2.0
-	golang.org/x/crypto v0.53.0 // indirect
+	golang.org/x/crypto v0.54.0 // indirect
 )
 
 require (
@@ -77,7 +77,7 @@ require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1
 	github.com/danjacques/gofslock v0.0.0-20240212154529-d899e02bfe22
 	github.com/jpillora/backoff v1.0.0
-	golang.org/x/net v0.56.0
+	golang.org/x/net v0.57.0
 )
 
 require (
