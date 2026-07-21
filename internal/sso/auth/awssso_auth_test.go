@@ -848,6 +848,10 @@ func (m *mockOIDCClient) StartPKCEAuthCodeFlow(_ context.Context, in oidc.StartP
 
 func (m *mockOIDCClient) WaitForPKCECallback(_ context.Context, in oidc.WaitForPKCECallbackInput) (oidc.PKCECallback, error) {
 	m.waitForCallbackInputs = append(m.waitForCallbackInputs, in)
+	// Match the real client's contract: take ownership of a supplied listener.
+	if in.Listener != nil {
+		_ = in.Listener.Close()
+	}
 	return m.waitForCallbackResult, m.waitForCallbackErr
 }
 

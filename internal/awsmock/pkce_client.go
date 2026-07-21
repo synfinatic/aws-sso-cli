@@ -57,8 +57,9 @@ func (c *PKCECallbackClient) StartPKCEAuthCodeFlow(ctx context.Context, in oidc.
 	go func() {
 		callbackURL := fmt.Sprintf("%s?code=%s&state=%s", redirectURI, authCode, state)
 		httpClient := &http.Client{Timeout: 2 * time.Second}
-		// Retry until the loopback listener is ready (WaitForPKCECallback binds it just
-		// after StartPKCEAuthCodeFlow returns, so the first few attempts may fail on load).
+		// The callback listener is bound before StartPKCEAuthCodeFlow is called, so
+		// the kernel queues this request even before Serve() starts. Retry anyway
+		// as cheap insurance against transient scheduling delays.
 		for range 20 {
 			time.Sleep(25 * time.Millisecond)
 			req, reqErr := http.NewRequestWithContext(context.Background(), http.MethodGet, callbackURL, nil) //nolint:gosec

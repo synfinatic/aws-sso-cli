@@ -3,6 +3,14 @@
 
 ## [Unreleased]
 
+### Bugs
+
+* Fix PKCE login intermittently failing with `ERR_CONNECTION_REFUSED` when the
+  browser redirects before the loopback callback server binds. The callback
+  listener is now bound before the browser opens and reused for the redirect, so
+  the kernel queues an instant redirect from a warm SSO session instead of
+  refusing the connection. #1441
+
 ## [v2.3.1] -- 2026-06-20
 
 ### Bugs
