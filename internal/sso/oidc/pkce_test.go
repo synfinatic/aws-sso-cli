@@ -349,6 +349,34 @@ func TestWaitForPKCECallback(t *testing.T) {
 			t.Fatalf("timed out waiting for PKCE callback: %v", ctx.Err())
 		}
 	})
+
+	t.Run("closes supplied listener on invalid input", func(t *testing.T) {
+		client := NewAWSWithAPI(&mockOIDCAPI{})
+		ln, err := net.Listen("tcp", "127.0.0.1:0")
+		assert.NoError(t, err)
+
+		_, err = client.WaitForPKCECallback(context.Background(), WaitForPKCECallbackInput{
+			RedirectURI: fmt.Sprintf("http://%s/", ln.Addr().String()),
+			Listener:    ln,
+		})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "expected state is required")
+		assert.ErrorIs(t, ln.Close(), net.ErrClosed)
+	})
+
+	t.Run("errors when fallback bind fails", func(t *testing.T) {
+		client := NewAWSWithAPI(&mockOIDCAPI{})
+		ln, err := net.Listen("tcp", "127.0.0.1:0")
+		assert.NoError(t, err)
+		defer ln.Close()
+
+		_, err = client.WaitForPKCECallback(context.Background(), WaitForPKCECallbackInput{
+			RedirectURI:   fmt.Sprintf("http://%s/", ln.Addr().String()),
+			ExpectedState: "state",
+		})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "listen for pkce callback")
+	})
 }
 
 func TestValidatePKCEState(t *testing.T) {

@@ -31,13 +31,15 @@ import (
 
 // PKCECallbackClient wraps an oidc.Client and overrides StartPKCEAuthCodeFlow to
 // automatically deliver the browser redirect callback, enabling headless PKCE tests.
+// WaitForPKCECallback is the embedded client's real implementation, which owns and
+// closes the caller-supplied listener.
 type PKCECallbackClient struct {
 	oidc.Client
 	authCode string
 }
 
 // NewPKCECallbackClient wraps client so that StartPKCEAuthCodeFlow spawns a goroutine
-// that delivers the PKCE callback to the loopback listener after a short delay.
+// that delivers the PKCE callback to the loopback listener.
 func NewPKCECallbackClient(client oidc.Client, authCode string) *PKCECallbackClient {
 	return &PKCECallbackClient{Client: client, authCode: authCode}
 }
@@ -56,23 +58,20 @@ func (c *PKCECallbackClient) StartPKCEAuthCodeFlow(ctx context.Context, in oidc.
 
 	go func() {
 		callbackURL := fmt.Sprintf("%s?code=%s&state=%s", redirectURI, authCode, state)
-		httpClient := &http.Client{Timeout: 2 * time.Second}
-		// The callback listener is bound before StartPKCEAuthCodeFlow is called, so
-		// the kernel queues this request even before Serve() starts. Retry anyway
-		// as cheap insurance against transient scheduling delays.
-		for range 20 {
-			time.Sleep(25 * time.Millisecond)
-			req, reqErr := http.NewRequestWithContext(context.Background(), http.MethodGet, callbackURL, nil) //nolint:gosec
-			if reqErr != nil {
-				return
-			}
-			resp, doErr := httpClient.Do(req)
-			if doErr != nil {
-				continue
-			}
-			_ = resp.Body.Close()
+		// Single immediate request, no retries: the callback listener is bound
+		// before StartPKCEAuthCodeFlow is called, so the kernel queues this
+		// connection until the server starts serving. If the pre-bind ever
+		// regresses, this request fails and the test times out.
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, callbackURL, nil) //nolint:gosec
+		if err != nil {
 			return
 		}
+		httpClient := &http.Client{Timeout: 2 * time.Second}
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			return
+		}
+		_ = resp.Body.Close()
 	}()
 
 	return flow, nil

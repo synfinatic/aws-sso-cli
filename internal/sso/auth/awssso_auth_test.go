@@ -21,6 +21,8 @@ package auth
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"testing"
 	"time"
@@ -823,6 +825,7 @@ type mockOIDCClient struct {
 	// captured inputs for assertions
 	startPKCEFlowInputs   []oidc.StartPKCEAuthCodeInput
 	waitForCallbackInputs []oidc.WaitForPKCECallbackInput
+	listenerDialErr       error
 	exchangePKCEInputs    []oidc.ExchangePKCEAuthCodeInput
 	exchangeRefreshInputs []oidc.ExchangeRefreshTokenInput
 	registerClientInputs  []oidc.RegisterClientInput
@@ -848,8 +851,14 @@ func (m *mockOIDCClient) StartPKCEAuthCodeFlow(_ context.Context, in oidc.StartP
 
 func (m *mockOIDCClient) WaitForPKCECallback(_ context.Context, in oidc.WaitForPKCECallbackInput) (oidc.PKCECallback, error) {
 	m.waitForCallbackInputs = append(m.waitForCallbackInputs, in)
-	// Match the real client's contract: take ownership of a supplied listener.
 	if in.Listener != nil {
+		// Prove the handed-off listener is accepting connections, then close it
+		// as the real implementation would.
+		conn, err := net.Dial("tcp", in.Listener.Addr().String())
+		m.listenerDialErr = err
+		if err == nil {
+			_ = conn.Close()
+		}
 		_ = in.Listener.Close()
 	}
 	return m.waitForCallbackResult, m.waitForCallbackErr
@@ -1042,9 +1051,16 @@ func TestReauthenticatePKCE(t *testing.T) {
 			assert.Equal(t, "test-verifier", in.CodeVerifier)
 		}
 
-		// verify state was forwarded to WaitForPKCECallback
+		// verify state and a pre-bound listener were forwarded to WaitForPKCECallback
 		if assert.Len(t, mock.waitForCallbackInputs, 1) {
-			assert.Equal(t, "test-state", mock.waitForCallbackInputs[0].ExpectedState)
+			in := mock.waitForCallbackInputs[0]
+			assert.Equal(t, "test-state", in.ExpectedState)
+			if assert.NotNil(t, in.Listener) {
+				u, err := url.Parse(in.RedirectURI)
+				assert.NoError(t, err)
+				assert.Equal(t, u.Host, in.Listener.Addr().String())
+			}
+			assert.NoError(t, mock.listenerDialErr)
 		}
 	})
 
