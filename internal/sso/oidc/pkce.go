@@ -101,6 +101,13 @@ func (c *AWSClient) ExchangePKCEAuthCode(ctx context.Context, in ExchangePKCEAut
 }
 
 func (c *AWSClient) WaitForPKCECallback(ctx context.Context, in WaitForPKCECallbackInput) (PKCECallback, error) {
+	// Take ownership of a caller-supplied listener immediately so it is closed
+	// on every return path, including validation errors below.
+	listener := in.Listener
+	if listener != nil {
+		defer listener.Close()
+	}
+
 	if in.RedirectURI == "" {
 		return PKCECallback{}, fmt.Errorf("redirect uri is required")
 	}
@@ -121,11 +128,17 @@ func (c *AWSClient) WaitForPKCECallback(ctx context.Context, in WaitForPKCECallb
 		path = "/"
 	}
 
-	listener, err := net.Listen("tcp", redirectURL.Host)
-	if err != nil {
-		return PKCECallback{}, fmt.Errorf("listen for pkce callback: %w", err)
+	// Prefer a listener supplied by the caller. Binding the loopback socket
+	// before the browser opens lets the kernel accept and queue the redirect
+	// even if it arrives before Serve() starts, avoiding a connection-refused
+	// race with warm SSO sessions that redirect instantly.
+	if listener == nil {
+		listener, err = net.Listen("tcp", redirectURL.Host)
+		if err != nil {
+			return PKCECallback{}, fmt.Errorf("listen for pkce callback: %w", err)
+		}
+		defer listener.Close()
 	}
-	defer listener.Close()
 
 	callbackCh := make(chan PKCECallback, 1)
 	errCh := make(chan error, 1)

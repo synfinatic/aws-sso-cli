@@ -3,6 +3,7 @@ package oidc
 import (
 	"context"
 	"fmt"
+	"net"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/ssooidc"
@@ -119,6 +120,12 @@ type PKCEAuthCodeFlow struct {
 type WaitForPKCECallbackInput struct {
 	RedirectURI   string
 	ExpectedState string
+	// Listener, when non-nil, is used for the callback server instead of
+	// binding a new one. Supplying a listener that was bound before the browser
+	// was opened avoids a connection-refused race when the SSO redirect arrives
+	// before the callback server would otherwise bind its socket.
+	// WaitForPKCECallback takes ownership and closes it on all return paths.
+	Listener net.Listener
 }
 
 type PKCECallback struct {

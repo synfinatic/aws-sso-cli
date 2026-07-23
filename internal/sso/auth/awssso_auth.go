@@ -391,15 +391,26 @@ func (as *AWSSSO) reauthenticateDeviceCode(ctx context.Context) error {
 }
 
 func (as *AWSSSO) reauthenticatePKCE(ctx context.Context) error {
-	// Find a free loopback port for the callback listener. RFC 8252 §7.3 recommends
-	// any available port rather than a fixed one to avoid bind conflicts.
+	// Bind the loopback callback listener up front. RFC 8252 §7.3 recommends any
+	// available port rather than a fixed one to avoid bind conflicts. Keeping the
+	// socket bound before the browser opens lets the kernel queue the redirect if
+	// it arrives before the callback server starts serving, avoiding a
+	// connection-refused race with warm SSO sessions that redirect instantly.
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		return fmt.Errorf("find free port for pkce callback: %w", err)
 	}
 	port := ln.Addr().(*net.TCPAddr).Port
-	_ = ln.Close()
 	redirectURI := fmt.Sprintf("http://127.0.0.1:%d", port)
+
+	// WaitForPKCECallback takes ownership of the listener and closes it. Close it
+	// here only if we return before handing it off.
+	listenerHandedOff := false
+	defer func() {
+		if !listenerHandedOff {
+			_ = ln.Close()
+		}
+	}()
 
 	authEndpoint, err := as.pkceAuthorizationEndpoint()
 	if err != nil {
@@ -426,9 +437,11 @@ func (as *AWSSSO) reauthenticatePKCE(ctx context.Context) error {
 	pkceCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 
+	listenerHandedOff = true
 	callback, err := as.oidcClient.WaitForPKCECallback(pkceCtx, oidc.WaitForPKCECallbackInput{
 		RedirectURI:   redirectURI,
 		ExpectedState: flow.State,
+		Listener:      ln,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to receive pkce callback: %w", err)

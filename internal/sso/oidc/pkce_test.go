@@ -300,6 +300,83 @@ func TestWaitForPKCECallback(t *testing.T) {
 			t.Fatal("timed out waiting for context cancellation")
 		}
 	})
+
+	t.Run("uses caller supplied listener", func(t *testing.T) {
+		client := NewAWSWithAPI(&mockOIDCAPI{})
+		// Bind the callback listener up front and keep it open, as
+		// reauthenticatePKCE does to avoid the connection-refused race. The old
+		// close-then-rebind behavior would fail here with "address already in use"
+		// because the port is still held by this listener.
+		ln, err := net.Listen("tcp", "127.0.0.1:0")
+		assert.NoError(t, err)
+		redirectURI := fmt.Sprintf("http://%s/", ln.Addr().String())
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		resultCh := make(chan PKCECallback, 1)
+		errCh := make(chan error, 1)
+		go func() {
+			callback, err := client.WaitForPKCECallback(ctx, WaitForPKCECallbackInput{
+				RedirectURI:   redirectURI,
+				ExpectedState: "pre-bound-state",
+				Listener:      ln,
+			})
+			if err != nil {
+				errCh <- err
+				return
+			}
+			resultCh <- callback
+		}()
+
+		waitForPKCEListener(t, redirectURI)
+
+		// Bounded client so a regression (rebinding the held port) fails fast
+		// instead of blocking on a socket whose server never starts.
+		httpClient := &http.Client{Timeout: 3 * time.Second}
+		resp, err := httpClient.Get(fmt.Sprintf("%s?code=pre-bound-code&state=pre-bound-state", redirectURI)) //nolint:noctx
+		assert.NoError(t, err)
+		if resp != nil {
+			_ = resp.Body.Close()
+		}
+
+		select {
+		case callback := <-resultCh:
+			assert.Equal(t, "pre-bound-code", callback.Code)
+		case err := <-errCh:
+			assert.NoError(t, err)
+		case <-ctx.Done():
+			t.Fatalf("timed out waiting for PKCE callback: %v", ctx.Err())
+		}
+	})
+
+	t.Run("closes supplied listener on invalid input", func(t *testing.T) {
+		client := NewAWSWithAPI(&mockOIDCAPI{})
+		ln, err := net.Listen("tcp", "127.0.0.1:0")
+		assert.NoError(t, err)
+
+		_, err = client.WaitForPKCECallback(context.Background(), WaitForPKCECallbackInput{
+			RedirectURI: fmt.Sprintf("http://%s/", ln.Addr().String()),
+			Listener:    ln,
+		})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "expected state is required")
+		assert.ErrorIs(t, ln.Close(), net.ErrClosed)
+	})
+
+	t.Run("errors when fallback bind fails", func(t *testing.T) {
+		client := NewAWSWithAPI(&mockOIDCAPI{})
+		ln, err := net.Listen("tcp", "127.0.0.1:0")
+		assert.NoError(t, err)
+		defer ln.Close()
+
+		_, err = client.WaitForPKCECallback(context.Background(), WaitForPKCECallbackInput{
+			RedirectURI:   fmt.Sprintf("http://%s/", ln.Addr().String()),
+			ExpectedState: "state",
+		})
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "listen for pkce callback")
+	})
 }
 
 func TestValidatePKCEState(t *testing.T) {
