@@ -3,13 +3,11 @@
 
 ## [Unreleased]
 
+## [v2.3.2] -- 2026-07-29
+
 ### Bugs
 
-* Fix PKCE login intermittently failing with `ERR_CONNECTION_REFUSED` when the
-  browser redirects before the loopback callback server binds. The callback
-  listener is now bound before the browser opens and reused for the redirect, so
-  the kernel queues an instant redirect from a warm SSO session instead of
-  refusing the connection. #1441
+* Fix PKCE login intermittently failing with `ERR_CONNECTION_REFUSED` #1441
 
 ## [v2.3.1] -- 2026-06-20
 
@@ -959,9 +957,10 @@ Initial release
 
 <!-- linkspector-disable -->
 <!-- markdownlint-disable-next-line MD053 -->
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.3.1...main
-[v2.3.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.3.1
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.3.2...main
+[v2.3.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.3.2
 <!-- linkspector-enable -->
+[v2.3.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.3.1
 [v2.3.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.3.0
 [v2.2.5]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.5
 [v2.2.4]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.4
