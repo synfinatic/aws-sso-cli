@@ -3,6 +3,10 @@
 
 ## [Unreleased]
 
+### New Features
+
+* Add `aws-sso login --force` to start a new SSO session, resetting its duration #1455
+
 ### Bugs
 
 * Remove `--no-config-check` and `--sts-refresh` from the documented `login` flags #1451

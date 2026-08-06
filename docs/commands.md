@@ -292,6 +292,8 @@ Flags:
 
 * `--url-action`, `-u` -- How to handle URLs for your SSO provider
 * `--threads <int>` -- Number of threads to use with AWS (default: 5)
+* `--force`, `-f` -- End the current SSO session and start a new one, resetting the
+    session duration.  Unlike `logout`, cached STS credentials are left in place.
 
 ---
 

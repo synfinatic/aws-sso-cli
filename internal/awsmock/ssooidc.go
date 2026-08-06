@@ -21,6 +21,7 @@ package awsmock
  */
 
 import (
+	"encoding/json"
 	"net/http"
 	"sync"
 )
@@ -61,6 +62,14 @@ type SSOOIDCHandler struct {
 	registerQ   []queueItem
 	deviceAuthQ []queueItem
 	tokenQ      []queueItem
+	tokenGrants []string
+}
+
+// TokenGrants returns the grantType of every CreateToken request received, in order.
+func (h *SSOOIDCHandler) TokenGrants() []string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return append([]string(nil), h.tokenGrants...)
 }
 
 // QueueRegisterClient enqueues a successful RegisterClient response.
@@ -118,7 +127,14 @@ func (h *SSOOIDCHandler) handleToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	// an undecodable body records an empty grant type; the queue drives the response
+	var body struct {
+		GrantType string `json:"grantType"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+
 	h.mu.Lock()
+	h.tokenGrants = append(h.tokenGrants, body.GrantType)
 	item, found := dequeue(&h.tokenQ)
 	h.mu.Unlock()
 	writeQueueItem(w, item, found)
