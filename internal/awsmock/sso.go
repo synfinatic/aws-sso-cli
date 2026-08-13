@@ -71,6 +71,14 @@ type SSOHandler struct {
 	listAccountRolesQ []queueItem
 	getRoleCredsQ     []queueItem
 	logoutQ           []queueItem
+	logoutCalls       int
+}
+
+// LogoutCalls returns how many Logout requests were received.
+func (h *SSOHandler) LogoutCalls() int {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.logoutCalls
 }
 
 // QueueListAccounts enqueues a ListAccounts response.
@@ -123,11 +131,13 @@ func (h *SSOHandler) handleGetRoleCredentials(w http.ResponseWriter, r *http.Req
 }
 
 func (h *SSOHandler) handleLogout(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
+	// The SSO Portal API defines Logout as POST /logout.
+	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	h.mu.Lock()
+	h.logoutCalls++
 	item, found := dequeue(&h.logoutQ)
 	h.mu.Unlock()
 	writeQueueItem(w, item, found)

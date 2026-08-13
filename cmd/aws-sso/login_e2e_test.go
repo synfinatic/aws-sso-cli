@@ -84,6 +84,258 @@ func TestE2ELogin_DeviceCode(t *testing.T) {
 	assert.False(t, ctr.Expired(), "token should not be expired after login")
 }
 
+// TestE2ELogin_AlreadyValidIsNoop verifies the default behaviour: with a valid
+// token in the store, login makes no AWS calls and leaves the token alone.
+// No mock responses are queued, so any AWS call would fail the test.
+func TestE2ELogin_AlreadyValidIsNoop(t *testing.T) {
+	setup := newE2ESetup(t)
+	preAuth(t, setup)
+
+	ctx := newRunContext(setup, AUTH_SKIP)
+	ctx.Cli.Login = LoginCmd{UrlAction: "print", Threads: 1}
+
+	cmd := &LoginCmd{}
+	require.NoError(t, cmd.Run(ctx))
+
+	var ctr storage.CreateTokenResponse
+	require.NoError(t, setup.Store.GetCreateTokenResponse(AwsSSO.StoreKey(), &ctr))
+	assert.Equal(t, "test-access-token", ctr.AccessToken, "token should be untouched")
+}
+
+// TestE2ELogin_Force verifies --force ends the current session before re-authenticating.
+func TestE2ELogin_Force(t *testing.T) {
+	setup := newE2ESetup(t)
+	preAuth(t, setup)
+
+	setup.Server.SSO.QueueLogout()
+	setup.Server.SSOOIDC.QueueDeviceAuth(awsmock.DeviceAuthResponse{
+		DeviceCode:              "device-code",
+		UserCode:                "CODE-1234",
+		VerificationURI:         "https://verify.example.com",
+		VerificationURIComplete: "https://verify.example.com?user_code=CODE-1234",
+		ExpiresIn:               600,
+		Interval:                0,
+	})
+	setup.Server.SSOOIDC.QueueCreateToken(awsmock.OIDCTokenResponse{
+		AccessToken:  "forced-access-token",
+		ExpiresIn:    28800,
+		RefreshToken: "forced-refresh-token",
+		TokenType:    "Bearer",
+	})
+
+	// login refreshes the role cache after authenticating.
+	setup.Server.SSO.QueueListAccounts(awsmock.ListAccountsResponse{
+		AccountList: []awsmock.AccountInfo{
+			{AccountID: "123456789012", AccountName: "TestAccount", EmailAddress: "admin@example.com"},
+		},
+	})
+	setup.Server.SSO.QueueListAccountRoles(awsmock.ListAccountRolesResponse{
+		RoleList: []awsmock.RoleInfo{
+			{AccountID: "123456789012", RoleName: "ReadOnly"},
+		},
+	})
+
+	ctx := newRunContext(setup, AUTH_SKIP)
+	ctx.Cli.Login = LoginCmd{UrlAction: "print", Threads: 1, Force: true}
+
+	cmd := &LoginCmd{}
+	require.NoError(t, cmd.Run(ctx))
+
+	assert.Equal(t, 1, setup.Server.SSO.LogoutCalls())
+
+	var ctr storage.CreateTokenResponse
+	require.NoError(t, setup.Store.GetCreateTokenResponse(AwsSSO.StoreKey(), &ctr))
+	assert.Equal(t, "forced-access-token", ctr.AccessToken, "--force must replace the valid token")
+	assert.False(t, ctr.Expired())
+}
+
+// TestE2ELogin_ForceLogoutFailureStillLogsIn verifies a failed Logout is not fatal.
+func TestE2ELogin_ForceLogoutFailureStillLogsIn(t *testing.T) {
+	setup := newE2ESetup(t)
+	preAuth(t, setup)
+
+	// No QueueLogout(), so the mock answers Logout with an error.
+	setup.Server.SSOOIDC.QueueDeviceAuth(awsmock.DeviceAuthResponse{
+		DeviceCode:              "device-code",
+		UserCode:                "CODE-1234",
+		VerificationURI:         "https://verify.example.com",
+		VerificationURIComplete: "https://verify.example.com?user_code=CODE-1234",
+		ExpiresIn:               600,
+		Interval:                0,
+	})
+	setup.Server.SSOOIDC.QueueCreateToken(awsmock.OIDCTokenResponse{
+		AccessToken:  "forced-access-token",
+		ExpiresIn:    3600,
+		RefreshToken: "forced-refresh-token",
+		TokenType:    "Bearer",
+	})
+	setup.Server.SSO.QueueListAccounts(awsmock.ListAccountsResponse{
+		AccountList: []awsmock.AccountInfo{
+			{AccountID: "123456789012", AccountName: "TestAccount", EmailAddress: "admin@example.com"},
+		},
+	})
+	setup.Server.SSO.QueueListAccountRoles(awsmock.ListAccountRolesResponse{
+		RoleList: []awsmock.RoleInfo{
+			{AccountID: "123456789012", RoleName: "ReadOnly"},
+		},
+	})
+
+	ctx := newRunContext(setup, AUTH_SKIP)
+	ctx.Cli.Login = LoginCmd{UrlAction: "print", Threads: 1, Force: true}
+
+	cmd := &LoginCmd{}
+	require.NoError(t, cmd.Run(ctx))
+
+	var ctr storage.CreateTokenResponse
+	require.NoError(t, setup.Store.GetCreateTokenResponse(AwsSSO.StoreKey(), &ctr))
+	assert.Equal(t, "forced-access-token", ctr.AccessToken)
+}
+
+// TestE2ELogin_ForceRenewsExpiredTokenToLogOut verifies that an expired token is
+// refreshed first, since Logout requires a valid AccessToken.
+func TestE2ELogin_ForceRenewsExpiredTokenToLogOut(t *testing.T) {
+	setup := newE2ESetup(t)
+	preAuthExpired(t, setup, "seeded-refresh-token")
+
+	setup.Server.SSOOIDC.QueueCreateToken(awsmock.OIDCTokenResponse{
+		AccessToken:  "refreshed-access-token",
+		ExpiresIn:    3600,
+		RefreshToken: "rotated-refresh-token",
+		TokenType:    "Bearer",
+	})
+	setup.Server.SSO.QueueLogout()
+	setup.Server.SSOOIDC.QueueDeviceAuth(awsmock.DeviceAuthResponse{
+		DeviceCode:              "device-code",
+		UserCode:                "CODE-1234",
+		VerificationURI:         "https://verify.example.com",
+		VerificationURIComplete: "https://verify.example.com?user_code=CODE-1234",
+		ExpiresIn:               600,
+		Interval:                0,
+	})
+	setup.Server.SSOOIDC.QueueCreateToken(awsmock.OIDCTokenResponse{
+		AccessToken:  "forced-access-token",
+		ExpiresIn:    3600,
+		RefreshToken: "forced-refresh-token",
+		TokenType:    "Bearer",
+	})
+	setup.Server.SSO.QueueListAccounts(awsmock.ListAccountsResponse{
+		AccountList: []awsmock.AccountInfo{
+			{AccountID: "123456789012", AccountName: "TestAccount", EmailAddress: "admin@example.com"},
+		},
+	})
+	setup.Server.SSO.QueueListAccountRoles(awsmock.ListAccountRolesResponse{
+		RoleList: []awsmock.RoleInfo{
+			{AccountID: "123456789012", RoleName: "ReadOnly"},
+		},
+	})
+
+	ctx := newRunContext(setup, AUTH_SKIP)
+	ctx.Cli.Login = LoginCmd{UrlAction: "print", Threads: 1, Force: true}
+
+	cmd := &LoginCmd{}
+	require.NoError(t, cmd.Run(ctx))
+
+	assert.Equal(t, []string{
+		string(storage.GrantTypeRefreshToken),
+		string(storage.GrantTypeDeviceCode),
+	}, setup.Server.SSOOIDC.TokenGrants())
+	assert.Equal(t, 1, setup.Server.SSO.LogoutCalls())
+
+	var ctr storage.CreateTokenResponse
+	require.NoError(t, setup.Store.GetCreateTokenResponse(AwsSSO.StoreKey(), &ctr))
+	assert.Equal(t, "forced-access-token", ctr.AccessToken)
+}
+
+// TestE2ELogin_ForceWithNoTokenSkipsLogout verifies --force skips the logout when
+// there is no session to end.
+func TestE2ELogin_ForceWithNoTokenSkipsLogout(t *testing.T) {
+	setup := newE2ESetup(t)
+	// deliberately no preAuth(): the store is empty
+
+	setup.Server.SSOOIDC.QueueRegisterClient(awsmock.RegisterClientResponse{
+		ClientID:              "test-client-id",
+		ClientSecret:          "test-client-secret",
+		ClientIDIssuedAt:      time.Now().Unix(),
+		ClientSecretExpiresAt: time.Now().Add(30 * 24 * time.Hour).Unix(),
+	})
+	setup.Server.SSOOIDC.QueueDeviceAuth(awsmock.DeviceAuthResponse{
+		DeviceCode:              "device-code",
+		UserCode:                "CODE-1234",
+		VerificationURI:         "https://verify.example.com",
+		VerificationURIComplete: "https://verify.example.com?user_code=CODE-1234",
+		ExpiresIn:               600,
+		Interval:                0,
+	})
+	setup.Server.SSOOIDC.QueueCreateToken(awsmock.OIDCTokenResponse{
+		AccessToken:  "forced-access-token",
+		ExpiresIn:    3600,
+		RefreshToken: "forced-refresh-token",
+		TokenType:    "Bearer",
+	})
+	setup.Server.SSO.QueueListAccounts(awsmock.ListAccountsResponse{
+		AccountList: []awsmock.AccountInfo{
+			{AccountID: "123456789012", AccountName: "TestAccount", EmailAddress: "admin@example.com"},
+		},
+	})
+	setup.Server.SSO.QueueListAccountRoles(awsmock.ListAccountRolesResponse{
+		RoleList: []awsmock.RoleInfo{
+			{AccountID: "123456789012", RoleName: "ReadOnly"},
+		},
+	})
+
+	ctx := newRunContext(setup, AUTH_SKIP)
+	ctx.Cli.Login = LoginCmd{UrlAction: "print", Threads: 1, Force: true}
+
+	cmd := &LoginCmd{}
+	require.NoError(t, cmd.Run(ctx))
+
+	assert.Equal(t, 0, setup.Server.SSO.LogoutCalls())
+
+	var ctr storage.CreateTokenResponse
+	require.NoError(t, setup.Store.GetCreateTokenResponse(AwsSSO.StoreKey(), &ctr))
+	assert.Equal(t, "forced-access-token", ctr.AccessToken)
+}
+
+// TestE2ELogin_NoForceNeverLogsOut verifies an ordinary login never ends the session.
+func TestE2ELogin_NoForceNeverLogsOut(t *testing.T) {
+	setup := newE2ESetup(t)
+	preAuth(t, setup)
+
+	ctx := newRunContext(setup, AUTH_SKIP)
+	ctx.Cli.Login = LoginCmd{UrlAction: "print", Threads: 1}
+
+	cmd := &LoginCmd{}
+	require.NoError(t, cmd.Run(ctx))
+
+	assert.Equal(t, 0, setup.Server.SSO.LogoutCalls())
+}
+
+// TestE2ELogin_ExpiredUsesSilentRefresh verifies an expired token is renewed silently
+// without --force.  No DeviceAuth is queued, so a browser flow would fail the test.
+func TestE2ELogin_ExpiredUsesSilentRefresh(t *testing.T) {
+	setup := newE2ESetup(t)
+	preAuthExpired(t, setup, "seeded-refresh-token")
+
+	setup.Server.SSOOIDC.QueueCreateToken(awsmock.OIDCTokenResponse{
+		AccessToken:  "refreshed-access-token",
+		ExpiresIn:    3600,
+		RefreshToken: "rotated-refresh-token",
+		TokenType:    "Bearer",
+	})
+
+	ctx := newRunContext(setup, AUTH_SKIP)
+	ctx.Cli.Login = LoginCmd{UrlAction: "print", Threads: 1}
+
+	cmd := &LoginCmd{}
+	require.NoError(t, cmd.Run(ctx))
+
+	assert.Equal(t, []string{string(storage.GrantTypeRefreshToken)}, setup.Server.SSOOIDC.TokenGrants())
+
+	var ctr storage.CreateTokenResponse
+	require.NoError(t, setup.Store.GetCreateTokenResponse(AwsSSO.StoreKey(), &ctr))
+	assert.Equal(t, "refreshed-access-token", ctr.AccessToken)
+}
+
 // TestE2ELogin_PKCE exercises the PKCE authorization-code flow via LoginCmd.Run.
 // PKCECallbackClient auto-delivers the browser redirect so no user interaction is needed.
 func TestE2ELogin_PKCE(t *testing.T) {

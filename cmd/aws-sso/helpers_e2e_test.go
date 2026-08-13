@@ -245,6 +245,34 @@ func preAuth(t *testing.T, setup *e2eSetup) {
 	require.NoError(t, err)
 }
 
+// preAuthExpired is like preAuth, but seeds an expired access token carrying
+// refreshToken so ValidAuthToken() attempts a silent refresh.
+func preAuthExpired(t *testing.T, setup *e2eSetup, refreshToken string) {
+	t.Helper()
+	ctx := context.Background()
+	key := AwsSSO.StoreKey()
+
+	err := setup.Store.SaveRegisterClientData(ctx, key, storage.RegisterClientData{
+		ClientId:              "test-client-id",
+		ClientSecret:          "test-client-secret",
+		ClientIdIssuedAt:      time.Now().Unix(),
+		ClientSecretExpiresAt: time.Now().Add(90 * 24 * time.Hour).Unix(),
+		GrantTypes: []storage.GrantType{
+			storage.GrantTypeDeviceCode,
+			storage.GrantTypeRefreshToken,
+		},
+	})
+	require.NoError(t, err)
+
+	err = setup.Store.SaveCreateTokenResponse(ctx, key, storage.CreateTokenResponse{
+		AccessToken:  "expired-access-token",
+		ExpiresAt:    time.Now().Add(-1 * time.Hour).Unix(),
+		RefreshToken: refreshToken,
+		TokenType:    "Bearer",
+	})
+	require.NoError(t, err)
+}
+
 // populateCache queues ListAccounts + ListAccountRoles mock responses and then
 // calls Cache.Refresh so the cache contains a known set of accounts and roles.
 // After this call, the Default SSO cache has:

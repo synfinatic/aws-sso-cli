@@ -26,6 +26,7 @@ import (
 type LoginCmd struct {
 	UrlAction string `kong:"short='u',help='How to handle URLs [clip|exec|open|print|printurl|granted-containers|open-url-in-container|ansi-osc52] (default: open)',predictor='urlAction'"`
 	Threads   int    `kong:"help='Override number of threads for talking to AWS',default=${DEFAULT_THREADS}"`
+	Force     bool   `kong:"short='f',help='End the current SSO session and start a new one, resetting the session duration'"`
 }
 
 // AfterApply determines if SSO auth token is required
@@ -39,10 +40,8 @@ func (cc *LoginCmd) Run(ctx *RunContext) error {
 	return nil
 }
 
-// checkAuth craetes a singleton AWSSO object and checks to see if
-// we have a valid SSO authentication token.  If this is false, then
-// we need to call doAuth()
-func checkAuth(ctx *RunContext) bool {
+// initAwsSSO creates the singleton AWSSSO object if it does not exist yet
+func initAwsSSO(ctx *RunContext) *ssoauth.AWSSSO {
 	if AwsSSO == nil {
 		s, err := ctx.Settings.GetSelectedSSO(ctx.Cli.SSO)
 		if err != nil {
@@ -52,12 +51,49 @@ func checkAuth(ctx *RunContext) bool {
 		AwsSSO = ssoauth.NewAWSSSO(s, ctx.Store)
 	}
 
-	return AwsSSO.ValidAuthToken(ctx.Ctx)
+	return AwsSSO
+}
+
+// checkAuth creates a singleton AWSSO object and checks to see if
+// we have a valid SSO authentication token.  If this is false, then
+// we need to call doAuth()
+func checkAuth(ctx *RunContext) bool {
+	return initAwsSSO(ctx).ValidAuthToken(ctx.Ctx)
+}
+
+// endCurrentSession invalidates the current SSO sign-in session.  AWS reuses an
+// active session and the new token inherits its expiry, so the session must be
+// ended for the login which follows to reset the session duration.  STS
+// credentials are left alone: IAM role sessions outlive the SSO session.
+func endCurrentSession(ctx *RunContext, as *ssoauth.AWSSSO) {
+	// Logout needs a valid AccessToken, so refresh an expired one first
+	if !as.ValidAuthToken(ctx.Ctx) {
+		log.Debug("no valid SSO token to log out with")
+		return
+	}
+
+	if err := as.Logout(ctx.Ctx); err != nil {
+		// not fatal: we fall back to re-authenticating into the existing session
+		log.Warn("unable to end the current SSO session; the new token may inherit its expiry",
+			"error", err.Error())
+		return
+	}
+
+	// don't leave behind a token that looks valid locally but is dead server side
+	if err := ctx.Store.DeleteCreateTokenResponse(ctx.Ctx, as.StoreKey()); err != nil {
+		log.Debug("unable to delete invalidated token", "error", err.Error())
+	}
+
+	log.Debug("Ended the current SSO session", "storeKey", as.StoreKey())
 }
 
 // doAuth creates a singleton AWSSO object post authentication
 func doAuth(ctx *RunContext) {
-	if checkAuth(ctx) {
+	as := initAwsSSO(ctx)
+
+	if ctx.Cli.Login.Force {
+		endCurrentSession(ctx, as)
+	} else if checkAuth(ctx) {
 		// nothing to do here
 		log.Info("You are already logged in. :)")
 		return

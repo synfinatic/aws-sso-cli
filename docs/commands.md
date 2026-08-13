@@ -290,10 +290,10 @@ per the [CacheRefresh](config.md#cacherefresh) setting.
 
 Flags:
 
-* `--no-config-check` -- Disable automatic updating of `~/.aws/config`
 * `--url-action`, `-u` -- How to handle URLs for your SSO provider
-* `--sts-refresh` -- Force refresh of STS Token Credentials
 * `--threads <int>` -- Number of threads to use with AWS (default: 5)
+* `--force`, `-f` -- End the current SSO session and start a new one, resetting the
+    session duration.  Unlike `logout`, cached STS credentials are left in place.
 
 ---
 
