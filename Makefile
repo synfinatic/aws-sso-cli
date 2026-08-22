@@ -38,6 +38,30 @@ BUILDINFOS                ?= $(shell date +%FT%T%z)$(BUILDINFOSDET)
 LDFLAGS                   := -X "main.Version=$(PROJECT_VERSION)" -X "main.Delta=$(PROJECT_DELTA)" -X "main.Buildinfos=$(BUILDINFOS)" -X "main.Tag=$(PROJECT_TAG)" -X "main.CommitID=$(PROJECT_COMMIT)"
 OUTPUT_NAME               := $(DIST_DIR)$(PROJECT_NAME)-$(PROJECT_VERSION)  # default for current platform
 GOLANGCI_LINT_VERSION     := 2.10.1
+GOLANGCI_LINT             := $(shell go env GOPATH)/bin/golangci-lint
+
+# Pin the Go toolchain to the version go.mod declares, which is the same
+# version CI installs via setup-go's `go-version-file: go.mod`. Without this,
+# every go command uses whatever Go is first in PATH. A newer local Go then
+# builds against a newer standard library than the pinned golangci-lint can
+# type-check, and `make lint` panics instead of linting.
+#
+# The environment variable is what pins. A `toolchain` line in go.mod does not:
+# Go upgrades to a named toolchain when the local one is older, but it never
+# downgrades. Go downloads the pinned toolchain on first use.
+#
+# GOTOOLCHAIN only accepts a full x.y.z toolchain name. A two-component
+# directive like `go 1.27`, which is what `go mod edit -go=1.27` writes, is a
+# language version rather than a toolchain, and pinning to it breaks every go
+# command instead of just lint. Skip the pin in that case rather than wedge
+# the build, and say so, since an unpinned toolchain is what we came here to
+# notice.
+GO_VERSION                := $(shell awk '$$1 == "go" { print $$2 }' go.mod)
+ifeq ($(words $(subst ., ,$(GO_VERSION))),3)
+export GOTOOLCHAIN        := go$(GO_VERSION)
+else
+$(warning go.mod declares "go $(GO_VERSION)": GOTOOLCHAIN needs an x.y.z toolchain name, so the Go toolchain is NOT pinned)
+endif
 
 #ifeq ($(GOOS),darwin)
 # https://github.com/golang/go/issues/61229#issuecomment-1988965927
@@ -204,7 +228,7 @@ test-tidy:  ## Test to make sure go.mod is tidy
 	fi
 
 lint: .lint-check  ## Run golangci-lint
-	golangci-lint run
+	$(GOLANGCI_LINT) run
 
 lint-install:  ## Install golangci-lint
 	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v$(GOLANGCI_LINT_VERSION)
@@ -215,7 +239,7 @@ lint-install:  ## Install golangci-lint
 
 .PHONY: .lint-check
 .lint-check:
-	@if test $$(golangci-lint --version 2>&1 | grep -c "version $(GOLANGCI_LINT_VERSION)") -eq 0 ; then \
+	@if test $$($(GOLANGCI_LINT) --version 2>&1 | grep -c "version $(GOLANGCI_LINT_VERSION)") -eq 0 ; then \
 	   echo "Need to install golangci-lint $(GOLANGCI_LINT_VERSION)" ; \
 	   echo "Run: make lint-install" ; \
 	   exit -1 ; \

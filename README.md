@@ -1,7 +1,6 @@
 # AWS SSO CLI
 
 [![Tests](https://github.com/synfinatic/aws-sso-cli/actions/workflows/tests.yml/badge.svg)](https://github.com/synfinatic/aws-sso-cli/actions/workflows/tests.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/synfinatic/aws-sso-cli)](https://goreportcard.com/report/github.com/synfinatic/aws-sso-cli)
 [![License Badge](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://raw.githubusercontent.com/synfinatic/aws-sso-cli/main/LICENSE.md)
 [![Codecov Badge](https://codecov.io/gh/synfinatic/aws-sso-cli/branch/main/graph/badge.svg?token=F8454GS4HS)](https://codecov.io/gh/synfinatic/aws-sso-cli)
 [![Publish Docs](https://github.com/synfinatic/aws-sso-cli/actions/workflows/update-mkdocs.yaml/badge.svg)](https://github.com/synfinatic/aws-sso-cli/actions/workflows/update-mkdocs.yaml)
