@@ -60,6 +60,23 @@ Stops the ECS Server Docker container.
 
 ---
 
+### ecs docker write-config
+
+Writes the bearer token and/or SSL certificate/private key from the SecureStore
+to the security config file (`~/.aws-sso/mnt/docker-ecs`) read by the ECS Server
+Docker image on startup, without starting or managing a container itself. Use
+this when launching the ECS Server container via `docker compose` or another
+tool instead of `ecs docker start`, so the container still picks up your
+configured HTTP Auth and/or TLS material. The file is deleted by the container
+once read, so re-run this command before every `docker compose up`.
+
+Flags:
+
+* `--disable-auth` -- Do not include the HTTP Auth bearer token in the config file
+* `--disable-ssl` -- Do not include the SSL cert/key in the config file
+
+---
+
 ### ecs list
 
 List the AWS Profiles stored in the ECS Server.

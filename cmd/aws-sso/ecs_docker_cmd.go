@@ -40,8 +40,9 @@ const (
 )
 
 type EcsDockerCmd struct {
-	Start EcsDockerStartCmd `kong:"cmd,help='Start the ECS Server in a Docker container'"`
-	Stop  EcsDockerStopCmd  `kong:"cmd,help='Stop the ECS Server Docker container'"`
+	Start       EcsDockerStartCmd       `kong:"cmd,help='Start the ECS Server in a Docker container'"`
+	Stop        EcsDockerStopCmd        `kong:"cmd,help='Stop the ECS Server Docker container'"`
+	WriteConfig EcsDockerWriteConfigCmd `kong:"cmd,help='Write the ECS security config file for use with Docker Compose or other non-aws-sso launchers'"`
 }
 
 type EcsDockerStartCmd struct {
@@ -197,6 +198,49 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 			return err
 		}
 	}
+	return nil
+}
+
+type EcsDockerWriteConfigCmd struct {
+	DisableAuth bool `kong:"help='Do not include the HTTP Auth bearer token in the config file'"`
+	DisableSSL  bool `kong:"help='Do not include the SSL cert/key in the config file'"`
+}
+
+// AfterApply determines if SSO auth token is required
+func (e EcsDockerWriteConfigCmd) AfterApply(runCtx *RunContext) error {
+	runCtx.Auth = AUTH_SKIP
+	return nil
+}
+
+// Run writes the security config file consumed by the `--docker` entrypoint
+// (`ecs.CONTAINER_NAMED_FILE`, bind-mounted from `ecs.HOST_NAMED_FILE_FMT`) without
+// starting or managing a container. This lets tools that own the container lifecycle
+// themselves, like `docker compose`, still provision the bearer token / SSL material
+// that `EcsDockerStartCmd` would otherwise write just before starting the container.
+func (cc *EcsDockerWriteConfigCmd) Run(ctx *RunContext) error {
+	var privateKey, certChain, bearerToken string
+	var err error
+
+	if !cc.DisableSSL {
+		if privateKey, err = ctx.Store.GetEcsSslKey(); err != nil {
+			return err
+		}
+		if certChain, err = ctx.Store.GetEcsSslCert(); err != nil {
+			return err
+		}
+	}
+
+	if !cc.DisableAuth {
+		if bearerToken, err = ctx.Store.GetEcsBearerToken(); err != nil {
+			return err
+		}
+	}
+
+	if err = writeAndCloseSecurityFile(privateKey, certChain, bearerToken); err != nil {
+		return err
+	}
+
+	log.Info("Wrote ECS security config", "path", ecs.SecurityFilePath(ecs.WRITE_ONLY))
 	return nil
 }
 

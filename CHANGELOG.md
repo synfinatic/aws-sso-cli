@@ -6,10 +6,12 @@
 ### New Features
 
 * Add `aws-sso login --force` to start a new SSO session, resetting its duration #1455
+* Add `aws-sso ecs docker write-config`
 
 ### Bugs
 
 * Remove `--no-config-check` and `--sts-refresh` from the documented `login` flags #1451
+* Fix documentation / examples related to using the ECS server with Docker Compose #1462
 
 ## [v2.3.2] -- 2026-07-29
 
