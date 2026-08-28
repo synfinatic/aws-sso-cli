@@ -306,27 +306,63 @@ profile name if it contains special characters).
 
 ### Docker Compose example
 
-```yaml
-services:
-  aws-sso:
-    image: synfinatic/aws-sso-cli-ecs-server
-    healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:4144/healthcheck"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+Unlike `aws-sso ecs docker start`, `docker compose` does not automatically provision
+your configured bearer token or SSL certificate/key into the container. If you have
+either configured (via `aws-sso setup ecs auth` and/or `aws-sso setup ecs ssl`), run
+`aws-sso ecs docker write-config` before every `docker compose up` to write them to
+`~/.aws-sso/mnt/docker-ecs`, which the container reads on startup and then deletes.
+Otherwise the container starts with HTTP Auth disabled, and any client (including
+`aws-sso ecs list`) that still sends a bearer token from a previously configured
+SecureStore will be rejected with a `403 Forbidden`.
+
+```bash
+aws-sso ecs docker write-config
+docker compose up &
+aws-sso ecs load ...
 ```
 
-Other services that depend on valid credentials can declare `depends_on` with a
-`service_healthy` condition:
-
 ```yaml
+# Run `aws-sso ecs docker write-config` before every `docker compose up` to
+# provision the bearer token / SSL cert+key into ${HOME}/.aws-sso/mnt/docker-ecs
+# (deleted by the container after it reads it), otherwise this starts with
+# HTTP Auth disabled and any client still sending a configured bearer token
+# will get a 403.
+networks:
+  aws-sso-ecs:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: "169.254.170.0/24"
+          gateway: "169.254.170.1"
+
+services:
+  aws-sso:
+    image: synfinatic/aws-sso-cli-ecs-server:latest
+    networks:
+      aws-sso-ecs:
+        # This special IP address is recognized by the AWS SDKs and AWS CLI
+        ipv4_address: "169.254.170.2" 
+      default: {}
+    volumes:
+      # necessary for the container to read the bearer token and SSL cert+key from the host
+      - ${HOME}/.aws-sso/mnt:/app/.aws-sso/mnt
+    ports:
+      # necessary for local management
+      - "127.0.0.1:4144:4144"
+
   myapp:
-    image: myapp
+    image: amazon/aws-cli # replace with your service
+    entrypoint: ""
+    command: /usr/local/bin/aws sts get-caller-identity
     depends_on:
       aws-sso:
+        # ensures this container doesn't start until credentials have been loaded in the ecs server
         condition: service_healthy
+    environment:
+      AWS_CONTAINER_CREDENTIALS_FULL_URI: http://169.254.170.2:4144
+    networks:
+      aws-sso-ecs: {}
+      default: {}
 ```
 
 ## Errors
