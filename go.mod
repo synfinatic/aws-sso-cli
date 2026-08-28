@@ -67,7 +67,7 @@ require (
 )
 
 require (
-	github.com/1password/onepassword-sdk-go v0.4.0
+	github.com/1password/onepassword-sdk-go v0.4.1
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/aws/aws-sdk-go-v2/config v1.27.24
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.24
