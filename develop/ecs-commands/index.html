@@ -685,6 +685,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#ecs-docker-write-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ecs docker write-config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#ecs-list" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1357,6 +1368,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#ecs-docker-write-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ecs docker write-config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#ecs-list" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1479,6 +1501,20 @@ AWS SDK will require <a href="https://docs.aws.amazon.com/sdkref/latest/guide/fe
 <hr />
 <h3 id="ecs-docker-stop">ecs docker stop</h3>
 <p>Stops the ECS Server Docker container.</p>
+<hr />
+<h3 id="ecs-docker-write-config">ecs docker write-config</h3>
+<p>Writes the bearer token and/or SSL certificate/private key from the SecureStore
+to the security config file (<code>~/.aws-sso/mnt/docker-ecs</code>) read by the ECS Server
+Docker image on startup, without starting or managing a container itself. Use
+this when launching the ECS Server container via <code>docker compose</code> or another
+tool instead of <code>ecs docker start</code>, so the container still picks up your
+configured HTTP Auth and/or TLS material. The file is deleted by the container
+once read, so re-run this command before every <code>docker compose up</code>.</p>
+<p>Flags:</p>
+<ul>
+<li><code>--disable-auth</code> -- Do not include the HTTP Auth bearer token in the config file</li>
+<li><code>--disable-ssl</code> -- Do not include the SSL cert/key in the config file</li>
+</ul>
 <hr />
 <h3 id="ecs-list">ecs list</h3>
 <p>List the AWS Profiles stored in the ECS Server.</p>

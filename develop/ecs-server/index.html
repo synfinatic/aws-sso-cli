@@ -2072,23 +2072,59 @@ readinessProbe:
 <p>For a named slot replace the path with <code>/healthcheck/slot/&lt;profile&gt;</code> (URL-encode the
 profile name if it contains special characters).</p>
 <h3 id="docker-compose-example">Docker Compose example</h3>
-<pre><code class="language-yaml">services:
-  aws-sso:
-    image: synfinatic/aws-sso-cli-ecs-server
-    healthcheck:
-      test: [&quot;CMD&quot;, &quot;curl&quot;, &quot;-sf&quot;, &quot;http://localhost:4144/healthcheck&quot;]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+<p>Unlike <code>aws-sso ecs docker start</code>, <code>docker compose</code> does not automatically provision
+your configured bearer token or SSL certificate/key into the container. If you have
+either configured (via <code>aws-sso setup ecs auth</code> and/or <code>aws-sso setup ecs ssl</code>), run
+<code>aws-sso ecs docker write-config</code> before every <code>docker compose up</code> to write them to
+<code>~/.aws-sso/mnt/docker-ecs</code>, which the container reads on startup and then deletes.
+Otherwise the container starts with HTTP Auth disabled, and any client (including
+<code>aws-sso ecs list</code>) that still sends a bearer token from a previously configured
+SecureStore will be rejected with a <code>403 Forbidden</code>.</p>
+<pre><code class="language-bash">aws-sso ecs docker write-config
+docker compose up &amp;
+aws-sso ecs load ...
 </code></pre>
-<p>Other services that depend on valid credentials can declare <code>depends_on</code> with a
-<code>service_healthy</code> condition:</p>
-<pre><code class="language-yaml">  myapp:
-    image: myapp
+<pre><code class="language-yaml"># Run `aws-sso ecs docker write-config` before every `docker compose up` to
+# provision the bearer token / SSL cert+key into ${HOME}/.aws-sso/mnt/docker-ecs
+# (deleted by the container after it reads it), otherwise this starts with
+# HTTP Auth disabled and any client still sending a configured bearer token
+# will get a 403.
+networks:
+  aws-sso-ecs:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: &quot;169.254.170.0/24&quot;
+          gateway: &quot;169.254.170.1&quot;
+
+services:
+  aws-sso:
+    image: synfinatic/aws-sso-cli-ecs-server:latest
+    networks:
+      aws-sso-ecs:
+        # This special IP address is recognized by the AWS SDKs and AWS CLI
+        ipv4_address: &quot;169.254.170.2&quot; 
+      default: {}
+    volumes:
+      # necessary for the container to read the bearer token and SSL cert+key from the host
+      - ${HOME}/.aws-sso/mnt:/app/.aws-sso/mnt
+    ports:
+      # necessary for local management
+      - &quot;127.0.0.1:4144:4144&quot;
+
+  myapp:
+    image: amazon/aws-cli # replace with your service
+    entrypoint: &quot;&quot;
+    command: /usr/local/bin/aws sts get-caller-identity
     depends_on:
       aws-sso:
+        # ensures this container doesn't start until credentials have been loaded in the ecs server
         condition: service_healthy
+    environment:
+      AWS_CONTAINER_CREDENTIALS_FULL_URI: http://169.254.170.2:4144
+    networks:
+      aws-sso-ecs: {}
+      default: {}
 </code></pre>
 <h2 id="errors">Errors</h2>
 <p>The ECS Server API endpoint generates errors with the following JSON format:</p>
