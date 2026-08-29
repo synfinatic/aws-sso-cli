@@ -228,8 +228,8 @@ func TestE2ESetupEcsSSL_SelfSigned(t *testing.T) {
 	})
 	assert.Contains(t, output, "SHA-256 fingerprint:",
 		"--print-ca should not error and should print trust instructions")
-	assert.Contains(t, output, "ignores both AWS_CA_BUNDLE and the OS",
-		"--print-ca output should include the Python/AWS CLI caveat")
+	assert.Contains(t, output, ecsSslTrustDocsURL,
+		"--print-ca output should link to the full trust instructions in the docs")
 
 	// --- Delete: --delete clears both CA and leaf ---
 	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{Delete: true}

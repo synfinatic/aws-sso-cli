@@ -94,8 +94,9 @@ This generates a local CA and a leaf certificate signed by that CA, covering
 `localhost`, `127.0.0.1`, `::1`, and `169.254.170.2` by default (add more names
 with `--san`, repeatable). Both are stored in the secure store — the same place
 `aws-sso ecs server` reads the leaf cert/key from — and the CA certificate (never
-its private key) is written to `~/.aws-sso/ecs-ca.pem`. The command then prints
-instructions for trusting that CA in your OS and in each AWS SDK runtime.
+its private key) is written to `~/.aws-sso/ecs-ca.pem`. The command then prints a
+short summary (CA path, fingerprint) and a link back to this section for the
+per-OS/per-runtime trust steps below.
 
 Rerunning `--self-signed` reuses the existing CA and only issues a new leaf, so
 after the first run you never need to re-trust anything — just rerun it whenever
@@ -103,8 +104,8 @@ the leaf is close to expiring (397 days) or you've added a new `--san`. Use
 `--rotate-ca` only if you need to force a brand new CA, which does
 require repeating the trust steps everywhere.
 
-If you need to see the trust instructions again — on a new machine, or because
-you forgot them — without generating anything new:
+If you need to see the CA path and fingerprint again — on a new machine, or
+because you forgot them — without generating anything new:
 
 ```bash
 aws-sso setup ecs ssl --print-ca
@@ -116,6 +117,71 @@ To remove both the CA and the leaf certificate/key from the secure store:
 aws-sso setup ecs ssl --delete
 ```
 
+If you lose your certificate, you can print it via:
+
+```bash
+aws-sso setup ecs ssl --print
+```
+
+**Note:** At this time, there is no way to extract the SSL Private Key from the Secure Store.
+
+##### Trusting the CA per OS and runtime
+
+The CA is reused (not regenerated) every time you rerun `--self-signed`, so you
+only need to trust it once per machine/runtime below. Only `--rotate-ca` or
+`--delete` will require repeating these steps. Substitute the path printed by
+`--self-signed`/`--print-ca` (`~/.aws-sso/ecs-ca.pem` by default) for `<CA path>`.
+
+**macOS** — trust the CA for your user (no sudo required):
+
+```bash
+security add-trusted-cert -d -r trustRoot -k ~/Library/Keychains/login.keychain-db <CA path>
+```
+
+To trust it for every user on the machine instead, add it to the System
+keychain (requires sudo):
+
+```bash
+sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain <CA path>
+```
+
+**Linux** — Debian/Ubuntu:
+
+```bash
+sudo cp <CA path> /usr/local/share/ca-certificates/aws-sso-ecs-ca.crt
+sudo update-ca-certificates
+```
+
+RHEL/Fedora/CentOS:
+
+```bash
+sudo cp <CA path> /etc/pki/ca-trust/source/anchors/aws-sso-ecs-ca.pem
+sudo update-ca-trust extract
+```
+
+**Windows:**
+
+```bash
+certutil -addstore -user Root <CA path>
+```
+
+**Node.js** — unlike `AWS_CA_BUNDLE`, this is additive to Node's existing trust
+store, so your real AWS API calls are unaffected. Set it in the environment of
+the process using the SDK (not just your shell):
+
+```bash
+NODE_EXTRA_CA_CERTS=<CA path>
+```
+
+**Java / JVM:**
+
+```bash
+keytool -importcert -alias aws-sso-ecs-ca -keystore <path to cacerts> -file <CA path>
+```
+
+**.NET** — uses the OS trust store, so no separate step is needed beyond the
+macOS/Linux/Windows instructions above.
+
 **Important caveat — Python / the AWS CLI:** botocore's container-credentials
 fetcher hardcodes certificate verification against a bundle it resolves
 internally — pip's `certifi` package if importable in that exact Python
@@ -124,19 +190,39 @@ install itself (never the system trust store, and not necessarily the same
 file a bare `python3` on your `$PATH` would report — Homebrew, pipx, and the
 official AWS CLI v2 installer each bundle their own isolated Python). It
 ignores both `AWS_CA_BUNDLE` and the OS trust store, so trusting this (or any)
-private CA has no effect on Python or the AWS CLI. This is tracked upstream at
-[aws/aws-cli#9016](https://github.com/aws/aws-cli/issues/9016) and can't be
-fixed from `aws-sso-cli`. Every other SDK covered by the printed instructions
-(Go, Node.js, Java/JVM, .NET) works once its OS or runtime trust store trusts
-the CA.
+private CA anywhere above has no effect on Python or the AWS CLI. This is
+tracked upstream at [aws/aws-cli#9016](https://github.com/aws/aws-cli/issues/9016)
+and can't be fixed from `aws-sso-cli`. Every other SDK covered above (Go,
+Node.js, Java/JVM, .NET) works once its OS or runtime trust store trusts the CA.
 
-If you lose your certificate, you can print it via:
+At-your-own-risk workaround (not a real fix — it is silently undone by every
+upgrade, and must be repeated for every Python env/AWS CLI install that talks
+to this ECS Server). Do NOT assume a bare `python3` on your `$PATH` is the same
+interpreter that runs `aws` — Homebrew, pipx, and the official AWS CLI v2
+installer each bundle their own isolated Python. Worse, even asking that exact
+interpreter to `import certifi`/`import botocore` isn't reliable: Homebrew's
+awscli formula, for example, vendors botocore as `awscli.botocore` (not a
+top-level `botocore` module) and doesn't install `certifi` at all, so both
+imports fail there even though the vendored `cacert.pem` is sitting right on
+disk. Search the filesystem near the `aws` binary instead:
 
 ```bash
-aws-sso setup ecs ssl --print
+find "$(dirname "$(dirname "$(readlink -f "$(command -v aws)")")")" -iname cacert.pem
 ```
 
-**Note:** At this time, there is no way to extract the SSL Private Key from the Secure Store.
+If that finds more than one match (some installs vendor both a `certifi` copy
+and botocore's own), it's harmless to append the CA to all of them.
+
+Then append this CA to whichever file(s) you found:
+
+```bash
+cat <CA path> >> <bundle path found above>
+```
+
+**Minimum botocore version:** if the ECS Server is not bound to loopback,
+botocore 1.43.0+ is required for the "https to any hostname" short-circuit;
+older versions reject non-loopback hostnames outright regardless of
+certificate trust.
 
 #### ECS Server HTTP Authentication
 
