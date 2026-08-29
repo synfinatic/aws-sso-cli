@@ -100,7 +100,7 @@ instructions for trusting that CA in your OS and in each AWS SDK runtime.
 Rerunning `--self-signed` reuses the existing CA and only issues a new leaf, so
 after the first run you never need to re-trust anything — just rerun it whenever
 the leaf is close to expiring (397 days) or you've added a new `--san`. Use
-`--rotate-ca` (hidden flag) only if you need to force a brand new CA, which does
+`--rotate-ca` only if you need to force a brand new CA, which does
 require repeating the trust steps everywhere.
 
 If you need to see the trust instructions again — on a new machine, or because

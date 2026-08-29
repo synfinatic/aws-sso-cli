@@ -34,6 +34,8 @@ Flags:
 * `--self-signed` -- Generate (or reuse) a local CA and issue a new leaf certificate for the
   ECS Server. This is the default action when no other flag is given.
 * `--san` -- Additional DNS name or IP address to include in the self-signed leaf certificate (repeatable)
+* `--rotate-ca` -- Force generation of a brand new CA instead of reusing the existing one (requires
+  re-trusting on every client)
 * `--print-ca` -- Prints the local self-signed CA certificate and re-prints trust instructions
 * `--print` -- Prints the current SSL (leaf) certificate
 * `--delete` -- Disables SSL and deletes the current SSL certificate/private key and CA from the Secure Store

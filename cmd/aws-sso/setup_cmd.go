@@ -79,7 +79,7 @@ type EcsSSLCmd struct {
 	PrintCa    bool     `kong:"help='Print the local self-signed CA certificate and re-print trust instructions',xor='flag'"`
 	SelfSigned bool     `kong:"help='Generate (or reuse) a local CA and issue a new leaf certificate for the ECS Server',xor='flag'"`
 	San        []string `kong:"help='Additional DNS name or IP address to include in the self-signed leaf certificate (repeatable)',group='self-signed'"`
-	RotateCa   bool     `kong:"hidden,help='Force generation of a brand new CA instead of reusing the existing one (requires re-trusting on every client)'"`
+	RotateCa   bool     `kong:"help='Force generation of a brand new CA instead of reusing the existing one (requires re-trusting on every client)'"`
 }
 
 // AfterApply determines if SSO auth token is required
