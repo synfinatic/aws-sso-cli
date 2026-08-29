@@ -86,8 +86,6 @@ No public CA (DigiCert, Let's Encrypt, etc.) will issue a certificate for
 getting SSL/TLS working here means running your own private CA. `aws-sso` can do
 this for you.
 
-##### `--self-signed` (recommended)
-
 ```bash
 aws-sso setup ecs ssl --self-signed
 ```
@@ -132,18 +130,6 @@ fixed from `aws-sso-cli`. Every other SDK covered by the printed instructions
 (Go, Node.js, Java/JVM, .NET) works once its OS or runtime trust store trusts
 the CA.
 
-##### Using your own certificate
-
-If you already have a certificate signed by a CA your clients trust — for
-example because you're not using `localhost`/loopback and have a real DNS name —
-you can load it directly instead:
-
-```bash
-aws-sso setup ecs ssl --certificate cert-chain.pem --private-key key.pem --force
-```
-
-**Important:** At this point, you should delete the private key file `key.pem` for security.
-
 If you lose your certificate, you can print it via:
 
 ```bash
@@ -151,9 +137,6 @@ aws-sso setup ecs ssl --print
 ```
 
 **Note:** At this time, there is no way to extract the SSL Private Key from the Secure Store.
-
-This path is experimental — see [issue #936](https://github.com/synfinatic/aws-sso-cli/issues/936)
-for context — which is why it requires `--force`. `--self-signed` above does not.
 
 #### ECS Server HTTP Authentication
 

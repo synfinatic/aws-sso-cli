@@ -74,15 +74,12 @@ func (cc *EcsAuthCmd) Run(ctx *RunContext) error {
 const EcsCaExportPath = "~/.aws-sso/ecs-ca.pem"
 
 type EcsSSLCmd struct {
-	Delete      bool     `kong:"short=d,help='Disable SSL and delete the current SSL cert/key and CA',xor='flag,cert,key'"`
-	Print       bool     `kong:"short=p,help='Print the current SSL certificate',xor='flag,cert,key'"`
-	PrintCa     bool     `kong:"help='Print the local self-signed CA certificate and re-print trust instructions',xor='flag,cert,key'"`
-	SelfSigned  bool     `kong:"help='Generate (or reuse) a local CA and issue a new leaf certificate for the ECS Server',xor='flag,cert,key'"`
-	San         []string `kong:"help='Additional DNS name or IP address to include in the self-signed leaf certificate (repeatable)',group='self-signed'"`
-	RotateCa    bool     `kong:"hidden,help='Force generation of a brand new CA instead of reusing the existing one (requires re-trusting on every client)'"`
-	Certificate string   `kong:"short=c,type='existingfile',help='Path to certificate chain PEM file',predictor='allFiles',group='add-ssl',xor='cert'"`
-	PrivateKey  string   `kong:"short=k,type='existingfile',help='Path to private key file PEM file',predictor='allFiles',group='add-ssl',xor='key'"` // nolint:gosec
-	Force       bool     `kong:"hidden,help='Force loading the certificate'"`
+	Delete     bool     `kong:"short=d,help='Disable SSL and delete the current SSL cert/key and CA',xor='flag'"`
+	Print      bool     `kong:"short=p,help='Print the current SSL certificate',xor='flag'"`
+	PrintCa    bool     `kong:"help='Print the local self-signed CA certificate and re-print trust instructions',xor='flag'"`
+	SelfSigned bool     `kong:"help='Generate (or reuse) a local CA and issue a new leaf certificate for the ECS Server',xor='flag'"`
+	San        []string `kong:"help='Additional DNS name or IP address to include in the self-signed leaf certificate (repeatable)',group='self-signed'"`
+	RotateCa   bool     `kong:"hidden,help='Force generation of a brand new CA instead of reusing the existing one (requires re-trusting on every client)'"`
 }
 
 // AfterApply determines if SSO auth token is required
@@ -112,33 +109,11 @@ func (cc *EcsSSLCmd) Run(ctx *RunContext) error {
 
 	case ctx.Cli.Setup.Ecs.SSL.PrintCa:
 		return cc.printCaAndInstructions(ctx)
-
-	case ctx.Cli.Setup.Ecs.SSL.SelfSigned:
-		return cc.runSelfSigned(ctx)
 	}
 
-	var privateKey, certChain []byte
-	var err error
-
-	if !ctx.Cli.Setup.Ecs.SSL.Force {
-		log.Warn("This feature is experimental and may not work as expected.")
-		log.Warn("Please read https://github.com/synfinatic/aws-sso-cli/issues/936 before contiuing.")
-		log.Fatal("Use `--force` to continue anyways.")
-	}
-
-	certChain, err = os.ReadFile(ctx.Cli.Setup.Ecs.SSL.Certificate)
-	if err != nil {
-		return fmt.Errorf("failed to read certificate chain file: %w", err)
-	}
-
-	if ctx.Cli.Setup.Ecs.SSL.PrivateKey != "" {
-		privateKey, err = os.ReadFile(ctx.Cli.Setup.Ecs.SSL.PrivateKey)
-		if err != nil {
-			return fmt.Errorf("failed to read private key file: %w", err)
-		}
-	}
-
-	return ctx.Store.SaveEcsSslKeyPair(ctx.Ctx, privateKey, certChain)
+	// --self-signed, or no flag at all: generating (or reusing/rotating) the
+	// local CA and issuing a new leaf certificate is the only remaining action.
+	return cc.runSelfSigned(ctx)
 }
 
 // runSelfSigned reuses the existing local CA (unless --rotate-ca is given, or

@@ -72,37 +72,29 @@ func generateSelfSignedCert(t *testing.T) (certPEM, keyPEM string) {
 	return
 }
 
-// TestE2ESetupEcsSSL exercises all three operations of the `setup ecs ssl` command:
-//  1. Save a cert+key from PEM files (--certificate, --private-key, --force).
+// TestE2ESetupEcsSSL exercises the leaf-cert operations of the `setup ecs ssl`
+// command:
+//  1. Generate a leaf certificate (--self-signed, the only generation path now
+//     that the BYO-certificate --certificate/--private-key flags are gone).
 //  2. Print the stored certificate (--print) and confirm the output.
 //  3. Delete the stored pair (--delete) and confirm the store is empty.
 func TestE2ESetupEcsSSL(t *testing.T) {
-	certPEM, keyPEM := generateSelfSignedCert(t)
-
-	tempDir := t.TempDir()
-	certFile := filepath.Join(tempDir, "cert.pem")
-	keyFile := filepath.Join(tempDir, "key.pem")
-	require.NoError(t, os.WriteFile(certFile, []byte(certPEM), 0600))
-	require.NoError(t, os.WriteFile(keyFile, []byte(keyPEM), 0600))
+	isolateHomeForCaExport(t)
 
 	setup := newE2ESetup(t)
 	ctx := newRunContext(setup, AUTH_SKIP)
 
-	// --- Save: --certificate, --private-key, --force ---
-	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{
-		Certificate: certFile,
-		PrivateKey:  keyFile,
-		Force:       true,
-	}
-	require.NoError(t, (&EcsSSLCmd{}).Run(ctx), "setup ecs ssl should store the cert+key")
+	// --- Generate: --self-signed ---
+	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{SelfSigned: true}
+	require.NoError(t, (&EcsSSLCmd{}).Run(ctx), "setup ecs ssl --self-signed should store a leaf cert+key")
 
 	storedCert, err := setup.Store.GetEcsSslCert()
 	require.NoError(t, err)
-	assert.Equal(t, certPEM, storedCert, "stored cert should match the PEM file content")
+	assert.NotEmpty(t, storedCert, "stored cert should be populated")
 
 	storedKey, err := setup.Store.GetEcsSslKey()
 	require.NoError(t, err)
-	assert.Equal(t, keyPEM, storedKey, "stored key should match the PEM file content")
+	assert.NotEmpty(t, storedKey, "stored key should be populated")
 
 	// --- Print: --print ---
 	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{Print: true}
@@ -126,7 +118,10 @@ func TestE2ESetupEcsSSL(t *testing.T) {
 }
 
 // TestE2EEcsServerSSL proves the full SSL/TLS path end-to-end:
-//  1. Generate a self-signed cert+key and store it via `setup ecs ssl --force`.
+//  1. Generate a self-signed cert+key and store it directly (bypassing the
+//     `setup ecs ssl` command, which now only ever issues certs via its own
+//     internal/certutil CA — this test cares about EcsServerCmd.Run()'s
+//     ServeTLS wiring, not certificate generation).
 //  2. Start EcsServerCmd.Run() without DisableSSL — it reads the pair from the
 //     store and passes them to server.Serve() → ServeTLS.
 //  3. Poll with waitForEcsServerUp using "https" and the cert chain: this fails
@@ -138,22 +133,10 @@ func TestE2ESetupEcsSSL(t *testing.T) {
 func TestE2EEcsServerSSL(t *testing.T) {
 	certPEM, keyPEM := generateSelfSignedCert(t)
 
-	tempDir := t.TempDir()
-	certFile := filepath.Join(tempDir, "cert.pem")
-	keyFile := filepath.Join(tempDir, "key.pem")
-	require.NoError(t, os.WriteFile(certFile, []byte(certPEM), 0600))
-	require.NoError(t, os.WriteFile(keyFile, []byte(keyPEM), 0600))
-
 	setup := newE2ESetup(t)
 	ctx := newRunContext(setup, AUTH_SKIP)
 
-	// Store cert+key so EcsServerCmd.Run() can read them.
-	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{
-		Certificate: certFile,
-		PrivateKey:  keyFile,
-		Force:       true,
-	}
-	require.NoError(t, (&EcsSSLCmd{}).Run(ctx))
+	require.NoError(t, setup.Store.SaveEcsSslKeyPair(ctx.Ctx, []byte(keyPEM), []byte(certPEM)))
 
 	// Start the ECS server with TLS enabled.
 	cctx, cancel := context.WithCancel(context.Background())

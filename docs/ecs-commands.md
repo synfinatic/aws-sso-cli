@@ -24,18 +24,19 @@ Flags:
 
 #### setup ecs ssl
 
- Configures the SSL Certificate and Private Key to enable SSL/TLS.  Saves the
- SSL certificate and private key to the SecureStore.
-
- **Note:** At this time, this feature is not recommended due to a bug
- in the [AWS SDK](https://github.com/boto/boto3/issues/4188).
+ Generates (or reuses) a local CA and issues a leaf certificate for the ECS
+ Server, saving both to the SecureStore. See
+ [ecs-server.md](ecs-server.md#ecs-server-ssl-certificate) for the full walkthrough,
+ including per-runtime trust instructions and the Python/AWS CLI caveat.
 
  Flags:
 
-* `--delete` -- Disables SSL and deletes both the SSL certificate and private key from the Secure Store
-* `--print` -- Prints the SSL certificate
-* `--certificate` -- Path to SSL certificate file in PEM format
-* `--private-key` -- Path to SSL private key in PEM format
+* `--self-signed` -- Generate (or reuse) a local CA and issue a new leaf certificate for the
+  ECS Server. This is the default action when no other flag is given.
+* `--san` -- Additional DNS name or IP address to include in the self-signed leaf certificate (repeatable)
+* `--print-ca` -- Prints the local self-signed CA certificate and re-prints trust instructions
+* `--print` -- Prints the current SSL (leaf) certificate
+* `--delete` -- Disables SSL and deletes the current SSL certificate/private key and CA from the Secure Store
 
 ---
 
