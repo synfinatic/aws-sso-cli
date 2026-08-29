@@ -309,24 +309,41 @@ profile name if it contains special characters).
 Unlike `aws-sso ecs docker start`, `docker compose` does not automatically provision
 your configured bearer token or SSL certificate/key into the container. If you have
 either configured (via `aws-sso setup ecs auth` and/or `aws-sso setup ecs ssl`), run
-`aws-sso ecs docker write-config` before every `docker compose up` to write them to
-`~/.aws-sso/mnt/docker-ecs`, which the container reads on startup and then deletes.
+`aws-sso ecs docker write-config --disable-ssl` before every `docker compose up` to write the
+bearer token to `~/.aws-sso/mnt/docker-ecs`, which the container reads on startup and then
+deletes.  See [Why SSL is not needed here](#why-ssl-is-not-needed-here) below for why this
+example skips the certificate.
 Otherwise the container starts with HTTP Auth disabled, and any client (including
 `aws-sso ecs list`) that still sends a bearer token from a previously configured
 SecureStore will be rejected with a `403 Forbidden`.
 
 ```bash
-aws-sso ecs docker write-config
+export AWS_SSO_ECS_TOKEN='<the token you passed to aws-sso setup ecs auth>'
+aws-sso ecs docker write-config --disable-ssl
 docker compose up &
 aws-sso ecs load ...
 ```
 
+The example below reads `AWS_SSO_ECS_TOKEN` from your shell rather than hard coding the bearer
+token into `compose.yaml`, so the secret does not end up in version control.
+
+#### Why SSL is not needed here
+
+`169.254.170.2` is the address AWS uses for the real ECS credential endpoint, so every AWS SDK
+and the AWS CLI accept it over **plain HTTP**, the same way they accept `127.0.0.1`.  Assigning
+that address to the `aws-sso` container gets you a working setup without an SSL certificate,
+which is otherwise [difficult to obtain](#ecs-server-ssl-certificate) for a local endpoint.
+Credentials stay on the Docker bridge network and access is controlled by the bearer token.
+
+If you leave off `--disable-ssl` while you have a certificate loaded, the container serves HTTPS
+instead, and `myapp` would have to use `https://169.254.170.2:4144` with a certificate the AWS
+SDK trusts _for that IP address_ -- which no public CA will issue.
+
 ```yaml
-# Run `aws-sso ecs docker write-config` before every `docker compose up` to
-# provision the bearer token / SSL cert+key into ${HOME}/.aws-sso/mnt/docker-ecs
-# (deleted by the container after it reads it), otherwise this starts with
-# HTTP Auth disabled and any client still sending a configured bearer token
-# will get a 403.
+# Run `aws-sso ecs docker write-config --disable-ssl` before every `docker compose up`
+# to provision the bearer token into ${HOME}/.aws-sso/mnt/docker-ecs (deleted by the
+# container after it reads it), otherwise this starts with HTTP Auth disabled and any
+# client still sending a configured bearer token will get a 403.
 networks:
   aws-sso-ecs:
     driver: bridge
@@ -341,10 +358,10 @@ services:
     networks:
       aws-sso-ecs:
         # This special IP address is recognized by the AWS SDKs and AWS CLI
-        ipv4_address: "169.254.170.2" 
+        ipv4_address: "169.254.170.2"
       default: {}
     volumes:
-      # necessary for the container to read the bearer token and SSL cert+key from the host
+      # necessary for the container to read the security config written by write-config
       - ${HOME}/.aws-sso/mnt:/app/.aws-sso/mnt
     ports:
       # necessary for local management
@@ -360,6 +377,9 @@ services:
         condition: service_healthy
     environment:
       AWS_CONTAINER_CREDENTIALS_FULL_URI: http://169.254.170.2:4144
+      # must match the token stored via `aws-sso setup ecs auth`.  Omit this (and run
+      # `write-config --disable-auth`) only if you are not using HTTP Auth.
+      AWS_CONTAINER_AUTHORIZATION_TOKEN: "Bearer ${AWS_SSO_ECS_TOKEN}"
     networks:
       aws-sso-ecs: {}
       default: {}
