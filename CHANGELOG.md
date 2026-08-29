@@ -12,6 +12,8 @@
 
 * Remove `--no-config-check` and `--sts-refresh` from the documented `login` flags #1451
 * Fix documentation / examples related to using the ECS server with Docker Compose #1462
+* Document `ssh -o ExitOnForwardFailure=yes` to prevent another user on the remote host from
+  hijacking the forwarded ECS server port
 
 ## [v2.3.2] -- 2026-07-29
 
