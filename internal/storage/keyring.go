@@ -64,6 +64,8 @@ type StorageData struct {
 	EcsBearerToken      string
 	EcsPrivateKey       string
 	EcsCertChain        string
+	EcsCaKey            string
+	EcsCaCert           string
 }
 
 func NewStorageData() StorageData {
@@ -75,6 +77,8 @@ func NewStorageData() StorageData {
 		EcsBearerToken:      "",
 		EcsPrivateKey:       "",
 		EcsCertChain:        "",
+		EcsCaKey:            "",
+		EcsCaCert:           "",
 	}
 }
 
@@ -538,5 +542,36 @@ func (kr *KeyringStore) GetEcsSslKey() (string, error) {
 func (kr *KeyringStore) DeleteEcsSslKeyPair(ctx context.Context) error {
 	kr.cache.EcsCertChain = ""
 	kr.cache.EcsPrivateKey = ""
+	return kr.saveStorageData(ctx)
+}
+
+// SaveEcsCaKeyPair stores the private CA key and certificate in the keyring
+func (kr *KeyringStore) SaveEcsCaKeyPair(ctx context.Context, privateKey, certChain []byte) error {
+	if err := ValidateSSLCertificate(certChain); err != nil {
+		return err
+	}
+	kr.cache.EcsCaCert = string(certChain)
+
+	if err := ValidateSSLPrivateKey(privateKey); err != nil {
+		return err
+	}
+	kr.cache.EcsCaKey = string(privateKey)
+	return kr.saveStorageData(ctx)
+}
+
+// GetEcsCaCert retrieves the CA certificate from the keyring
+func (kr *KeyringStore) GetEcsCaCert() (string, error) {
+	return kr.cache.EcsCaCert, nil
+}
+
+// GetEcsCaKey retrieves the CA private key from the keyring
+func (kr *KeyringStore) GetEcsCaKey() (string, error) {
+	return kr.cache.EcsCaKey, nil
+}
+
+// DeleteEcsCaKeyPair deletes the CA private key and certificate from the keyring
+func (kr *KeyringStore) DeleteEcsCaKeyPair(ctx context.Context) error {
+	kr.cache.EcsCaCert = ""
+	kr.cache.EcsCaKey = ""
 	return kr.saveStorageData(ctx)
 }

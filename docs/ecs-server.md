@@ -39,11 +39,17 @@ to add to your test harness, Docker compose file, etc.
 
 ## Security Considerations
 
-The `aws-sso` ECS Server is intended to run on hosts where a single user has access.
-The security of your IAM credentials is dependent on nobody else being able to talk
-to the server. Due to a [limitation of the AWS SDK](https://github.com/boto/boto3/issues/4188),
-SSL/TLS is not well supported, which means that
-[enabling HTTP Authentication](#ecs-server-http-authentication) may not be enough to protect your credentials.
+The `aws-sso` ECS Server by default has no SSL or authentication and is intended to
+run on hosts where a single user has access.  The security of your IAM credentials
+is dependent on nobody else being able to talk to the server.
+
+For multi-user systems, [enabling HTTP Authentication](#ecs-server-http-authentication)
+possible to limit who can fetch AWS IAM security tokens from the service.
+
+For multi-user systems where the network is not trusted, `aws-sso setup ecs ssl --self-signed`
+(see below) makes SSL/TLS practical to enable for most AWS SDKs, but Python/the
+AWS CLI [cannot easily trust a private CA for this endpoint](
+https://github.com/boto/boto3/issues/4188).
 
 ## Starting the ECS Server
 
@@ -74,56 +80,72 @@ Together, they allow using the `aws-sso` ECS Server on multi-user systems in a
 secure manner.
 
 **Important:** Failure to configure HTTP Authentication _and_ SSL/TLS encryption
-risks any user on the system running the `aws-sso` ECS Server access to your
-AWS IAM authentication tokens.
+risks exposing your AWS IAM authentication tokens to other users on the system.
 
 #### ECS Server SSL Certificate
 
-**Important:** Due to a [bug in the AWS SDK](https://github.com/aws/aws-sdk/issues/774)
-you can not easily enable SSL at this time.  _I'd greatly
-appreciate people to upvote my ticket with AWS and help get it greater
-visibility at AWS and hopefully addressed sooner rather than later._
+No public CA (DigiCert, Let's Encrypt, etc.) will issue a certificate for
+`localhost`, `127.0.0.1`, or the special ECS credentials IP `169.254.170.2`, so
+getting SSL/TLS working here means running your own private CA. `aws-sso` can do
+this for you.
 
-You will need to create an SSL certificate which is _signed by a well trusted CA_
-such as DigiCert, Let's Encrypt, Thwate, etc.  Currently, the AWS SDK does _NOT_
-support self-signed certificates or private CA's for this endpoint.
-
-<!--
-You will need to create an SSL certificate/key pair in PKCS#8/PEM format. Typically,
-this will be a self-signed certificate which can be generated thusly:
+##### `--self-signed` (recommended)
 
 ```bash
-$ cat <<-EOF > config.ssl
-[dn]
-CN=localhost
-[req]
-distinguished_name = dn
-[EXT]
-subjectAltName=DNS:localhost,IP:127.0.0.1
-keyUsage=digitalSignature
-extendedKeyUsage=serverAuth
-EOF
-
-$ openssl req -x509 -out localhost.crt -keyout localhost.key \
-  -newkey rsa:2048 -nodes -sha256 -subj '/CN=localhost' -extensions EXT -config config.ssl
-
-$ rm config.ssl
+aws-sso setup ecs ssl --self-signed
 ```
 
--->
+This generates a local CA and a leaf certificate signed by that CA, covering
+`localhost`, `127.0.0.1`, `::1`, and `169.254.170.2` by default (add more names
+with `--san`, repeatable). Both are stored in the secure store — the same place
+`aws-sso ecs server` reads the leaf cert/key from — and the CA certificate (never
+its private key) is written to `~/.aws-sso/ecs-ca.pem`. The command then prints
+instructions for trusting that CA in your OS and in each AWS SDK runtime.
 
-Once you have your certificate and private key, you will need to save them into the
-`aws-sso` secure store:
+Rerunning `--self-signed` reuses the existing CA and only issues a new leaf, so
+after the first run you never need to re-trust anything — just rerun it whenever
+the leaf is close to expiring (30 days) or you've added a new `--san`. Use
+`--rotate-ca` (hidden flag) only if you need to force a brand new CA, which does
+require repeating the trust steps everywhere.
+
+If you need to see the trust instructions again — on a new machine, or because
+you forgot them — without generating anything new:
 
 ```bash
-aws-sso setup ecs ssl --private-key localhost.key --cert-chain localhost.crt
+aws-sso setup ecs ssl --print-ca
 ```
 
-**Important:** At this point, you should delete the private key file `localhost.key` for security.
+To remove both the CA and the leaf certificate/key from the secure store:
 
-The `localhost.crt` file will be automatically trusted by the `aws-sso` client if it
-uses the same secure store so it will be able to validate the server before uploading any IAM
-credentials.
+```bash
+aws-sso setup ecs ssl --delete
+```
+
+**Important caveat — Python / the AWS CLI:** botocore's container-credentials
+fetcher hardcodes certificate verification against a bundle it resolves
+internally — pip's `certifi` package if importable in that exact Python
+environment, otherwise a `cacert.pem` file vendored inside the botocore
+install itself (never the system trust store, and not necessarily the same
+file a bare `python3` on your `$PATH` would report — Homebrew, pipx, and the
+official AWS CLI v2 installer each bundle their own isolated Python). It
+ignores both `AWS_CA_BUNDLE` and the OS trust store, so trusting this (or any)
+private CA has no effect on Python or the AWS CLI. This is tracked upstream at
+[aws/aws-cli#9016](https://github.com/aws/aws-cli/issues/9016) and can't be
+fixed from `aws-sso-cli`. Every other SDK covered by the printed instructions
+(Go, Node.js, Java/JVM, .NET) works once its OS or runtime trust store trusts
+the CA.
+
+##### Using your own certificate
+
+If you already have a certificate signed by a CA your clients trust — for
+example because you're not using `localhost`/loopback and have a real DNS name —
+you can load it directly instead:
+
+```bash
+aws-sso setup ecs ssl --certificate cert-chain.pem --private-key key.pem --force
+```
+
+**Important:** At this point, you should delete the private key file `key.pem` for security.
 
 If you lose your certificate, you can print it via:
 
@@ -133,23 +155,8 @@ aws-sso setup ecs ssl --print
 
 **Note:** At this time, there is no way to extract the SSL Private Key from the Secure Store.
 
-<!--
-#### AWS SDK SSL Limitations
-
-If you create a self-signed certificate as described above, you will not be able to use the
-AWS CLI tooling or other AWS SDK's without additional work.  This is because the AWS SDK does
-not trust self-signed certificates.  Right now, it is best to get a signed cert by a trusted CA
-like Let's Encrypt.  Due to the complexity of this at this time, getting this to work is left
-as an exercise to the reader.
-
--->
-
-##### Using self-signed certificates
-
-In theory, you can add your self-signed certificate or custom CA into the AWS SDK certificate bundle.
-However, this file is SDK specific (the Boto3 SDK ships with it's own `cacert.pem` while the Go v2 SDK uses
-the system default bundle).  Managing this is not just language specific, but likely to be site-specific
-so getting this to work is left as an exercise to the reader.
+This path is experimental — see [issue #936](https://github.com/synfinatic/aws-sso-cli/issues/936)
+for context — which is why it requires `--force`. `--self-signed` above does not.
 
 #### ECS Server HTTP Authentication
 
@@ -332,7 +339,9 @@ token into `compose.yaml`, so the secret does not end up in version control.
 `169.254.170.2` is the address AWS uses for the real ECS credential endpoint, so every AWS SDK
 and the AWS CLI accept it over **plain HTTP**, the same way they accept `127.0.0.1`.  Assigning
 that address to the `aws-sso` container gets you a working setup without an SSL certificate,
-which is otherwise [difficult to obtain](#ecs-server-ssl-certificate) for a local endpoint.
+which is otherwise more setup than needed for a local endpoint (see
+[`--self-signed`](#ecs-server-ssl-certificate) if you do want SSL/TLS here — its default SANs
+already include `169.254.170.2`).
 Credentials stay on the Docker bridge network and access is controlled by the bearer token.
 
 If you leave off `--disable-ssl` while you have a certificate loaded, the container serves HTTPS
@@ -404,7 +413,7 @@ variable is supported.
 
 ## HTTPS Transport
 
-HTTPS support is a work in progress.  Right now, due to a [limitation with the AWS SDK](
-https://github.com/aws/aws-sdk/issues/774) only SSL certificates signed by CA that the
-AWS SDK trusts will work. If you think this feature would be useful to you, please leave
-a comment so AWS knows they should prioritize this work.
+`aws-sso setup ecs ssl --self-signed` (see [ECS Server SSL Certificate](#ecs-server-ssl-certificate))
+covers HTTPS for every AWS SDK runtime except Python/the AWS CLI. That gap is tracked upstream at
+[aws/aws-cli#9016](https://github.com/aws/aws-cli/issues/9016) — if you think this feature would be
+useful to you, please leave a comment so AWS knows they should prioritize this work.

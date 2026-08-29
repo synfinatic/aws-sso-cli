@@ -39,6 +39,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/synfinatic/aws-sso-cli/internal/certutil"
 	ecsclient "github.com/synfinatic/aws-sso-cli/internal/ecs/client"
 )
 
@@ -189,6 +190,135 @@ func TestE2EEcsServerSSL(t *testing.T) {
 	hcResp.Body.Close()
 	assert.Equal(t, http.StatusServiceUnavailable, hcResp.StatusCode,
 		"HTTPS healthcheck should return 503 when no credentials are loaded")
+
+	cancel()
+	assert.NoError(t, <-done, "Run() should return nil on context cancellation")
+}
+
+// isolateHomeForCaExport points $HOME at a fresh temp dir so printCaAndInstructions's
+// write to ~/.aws-sso/ecs-ca.pem never touches the real user's home directory, while
+// pre-creating ~/.config/aws-sso so the SecureStore's flock file (derived from
+// config.ConfigDir(), which resolves against $HOME independently of where the JSON
+// store file itself lives) can still be created.
+func isolateHomeForCaExport(t *testing.T) string {
+	t.Helper()
+	home := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config", "aws-sso"), 0700))
+	t.Setenv("HOME", home)
+	return home
+}
+
+// TestE2ESetupEcsSSL_SelfSigned exercises the full `setup ecs ssl --self-signed`
+// lifecycle: generate, rerun (CA reused, leaf rotates), --print-ca, and --delete.
+func TestE2ESetupEcsSSL_SelfSigned(t *testing.T) {
+	isolateHomeForCaExport(t)
+
+	setup := newE2ESetup(t)
+	ctx := newRunContext(setup, AUTH_SKIP)
+
+	// --- Generate: --self-signed ---
+	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{SelfSigned: true}
+	require.NoError(t, (&EcsSSLCmd{}).Run(ctx))
+
+	caCert1, err := setup.Store.GetEcsCaCert()
+	require.NoError(t, err)
+	assert.NotEmpty(t, caCert1)
+	leafCert1, err := setup.Store.GetEcsSslCert()
+	require.NoError(t, err)
+	assert.NotEmpty(t, leafCert1)
+
+	// --- Rerun: CA is reused byte-for-byte, leaf rotates ---
+	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{SelfSigned: true}
+	require.NoError(t, (&EcsSSLCmd{}).Run(ctx))
+
+	caCert2, err := setup.Store.GetEcsCaCert()
+	require.NoError(t, err)
+	leafCert2, err := setup.Store.GetEcsSslCert()
+	require.NoError(t, err)
+	assert.Equal(t, caCert1, caCert2, "rerunning --self-signed must not rotate the CA")
+	assert.NotEqual(t, leafCert1, leafCert2, "rerunning --self-signed should rotate the leaf")
+
+	// --- Print CA: --print-ca ---
+	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{PrintCa: true}
+	output := captureStdout(func() {
+		assert.NoError(t, (&EcsSSLCmd{}).Run(ctx))
+	})
+	assert.Contains(t, output, "SHA-256 fingerprint:",
+		"--print-ca should not error and should print trust instructions")
+	assert.Contains(t, output, "ignores both AWS_CA_BUNDLE and the OS",
+		"--print-ca output should include the Python/AWS CLI caveat")
+
+	// --- Delete: --delete clears both CA and leaf ---
+	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{Delete: true}
+	require.NoError(t, (&EcsSSLCmd{}).Run(ctx))
+
+	afterCA, err := setup.Store.GetEcsCaCert()
+	require.NoError(t, err)
+	assert.Empty(t, afterCA)
+
+	afterLeaf, err := setup.Store.GetEcsSslCert()
+	require.NoError(t, err)
+	assert.Empty(t, afterLeaf)
+}
+
+// TestE2EEcsServerSSL_SelfSigned_ChainOfTrust proves real chain-of-trust (not
+// exact-leaf-pinning): a client that trusts only the CA — never the leaf directly —
+// can complete a TLS handshake against the running ECS Server, and a client that
+// trusts an unrelated CA cannot.
+func TestE2EEcsServerSSL_SelfSigned_ChainOfTrust(t *testing.T) {
+	isolateHomeForCaExport(t)
+
+	setup := newE2ESetup(t)
+	ctx := newRunContext(setup, AUTH_SKIP)
+
+	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{SelfSigned: true}
+	require.NoError(t, (&EcsSSLCmd{}).Run(ctx))
+
+	caCertPEM, err := setup.Store.GetEcsCaCert()
+	require.NoError(t, err)
+	require.NotEmpty(t, caCertPEM)
+
+	// Start the ECS server with TLS enabled using the self-signed leaf.
+	cctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	ctx.Ctx = cctx
+
+	port := freePort(t)
+	ctx.Cli.Ecs.Server = EcsServerCmd{
+		BindIP:      "127.0.0.1",
+		Port:        port,
+		DisableAuth: true,
+	}
+	cc := &ctx.Cli.Ecs.Server
+
+	done := make(chan error, 1)
+	go func() { done <- cc.Run(ctx) }()
+
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+
+	// Trusting only the CA (not the leaf) proves the leaf actually chains to it.
+	require.NoError(t, waitForEcsServerUp("https", addr, caCertPEM, 5*time.Second),
+		"HTTPS ECS server should be reachable by a client that trusts only the CA")
+
+	tlsClient, err := ecsclient.NewHTTPClient(caCertPEM)
+	require.NoError(t, err)
+	tlsClient.Timeout = 5 * time.Second
+
+	hcResp, err := tlsClient.Get(fmt.Sprintf("https://%s/healthcheck", addr)) // nolint:gosec,noctx
+	require.NoError(t, err)
+	hcResp.Body.Close()
+	assert.Equal(t, http.StatusServiceUnavailable, hcResp.StatusCode,
+		"HTTPS healthcheck should return 503 when no credentials are loaded")
+
+	// Negative case: a client trusting an unrelated CA must fail the handshake.
+	unrelatedCA, err := certutil.GenerateCA()
+	require.NoError(t, err)
+	unrelatedClient, err := ecsclient.NewHTTPClient(unrelatedCA.CertPEM)
+	require.NoError(t, err)
+	unrelatedClient.Timeout = 5 * time.Second
+
+	_, err = unrelatedClient.Get(fmt.Sprintf("https://%s/healthcheck", addr)) // nolint:gosec,noctx
+	assert.Error(t, err, "a client trusting an unrelated CA must fail the TLS handshake")
 
 	cancel()
 	assert.NoError(t, <-done, "Run() should return nil on context cancellation")

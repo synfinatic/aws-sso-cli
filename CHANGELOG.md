@@ -3,8 +3,6 @@
 
 ## [Unreleased]
 
-## [v2.4.0]
-
 ### New Features
 
 * Add `aws-sso login --force` to start a new SSO session, resetting its duration #1455

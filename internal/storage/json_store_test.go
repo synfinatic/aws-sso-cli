@@ -26,6 +26,7 @@ import (
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"github.com/synfinatic/aws-sso-cli/internal/certutil"
 )
 
 const TEST_JSON_STORE_FILE = "./testdata/store.json"
@@ -274,6 +275,53 @@ func (s *JsonStoreTestSuite) TestEcsSslKeyPair() { // nolint: dupl
 	assert.Empty(t, cert)
 
 	key, err = s.json.GetEcsSslKey()
+	assert.NoError(t, err)
+	assert.Empty(t, key)
+}
+
+func (s *JsonStoreTestSuite) TestEcsCaKeyPair() { // nolint: dupl
+	t := s.T()
+
+	cert, err := s.json.GetEcsCaCert()
+	assert.NoError(t, err)
+	assert.Empty(t, cert)
+
+	key, err := s.json.GetEcsCaKey()
+	assert.NoError(t, err)
+	assert.Empty(t, key)
+
+	ca, err := certutil.GenerateCA()
+	assert.NoError(t, err)
+	certBytes := []byte(ca.CertPEM)
+	keyBytes := []byte(ca.KeyPEM)
+
+	err = s.json.SaveEcsCaKeyPair(context.Background(), []byte{}, certBytes)
+	assert.NoError(t, err)
+
+	err = s.json.SaveEcsCaKeyPair(context.Background(), keyBytes, certBytes)
+	assert.NoError(t, err)
+
+	err = s.json.SaveEcsCaKeyPair(context.Background(), keyBytes, keyBytes)
+	assert.Error(t, err)
+	err = s.json.SaveEcsCaKeyPair(context.Background(), certBytes, certBytes)
+	assert.Error(t, err)
+
+	cert, err = s.json.GetEcsCaCert()
+	assert.NoError(t, err)
+	assert.Equal(t, string(certBytes), cert)
+
+	key, err = s.json.GetEcsCaKey()
+	assert.NoError(t, err)
+	assert.Equal(t, string(keyBytes), key)
+
+	err = s.json.DeleteEcsCaKeyPair(context.Background())
+	assert.NoError(t, err)
+
+	cert, err = s.json.GetEcsCaCert()
+	assert.NoError(t, err)
+	assert.Empty(t, cert)
+
+	key, err = s.json.GetEcsCaKey()
 	assert.NoError(t, err)
 	assert.Empty(t, key)
 }
