@@ -701,6 +701,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#why-exitonforwardfailure-matters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why ExitOnForwardFailure matters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#advanced-usage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1228,6 +1239,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#why-exitonforwardfailure-matters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why ExitOnForwardFailure matters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#advanced-usage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1272,8 +1294,12 @@ If not, do that now. :)</p>
 running locally and then using ssh to forward the port to the remote host.
 Security is provided via a bearer token you configure on each side and all traffic is
 encrypted over ssh.</p>
-<p><strong>Warning:</strong> Running <a href="../ecs-server/#ecs-server-security">without SSL</a> is not recommend as it
-may allow even a non-root user on the remote host to steal your AWS API credentials.</p>
+<p><strong>Note:</strong> Configuring the bearer token is mandatory; <a href="../ecs-server/#ecs-server-security">SSL</a> is
+worth enabling on top of it if you can, but it is not the only thing protecting you.  The practical
+attack by a non-root user on the remote host -- hijacking the forwarded port -- is closed by
+<a href="#why-exitonforwardfailure-matters">ExitOnForwardFailure</a>, described below.  What SSL adds beyond
+that is protection from someone capturing loopback traffic, which requires <code>CAP_NET_RAW</code> on Linux
+or root on macOS -- and an attacker with that much access has better options available to them.</p>
 <h2 id="on-your-local-system">On your local system</h2>
 <ol>
 <li>Follow the <a href="../ecs-server/#ecs-server-security">directions to enable HTTP Authentication and Encryption</a>.</li>
@@ -1284,8 +1310,13 @@ or <a href="https://hamvocke.com/blog/a-quick-and-easy-guide-to-tmux/">tmux</a> 
 </ol>
 </li>
 <li>Load your selected IAM credentials into the ECS Server: <code>aws-sso ecs load --profile=&lt;profile name&gt;</code></li>
-<li>SSH to the remote system using the <a href="https://man.openbsd.org/ssh#R">-R flag to forward tcp/4144</a>:
-    <code>ssh -R 4144:localhost:4144 &lt;remotehost&gt;</code></li>
+<li>
+<p>SSH to the remote system using the <a href="https://man.openbsd.org/ssh#R">-R flag to forward tcp/4144</a>
+together with <a href="https://man.openbsd.org/ssh_config#ExitOnForwardFailure">ExitOnForwardFailure</a>:<br>
+    <code>ssh -o ExitOnForwardFailure=yes -R 4144:localhost:4144 &lt;remotehost&gt;</code></p>
+<p><strong>Important:</strong> Do not omit <code>-o ExitOnForwardFailure=yes</code>.  See
+<a href="#why-exitonforwardfailure-matters">Why ExitOnForwardFailure matters</a> below.</p>
+</li>
 </ol>
 <h2 id="on-your-remote-system-once-you-have-logged-in-as-described-above">On your remote system (once you have logged in as described above)</h2>
 <p><strong>Note:</strong> The following commands assume you are using <code>bash</code>.  You may have to tweak for other shells.</p>
@@ -1298,6 +1329,28 @@ or <a href="https://hamvocke.com/blog/a-quick-and-easy-guide-to-tmux/">tmux</a> 
 </ol>
 <p>See the <a href="../ecs-server/">ECS Server documentation</a> for more information about the ECS server and
 how to use multiple IAM role credentials simultaneously.</p>
+<h2 id="why-exitonforwardfailure-matters">Why ExitOnForwardFailure matters</h2>
+<p>By default, <code>ssh</code> only prints a warning when it is unable to bind the remote listener and
+then continues with the session anyway:</p>
+<pre><code class="language-text">Warning: remote port forwarding failed for listen port 4144
+</code></pre>
+<p>That warning is easy to miss, and ignoring it is dangerous.  If another user on the remote
+host has already bound tcp/4144, then <em>their</em> listener -- not your ssh tunnel -- is what
+<code>AWS_CONTAINER_CREDENTIALS_FULL_URI</code> points at.  The AWS SDK will send them the value of
+<code>AWS_CONTAINER_AUTHORIZATION_TOKEN</code>, which they can then replay against your local ECS Server
+to extract your AWS API credentials.</p>
+<p>Setting <code>ExitOnForwardFailure=yes</code> turns that warning into a fatal error, so ssh terminates
+instead of leaving you with a hijacked port.  This closes the attack whether or not you have
+SSL/TLS enabled, and costs you nothing.</p>
+<p>If you'd rather not type the flag every time, put it in your <code>~/.ssh/config</code> for the hosts you
+use this way:</p>
+<pre><code class="language-text">Host bastion.example.com
+    ExitOnForwardFailure yes
+    RemoteForward 4144 localhost:4144
+</code></pre>
+<p><strong>Note:</strong> <code>sshd</code> defaults to <code>GatewayPorts no</code>, so your forwarded port is bound to the loopback
+interface of the remote host and only users with an account on that host can reach it.  On a
+shared bastion, that may still be a lot of people.</p>
 <h2 id="advanced-usage">Advanced Usage</h2>
 <p>The above instructions grant any host you ssh to, access to the same AWS IAM Role.  But what if
 you want to access multiple roles?</p>

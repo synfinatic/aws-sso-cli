@@ -1611,6 +1611,8 @@ traffic, they can obtain the Bearer Token or AWS API credentials.</li>
     runs the ssh port-forwarding.  If the user then ignores the error when they ssh
     over, the attacker can get access to the Bearer Token used by the AWS SDK and
     use that later on to extract AWS API credentials.</li>
+<li>Mitigate: <code>ssh -o ExitOnForwardFailure=yes</code> makes the failed bind fatal rather than a
+    warning the user can ignore, which closes this attack even without SSL.</li>
 <li>With SSL: No attack; traffic is e2e encrypted and authenticated.</li>
 </ul>
 <h3 id="attacker-can-posion-dns-or-etchosts">Attacker can posion DNS or /etc/hosts</h3>
