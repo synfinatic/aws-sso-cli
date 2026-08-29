@@ -98,6 +98,11 @@ its private key) is written to `~/.aws-sso/ecs-ca.pem`. The command then prints 
 short summary (CA path, fingerprint) and a link back to this section for the
 per-OS/per-runtime trust steps below.
 
+Both the CA and the leaf use P-256 ECDSA keys. The CA is valid for 10 years
+(its key is retained and reused across leaf rotations, so it's long-lived on
+purpose); the leaf is valid for 397 days and is cheap to rotate since doing so
+never requires re-trusting anything.
+
 Rerunning `--self-signed` reuses the existing CA and only issues a new leaf, so
 after the first run you never need to re-trust anything — just rerun it whenever
 the leaf is close to expiring (397 days) or you've added a new `--san`. Use
