@@ -27,6 +27,8 @@ or root on macOS -- and an attacker with that much access has better options ava
 ## On your local system
 
 1. Follow the [directions to enable HTTP Authentication and Encryption](ecs-server.md#ecs-server-security).
+   For encryption, [`aws-sso setup ecs ssl --self-signed`](ecs-server.md#ecs-server-ssl-certificate)
+   is the easiest way to get a trusted certificate for `localhost`.
 1. Start the ECS Server:
     1. In a Docker container: `aws-sso ecs docker start`
     1. Or you can use a [screen](https://www.hostinger.com/tutorials/how-to-install-and-use-linux-screen)

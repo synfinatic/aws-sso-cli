@@ -341,3 +341,29 @@ func (op *OnePasswordStore) DeleteEcsSslKeyPair(ctx context.Context) error {
 	op.cache.EcsPrivateKey = ""
 	return op.saveStorageData(ctx)
 }
+
+func (op *OnePasswordStore) SaveEcsCaKeyPair(ctx context.Context, privateKey, certChain []byte) error {
+	if err := ValidateSSLCertificate(certChain); err != nil {
+		return err
+	}
+	op.cache.EcsCaCert = string(certChain)
+	if err := ValidateSSLPrivateKey(privateKey); err != nil {
+		return err
+	}
+	op.cache.EcsCaKey = string(privateKey)
+	return op.saveStorageData(ctx)
+}
+
+func (op *OnePasswordStore) GetEcsCaCert() (string, error) {
+	return op.cache.EcsCaCert, nil
+}
+
+func (op *OnePasswordStore) GetEcsCaKey() (string, error) {
+	return op.cache.EcsCaKey, nil
+}
+
+func (op *OnePasswordStore) DeleteEcsCaKeyPair(ctx context.Context) error {
+	op.cache.EcsCaCert = ""
+	op.cache.EcsCaKey = ""
+	return op.saveStorageData(ctx)
+}

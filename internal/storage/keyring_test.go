@@ -31,6 +31,7 @@ import (
 	"github.com/99designs/keyring"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"github.com/synfinatic/aws-sso-cli/internal/certutil"
 	testlogger "github.com/synfinatic/flexlog/test"
 )
 
@@ -219,6 +220,54 @@ func (suite *KeyringSuite) TestEcsSslKeyPair() { // nolint: dupl
 	assert.Empty(t, cert)
 
 	key, err = suite.store.GetEcsSslKey()
+	assert.NoError(t, err)
+	assert.Empty(t, key)
+}
+
+func (suite *KeyringSuite) TestEcsCaKeyPair() { // nolint: dupl
+	t := suite.T()
+
+	cert, err := suite.store.GetEcsCaCert()
+	assert.NoError(t, err)
+	assert.Empty(t, cert)
+
+	key, err := suite.store.GetEcsCaKey()
+	assert.NoError(t, err)
+	assert.Empty(t, key)
+
+	ca, err := certutil.GenerateCA()
+	assert.NoError(t, err)
+	certBytes := []byte(ca.CertPEM)
+	keyBytes := []byte(ca.KeyPEM)
+
+	err = suite.store.SaveEcsCaKeyPair(context.Background(), []byte{}, certBytes)
+	assert.NoError(t, err)
+
+	err = suite.store.SaveEcsCaKeyPair(context.Background(), keyBytes, certBytes)
+	assert.NoError(t, err)
+
+	err = suite.store.SaveEcsCaKeyPair(context.Background(), keyBytes, keyBytes)
+	assert.Error(t, err)
+
+	err = suite.store.SaveEcsCaKeyPair(context.Background(), certBytes, certBytes)
+	assert.Error(t, err)
+
+	cert, err = suite.store.GetEcsCaCert()
+	assert.NoError(t, err)
+	assert.Equal(t, string(certBytes), cert)
+
+	key, err = suite.store.GetEcsCaKey()
+	assert.NoError(t, err)
+	assert.Equal(t, string(keyBytes), key)
+
+	err = suite.store.DeleteEcsCaKeyPair(context.Background())
+	assert.NoError(t, err)
+
+	cert, err = suite.store.GetEcsCaCert()
+	assert.NoError(t, err)
+	assert.Empty(t, cert)
+
+	key, err = suite.store.GetEcsCaKey()
 	assert.NoError(t, err)
 	assert.Empty(t, key)
 }
