@@ -20,6 +20,8 @@ package certutil
 
 import (
 	"crypto/ecdsa"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
@@ -165,6 +167,59 @@ func TestFingerprint(t *testing.T) {
 	expected := strings.Join(parts, ":")
 
 	assert.Equal(t, expected, fp)
+}
+
+func TestGenerateLeaf_InvalidCACert(t *testing.T) {
+	t.Parallel()
+
+	_, err := GenerateLeaf(KeyPair{CertPEM: "not a cert", KeyPEM: "not a key"}, nil)
+	assert.Error(t, err)
+}
+
+func TestGenerateLeaf_InvalidCAKeyPEM(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	_, err = GenerateLeaf(KeyPair{CertPEM: ca.CertPEM, KeyPEM: "not a key"}, nil)
+	assert.Error(t, err)
+}
+
+func TestGenerateLeaf_UnparsableCAKey(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	badKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: []byte("garbage")})
+	_, err = GenerateLeaf(KeyPair{CertPEM: ca.CertPEM, KeyPEM: string(badKeyPEM)}, nil)
+	assert.Error(t, err)
+}
+
+func TestGenerateLeaf_NonECDSACAKey(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	der, err := x509.MarshalPKCS8PrivateKey(rsaKey)
+	require.NoError(t, err)
+	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: der})
+
+	_, err = GenerateLeaf(KeyPair{CertPEM: ca.CertPEM, KeyPEM: string(keyPEM)}, nil)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not an ECDSA key")
+}
+
+func TestFingerprint_ValidPEMInvalidDER(t *testing.T) {
+	t.Parallel()
+
+	badCertPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: []byte("garbage")})
+	_, err := Fingerprint(string(badCertPEM))
+	assert.Error(t, err)
 }
 
 func TestNotAfter(t *testing.T) {

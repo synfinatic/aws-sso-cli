@@ -19,13 +19,44 @@ package main
  */
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"math/big"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/synfinatic/aws-sso-cli/internal/certutil"
 	ssocache "github.com/synfinatic/aws-sso-cli/internal/sso/cache"
+	testlogger "github.com/synfinatic/flexlog/test"
 )
+
+// genTestCertWithNotAfter builds a self-signed leaf good enough for
+// warnIfCertExpiringSoon (it only needs a certutil.NotAfter-parseable PEM),
+// with an arbitrary expiration so expiry-warning boundary cases are
+// deterministic instead of depending on certutil.LeafValidity/CAValidity.
+func genTestCertWithNotAfter(t *testing.T, notAfter time.Time) string {
+	t.Helper()
+
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject:      pkix.Name{CommonName: "test"},
+		NotBefore:    notAfter.Add(-time.Hour),
+		NotAfter:     notAfter,
+	}
+	der, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	require.NoError(t, err)
+
+	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}))
+}
 
 func TestCertExpiryWarning(t *testing.T) {
 	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -67,6 +98,54 @@ func TestCertExpiryWarning(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestWarnIfCertExpiringSoon_InvalidCert(t *testing.T) {
+	tLogger := testlogger.NewTestLogger("DEBUG")
+	defer tLogger.Close()
+
+	oldLog := log
+	log = tLogger
+	defer func() { log = oldLog }()
+
+	// Not a parseable certificate: NotAfter fails, so nothing should be logged.
+	warnIfCertExpiringSoon("not a cert", "leaf certificate", "aws-sso setup ecs ssl --self-signed")
+
+	msg := testlogger.LogMessage{}
+	assert.Error(t, tLogger.GetNext(&msg), "no warning should be logged when the certificate can't be parsed")
+}
+
+func TestWarnIfCertExpiringSoon_NotExpiring(t *testing.T) {
+	tLogger := testlogger.NewTestLogger("DEBUG")
+	defer tLogger.Close()
+
+	oldLog := log
+	log = tLogger
+	defer func() { log = oldLog }()
+
+	ca, err := certutil.GenerateCA()
+	require.NoError(t, err)
+
+	warnIfCertExpiringSoon(ca.CertPEM, "CA certificate", "aws-sso setup ecs ssl --rotate-ca")
+
+	msg := testlogger.LogMessage{}
+	assert.Error(t, tLogger.GetNext(&msg), "a CA valid for 10 years should not trigger a warning")
+}
+
+func TestWarnIfCertExpiringSoon_Expired(t *testing.T) {
+	tLogger := testlogger.NewTestLogger("DEBUG")
+	defer tLogger.Close()
+
+	oldLog := log
+	log = tLogger
+	defer func() { log = oldLog }()
+
+	certPEM := genTestCertWithNotAfter(t, time.Now().Add(-24*time.Hour))
+	warnIfCertExpiringSoon(certPEM, "leaf certificate", "aws-sso setup ecs ssl --self-signed")
+
+	msg := testlogger.LogMessage{}
+	require.NoError(t, tLogger.GetNext(&msg))
+	assert.Equal(t, "SSL/TLS leaf certificate has expired", msg.Message)
 }
 
 func TestEcsServerCmdAfterApply(t *testing.T) {
