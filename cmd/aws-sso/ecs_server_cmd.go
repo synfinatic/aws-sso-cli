@@ -25,10 +25,18 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 
+	"github.com/synfinatic/aws-sso-cli/internal/certutil"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs/server"
 )
+
+// ecsCertExpiryWarningWindow is how far ahead of a CA/leaf certificate's
+// expiration `ecs server` starts warning on startup, giving the user time to
+// rerun `aws-sso setup ecs ssl --self-signed` (leaf) or `--rotate-ca` (CA)
+// before clients start failing TLS handshakes.
+const ecsCertExpiryWarningWindow = 30 * 24 * time.Hour
 
 type EcsServerCmd struct {
 	BindIP  string `kong:"help='Bind address for ECS Server',default='127.0.0.1'"`
@@ -116,6 +124,15 @@ func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 
 	if privateKey != "" && certChain != "" {
 		log.Info("SSL/TLS: enabled")
+		warnIfCertExpiringSoon(certChain, "leaf certificate",
+			"aws-sso setup ecs ssl --self-signed")
+
+		if !ctx.Cli.Ecs.Server.Docker {
+			if caCert, err := ctx.Store.GetEcsCaCert(); err == nil && caCert != "" {
+				warnIfCertExpiringSoon(caCert, "CA certificate",
+					"aws-sso setup ecs ssl --rotate-ca")
+			}
+		}
 	} else if !ctx.Cli.Ecs.Server.DisableSSL {
 		log.Warn("SSL/TLS: disabled.  Use 'aws-sso setup ecs ssl' to enable")
 	}
@@ -140,6 +157,35 @@ func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 		return err
 	}
 	return nil
+}
+
+// warnIfCertExpiringSoon logs a warning if certPEM expires within
+// ecsCertExpiryWarningWindow (or has already expired), naming the fixCmd the
+// user should rerun. Parse errors are ignored here: certificates loaded from
+// the SecureStore have already been validated when they were saved.
+func warnIfCertExpiringSoon(certPEM, label, fixCmd string) {
+	notAfter, err := certutil.NotAfter(certPEM)
+	if err != nil {
+		return
+	}
+
+	if msg := certExpiryWarning(label, notAfter, time.Now(), ecsCertExpiryWarningWindow); msg != "" {
+		log.Warn(msg, "expires", notAfter.Format(time.RFC3339), "fix", fixCmd)
+	}
+}
+
+// certExpiryWarning returns a warning message if notAfter is at or before
+// now, or within window of now; otherwise it returns "".
+func certExpiryWarning(label string, notAfter, now time.Time, window time.Duration) string {
+	remaining := notAfter.Sub(now)
+	switch {
+	case remaining <= 0:
+		return fmt.Sprintf("SSL/TLS %s has expired", label)
+	case remaining < window:
+		return fmt.Sprintf("SSL/TLS %s expires soon", label)
+	default:
+		return ""
+	}
 }
 
 // setServerDefaultProfile resolves a profile name to credentials and injects them

@@ -167,6 +167,22 @@ func TestFingerprint(t *testing.T) {
 	assert.Equal(t, expected, fp)
 }
 
+func TestNotAfter(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	notAfter, err := NotAfter(ca.CertPEM)
+	require.NoError(t, err)
+
+	cert := parsePEMCert(t, ca.CertPEM)
+	assert.Equal(t, cert.NotAfter, notAfter)
+
+	_, err = NotAfter("not a cert")
+	assert.Error(t, err)
+}
+
 func parsePEMCert(t *testing.T, certPEM string) *x509.Certificate {
 	t.Helper()
 	block, _ := pem.Decode([]byte(certPEM))

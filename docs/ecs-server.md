@@ -109,6 +109,11 @@ the leaf is close to expiring (397 days) or you've added a new `--san`. Use
 `--rotate-ca` only if you need to force a brand new CA, which does
 require repeating the trust steps everywhere.
 
+`aws-sso ecs server` warns on startup if the leaf or CA certificate will
+expire within 30 days (or already has), naming the command to fix it
+(`--self-signed` for the leaf, `--rotate-ca` for the CA) so you don't find out
+from a client's TLS handshake failing instead.
+
 If you need to see the CA path and fingerprint again — on a new machine, or
 because you forgot them — without generating anything new:
 

@@ -20,11 +20,54 @@ package main
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	ssocache "github.com/synfinatic/aws-sso-cli/internal/sso/cache"
 )
+
+func TestCertExpiryWarning(t *testing.T) {
+	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name     string
+		notAfter time.Time
+		want     string
+	}{
+		{
+			name:     "far from expiring",
+			notAfter: now.Add(60 * 24 * time.Hour),
+			want:     "",
+		},
+		{
+			name:     "exactly at the warning window",
+			notAfter: now.Add(ecsCertExpiryWarningWindow),
+			want:     "",
+		},
+		{
+			name:     "just inside the warning window",
+			notAfter: now.Add(ecsCertExpiryWarningWindow - time.Second),
+			want:     "SSL/TLS leaf certificate expires soon",
+		},
+		{
+			name:     "expires right now",
+			notAfter: now,
+			want:     "SSL/TLS leaf certificate has expired",
+		},
+		{
+			name:     "already expired",
+			notAfter: now.Add(-24 * time.Hour),
+			want:     "SSL/TLS leaf certificate has expired",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := certExpiryWarning("leaf certificate", tt.notAfter, now, ecsCertExpiryWarningWindow)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
 
 func TestEcsServerCmdAfterApply(t *testing.T) {
 	tests := []struct {

@@ -170,6 +170,16 @@ func Fingerprint(certPEM string) (string, error) {
 	return strings.Join(parts, ":"), nil
 }
 
+// NotAfter returns the expiration time of a PEM-encoded certificate, so
+// callers can warn users before a CA or leaf certificate lapses.
+func NotAfter(certPEM string) (time.Time, error) {
+	cert, err := parseCertificate(certPEM)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return cert.NotAfter, nil
+}
+
 func newSerialNumber() (*big.Int, error) {
 	limit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serial, err := rand.Int(rand.Reader, limit)
