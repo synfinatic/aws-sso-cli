@@ -179,10 +179,10 @@ func TestE2EEcsServerSSL(t *testing.T) {
 }
 
 // isolateHomeForCaExport points $HOME at a fresh temp dir so printCaAndInstructions's
-// write to ~/.aws-sso/ecs-ca.pem never touches the real user's home directory, while
-// pre-creating ~/.config/aws-sso so the SecureStore's flock file (derived from
-// config.ConfigDir(), which resolves against $HOME independently of where the JSON
-// store file itself lives) can still be created.
+// write of the CA export (under config.ConfigDir()) never touches the real user's
+// home directory, while pre-creating ~/.config/aws-sso so the SecureStore's flock
+// file (also derived from config.ConfigDir(), independently of where the JSON store
+// file itself lives) can still be created.
 func isolateHomeForCaExport(t *testing.T) string {
 	t.Helper()
 	home := t.TempDir()
@@ -226,6 +226,7 @@ func TestE2ESetupEcsSSL_SelfSigned(t *testing.T) {
 	output := captureStdout(func() {
 		assert.NoError(t, (&EcsSSLCmd{}).Run(ctx))
 	})
+	assert.Contains(t, output, caCert2, "--print-ca should print the CA certificate PEM")
 	assert.Contains(t, output, "SHA-256 fingerprint:",
 		"--print-ca should not error and should print trust instructions")
 	assert.Contains(t, output, ecsSslTrustDocsURL,

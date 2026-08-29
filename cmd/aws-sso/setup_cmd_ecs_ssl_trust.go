@@ -36,17 +36,12 @@ func ecsSslTrustInstructions(caPath, fingerprint string, sans []string) string {
 
 	fmt.Fprintf(&b, "\nLocal ECS Server CA certificate: %s\n", caPath)
 	fmt.Fprintf(&b, "SHA-256 fingerprint: %s\n", fingerprint)
-	fmt.Fprintf(&b, "\nThis CA is reused (not regenerated) every time you rerun\n")
-	fmt.Fprintf(&b, "'aws-sso setup ecs ssl --self-signed', so you only need to trust it\n")
-	fmt.Fprintf(&b, "once per machine/runtime. Only 'aws-sso setup ecs ssl --rotate-ca'\n")
-	fmt.Fprintf(&b, "or '--delete' will require repeating those steps.\n")
-
 	if len(sans) > 0 {
 		fmt.Fprintf(&b, "\nAdditional certificate names covered: %s\n", strings.Join(sans, ", "))
 	}
 
-	fmt.Fprintf(&b, "\nFor per-OS/per-runtime trust instructions (including the Python/AWS\n")
-	fmt.Fprintf(&b, "CLI caveat), see:\n  %s\n", ecsSslTrustDocsURL)
+	fmt.Fprintf(&b, "\nFor per-OS/per-runtime trust instructions see:\n")
+	fmt.Fprintf(&b, "  %s\n", ecsSslTrustDocsURL)
 
 	return b.String()
 }

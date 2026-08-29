@@ -32,9 +32,9 @@ import (
 )
 
 // storeCaForTest saves a freshly generated CA directly into ctx's store,
-// without going through EcsSSLCmd.Run (which would also export it to
-// EcsCaExportPath and print instructions) -- these tests only need
-// GetEcsCaCert to return a real, non-empty CA cert.
+// without going through EcsSSLCmd.Run (which would also export it to disk
+// and print instructions) -- these tests only need GetEcsCaCert to return
+// a real, non-empty CA cert.
 func storeCaForTest(t *testing.T, ctx *RunContext) {
 	t.Helper()
 	ca, err := certutil.GenerateCA()
@@ -220,10 +220,12 @@ func TestEcsSSLCmdRun_PrintCa_EnsureDirExistsError(t *testing.T) {
 	ctx := newSelfSignedTestCtx(t)
 	storeCaForTest(t, ctx)
 
-	// EcsCaExportPath is "~/.aws-sso/ecs-ca.pem"; making ~/.aws-sso a regular
-	// file (instead of a directory) makes EnsureDirExists fail.
+	// The CA is exported under config.ConfigDir() (already pre-created as a
+	// directory by newSelfSignedTestCtx); removing it and replacing it with a
+	// regular file makes EnsureDirExists fail.
 	home := os.Getenv("HOME")
-	caDir := filepath.Join(home, ".aws-sso")
+	caDir := filepath.Join(home, ".config", "aws-sso")
+	require.NoError(t, os.RemoveAll(caDir))                                  // nolint:gosec
 	require.NoError(t, os.WriteFile(caDir, []byte("not a directory"), 0600)) // nolint:gosec
 
 	ctx.Cli.Setup.Ecs.SSL.PrintCa = true
@@ -240,7 +242,7 @@ func TestEcsSSLCmdRun_PrintCa_WriteFileError(t *testing.T) {
 	// Pre-create the CA export path itself as a directory, so the directory
 	// check/creation succeeds but writing the file to that path fails.
 	home := os.Getenv("HOME")
-	caPath := filepath.Join(home, ".aws-sso", "ecs-ca.pem")
+	caPath := filepath.Join(home, ".config", "aws-sso", EcsCaExportFilename)
 	require.NoError(t, os.MkdirAll(caPath, 0700)) // nolint:gosec
 
 	ctx.Cli.Setup.Ecs.SSL.PrintCa = true

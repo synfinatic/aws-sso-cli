@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/synfinatic/aws-sso-cli/internal/certutil"
+	"github.com/synfinatic/aws-sso-cli/internal/config"
 	"github.com/synfinatic/aws-sso-cli/internal/fileutils"
 )
 
@@ -66,12 +68,14 @@ func (cc *EcsAuthCmd) Run(ctx *RunContext) error {
 	return ctx.Store.SaveEcsBearerToken(ctx.Ctx, ctx.Cli.Setup.Ecs.Auth.BearerToken)
 }
 
-// EcsCaExportPath is where the local CA certificate (never the key) is written
-// so the user can hand it to `security add-trusted-cert`, `update-ca-certificates`,
-// `keytool -importcert`, etc.  Deliberately not under internal/config.ConfigDir():
-// that path can be XDG-based and changes across machines/versions, while this one
-// is a fixed, predictable location to point OS/runtime trust-store tooling at.
-const EcsCaExportPath = "~/.aws-sso/ecs-ca.pem"
+// EcsCaExportFilename is where, under config.ConfigDir(), the local CA certificate
+// (never the key) is written so the user can hand it to `security add-trusted-cert`,
+// `update-ca-certificates`, `keytool -importcert`, etc. It lives alongside the rest
+// of aws-sso's config/store files rather than a separate fixed path: config.ConfigDir()
+// treats the mere existence of the legacy ~/.aws-sso directory as a signal to switch
+// the whole tool into legacy (non-XDG) mode, so creating a standalone ~/.aws-sso just
+// for this file would silently move every other aws-sso config file there too.
+const EcsCaExportFilename = "ecs-ca.pem"
 
 type EcsSSLCmd struct {
 	Delete     bool     `kong:"short=d,help='Disable SSL and delete the current SSL cert/key and CA',xor='flag'"`
@@ -108,7 +112,7 @@ func (cc *EcsSSLCmd) Run(ctx *RunContext) error {
 		return nil
 
 	case ctx.Cli.Setup.Ecs.SSL.PrintCa:
-		return cc.printCaAndInstructions(ctx)
+		return cc.printCaAndInstructions(ctx, true)
 	}
 
 	// --self-signed, or no flag at all: generating (or reusing/rotating) the
@@ -142,7 +146,7 @@ func (cc *EcsSSLCmd) runSelfSigned(ctx *RunContext) error {
 		log.Info("The CA has not changed, so no trust-store changes are needed.")
 	}
 
-	return cc.printCaAndInstructions(ctx)
+	return cc.printCaAndInstructions(ctx, false)
 }
 
 // loadOrGenerateCa returns the existing stored CA unless --rotate-ca was given
@@ -174,12 +178,15 @@ func (cc *EcsSSLCmd) loadOrGenerateCa(ctx *RunContext) (certutil.KeyPair, bool, 
 	return ca, true, nil
 }
 
-// printCaAndInstructions exports the current CA certificate to EcsCaExportPath
+// printCaAndInstructions exports the current CA certificate under config.ConfigDir()
 // and prints per-runtime trust instructions for it. Used by both --self-signed
 // (right after generating/reusing a CA) and --print-ca (to re-display the same
 // instructions on another machine, or after forgetting them, without touching
-// any stored key material).
-func (cc *EcsSSLCmd) printCaAndInstructions(ctx *RunContext) error {
+// any stored key material). printCert additionally prints the CA certificate
+// PEM itself (as --print already does for the leaf certificate) -- only done
+// for --print-ca, not after every --self-signed run, so routine rotation
+// doesn't dump a full PEM block on every invocation.
+func (cc *EcsSSLCmd) printCaAndInstructions(ctx *RunContext, printCert bool) error {
 	caCert, err := ctx.Store.GetEcsCaCert()
 	if err != nil {
 		return err
@@ -188,7 +195,7 @@ func (cc *EcsSSLCmd) printCaAndInstructions(ctx *RunContext) error {
 		return fmt.Errorf("no local CA found; run 'aws-sso setup ecs ssl --self-signed' first")
 	}
 
-	caPath := fileutils.GetHomePath(EcsCaExportPath)
+	caPath := filepath.Join(config.ConfigDir(true), EcsCaExportFilename)
 	if err := fileutils.EnsureDirExists(caPath); err != nil {
 		return fmt.Errorf("unable to create directory for %s: %w", caPath, err)
 	}
@@ -201,6 +208,9 @@ func (cc *EcsSSLCmd) printCaAndInstructions(ctx *RunContext) error {
 		return err
 	}
 
+	if printCert {
+		fmt.Println(caCert)
+	}
 	fmt.Print(ecsSslTrustInstructions(caPath, fingerprint, ctx.Cli.Setup.Ecs.SSL.San))
 	return nil
 }

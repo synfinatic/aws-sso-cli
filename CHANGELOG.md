@@ -7,6 +7,7 @@
 
 * Add `aws-sso login --force` to start a new SSO session, resetting its duration #1455
 * Add `aws-sso ecs docker write-config`
+* Add support for generating self-signed certificates for ECS server
 
 ### Bugs
 

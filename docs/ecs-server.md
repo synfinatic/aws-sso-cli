@@ -94,9 +94,10 @@ This generates a local CA and a leaf certificate signed by that CA, covering
 `localhost`, `127.0.0.1`, `::1`, and `169.254.170.2` by default (add more names
 with `--san`, repeatable). Both are stored in the secure store — the same place
 `aws-sso ecs server` reads the leaf cert/key from — and the CA certificate (never
-its private key) is written to `~/.aws-sso/ecs-ca.pem`. The command then prints a
-short summary (CA path, fingerprint) and a link back to this section for the
-per-OS/per-runtime trust steps below.
+its private key) is written to `ecs-ca.pem` in your aws-sso config directory
+(`~/.config/aws-sso` by default, or `~/.aws-sso` if you're on the legacy config
+path). The command then prints a short summary (CA path, fingerprint) and a link
+back to this section for the per-OS/per-runtime trust steps below.
 
 Both the CA and the leaf use P-256 ECDSA keys. The CA is valid for 10 years
 (its key is retained and reused across leaf rotations, so it's long-lived on
@@ -114,8 +115,8 @@ expire within 30 days (or already has), naming the command to fix it
 (`--self-signed` for the leaf, `--rotate-ca` for the CA) so you don't find out
 from a client's TLS handshake failing instead.
 
-If you need to see the CA path and fingerprint again — on a new machine, or
-because you forgot them — without generating anything new:
+If you need to see the CA certificate, path, and fingerprint again — on a new
+machine, or because you forgot them — without generating anything new:
 
 ```bash
 aws-sso setup ecs ssl --print-ca
@@ -140,7 +141,7 @@ aws-sso setup ecs ssl --print
 The CA is reused (not regenerated) every time you rerun `--self-signed`, so you
 only need to trust it once per machine/runtime below. Only `--rotate-ca` or
 `--delete` will require repeating these steps. Substitute the path printed by
-`--self-signed`/`--print-ca` (`~/.aws-sso/ecs-ca.pem` by default) for `<CA path>`.
+`--self-signed`/`--print-ca` for `<CA path>`.
 
 **macOS** — trust the CA for your user (no sudo required):
 
