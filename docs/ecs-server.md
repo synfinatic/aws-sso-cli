@@ -90,30 +90,33 @@ this for you.
 aws-sso setup ecs ssl --self-signed
 ```
 
-This generates a local CA and a leaf certificate signed by that CA, covering
-`localhost`, `127.0.0.1`, `::1`, and `169.254.170.2` by default (add more names
-with `--san`, repeatable). Both are stored in the secure store — the same place
-`aws-sso ecs server` reads the leaf cert/key from — and the CA certificate (never
-its private key) is written to `ecs-ca.pem` in your aws-sso config directory
-(`~/.config/aws-sso` by default, or `~/.aws-sso` if you're on the legacy config
-path). The command then prints a short summary (CA path, fingerprint) and a link
-back to this section for the per-OS/per-runtime trust steps below.
+This generates (or reuses) a local CA, covering `localhost`, `127.0.0.1`,
+`::1`, and `169.254.170.2` by default. The CA certificate (never its private
+key) is stored in the secure store and also written to `ecs-ca.pem` in your
+aws-sso config directory (`~/.config/aws-sso` by default, or `~/.aws-sso` if
+you're on the legacy config path). The command then prints a short summary
+(CA path, fingerprint) and a link back to this section for the per-OS/
+per-runtime trust steps below.
 
-Both the CA and the leaf use P-256 ECDSA keys. The CA is valid for 10 years
-(its key is retained and reused across leaf rotations, so it's long-lived on
-purpose); the leaf is valid for 397 days and is cheap to rotate since doing so
-never requires re-trusting anything.
+A short-lived (30-day) leaf certificate, signed by that CA, is minted
+automatically wherever it's needed — entirely in memory, never written to
+the secure store or disk — at native `aws-sso ecs server` startup, or by
+`aws-sso ecs docker start`/`write-config` right before the container starts.
+There's nothing to rotate and nothing to rerun for the leaf itself: as long
+as the CA is trusted, every freshly minted leaf is trusted too.
 
-Rerunning `--self-signed` reuses the existing CA and only issues a new leaf, so
-after the first run you never need to re-trust anything — just rerun it whenever
-the leaf is close to expiring (397 days) or you've added a new `--san`. Use
-`--rotate-ca` only if you need to force a brand new CA, which does
-require repeating the trust steps everywhere.
+The CA uses a P-256 ECDSA key and is valid for 10 years — it's retained and
+reused indefinitely on purpose, since regenerating it (`--rotate-ca`) is the
+only thing that requires repeating the trust steps below.
 
-`aws-sso ecs server` warns on startup if the leaf or CA certificate will
-expire within 30 days (or already has), naming the command to fix it
-(`--self-signed` for the leaf, `--rotate-ca` for the CA) so you don't find out
-from a client's TLS handshake failing instead.
+Rerunning `--self-signed` reuses the existing CA, so after the first run you
+never need to re-trust anything. Use `--rotate-ca` only if you need to force
+a brand new CA, which does require repeating the trust steps everywhere.
+
+`aws-sso ecs server` warns on startup if the CA certificate will expire
+within 30 days (or already has), naming `--rotate-ca` as the fix, so you
+don't find out from a client's TLS handshake failing instead. The leaf is
+always freshly minted, so it can never be close to expiring.
 
 If you need to see the CA certificate, path, and fingerprint again — on a new
 machine, or because you forgot them — without generating anything new:
@@ -122,19 +125,16 @@ machine, or because you forgot them — without generating anything new:
 aws-sso setup ecs ssl --print-ca
 ```
 
-To remove both the CA and the leaf certificate/key from the secure store:
+To remove the CA from the secure store (also disabling SSL/TLS until you
+run `--self-signed` again):
 
 ```bash
 aws-sso setup ecs ssl --delete
 ```
 
-If you lose your certificate, you can print it via:
-
-```bash
-aws-sso setup ecs ssl --print
-```
-
-**Note:** At this time, there is no way to extract the SSL Private Key from the Secure Store.
+**Note:** A `docker compose` deployment left running longer than the leaf's
+30-day validity without a restart will have its leaf expire mid-run; restart
+the container (or rerun `write-config` and restart it) to mint a fresh one.
 
 ##### Trusting the CA per OS and runtime
 
