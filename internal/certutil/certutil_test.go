@@ -25,8 +25,11 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"math/big"
+	"net"
 	"strings"
 	"testing"
 	"time"
@@ -277,13 +280,150 @@ func TestZeroPrivateKey(t *testing.T) {
 	require.NoError(t, err)
 	require.NotZero(t, key.D.Sign()) // nolint:staticcheck
 
+	// Hold onto the scalar's backing word array so we can prove the secret is
+	// actually gone from memory, not merely that the big.Int now reads as
+	// zero. big.Int.SetInt64(0) would satisfy the Sign() check below while
+	// leaving every one of these words intact.
+	words := key.D.Bits() // nolint:staticcheck
+	require.NotEmpty(t, words)
+	before := append([]big.Word{}, words...)
+	require.NotEqual(t, make([]big.Word, len(before)), before)
+
 	zeroPrivateKey(key)
 
 	assert.Zero(t, key.D.Sign()) // nolint:staticcheck
+	assert.Equal(t, make([]big.Word, len(before)), words[:len(before)],
+		"secret scalar must be overwritten in its backing array, not just resliced away")
 }
 
 func TestZeroPrivateKey_Nil(t *testing.T) {
 	t.Parallel()
 
 	assert.NotPanics(t, func() { zeroPrivateKey(nil) })
+}
+
+func TestGenerateCA_NameConstraints(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	cert := parsePEMCert(t, ca.CertPEM)
+
+	require.True(t, cert.PermittedDNSDomainsCritical,
+		"name constraints must be critical so validators cannot silently ignore them")
+	assert.Equal(t, []string{"localhost"}, cert.PermittedDNSDomains)
+
+	// Both constraint types must be present: RFC 5280 leaves a name type
+	// entirely unconstrained when no constraint of that type is given.
+	require.Len(t, cert.PermittedIPRanges, 3)
+	ranges := make([]string, len(cert.PermittedIPRanges))
+	for i, r := range cert.PermittedIPRanges {
+		ranges[i] = r.String()
+	}
+	assert.Contains(t, ranges, "127.0.0.0/8")
+	assert.Contains(t, ranges, "::1/128")
+	assert.Contains(t, ranges, "169.254.170.2/32")
+}
+
+// TestGenerateCA_ConstraintsCoverDefaultSANs guards the invariant called out
+// on permittedDNSDomains: every name GenerateLeaf puts in a leaf must be
+// permitted by the CA that signs it, or the CA cannot sign its own leaves.
+func TestGenerateCA_ConstraintsCoverDefaultSANs(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+	leaf, err := GenerateLeaf(ca)
+	require.NoError(t, err)
+
+	pool := x509.NewCertPool()
+	pool.AddCert(parsePEMCert(t, ca.CertPEM))
+	leafCert := parsePEMCert(t, leaf.CertPEM)
+
+	for _, name := range DefaultDNSNames {
+		_, err := leafCert.Verify(x509.VerifyOptions{
+			Roots: pool, DNSName: name,
+			KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		})
+		assert.NoError(t, err, "default DNS SAN %q must be permitted by the CA", name)
+	}
+	for _, ip := range DefaultIPs {
+		_, err := leafCert.Verify(x509.VerifyOptions{
+			Roots: pool, DNSName: ip.String(),
+			KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		})
+		assert.NoError(t, err, "default IP SAN %q must be permitted by the CA", ip)
+	}
+}
+
+// TestGenerateCA_ConstraintsBlockForeignNames is the point of the name
+// constraints: even holding the CA private key, an attacker cannot mint a
+// certificate this CA is authorized to sign for a name outside the ECS
+// Server's own loopback/ECS endpoints.
+func TestGenerateCA_ConstraintsBlockForeignNames(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	caCert := parsePEMCert(t, ca.CertPEM)
+	_, caKey, err := parseCAKeyPair(ca)
+	require.NoError(t, err)
+
+	pool := x509.NewCertPool()
+	pool.AddCert(caCert)
+
+	tests := []struct {
+		name string
+		dns  []string
+		ips  []net.IP
+	}{
+		{name: "www.google.com", dns: []string{"www.google.com"}},
+		{name: "sts.amazonaws.com", dns: []string{"sts.amazonaws.com"}},
+		{name: "wildcard", dns: []string{"*.internal.corp"}},
+		{name: "public IP", ips: []net.IP{net.ParseIP("8.8.8.8")}},
+		{name: "private LAN IP", ips: []net.IP{net.ParseIP("10.0.0.5")}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+			require.NoError(t, err)
+			serial, err := newSerialNumber()
+			require.NoError(t, err)
+
+			now := time.Now()
+			tmpl := &x509.Certificate{
+				SerialNumber:          serial,
+				Subject:               pkix.Name{CommonName: "forged"},
+				NotBefore:             now.Add(-time.Minute),
+				NotAfter:              now.Add(LeafValidity),
+				KeyUsage:              x509.KeyUsageDigitalSignature,
+				ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+				BasicConstraintsValid: true,
+				DNSNames:              tc.dns,
+				IPAddresses:           tc.ips,
+			}
+			der, err := x509.CreateCertificate(rand.Reader, tmpl, caCert, &key.PublicKey, caKey)
+			require.NoError(t, err, "signing itself is expected to succeed; verification is what must fail")
+
+			forged, err := x509.ParseCertificate(der)
+			require.NoError(t, err)
+
+			verifyName := ""
+			if len(tc.dns) > 0 {
+				verifyName = tc.dns[0]
+			} else {
+				verifyName = tc.ips[0].String()
+			}
+
+			_, err = forged.Verify(x509.VerifyOptions{
+				Roots: pool, DNSName: verifyName,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+			})
+			require.Error(t, err, "CA must not be authorized to sign for %q", verifyName)
+			assert.Contains(t, err.Error(), "not permitted by any constraint")
+		})
+	}
 }

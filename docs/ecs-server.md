@@ -109,6 +109,16 @@ The CA uses a P-256 ECDSA key and is valid for 10 years — it's retained and
 reused indefinitely on purpose, since regenerating it (`--rotate-ca`) is the
 only thing that requires repeating the trust steps below.
 
+The CA is **name-constrained** (RFC 5280): it carries a critical
+`nameConstraints` extension permitting only `localhost`, `127.0.0.0/8`,
+`::1/128`, and `169.254.170.2/32`. This matters because the steps below install
+it as a trust root. An unconstrained private CA in your trust store would let
+anyone holding its private key forge a valid certificate for *any* site
+— `sts.amazonaws.com`, your bank, your company SSO. With the constraints in
+place, a leaked CA key can only forge certificates for the loopback and ECS
+endpoints the ECS Server itself listens on. It is also marked `pathLen:0`, so
+it cannot issue intermediate CAs.
+
 Rerunning `--self-signed` reuses the existing CA, so after the first run you
 never need to re-trust anything. Use `--rotate-ca` only if you need to force
 a brand new CA, which does require repeating the trust steps everywhere.

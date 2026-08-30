@@ -67,6 +67,27 @@ var DefaultIPs = []net.IP{
 	net.ParseIP("169.254.170.2"),
 }
 
+// permittedDNSDomains and permittedIPRanges are the X.509 name constraints
+// (RFC 5280 section 4.2.1.10) burned into every generated CA.  Users are told to
+// install this CA as a trust root -- the OS trust store, the JVM cacerts,
+// NODE_EXTRA_CA_CERTS -- so an unconstrained CA would hand whoever holds its
+// private key a universal MITM capability against every TLS connection that
+// machine makes.  Constraining it means a leaked CA key can only forge
+// certificates for the loopback/ECS names the ECS Server actually listens on.
+//
+// Both a DNS and an IP constraint must be present: under RFC 5280 a name type
+// with no constraint of that type is entirely unconstrained, so permitting
+// only DNS names would leave IP SANs wide open (and vice versa).  These must
+// stay a superset of DefaultDNSNames/DefaultIPs or GenerateLeaf will produce
+// leaves its own CA is not authorized to sign.
+var permittedDNSDomains = []string{"localhost"}
+
+var permittedIPRanges = []*net.IPNet{
+	{IP: net.IPv4(127, 0, 0, 0).To4(), Mask: net.CIDRMask(8, 32)},
+	{IP: net.ParseIP("::1"), Mask: net.CIDRMask(128, 128)},
+	{IP: net.IPv4(169, 254, 170, 2).To4(), Mask: net.CIDRMask(32, 32)},
+}
+
 // KeyPair holds a PEM-encoded certificate and its PEM-encoded (PKCS#8)
 // private key.  PKCS#8 is required, not just conventional: SaveEcsSslKeyPair
 // and SaveEcsCaKeyPair validate keys via x509.ParsePKCS8PrivateKey and
@@ -100,6 +121,13 @@ func GenerateCA() (KeyPair, error) {
 		IsCA:                  true,
 		MaxPathLen:            0,
 		MaxPathLenZero:        true,
+
+		// Marked critical so a validator that does not understand name
+		// constraints rejects the CA outright rather than silently ignoring
+		// the extension and treating it as unconstrained.
+		PermittedDNSDomainsCritical: true,
+		PermittedDNSDomains:         permittedDNSDomains,
+		PermittedIPRanges:           permittedIPRanges,
 	}
 
 	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
@@ -199,11 +227,21 @@ func newSerialNumber() (*big.Int, error) {
 // once it's no longer needed. Like ZeroSecret, this is defense-in-depth, not
 // a secure-erase guarantee: the runtime/GC may have already copied the
 // underlying words elsewhere.
+//
+// Note that big.Int.SetInt64(0) is *not* sufficient: setting a big.Int to
+// zero only reslices its backing word array to length zero, leaving every
+// word of the secret scalar intact in memory behind it. The words have to be
+// overwritten through the slice first, then the big.Int normalized back to
+// zero via SetBits.
 func zeroPrivateKey(key *ecdsa.PrivateKey) {
 	if key == nil || key.D == nil { // nolint:staticcheck
 		return
 	}
-	key.D.SetInt64(0) // nolint:staticcheck
+	words := key.D.Bits() // nolint:staticcheck
+	for i := range words {
+		words[i] = 0
+	}
+	key.D.SetBits(words) // nolint:staticcheck
 }
 
 // ZeroSecret best-effort overwrites the backing bytes of a string in place,
