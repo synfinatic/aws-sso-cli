@@ -56,4 +56,3 @@ nav:
       - 'Commit Signing Key': commit-sign-key.asc.md
   - 'Developer Notes':
     - 'Release New Version': release.md
-    - 'ECS Server Threat Model': ecs-threats.md
