@@ -20,6 +20,7 @@ package certutil
 
 import (
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -65,7 +66,7 @@ func TestGenerateLeaf_SignedByCA(t *testing.T) {
 	ca, err := GenerateCA()
 	require.NoError(t, err)
 
-	leaf, err := GenerateLeaf(ca, nil)
+	leaf, err := GenerateLeaf(ca)
 	require.NoError(t, err)
 
 	caCert := parsePEMCert(t, ca.CertPEM)
@@ -87,7 +88,7 @@ func TestGenerateLeaf_DefaultSANs(t *testing.T) {
 	ca, err := GenerateCA()
 	require.NoError(t, err)
 
-	leaf, err := GenerateLeaf(ca, nil)
+	leaf, err := GenerateLeaf(ca)
 	require.NoError(t, err)
 
 	cert := parsePEMCert(t, leaf.CertPEM)
@@ -103,26 +104,17 @@ func TestGenerateLeaf_DefaultSANs(t *testing.T) {
 	assert.Contains(t, ips, "169.254.170.2")
 }
 
-func TestGenerateLeaf_ExtraSANs(t *testing.T) {
+func TestGenerateLeaf_Validity(t *testing.T) {
 	t.Parallel()
 
 	ca, err := GenerateCA()
 	require.NoError(t, err)
 
-	leaf, err := GenerateLeaf(ca, []string{"myhost.local", "10.0.0.5", "localhost"})
+	leaf, err := GenerateLeaf(ca)
 	require.NoError(t, err)
 
 	cert := parsePEMCert(t, leaf.CertPEM)
-
-	assert.Contains(t, cert.DNSNames, "myhost.local")
-	// "localhost" was already a default SAN and should not be duplicated.
-	assert.Equal(t, 1, countOccurrences(cert.DNSNames, "localhost"))
-
-	ips := make([]string, len(cert.IPAddresses))
-	for i, ip := range cert.IPAddresses {
-		ips[i] = ip.String()
-	}
-	assert.Contains(t, ips, "10.0.0.5")
+	assert.WithinDuration(t, cert.NotBefore.Add(LeafValidity), cert.NotAfter, time.Minute)
 }
 
 func TestGenerateLeaf_UntrustedCARejected(t *testing.T) {
@@ -133,7 +125,7 @@ func TestGenerateLeaf_UntrustedCARejected(t *testing.T) {
 	ca2, err := GenerateCA()
 	require.NoError(t, err)
 
-	leaf, err := GenerateLeaf(ca1, nil)
+	leaf, err := GenerateLeaf(ca1)
 	require.NoError(t, err)
 
 	leafCert := parsePEMCert(t, leaf.CertPEM)
@@ -172,7 +164,7 @@ func TestFingerprint(t *testing.T) {
 func TestGenerateLeaf_InvalidCACert(t *testing.T) {
 	t.Parallel()
 
-	_, err := GenerateLeaf(KeyPair{CertPEM: "not a cert", KeyPEM: "not a key"}, nil)
+	_, err := GenerateLeaf(KeyPair{CertPEM: "not a cert", KeyPEM: "not a key"})
 	assert.Error(t, err)
 }
 
@@ -182,7 +174,7 @@ func TestGenerateLeaf_InvalidCAKeyPEM(t *testing.T) {
 	ca, err := GenerateCA()
 	require.NoError(t, err)
 
-	_, err = GenerateLeaf(KeyPair{CertPEM: ca.CertPEM, KeyPEM: "not a key"}, nil)
+	_, err = GenerateLeaf(KeyPair{CertPEM: ca.CertPEM, KeyPEM: "not a key"})
 	assert.Error(t, err)
 }
 
@@ -193,7 +185,7 @@ func TestGenerateLeaf_UnparsableCAKey(t *testing.T) {
 	require.NoError(t, err)
 
 	badKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: []byte("garbage")})
-	_, err = GenerateLeaf(KeyPair{CertPEM: ca.CertPEM, KeyPEM: string(badKeyPEM)}, nil)
+	_, err = GenerateLeaf(KeyPair{CertPEM: ca.CertPEM, KeyPEM: string(badKeyPEM)})
 	assert.Error(t, err)
 }
 
@@ -209,7 +201,7 @@ func TestGenerateLeaf_NonECDSACAKey(t *testing.T) {
 	require.NoError(t, err)
 	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: der})
 
-	_, err = GenerateLeaf(KeyPair{CertPEM: ca.CertPEM, KeyPEM: string(keyPEM)}, nil)
+	_, err = GenerateLeaf(KeyPair{CertPEM: ca.CertPEM, KeyPEM: string(keyPEM)})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "not an ECDSA key")
 }
@@ -247,12 +239,51 @@ func parsePEMCert(t *testing.T, certPEM string) *x509.Certificate {
 	return cert
 }
 
-func countOccurrences(items []string, target string) int {
-	count := 0
-	for _, item := range items {
-		if item == target {
-			count++
-		}
+func TestZeroSecret(t *testing.T) {
+	t.Parallel()
+
+	// Build the string from a freshly-allocated []byte (not a literal) so it
+	// isn't interned/shared. string(b) copies, so we can't observe the
+	// zeroing through b itself -- instead take fresh []byte(s) snapshots
+	// before and after: each snapshot copies whatever s's backing array
+	// holds *at that moment*, so the second one reflects ZeroSecret's edit.
+	b := make([]byte, 32)
+	for i := range b {
+		b[i] = byte(i + 1)
 	}
-	return count
+	s := string(b)
+
+	before := []byte(s)
+	require.NotZero(t, before[0], "sanity check: string should start non-zero")
+
+	ZeroSecret(s)
+
+	after := []byte(s)
+	for i, v := range after {
+		assert.Zerof(t, v, "byte %d was not zeroed", i)
+	}
+}
+
+func TestZeroSecret_Empty(t *testing.T) {
+	t.Parallel()
+
+	assert.NotPanics(t, func() { ZeroSecret("") })
+}
+
+func TestZeroPrivateKey(t *testing.T) {
+	t.Parallel()
+
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	require.NotZero(t, key.D.Sign()) // nolint:staticcheck
+
+	zeroPrivateKey(key)
+
+	assert.Zero(t, key.D.Sign()) // nolint:staticcheck
+}
+
+func TestZeroPrivateKey_Nil(t *testing.T) {
+	t.Parallel()
+
+	assert.NotPanics(t, func() { zeroPrivateKey(nil) })
 }

@@ -183,9 +183,9 @@ func listProfiles(profiles []ecs.ListProfilesResponse) error {
 }
 
 func newClient(server string, ctx *RunContext) *client.ECSClient {
-	certChain, err := ctx.Store.GetEcsSslCert()
+	certChain, err := ctx.Store.GetEcsCaCert()
 	if err != nil {
-		log.Fatal("Unable to get ECS SSL cert", "error", err.Error())
+		log.Fatal("Unable to get ECS CA cert", "error", err.Error())
 	}
 	bearerToken, err := ctx.Store.GetEcsBearerToken()
 	if err != nil {

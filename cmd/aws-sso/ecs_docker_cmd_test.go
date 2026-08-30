@@ -20,14 +20,8 @@ package main
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/x509"
-	"crypto/x509/pkix"
 	"encoding/json"
-	"encoding/pem"
-	"math/big"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -39,34 +33,20 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/synfinatic/aws-sso-cli/internal/certutil"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	ssocache "github.com/synfinatic/aws-sso-cli/internal/sso/cache"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
 
-// genTestCertPEM creates a throwaway ECDSA P-256 self-signed certificate/key
-// pair in PEM form, valid enough to pass SaveEcsSslKeyPair's x509 validation.
-func genTestCertPEM(t *testing.T) (certPEM, keyPEM string) {
+// genTestCA creates a throwaway CA PEM certificate/key pair, valid enough to
+// pass SaveEcsCaKeyPair's x509 validation and to sign leaves via
+// certutil.GenerateLeaf.
+func genTestCA(t *testing.T) (certPEM, keyPEM string) {
 	t.Helper()
-
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	ca, err := certutil.GenerateCA()
 	require.NoError(t, err)
-
-	template := &x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject:      pkix.Name{CommonName: "localhost"},
-		NotBefore:    time.Now().Add(-time.Minute),
-		NotAfter:     time.Now().Add(time.Hour),
-	}
-
-	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
-	require.NoError(t, err)
-	certPEM = string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER}))
-
-	keyDER, err := x509.MarshalPKCS8PrivateKey(key)
-	require.NoError(t, err)
-	keyPEM = string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyDER}))
-	return
+	return ca.CertPEM, ca.KeyPEM
 }
 
 func TestEcsDockerStartCmdAfterApply(t *testing.T) {
@@ -170,9 +150,9 @@ func TestEcsDockerWriteConfigCmdRun(t *testing.T) {
 	store, err := storage.OpenJsonStore(context.Background(), filepath.Join(home, "store.json"))
 	require.NoError(t, err)
 
-	certPEM, keyPEM := genTestCertPEM(t)
+	caCertPEM, caKeyPEM := genTestCA(t)
 	require.NoError(t, store.SaveEcsBearerToken(context.Background(), "s3cr3t"))
-	require.NoError(t, store.SaveEcsSslKeyPair(context.Background(), []byte(keyPEM), []byte(certPEM)))
+	require.NoError(t, store.SaveEcsCaKeyPair(context.Background(), []byte(caKeyPEM), []byte(caCertPEM)))
 
 	ctx := &RunContext{Store: store}
 	cc := &EcsDockerWriteConfigCmd{}
@@ -185,8 +165,20 @@ func TestEcsDockerWriteConfigCmdRun(t *testing.T) {
 	sec := &ecs.ECSSecurity{}
 	require.NoError(t, json.Unmarshal(data, sec))
 	assert.Equal(t, "s3cr3t", sec.BearerToken)
-	assert.Equal(t, keyPEM, sec.PrivateKey)
-	assert.Equal(t, certPEM, sec.CertChain)
+	assert.NotEmpty(t, sec.PrivateKey)
+	assert.NotEmpty(t, sec.CertChain)
+
+	// The written leaf must chain-verify against the stored CA -- it's
+	// minted fresh, not a byte-for-byte copy of anything persisted.
+	caCert := parsePEMCertForTest(t, caCertPEM)
+	leafCert := parsePEMCertForTest(t, sec.CertChain)
+	pool := x509.NewCertPool()
+	pool.AddCert(caCert)
+	_, err = leafCert.Verify(x509.VerifyOptions{
+		Roots:     pool,
+		KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+	})
+	assert.NoError(t, err, "written leaf should chain-verify against the stored CA")
 }
 
 func TestEcsDockerWriteConfigCmdRunDisabled(t *testing.T) {
@@ -197,9 +189,9 @@ func TestEcsDockerWriteConfigCmdRunDisabled(t *testing.T) {
 	store, err := storage.OpenJsonStore(context.Background(), filepath.Join(home, "store.json"))
 	require.NoError(t, err)
 
-	certPEM, keyPEM := genTestCertPEM(t)
+	caCertPEM, caKeyPEM := genTestCA(t)
 	require.NoError(t, store.SaveEcsBearerToken(context.Background(), "s3cr3t"))
-	require.NoError(t, store.SaveEcsSslKeyPair(context.Background(), []byte(keyPEM), []byte(certPEM)))
+	require.NoError(t, store.SaveEcsCaKeyPair(context.Background(), []byte(caKeyPEM), []byte(caCertPEM)))
 
 	ctx := &RunContext{Store: store}
 	cc := &EcsDockerWriteConfigCmd{DisableAuth: true, DisableSSL: true}
@@ -214,4 +206,52 @@ func TestEcsDockerWriteConfigCmdRunDisabled(t *testing.T) {
 	assert.Empty(t, sec.BearerToken)
 	assert.Empty(t, sec.PrivateKey)
 	assert.Empty(t, sec.CertChain)
+}
+
+func TestEcsDockerWriteConfigCmdRun_MintsFreshLeafEachRun(t *testing.T) {
+	home := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config", "aws-sso"), 0700))
+	t.Setenv("HOME", home)
+
+	store, err := storage.OpenJsonStore(context.Background(), filepath.Join(home, "store.json"))
+	require.NoError(t, err)
+
+	caCertPEM, caKeyPEM := genTestCA(t)
+	require.NoError(t, store.SaveEcsCaKeyPair(context.Background(), []byte(caKeyPEM), []byte(caCertPEM)))
+
+	ctx := &RunContext{Store: store}
+	cc := &EcsDockerWriteConfigCmd{DisableAuth: true}
+	path := filepath.Join(home, ".aws-sso", "mnt", "docker-ecs")
+
+	readLeaf := func() string {
+		require.NoError(t, cc.Run(ctx))
+		data, err := os.ReadFile(path) // nolint:gosec
+		require.NoError(t, err)
+		sec := &ecs.ECSSecurity{}
+		require.NoError(t, json.Unmarshal(data, sec))
+		return sec.CertChain
+	}
+
+	leaf1 := readLeaf()
+	leaf2 := readLeaf()
+	assert.NotEqual(t, leaf1, leaf2, "each run should mint a fresh leaf rather than reuse a stored one")
+}
+
+func TestEcsDockerWriteConfigCmdRun_MalformedCA_ReturnsError(t *testing.T) {
+	home := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config", "aws-sso"), 0700))
+	t.Setenv("HOME", home)
+
+	store, err := storage.OpenJsonStore(context.Background(), filepath.Join(home, "store.json"))
+	require.NoError(t, err)
+
+	ctx := &RunContext{Store: &errStore{
+		SecureStorage: store,
+		getEcsCaCert:  func() (string, error) { return "not a cert", nil },
+		getEcsCaKey:   func() (string, error) { return "not a key", nil },
+	}}
+	cc := &EcsDockerWriteConfigCmd{DisableAuth: true}
+	err = cc.Run(ctx)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unable to generate leaf certificate")
 }

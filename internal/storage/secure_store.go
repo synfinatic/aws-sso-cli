@@ -49,12 +49,6 @@ type SecureStorage interface {
 	GetEcsBearerToken() (string, error)
 	DeleteEcsBearerToken(ctx context.Context) error
 
-	// ECS Server SSL Cert
-	SaveEcsSslKeyPair(ctx context.Context, privateKey []byte, certChain []byte) error
-	DeleteEcsSslKeyPair(ctx context.Context) error
-	GetEcsSslCert() (string, error)
-	GetEcsSslKey() (string, error)
-
 	// ECS Server private CA (used only by `setup ecs ssl --self-signed`)
 	SaveEcsCaKeyPair(ctx context.Context, privateKey []byte, certChain []byte) error
 	DeleteEcsCaKeyPair(ctx context.Context) error

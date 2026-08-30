@@ -78,12 +78,10 @@ func (cc *EcsAuthCmd) Run(ctx *RunContext) error {
 const EcsCaExportFilename = "ecs-ca.pem"
 
 type EcsSSLCmd struct {
-	Delete     bool     `kong:"short=d,help='Disable SSL and delete the current SSL cert/key and CA',xor='flag'"`
-	Print      bool     `kong:"short=p,help='Print the current SSL certificate',xor='flag'"`
-	PrintCa    bool     `kong:"help='Print the local self-signed CA certificate and re-print trust instructions',xor='flag'"`
-	SelfSigned bool     `kong:"help='Generate (or reuse) a local CA and issue a new leaf certificate for the ECS Server',xor='flag'"`
-	San        []string `kong:"help='Additional DNS name or IP address to include in the self-signed leaf certificate (repeatable)',group='self-signed'"`
-	RotateCa   bool     `kong:"help='Force generation of a brand new CA instead of reusing the existing one (requires re-trusting on every client)'"`
+	Delete     bool `kong:"short=d,help='Disable SSL and delete the local CA',xor='flag'"`
+	PrintCa    bool `kong:"help='Print the local self-signed CA certificate and re-print trust instructions',xor='flag'"`
+	SelfSigned bool `kong:"help='Generate (or reuse) the local CA for the ECS Server -- a short-lived leaf certificate is minted automatically wherever it is needed',xor='flag'"`
+	RotateCa   bool `kong:"help='Force generation of a brand new CA instead of reusing the existing one (requires re-trusting on every client)'"`
 }
 
 // AfterApply determines if SSO auth token is required
@@ -95,21 +93,7 @@ func (e EcsSSLCmd) AfterApply(runCtx *RunContext) error {
 func (cc *EcsSSLCmd) Run(ctx *RunContext) error {
 	switch {
 	case ctx.Cli.Setup.Ecs.SSL.Delete:
-		if err := ctx.Store.DeleteEcsCaKeyPair(ctx.Ctx); err != nil {
-			return err
-		}
-		return ctx.Store.DeleteEcsSslKeyPair(ctx.Ctx)
-
-	case ctx.Cli.Setup.Ecs.SSL.Print:
-		cert, err := ctx.Store.GetEcsSslCert()
-		if err != nil {
-			return err
-		}
-		if cert == "" {
-			return fmt.Errorf("no certificate found")
-		}
-		fmt.Println(cert)
-		return nil
+		return ctx.Store.DeleteEcsCaKeyPair(ctx.Ctx)
 
 	case ctx.Cli.Setup.Ecs.SSL.PrintCa:
 		return cc.printCaAndInstructions(ctx, true)
@@ -125,57 +109,47 @@ func (cc *EcsSSLCmd) Run(ctx *RunContext) error {
 // Reusing the CA is the entire renewal story: since the CA never changes on a
 // normal rerun, nothing needs to be re-trusted in the OS/runtime trust stores.
 func (cc *EcsSSLCmd) runSelfSigned(ctx *RunContext) error {
-	ca, freshCa, err := cc.loadOrGenerateCa(ctx)
+	freshCa, err := cc.loadOrGenerateCa(ctx)
 	if err != nil {
 		return err
 	}
 
-	leaf, err := certutil.GenerateLeaf(ca, ctx.Cli.Setup.Ecs.SSL.San)
-	if err != nil {
-		return fmt.Errorf("unable to generate leaf certificate: %w", err)
-	}
-
-	if err := ctx.Store.SaveEcsSslKeyPair(ctx.Ctx, []byte(leaf.KeyPEM), []byte(leaf.CertPEM)); err != nil {
-		return fmt.Errorf("unable to save leaf certificate: %w", err)
-	}
-
 	if freshCa {
-		log.Info("Generated a new local CA and leaf certificate for the ECS Server.")
+		log.Info("Generated a new local CA for the ECS Server.")
 	} else {
-		log.Info("Reused the existing local CA and issued a new leaf certificate for the ECS Server.")
+		log.Info("Reused the existing local CA for the ECS Server.")
 		log.Info("The CA has not changed, so no trust-store changes are needed.")
 	}
 
 	return cc.printCaAndInstructions(ctx, false)
 }
 
-// loadOrGenerateCa returns the existing stored CA unless --rotate-ca was given
-// or no CA is stored yet, in which case it generates and saves a new one. The
-// bool return indicates whether a new CA was generated (true) or an existing
-// one was reused (false).
-func (cc *EcsSSLCmd) loadOrGenerateCa(ctx *RunContext) (certutil.KeyPair, bool, error) {
+// loadOrGenerateCa confirms a CA is stored, generating and saving a new one
+// if --rotate-ca was given or none is stored yet. The bool return indicates
+// whether a new CA was generated (true) or an existing one was reused
+// (false). The reuse path only needs to confirm a CA cert exists, so it
+// never reads the CA private key at all.
+func (cc *EcsSSLCmd) loadOrGenerateCa(ctx *RunContext) (bool, error) {
 	if !ctx.Cli.Setup.Ecs.SSL.RotateCa {
 		caCert, err := ctx.Store.GetEcsCaCert()
 		if err != nil {
-			return certutil.KeyPair{}, false, err
+			return false, err
 		}
-		caKey, err := ctx.Store.GetEcsCaKey()
-		if err != nil {
-			return certutil.KeyPair{}, false, err
-		}
-		if caCert != "" && caKey != "" {
-			return certutil.KeyPair{CertPEM: caCert, KeyPEM: caKey}, false, nil
+		if caCert != "" {
+			return false, nil
 		}
 	}
 
 	ca, err := certutil.GenerateCA()
 	if err != nil {
-		return certutil.KeyPair{}, false, fmt.Errorf("unable to generate CA: %w", err)
+		return false, fmt.Errorf("unable to generate CA: %w", err)
 	}
-	if err := ctx.Store.SaveEcsCaKeyPair(ctx.Ctx, []byte(ca.KeyPEM), []byte(ca.CertPEM)); err != nil {
-		return certutil.KeyPair{}, false, fmt.Errorf("unable to save CA: %w", err)
+	err = ctx.Store.SaveEcsCaKeyPair(ctx.Ctx, []byte(ca.KeyPEM), []byte(ca.CertPEM))
+	certutil.ZeroSecret(ca.KeyPEM)
+	if err != nil {
+		return false, fmt.Errorf("unable to save CA: %w", err)
 	}
-	return ca, true, nil
+	return true, nil
 }
 
 // printCaAndInstructions exports the current CA certificate under config.ConfigDir()
@@ -211,6 +185,6 @@ func (cc *EcsSSLCmd) printCaAndInstructions(ctx *RunContext, printCert bool) err
 	if printCert {
 		fmt.Println(caCert)
 	}
-	fmt.Print(ecsSslTrustInstructions(caPath, fingerprint, ctx.Cli.Setup.Ecs.SSL.San))
+	fmt.Print(ecsSslTrustInstructions(caPath, fingerprint))
 	return nil
 }

@@ -40,8 +40,6 @@ type JsonStore struct {
 	RoleCredentials     map[string]RoleCredentials     `json:"RoleCredentials,omitempty"`   // ARN = key
 	StaticCredentials   map[string]StaticCredentials   `json:"StaticCredentials,omitempty"` // ARN = key
 	EcsBearerToken      string                         `json:"EcsBearerToken,omitempty"`
-	EcsPrivateKey       string                         `json:"EcsPrivateKey,omitempty"`
-	EcsCertChain        string                         `json:"EcsCertChain,omitempty"`
 	EcsCaKey            string                         `json:"EcsCaKey,omitempty"`
 	EcsCaCert           string                         `json:"EcsCaCert,omitempty"`
 }
@@ -57,8 +55,6 @@ func OpenJsonStore(ctx context.Context, filename string) (SecureStorage, error) 
 		RoleCredentials:     map[string]RoleCredentials{},
 		StaticCredentials:   map[string]StaticCredentials{},
 		EcsBearerToken:      "",
-		EcsPrivateKey:       "",
-		EcsCertChain:        "",
 		EcsCaKey:            "",
 		EcsCaCert:           "",
 	}
@@ -240,37 +236,6 @@ func (jc *JsonStore) GetEcsBearerToken() (string, error) {
 // DeleteEcsBearerToken deletes the token from the json file
 func (jc *JsonStore) DeleteEcsBearerToken(ctx context.Context) error {
 	jc.EcsBearerToken = ""
-	return jc.save(ctx)
-}
-
-// SaveEcsSslKeyPair stores the SSL private key and certificate chain in the json file
-func (jc *JsonStore) SaveEcsSslKeyPair(ctx context.Context, privateKey, certChain []byte) error {
-	if err := ValidateSSLCertificate(certChain); err != nil {
-		return err
-	}
-	jc.EcsCertChain = string(certChain)
-
-	if err := ValidateSSLPrivateKey(privateKey); err != nil {
-		return err
-	}
-	jc.EcsPrivateKey = string(privateKey)
-	return jc.save(ctx)
-}
-
-// GetEcsSslCert retrieves the SSL certificate chain from the json file
-func (jc *JsonStore) GetEcsSslCert() (string, error) {
-	return jc.EcsCertChain, nil
-}
-
-// GetEcsSslKey retrieves the SSL private keyfrom the json file
-func (jc *JsonStore) GetEcsSslKey() (string, error) {
-	return jc.EcsPrivateKey, nil
-}
-
-// DeleteEcsSslKeyPair deletes the SSL private key and certificate chain from the json file
-func (jc *JsonStore) DeleteEcsSslKeyPair(ctx context.Context) error {
-	jc.EcsPrivateKey = ""
-	jc.EcsCertChain = ""
 	return jc.save(ctx)
 }
 

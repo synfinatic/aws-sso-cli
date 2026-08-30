@@ -25,6 +25,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/synfinatic/aws-sso-cli/internal/certutil"
@@ -96,13 +97,26 @@ func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 			return err
 		}
 
-		if privateKey, err = ctx.Store.GetEcsSslKey(); err != nil {
+		caCert, err := ctx.Store.GetEcsCaCert()
+		if err != nil {
 			return err
-		} else if privateKey != "" {
-			// only get the certificate if the private key is set
-			if certChain, err = ctx.Store.GetEcsSslCert(); err != nil {
-				return err
+		}
+		caKey, err := ctx.Store.GetEcsCaKey()
+		if err != nil {
+			return err
+		}
+		if caCert != "" && caKey != "" {
+			// Clone before use: SecureStorage backends return their cached key
+			// string directly, sharing its backing array. ZeroSecret-ing that
+			// shared array in place would corrupt the store's own in-memory
+			// copy instead of just scrubbing our local, single-use copy.
+			caKey = strings.Clone(caKey)
+			leaf, leafErr := certutil.GenerateLeaf(certutil.KeyPair{CertPEM: caCert, KeyPEM: caKey})
+			certutil.ZeroSecret(caKey)
+			if leafErr != nil {
+				return fmt.Errorf("unable to generate leaf certificate: %w", leafErr)
 			}
+			privateKey, certChain = leaf.KeyPEM, leaf.CertPEM
 		}
 	}
 
@@ -124,9 +138,11 @@ func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 
 	if privateKey != "" && certChain != "" {
 		log.Info("SSL/TLS: enabled")
-		warnIfCertExpiringSoon(certChain, "leaf certificate",
-			"aws-sso setup ecs ssl --self-signed")
 
+		// Docker's `ecs server --docker` process reads its leaf from the
+		// security file rather than the store, so it has no access to the CA
+		// cert here to check its expiry; threading the CA cert through the
+		// security file just for this warning is left as a follow-up.
 		if !ctx.Cli.Ecs.Server.Docker {
 			if caCert, err := ctx.Store.GetEcsCaCert(); err == nil && caCert != "" {
 				warnIfCertExpiringSoon(caCert, "CA certificate",

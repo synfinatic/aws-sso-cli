@@ -254,46 +254,6 @@ func (suite *OnePasswordSuite) TestEcsBearerToken() {
 	assert.Empty(t, token)
 }
 
-func (suite *OnePasswordSuite) TestEcsSslKeyPair() { //nolint:dupl
-	t := suite.T()
-
-	cert, err := suite.store.GetEcsSslCert()
-	assert.NoError(t, err)
-	assert.Empty(t, cert)
-
-	key, err := suite.store.GetEcsSslKey()
-	assert.NoError(t, err)
-	assert.Empty(t, key)
-
-	certBytes, err := os.ReadFile("../ecs/server/testdata/localhost.crt")
-	assert.NoError(t, err)
-	keyBytes, err := os.ReadFile("../ecs/server/testdata/localhost.key")
-	assert.NoError(t, err)
-
-	assert.NoError(t, suite.store.SaveEcsSslKeyPair(context.Background(), []byte{}, certBytes))
-	assert.NoError(t, suite.store.SaveEcsSslKeyPair(context.Background(), keyBytes, certBytes))
-	assert.Error(t, suite.store.SaveEcsSslKeyPair(context.Background(), keyBytes, keyBytes))
-	assert.Error(t, suite.store.SaveEcsSslKeyPair(context.Background(), certBytes, certBytes))
-
-	cert, err = suite.store.GetEcsSslCert()
-	assert.NoError(t, err)
-	assert.Equal(t, string(certBytes), cert)
-
-	key, err = suite.store.GetEcsSslKey()
-	assert.NoError(t, err)
-	assert.Equal(t, string(keyBytes), key)
-
-	assert.NoError(t, suite.store.DeleteEcsSslKeyPair(context.Background()))
-
-	cert, err = suite.store.GetEcsSslCert()
-	assert.NoError(t, err)
-	assert.Empty(t, cert)
-
-	key, err = suite.store.GetEcsSslKey()
-	assert.NoError(t, err)
-	assert.Empty(t, key)
-}
-
 func (suite *OnePasswordSuite) TestEcsCaKeyPair() { //nolint:dupl
 	t := suite.T()
 

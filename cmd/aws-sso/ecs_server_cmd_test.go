@@ -19,13 +19,16 @@ package main
  */
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"fmt"
 	"math/big"
+	"net"
 	"testing"
 	"time"
 
@@ -35,6 +38,106 @@ import (
 	ssocache "github.com/synfinatic/aws-sso-cli/internal/sso/cache"
 	testlogger "github.com/synfinatic/flexlog/test"
 )
+
+// freeTestPort returns a currently-unused TCP port on 127.0.0.1 for tests
+// that need to bind their own listener (EcsServerCmd.Run picks its own
+// net.Listen, so tests can't use port 0 directly).
+func freeTestPort(t *testing.T) int {
+	t.Helper()
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port
+}
+
+// TestEcsServerCmdRun_NativeMintsLeafFromCA proves the native (non-Docker)
+// path mints a fresh leaf from the stored CA rather than reading a
+// persisted leaf: a client trusting only the CA (never told about any
+// specific leaf) completes a real TLS handshake against the running server.
+func TestEcsServerCmdRun_NativeMintsLeafFromCA(t *testing.T) {
+	ctx := newSelfSignedTestCtx(t)
+	storeCaForTest(t, ctx)
+
+	caCert, err := ctx.Store.GetEcsCaCert()
+	require.NoError(t, err)
+
+	cctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	ctx.Ctx = cctx
+
+	port := freeTestPort(t)
+	ctx.Cli.Ecs.Server = EcsServerCmd{
+		BindIP:      "127.0.0.1",
+		Port:        port,
+		DisableAuth: true,
+	}
+	cc := &ctx.Cli.Ecs.Server
+
+	done := make(chan error, 1)
+	go func() { done <- cc.Run(ctx) }()
+
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	require.NoError(t, waitForEcsServerUp("https", addr, caCert, 5*time.Second),
+		"native ecs server should mint a leaf from the stored CA and serve TLS")
+
+	cancel()
+	assert.NoError(t, <-done, "Run() should return nil on context cancellation")
+}
+
+// TestEcsServerCmdRun_NativeNoCA_SSLDisabled confirms that, with no CA
+// configured, the native path leaves SSL disabled exactly as before this
+// change (no persisted leaf to fall back to either).
+func TestEcsServerCmdRun_NativeNoCA_SSLDisabled(t *testing.T) {
+	ctx := newSelfSignedTestCtx(t)
+
+	caCert, err := ctx.Store.GetEcsCaCert()
+	require.NoError(t, err)
+	require.Empty(t, caCert, "sanity check: no CA should be configured")
+
+	cctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	ctx.Ctx = cctx
+
+	port := freeTestPort(t)
+	ctx.Cli.Ecs.Server = EcsServerCmd{
+		BindIP:      "127.0.0.1",
+		Port:        port,
+		DisableAuth: true,
+	}
+	cc := &ctx.Cli.Ecs.Server
+
+	done := make(chan error, 1)
+	go func() { done <- cc.Run(ctx) }()
+
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	require.NoError(t, waitForEcsServerUp("http", addr, "", 5*time.Second),
+		"ecs server with no CA configured should serve plain HTTP")
+
+	cancel()
+	assert.NoError(t, <-done, "Run() should return nil on context cancellation")
+}
+
+// TestEcsServerCmdRun_NativeMalformedCA_ReturnsError confirms a malformed
+// stored CA fails fast rather than silently falling back to no-TLS.
+func TestEcsServerCmdRun_NativeMalformedCA_ReturnsError(t *testing.T) {
+	ctx := newSelfSignedTestCtx(t)
+	ctx.Store = &errStore{
+		SecureStorage: ctx.Store,
+		getEcsCaCert:  func() (string, error) { return "not a cert", nil },
+		getEcsCaKey:   func() (string, error) { return "not a key", nil },
+	}
+
+	ctx.Cli.Ecs.Server = EcsServerCmd{
+		BindIP:      "127.0.0.1",
+		Port:        freeTestPort(t),
+		DisableAuth: true,
+	}
+	cc := &ctx.Cli.Ecs.Server
+
+	err := cc.Run(ctx)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unable to generate leaf certificate")
+}
 
 // genTestCertWithNotAfter builds a self-signed leaf good enough for
 // warnIfCertExpiringSoon (it only needs a certutil.NotAfter-parseable PEM),

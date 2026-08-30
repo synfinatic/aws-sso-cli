@@ -38,23 +38,8 @@ func TestEcsSSLCmdRun_Delete(t *testing.T) {
 	ctx.Cli.Setup.Ecs.SSL.Delete = true
 
 	cmd := &EcsSSLCmd{}
-	// Store is empty; DeleteEcsSslKeyPair on an empty store still returns nil.
+	// Store is empty; DeleteEcsCaKeyPair on an empty store still returns nil.
 	assert.NoError(t, cmd.Run(ctx))
-}
-
-func TestEcsSSLCmdRun_Print_NoCert(t *testing.T) {
-	store := openTestStore(t)
-	ctx := &RunContext{
-		Cli:   &CLI{},
-		Store: store,
-		Ctx:   context.Background(),
-	}
-	ctx.Cli.Setup.Ecs.SSL.Print = true
-
-	cmd := &EcsSSLCmd{}
-	// No certificate stored; Run should return an error.
-	err := cmd.Run(ctx)
-	assert.Error(t, err)
 }
 
 func newSelfSignedTestCtx(t *testing.T) *RunContext {
@@ -95,21 +80,6 @@ func TestEcsSSLCmdRun_SelfSigned_FreshCA(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotEmpty(t, caCert)
 	assert.NotEmpty(t, caKey)
-
-	leafCert, err := ctx.Store.GetEcsSslCert()
-	require.NoError(t, err)
-	leafKey, err := ctx.Store.GetEcsSslKey()
-	require.NoError(t, err)
-	assert.NotEmpty(t, leafCert)
-	assert.NotEmpty(t, leafKey)
-
-	pool := x509.NewCertPool()
-	pool.AddCert(parsePEMCertForTest(t, caCert))
-	_, err = parsePEMCertForTest(t, leafCert).Verify(x509.VerifyOptions{
-		Roots:     pool,
-		KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-	})
-	assert.NoError(t, err, "leaf certificate should chain-verify against the generated CA")
 }
 
 func TestEcsSSLCmdRun_SelfSigned_RerunReusesCA(t *testing.T) {
@@ -121,18 +91,33 @@ func TestEcsSSLCmdRun_SelfSigned_RerunReusesCA(t *testing.T) {
 
 	caCert1, err := ctx.Store.GetEcsCaCert()
 	require.NoError(t, err)
-	leafCert1, err := ctx.Store.GetEcsSslCert()
-	require.NoError(t, err)
 
 	require.NoError(t, cmd.Run(ctx))
 
 	caCert2, err := ctx.Store.GetEcsCaCert()
 	require.NoError(t, err)
-	leafCert2, err := ctx.Store.GetEcsSslCert()
-	require.NoError(t, err)
 
 	assert.Equal(t, caCert1, caCert2, "CA must be byte-for-byte identical across reruns")
-	assert.NotEqual(t, leafCert1, leafCert2, "leaf certificate should rotate on rerun")
+}
+
+// TestEcsSSLCmdRun_SelfSigned_ReuseNeverReadsCaKey confirms the reuse path
+// (--self-signed, CA already present, no --rotate-ca) no longer mints a leaf
+// and so never needs the CA private key -- only GetEcsCaCert is consulted.
+func TestEcsSSLCmdRun_SelfSigned_ReuseNeverReadsCaKey(t *testing.T) {
+	ctx := newSelfSignedTestCtx(t)
+	storeCaForTest(t, ctx)
+
+	ctx.Store = &errStore{
+		SecureStorage: ctx.Store,
+		getEcsCaKey: func() (string, error) {
+			t.Fatal("GetEcsCaKey should not be called when reusing an existing CA")
+			return "", nil
+		},
+	}
+	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
+
+	cmd := &EcsSSLCmd{}
+	require.NoError(t, cmd.Run(ctx))
 }
 
 func TestEcsSSLCmdRun_SelfSigned_RotateCa(t *testing.T) {
@@ -154,28 +139,7 @@ func TestEcsSSLCmdRun_SelfSigned_RotateCa(t *testing.T) {
 	assert.NotEqual(t, caCert1, caCert2, "--rotate-ca should generate a brand new CA")
 }
 
-func TestEcsSSLCmdRun_SelfSigned_San(t *testing.T) {
-	ctx := newSelfSignedTestCtx(t)
-	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
-	ctx.Cli.Setup.Ecs.SSL.San = []string{"myhost.example.com", "10.1.2.3"}
-
-	cmd := &EcsSSLCmd{}
-	require.NoError(t, cmd.Run(ctx))
-
-	leafCert, err := ctx.Store.GetEcsSslCert()
-	require.NoError(t, err)
-	cert := parsePEMCertForTest(t, leafCert)
-
-	assert.Contains(t, cert.DNSNames, "myhost.example.com")
-
-	ips := make([]string, len(cert.IPAddresses))
-	for i, ip := range cert.IPAddresses {
-		ips[i] = ip.String()
-	}
-	assert.Contains(t, ips, "10.1.2.3")
-}
-
-func TestEcsSSLCmdRun_Delete_ClearsCaAndLeaf(t *testing.T) {
+func TestEcsSSLCmdRun_Delete_ClearsCa(t *testing.T) {
 	ctx := newSelfSignedTestCtx(t)
 	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
 
@@ -189,10 +153,6 @@ func TestEcsSSLCmdRun_Delete_ClearsCaAndLeaf(t *testing.T) {
 	caCert, err := ctx.Store.GetEcsCaCert()
 	require.NoError(t, err)
 	assert.Empty(t, caCert)
-
-	leafCert, err := ctx.Store.GetEcsSslCert()
-	require.NoError(t, err)
-	assert.Empty(t, leafCert)
 }
 
 func TestEcsSSLCmdRun_PrintCa_NoCa(t *testing.T) {

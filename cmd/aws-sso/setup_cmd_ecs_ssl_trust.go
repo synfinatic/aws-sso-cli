@@ -31,14 +31,11 @@ const ecsSslTrustDocsURL = "https://synfinatic.github.io/aws-sso-cli/latest/ecs-
 
 // ecsSslTrustInstructions renders a short summary of the local ECS Server CA
 // at caPath plus a link to the full per-OS/per-runtime trust instructions.
-func ecsSslTrustInstructions(caPath, fingerprint string, sans []string) string {
+func ecsSslTrustInstructions(caPath, fingerprint string) string {
 	var b strings.Builder
 
 	fmt.Fprintf(&b, "\nLocal ECS Server CA certificate: %s\n", caPath)
 	fmt.Fprintf(&b, "SHA-256 fingerprint: %s\n", fingerprint)
-	if len(sans) > 0 {
-		fmt.Fprintf(&b, "\nAdditional certificate names covered: %s\n", strings.Join(sans, ", "))
-	}
 
 	fmt.Fprintf(&b, "\nFor per-OS/per-runtime trust instructions see:\n")
 	fmt.Fprintf(&b, "  %s\n", ecsSslTrustDocsURL)

@@ -31,18 +31,20 @@ import (
 	"net"
 	"strings"
 	"time"
+	"unsafe"
 )
 
 // CAValidity is how long a generated CA is valid for.  The CA private key is
-// retained in the SecureStore and reused across leaf rotations, so it is
-// long-lived on purpose: the user only has to repeat the OS/runtime trust
-// steps if the CA itself actually expires.
+// retained in the SecureStore and reused indefinitely, so it is long-lived on
+// purpose: the user only has to repeat the OS/runtime trust steps if the CA
+// itself actually expires.
 const CAValidity = 10 * 365 * 24 * time.Hour
 
-// LeafValidity is intentionally short: rotating the leaf is cheap (just
-// `setup ecs ssl --self-signed` again, reusing the existing CA) and never
-// requires re-trusting anything, so there's no reason to make it long-lived.
-const LeafValidity = 397 * 24 * time.Hour
+// LeafValidity is intentionally short: the leaf is never persisted, it's
+// minted fresh in memory from the CA every time it's needed (native `ecs
+// server` startup, or `ecs docker start`/`write-config` before the container
+// starts), so there's no reason to make it long-lived.
+const LeafValidity = 30 * 24 * time.Hour
 
 // CACommonName identifies the generated CA in OS trust-store UIs so users
 // can find (and remove) it later.
@@ -109,15 +111,18 @@ func GenerateCA() (KeyPair, error) {
 }
 
 // GenerateLeaf creates a new leaf certificate signed by the given CA, for
-// the ECS Server to present over TLS.  extraSANs may contain additional DNS
-// names or IP addresses (parsed via net.ParseIP; anything that doesn't
-// parse as an IP is treated as a DNS name) to include alongside the
-// defaults in DefaultDNSNames/DefaultIPs.
-func GenerateLeaf(ca KeyPair, extraSANs []string) (KeyPair, error) {
+// the ECS Server to present over TLS, using the default SANs in
+// DefaultDNSNames/DefaultIPs.
+func GenerateLeaf(ca KeyPair) (KeyPair, error) {
 	caCert, caKey, err := parseCAKeyPair(ca)
 	if err != nil {
 		return KeyPair{}, err
 	}
+	// Best-effort defense-in-depth: the CA private key is only needed for the
+	// x509.CreateCertificate call below, so wipe the parsed scalar as soon as
+	// this function returns. This shrinks the exposure window but is not a
+	// secure-erase guarantee -- see ZeroSecret.
+	defer zeroPrivateKey(caKey)
 
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
@@ -129,7 +134,8 @@ func GenerateLeaf(ca KeyPair, extraSANs []string) (KeyPair, error) {
 		return KeyPair{}, err
 	}
 
-	dnsNames, ips := mergeSANs(extraSANs)
+	dnsNames := append([]string{}, DefaultDNSNames...)
+	ips := append([]net.IP{}, DefaultIPs...)
 
 	now := time.Now()
 	template := &x509.Certificate{
@@ -189,34 +195,46 @@ func newSerialNumber() (*big.Int, error) {
 	return serial, nil
 }
 
-func mergeSANs(extraSANs []string) ([]string, []net.IP) {
-	dnsNames := append([]string{}, DefaultDNSNames...)
-	ips := append([]net.IP{}, DefaultIPs...)
-
-	seenDNS := map[string]bool{}
-	for _, d := range dnsNames {
-		seenDNS[d] = true
+// zeroPrivateKey best-effort overwrites the scalar of an ECDSA private key
+// once it's no longer needed. Like ZeroSecret, this is defense-in-depth, not
+// a secure-erase guarantee: the runtime/GC may have already copied the
+// underlying words elsewhere.
+func zeroPrivateKey(key *ecdsa.PrivateKey) {
+	if key == nil || key.D == nil { // nolint:staticcheck
+		return
 	}
-	seenIP := map[string]bool{}
-	for _, ip := range ips {
-		seenIP[ip.String()] = true
-	}
+	key.D.SetInt64(0) // nolint:staticcheck
+}
 
-	for _, san := range extraSANs {
-		if ip := net.ParseIP(san); ip != nil {
-			if !seenIP[ip.String()] {
-				ips = append(ips, ip)
-				seenIP[ip.String()] = true
-			}
-			continue
-		}
-		if !seenDNS[san] {
-			dnsNames = append(dnsNames, san)
-			seenDNS[san] = true
-		}
+// ZeroSecret best-effort overwrites the backing bytes of a string in place,
+// for scrubbing secret material (e.g. a CA private key PEM) from memory as
+// soon as the caller is done with it. Go string copies (assignment, passing
+// by value) share the same backing array rather than duplicating it, so
+// zeroing through any one copy after all uses are done clears it for all of
+// them.
+//
+// Because of that same aliasing, callers must only pass a string they
+// exclusively own -- e.g. one produced by strings.Clone -- never a value
+// fetched directly from a cache or struct field still in use elsewhere (a
+// SecureStore's in-memory copy, a string literal). Zeroing an aliased string
+// corrupts every alias, not just the caller's use of it; it also risks a
+// SIGBUS/fault if the backing bytes happen to live in read-only memory
+// (e.g. a compiled-in literal).
+//
+// This is explicitly best-effort, defense-in-depth: it shrinks how long the
+// secret sits in memory we have a handle to, not a guarantee of secure
+// erasure. Go's garbage collector can have relocated or copied the
+// underlying bytes, and callers that received this value from elsewhere
+// (e.g. a SecureStore backend's own internal buffers) may hold copies this
+// function has no way to reach.
+func ZeroSecret(s string) {
+	if len(s) == 0 {
+		return
 	}
-
-	return dnsNames, ips
+	b := unsafe.Slice(unsafe.StringData(s), len(s))
+	for i := range b {
+		b[i] = 0
+	}
 }
 
 func encodeKeyPair(certDER []byte, key *ecdsa.PrivateKey) (KeyPair, error) {

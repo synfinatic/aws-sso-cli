@@ -51,10 +51,8 @@ type errStore struct {
 	storage.SecureStorage
 	getEcsCaCert       func() (string, error)
 	getEcsCaKey        func() (string, error)
-	getEcsSslCert      func() (string, error)
 	deleteEcsCaKeyPair func(ctx context.Context) error
 	saveEcsCaKeyPair   func(ctx context.Context, key, cert []byte) error
-	saveEcsSslKeyPair  func(ctx context.Context, key, cert []byte) error
 }
 
 func (e *errStore) GetEcsCaCert() (string, error) {
@@ -71,13 +69,6 @@ func (e *errStore) GetEcsCaKey() (string, error) {
 	return e.SecureStorage.GetEcsCaKey()
 }
 
-func (e *errStore) GetEcsSslCert() (string, error) {
-	if e.getEcsSslCert != nil {
-		return e.getEcsSslCert()
-	}
-	return e.SecureStorage.GetEcsSslCert()
-}
-
 func (e *errStore) DeleteEcsCaKeyPair(ctx context.Context) error {
 	if e.deleteEcsCaKeyPair != nil {
 		return e.deleteEcsCaKeyPair(ctx)
@@ -90,13 +81,6 @@ func (e *errStore) SaveEcsCaKeyPair(ctx context.Context, key, cert []byte) error
 		return e.saveEcsCaKeyPair(ctx, key, cert)
 	}
 	return e.SecureStorage.SaveEcsCaKeyPair(ctx, key, cert)
-}
-
-func (e *errStore) SaveEcsSslKeyPair(ctx context.Context, key, cert []byte) error {
-	if e.saveEcsSslKeyPair != nil {
-		return e.saveEcsSslKeyPair(ctx, key, cert)
-	}
-	return e.SecureStorage.SaveEcsSslKeyPair(ctx, key, cert)
 }
 
 var errBoom = errors.New("boom")
@@ -113,35 +97,11 @@ func TestEcsSSLCmdRun_Delete_DeleteCaError(t *testing.T) {
 	assert.ErrorIs(t, cmd.Run(ctx), errBoom)
 }
 
-func TestEcsSSLCmdRun_Print_GetCertError(t *testing.T) {
-	ctx := newSelfSignedTestCtx(t)
-	ctx.Store = &errStore{
-		SecureStorage: ctx.Store,
-		getEcsSslCert: func() (string, error) { return "", errBoom },
-	}
-	ctx.Cli.Setup.Ecs.SSL.Print = true
-
-	cmd := &EcsSSLCmd{}
-	assert.ErrorIs(t, cmd.Run(ctx), errBoom)
-}
-
 func TestEcsSSLCmdRun_SelfSigned_GetCaCertError(t *testing.T) {
 	ctx := newSelfSignedTestCtx(t)
 	ctx.Store = &errStore{
 		SecureStorage: ctx.Store,
 		getEcsCaCert:  func() (string, error) { return "", errBoom },
-	}
-	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
-
-	cmd := &EcsSSLCmd{}
-	assert.ErrorIs(t, cmd.Run(ctx), errBoom)
-}
-
-func TestEcsSSLCmdRun_SelfSigned_GetCaKeyError(t *testing.T) {
-	ctx := newSelfSignedTestCtx(t)
-	ctx.Store = &errStore{
-		SecureStorage: ctx.Store,
-		getEcsCaKey:   func() (string, error) { return "", errBoom },
 	}
 	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
 
@@ -161,35 +121,6 @@ func TestEcsSSLCmdRun_SelfSigned_SaveCaError(t *testing.T) {
 	err := cmd.Run(ctx)
 	assert.ErrorIs(t, err, errBoom)
 	assert.Contains(t, err.Error(), "unable to save CA")
-}
-
-func TestEcsSSLCmdRun_SelfSigned_SaveLeafError(t *testing.T) {
-	ctx := newSelfSignedTestCtx(t)
-	ctx.Store = &errStore{
-		SecureStorage:     ctx.Store,
-		saveEcsSslKeyPair: func(context.Context, []byte, []byte) error { return errBoom },
-	}
-	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
-
-	cmd := &EcsSSLCmd{}
-	err := cmd.Run(ctx)
-	assert.ErrorIs(t, err, errBoom)
-	assert.Contains(t, err.Error(), "unable to save leaf certificate")
-}
-
-func TestEcsSSLCmdRun_SelfSigned_MalformedStoredCaFailsLeafGeneration(t *testing.T) {
-	ctx := newSelfSignedTestCtx(t)
-	ctx.Store = &errStore{
-		SecureStorage: ctx.Store,
-		getEcsCaCert:  func() (string, error) { return "not a cert", nil },
-		getEcsCaKey:   func() (string, error) { return "not a key", nil },
-	}
-	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
-
-	cmd := &EcsSSLCmd{}
-	err := cmd.Run(ctx)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "unable to generate leaf certificate")
 }
 
 func TestEcsSSLCmdRun_PrintCa_GetCaCertError(t *testing.T) {

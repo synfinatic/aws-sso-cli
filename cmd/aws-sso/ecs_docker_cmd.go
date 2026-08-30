@@ -24,12 +24,14 @@ import (
 	"net/http"
 	"net/netip"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/mount"
 	"github.com/moby/moby/api/types/network"
 	dockerclient "github.com/moby/moby/client"
+	"github.com/synfinatic/aws-sso-cli/internal/certutil"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	ecsclient "github.com/synfinatic/aws-sso-cli/internal/ecs/client"
 	// "github.com/davecgh/go-spew/spew"
@@ -75,11 +77,7 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 	var privateKey, certChain, bearerToken string
 
 	if !ctx.Cli.Ecs.Docker.Start.DisableSSL {
-		privateKey, err = ctx.Store.GetEcsSslKey()
-		if err != nil {
-			return err
-		}
-		certChain, err = ctx.Store.GetEcsSslCert()
+		privateKey, certChain, err = mintLeafFromStoredCA(ctx)
 		if err != nil {
 			return err
 		}
@@ -185,6 +183,10 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 		}
 
 		// Wait until the container is accepting connections (503 = up but no creds yet).
+		// Pinning the exact freshly-minted certChain (rather than CA-based trust, as
+		// ecs_client_cmd.go's newClient uses) is intentional: this process just minted
+		// that exact leaf and already knows it, so there's no ambiguity to resolve via
+		// chain verification.
 		if err := waitForEcsServerUp(proto, serverAddr, certChain, 30*time.Second); err != nil {
 			stopAndRemove()
 			return err
@@ -222,10 +224,7 @@ func (cc *EcsDockerWriteConfigCmd) Run(ctx *RunContext) error {
 	var err error
 
 	if !cc.DisableSSL {
-		if privateKey, err = ctx.Store.GetEcsSslKey(); err != nil {
-			return err
-		}
-		if certChain, err = ctx.Store.GetEcsSslCert(); err != nil {
+		if privateKey, certChain, err = mintLeafFromStoredCA(ctx); err != nil {
 			return err
 		}
 	}
@@ -242,6 +241,37 @@ func (cc *EcsDockerWriteConfigCmd) Run(ctx *RunContext) error {
 
 	log.Info("Wrote ECS security config", "path", ecs.SecurityFilePath(ecs.WRITE_ONLY))
 	return nil
+}
+
+// mintLeafFromStoredCA fetches the persisted CA from the store and mints a
+// fresh, short-lived leaf from it -- the leaf itself is never persisted, so
+// this runs host-side right before every `ecs docker start`/`write-config`
+// invocation, mirroring the equivalent mint in EcsServerCmd.Run's native path.
+func mintLeafFromStoredCA(ctx *RunContext) (privateKey, certChain string, err error) {
+	caCert, err := ctx.Store.GetEcsCaCert()
+	if err != nil {
+		return "", "", err
+	}
+	caKey, err := ctx.Store.GetEcsCaKey()
+	if err != nil {
+		return "", "", err
+	}
+	if caCert == "" || caKey == "" {
+		return "", "", nil
+	}
+
+	// Clone before use: SecureStorage backends return their cached key string
+	// directly, sharing its backing array. ZeroSecret-ing that shared array in
+	// place would corrupt the store's own in-memory copy (and, on JsonStore,
+	// risk persisting a zeroed CA key to disk on a later save) instead of just
+	// scrubbing our local, single-use copy.
+	caKey = strings.Clone(caKey)
+	leaf, err := certutil.GenerateLeaf(certutil.KeyPair{CertPEM: caCert, KeyPEM: caKey})
+	certutil.ZeroSecret(caKey)
+	if err != nil {
+		return "", "", fmt.Errorf("unable to generate leaf certificate: %w", err)
+	}
+	return leaf.KeyPEM, leaf.CertPEM, nil
 }
 
 // writeAndCloseSecurityFile writes the ECS security config and closes the file

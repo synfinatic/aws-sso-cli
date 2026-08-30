@@ -22,15 +22,7 @@ package main
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/pem"
 	"fmt"
-	"math/big"
-	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -43,41 +35,10 @@ import (
 	ecsclient "github.com/synfinatic/aws-sso-cli/internal/ecs/client"
 )
 
-// generateSelfSignedCert creates an ECDSA P-256 self-signed certificate valid
-// for 127.0.0.1 / localhost.  Both PEM strings are returned.
-func generateSelfSignedCert(t *testing.T) (certPEM, keyPEM string) {
-	t.Helper()
-
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	require.NoError(t, err)
-
-	template := &x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject:      pkix.Name{CommonName: "localhost"},
-		NotBefore:    time.Now().Add(-time.Minute),
-		NotAfter:     time.Now().Add(time.Hour),
-		IPAddresses:  []net.IP{net.ParseIP("127.0.0.1")},
-		DNSNames:     []string{"localhost"},
-	}
-
-	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
-	require.NoError(t, err)
-	certPEM = string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER}))
-
-	// SaveEcsSslKeyPair validates with x509.ParsePKCS8PrivateKey, so we must use
-	// PKCS#8 marshalling ("PRIVATE KEY" PEM type), not the SEC 1 EC form.
-	keyDER, err := x509.MarshalPKCS8PrivateKey(key)
-	require.NoError(t, err)
-	keyPEM = string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyDER}))
-	return
-}
-
-// TestE2ESetupEcsSSL exercises the leaf-cert operations of the `setup ecs ssl`
+// TestE2ESetupEcsSSL exercises the basic CA lifecycle of the `setup ecs ssl`
 // command:
-//  1. Generate a leaf certificate (--self-signed, the only generation path now
-//     that the BYO-certificate --certificate/--private-key flags are gone).
-//  2. Print the stored certificate (--print) and confirm the output.
-//  3. Delete the stored pair (--delete) and confirm the store is empty.
+//  1. Generate a CA (--self-signed).
+//  2. Delete the stored CA (--delete) and confirm the store is empty.
 func TestE2ESetupEcsSSL(t *testing.T) {
 	isolateHomeForCaExport(t)
 
@@ -86,57 +47,41 @@ func TestE2ESetupEcsSSL(t *testing.T) {
 
 	// --- Generate: --self-signed ---
 	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{SelfSigned: true}
-	require.NoError(t, (&EcsSSLCmd{}).Run(ctx), "setup ecs ssl --self-signed should store a leaf cert+key")
+	require.NoError(t, (&EcsSSLCmd{}).Run(ctx), "setup ecs ssl --self-signed should store a CA")
 
-	storedCert, err := setup.Store.GetEcsSslCert()
+	storedCert, err := setup.Store.GetEcsCaCert()
 	require.NoError(t, err)
-	assert.NotEmpty(t, storedCert, "stored cert should be populated")
-
-	storedKey, err := setup.Store.GetEcsSslKey()
-	require.NoError(t, err)
-	assert.NotEmpty(t, storedKey, "stored key should be populated")
-
-	// --- Print: --print ---
-	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{Print: true}
-	output := captureStdout(func() {
-		assert.NoError(t, (&EcsSSLCmd{}).Run(ctx))
-	})
-	assert.Contains(t, output, "BEGIN CERTIFICATE",
-		"--print should output the PEM certificate block")
+	assert.NotEmpty(t, storedCert, "stored CA cert should be populated")
 
 	// --- Delete: --delete ---
 	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{Delete: true}
 	require.NoError(t, (&EcsSSLCmd{}).Run(ctx))
 
-	afterCert, err := setup.Store.GetEcsSslCert()
+	afterCert, err := setup.Store.GetEcsCaCert()
 	require.NoError(t, err)
-	assert.Empty(t, afterCert, "cert should be cleared from store after --delete")
-
-	afterKey, err := setup.Store.GetEcsSslKey()
-	require.NoError(t, err)
-	assert.Empty(t, afterKey, "key should be cleared from store after --delete")
+	assert.Empty(t, afterCert, "CA cert should be cleared from store after --delete")
 }
 
 // TestE2EEcsServerSSL proves the full SSL/TLS path end-to-end:
-//  1. Generate a self-signed cert+key and store it directly (bypassing the
-//     `setup ecs ssl` command, which now only ever issues certs via its own
-//     internal/certutil CA — this test cares about EcsServerCmd.Run()'s
-//     ServeTLS wiring, not certificate generation).
-//  2. Start EcsServerCmd.Run() without DisableSSL — it reads the pair from the
-//     store and passes them to server.Serve() → ServeTLS.
-//  3. Poll with waitForEcsServerUp using "https" and the cert chain: this fails
-//     unless the server is actually serving TLS (a plain-HTTP server would cause
-//     TLS handshake errors and the poll would time out).
-//  4. Make an explicit HTTPS GET /healthcheck with a custom TLS client to confirm
-//     the certificate is correctly presented and trusted.
+//  1. Generate a CA and store it directly (bypassing the `setup ecs ssl`
+//     command -- this test cares about EcsServerCmd.Run()'s leaf-minting and
+//     ServeTLS wiring, not the `setup` command itself).
+//  2. Start EcsServerCmd.Run() without DisableSSL -- it mints a fresh leaf
+//     from the stored CA and passes it to server.Serve() -> ServeTLS.
+//  3. Poll with waitForEcsServerUp using "https" and the CA cert: this fails
+//     unless the server is actually serving TLS with a leaf that chains to
+//     the CA (a plain-HTTP server, or one presenting an unrelated cert,
+//     would cause TLS handshake errors and the poll would time out).
+//  4. Make an explicit HTTPS GET /healthcheck with a CA-trusting TLS client
+//     to confirm the minted certificate is correctly presented and trusted.
 //  5. Cancel the context and verify Run() returns nil.
 func TestE2EEcsServerSSL(t *testing.T) {
-	certPEM, keyPEM := generateSelfSignedCert(t)
-
 	setup := newE2ESetup(t)
 	ctx := newRunContext(setup, AUTH_SKIP)
 
-	require.NoError(t, setup.Store.SaveEcsSslKeyPair(ctx.Ctx, []byte(keyPEM), []byte(certPEM)))
+	ca, err := certutil.GenerateCA()
+	require.NoError(t, err)
+	require.NoError(t, setup.Store.SaveEcsCaKeyPair(ctx.Ctx, []byte(ca.KeyPEM), []byte(ca.CertPEM)))
 
 	// Start the ECS server with TLS enabled.
 	cctx, cancel := context.WithCancel(context.Background())
@@ -148,7 +93,7 @@ func TestE2EEcsServerSSL(t *testing.T) {
 		BindIP:      "127.0.0.1",
 		Port:        port,
 		DisableAuth: true,
-		// DisableSSL defaults to false — Run() reads the stored cert+key and calls ServeTLS.
+		// DisableSSL defaults to false — Run() mints a fresh leaf from the stored CA and calls ServeTLS.
 	}
 	cc := &ctx.Cli.Ecs.Server
 
@@ -157,14 +102,15 @@ func TestE2EEcsServerSSL(t *testing.T) {
 
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
 
-	// waitForEcsServerUp with "https" builds a TLS client that trusts certPEM.
-	// If the server were serving plain HTTP this would always fail (TLS error),
-	// proving that TLS must be active for the poll to succeed.
-	require.NoError(t, waitForEcsServerUp("https", addr, certPEM, 5*time.Second),
-		"HTTPS ECS server should become reachable once ServeTLS is active")
+	// waitForEcsServerUp with "https" builds a TLS client that trusts the CA,
+	// not any particular leaf. If the server were serving plain HTTP, or a
+	// leaf that doesn't chain to this CA, this would always fail.
+	require.NoError(t, waitForEcsServerUp("https", addr, ca.CertPEM, 5*time.Second),
+		"HTTPS ECS server should become reachable once ServeTLS is active with a CA-issued leaf")
 
-	// Confirm the certificate is correctly presented by making a direct HTTPS request.
-	tlsClient, err := ecsclient.NewHTTPClient(certPEM)
+	// Confirm the minted certificate is correctly presented by making a
+	// direct HTTPS request through a client that trusts only the CA.
+	tlsClient, err := ecsclient.NewHTTPClient(ca.CertPEM)
 	require.NoError(t, err)
 	tlsClient.Timeout = 5 * time.Second
 
@@ -192,7 +138,7 @@ func isolateHomeForCaExport(t *testing.T) string {
 }
 
 // TestE2ESetupEcsSSL_SelfSigned exercises the full `setup ecs ssl --self-signed`
-// lifecycle: generate, rerun (CA reused, leaf rotates), --print-ca, and --delete.
+// lifecycle: generate, rerun (CA reused byte-for-byte), --print-ca, and --delete.
 func TestE2ESetupEcsSSL_SelfSigned(t *testing.T) {
 	isolateHomeForCaExport(t)
 
@@ -206,20 +152,14 @@ func TestE2ESetupEcsSSL_SelfSigned(t *testing.T) {
 	caCert1, err := setup.Store.GetEcsCaCert()
 	require.NoError(t, err)
 	assert.NotEmpty(t, caCert1)
-	leafCert1, err := setup.Store.GetEcsSslCert()
-	require.NoError(t, err)
-	assert.NotEmpty(t, leafCert1)
 
-	// --- Rerun: CA is reused byte-for-byte, leaf rotates ---
+	// --- Rerun: CA is reused byte-for-byte ---
 	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{SelfSigned: true}
 	require.NoError(t, (&EcsSSLCmd{}).Run(ctx))
 
 	caCert2, err := setup.Store.GetEcsCaCert()
 	require.NoError(t, err)
-	leafCert2, err := setup.Store.GetEcsSslCert()
-	require.NoError(t, err)
 	assert.Equal(t, caCert1, caCert2, "rerunning --self-signed must not rotate the CA")
-	assert.NotEqual(t, leafCert1, leafCert2, "rerunning --self-signed should rotate the leaf")
 
 	// --- Print CA: --print-ca ---
 	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{PrintCa: true}
@@ -232,17 +172,13 @@ func TestE2ESetupEcsSSL_SelfSigned(t *testing.T) {
 	assert.Contains(t, output, ecsSslTrustDocsURL,
 		"--print-ca output should link to the full trust instructions in the docs")
 
-	// --- Delete: --delete clears both CA and leaf ---
+	// --- Delete: --delete clears the CA ---
 	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{Delete: true}
 	require.NoError(t, (&EcsSSLCmd{}).Run(ctx))
 
 	afterCA, err := setup.Store.GetEcsCaCert()
 	require.NoError(t, err)
 	assert.Empty(t, afterCA)
-
-	afterLeaf, err := setup.Store.GetEcsSslCert()
-	require.NoError(t, err)
-	assert.Empty(t, afterLeaf)
 }
 
 // TestE2EEcsServerSSL_SelfSigned_ChainOfTrust proves real chain-of-trust (not
@@ -262,7 +198,8 @@ func TestE2EEcsServerSSL_SelfSigned_ChainOfTrust(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, caCertPEM)
 
-	// Start the ECS server with TLS enabled using the self-signed leaf.
+	// Start the ECS server with TLS enabled; it mints its own leaf from the
+	// stored CA at startup.
 	cctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 	ctx.Ctx = cctx
