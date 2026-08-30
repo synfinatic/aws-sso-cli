@@ -13,6 +13,26 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
 
+// unsetXDGConfigHomeForTest clears XDG_CONFIG_HOME for the duration of the
+// test and restores whatever value (or absence) it had before. Needed
+// wherever a test overrides $HOME: config.ConfigDir() prefers
+// XDG_CONFIG_HOME over $HOME, and its heuristic for re-deriving XDG_CONFIG_HOME
+// from a changed $HOME only fires when the old XDG_CONFIG_HOME exactly
+// matches the old $HOME/.config -- t.Setenv can't express "unset", so this
+// has to save/restore manually rather than via t.Setenv.
+func unsetXDGConfigHomeForTest(t *testing.T) {
+	t.Helper()
+	orig, had := os.LookupEnv("XDG_CONFIG_HOME")
+	require.NoError(t, os.Unsetenv("XDG_CONFIG_HOME"))
+	t.Cleanup(func() {
+		if had {
+			os.Setenv("XDG_CONFIG_HOME", orig) // nolint:errcheck
+		} else {
+			os.Unsetenv("XDG_CONFIG_HOME") // nolint:errcheck
+		}
+	})
+}
+
 func openTestStore(t *testing.T) storage.SecureStorage {
 	t.Helper()
 	ctx := context.Background()
@@ -46,6 +66,13 @@ func newSelfSignedTestCtx(t *testing.T) *RunContext {
 	t.Helper()
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	// config.ConfigDir() prefers XDG_CONFIG_HOME over $HOME when it's set,
+	// with a heuristic that only re-derives it from the (now overridden)
+	// $HOME if the two happen to match exactly. On CI runners that export a
+	// real XDG_CONFIG_HOME (e.g. /home/runner/.config), overriding $HOME
+	// alone leaves that heuristic pointed at the real, un-isolated
+	// directory -- so it must be cleared here too.
+	unsetXDGConfigHomeForTest(t)
 	// FlockFile() derives its path from config.ConfigDir(), which in turn
 	// resolves against $HOME; the lock file's parent directory must exist
 	// before any SecureStorage Save*/Delete* call runs.

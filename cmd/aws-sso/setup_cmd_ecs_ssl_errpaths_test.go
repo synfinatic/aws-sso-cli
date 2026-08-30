@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/synfinatic/aws-sso-cli/internal/certutil"
+	"github.com/synfinatic/aws-sso-cli/internal/config"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
 
@@ -153,16 +154,18 @@ func TestEcsSSLCmdRun_PrintCa_EnsureDirExistsError(t *testing.T) {
 
 	// The CA is exported under config.ConfigDir() (already pre-created as a
 	// directory by newSelfSignedTestCtx); removing it and replacing it with a
-	// regular file makes EnsureDirExists fail.
-	home := os.Getenv("HOME")
-	caDir := filepath.Join(home, ".config", "aws-sso")
+	// regular file makes EnsureDirExists fail. Derive the path via
+	// config.ConfigDir() itself, rather than reconstructing it manually, so
+	// this can never target a different directory than the one
+	// printCaAndInstructions actually resolves at call time.
+	caDir := config.ConfigDir(true)
 	require.NoError(t, os.RemoveAll(caDir))                                  // nolint:gosec
 	require.NoError(t, os.WriteFile(caDir, []byte("not a directory"), 0600)) // nolint:gosec
 
 	ctx.Cli.Setup.Ecs.SSL.PrintCa = true
 	cmd := &EcsSSLCmd{}
 	err := cmd.Run(ctx)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "exists and is not a directory")
 }
 
@@ -172,13 +175,12 @@ func TestEcsSSLCmdRun_PrintCa_WriteFileError(t *testing.T) {
 
 	// Pre-create the CA export path itself as a directory, so the directory
 	// check/creation succeeds but writing the file to that path fails.
-	home := os.Getenv("HOME")
-	caPath := filepath.Join(home, ".config", "aws-sso", EcsCaExportFilename)
+	caPath := filepath.Join(config.ConfigDir(true), EcsCaExportFilename)
 	require.NoError(t, os.MkdirAll(caPath, 0700)) // nolint:gosec
 
 	ctx.Cli.Setup.Ecs.SSL.PrintCa = true
 	cmd := &EcsSSLCmd{}
 	err := cmd.Run(ctx)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unable to write")
 }

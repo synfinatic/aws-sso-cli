@@ -146,6 +146,7 @@ func TestEcsDockerWriteConfigCmdRun(t *testing.T) {
 	home := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config", "aws-sso"), 0700))
 	t.Setenv("HOME", home)
+	unsetXDGConfigHomeForTest(t)
 
 	store, err := storage.OpenJsonStore(context.Background(), filepath.Join(home, "store.json"))
 	require.NoError(t, err)
@@ -185,6 +186,7 @@ func TestEcsDockerWriteConfigCmdRunDisabled(t *testing.T) {
 	home := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config", "aws-sso"), 0700))
 	t.Setenv("HOME", home)
+	unsetXDGConfigHomeForTest(t)
 
 	store, err := storage.OpenJsonStore(context.Background(), filepath.Join(home, "store.json"))
 	require.NoError(t, err)
@@ -212,6 +214,7 @@ func TestEcsDockerWriteConfigCmdRun_MintsFreshLeafEachRun(t *testing.T) {
 	home := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config", "aws-sso"), 0700))
 	t.Setenv("HOME", home)
+	unsetXDGConfigHomeForTest(t)
 
 	store, err := storage.OpenJsonStore(context.Background(), filepath.Join(home, "store.json"))
 	require.NoError(t, err)
@@ -241,6 +244,7 @@ func TestEcsDockerWriteConfigCmdRun_MalformedCA_ReturnsError(t *testing.T) {
 	home := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config", "aws-sso"), 0700))
 	t.Setenv("HOME", home)
+	unsetXDGConfigHomeForTest(t)
 
 	store, err := storage.OpenJsonStore(context.Background(), filepath.Join(home, "store.json"))
 	require.NoError(t, err)
