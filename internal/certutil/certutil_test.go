@@ -427,3 +427,101 @@ func TestGenerateCA_ConstraintsBlockForeignNames(t *testing.T) {
 		})
 	}
 }
+
+// signLeafWithNotAfter mints a leaf signed by the given CA with an arbitrary
+// expiration, so VerifyLeafAgainstCA's time-validity behavior can be tested
+// without waiting out LeafValidity.  The SANs match DefaultDNSNames/DefaultIPs
+// so the CA's name constraints permit it.
+func signLeafWithNotAfter(t *testing.T, ca KeyPair, notAfter time.Time) string {
+	t.Helper()
+
+	caCert, caKey, err := parseCAKeyPair(ca)
+	require.NoError(t, err)
+
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	serial, err := newSerialNumber()
+	require.NoError(t, err)
+
+	tmpl := &x509.Certificate{
+		SerialNumber:          serial,
+		Subject:               pkix.Name{CommonName: LeafCommonName},
+		NotBefore:             notAfter.Add(-LeafValidity),
+		NotAfter:              notAfter,
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+		DNSNames:              DefaultDNSNames,
+		IPAddresses:           DefaultIPs,
+	}
+	der, err := x509.CreateCertificate(rand.Reader, tmpl, caCert, &key.PublicKey, caKey)
+	require.NoError(t, err)
+
+	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}))
+}
+
+func TestVerifyLeafAgainstCA(t *testing.T) {
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+	leaf, err := GenerateLeaf(ca)
+	require.NoError(t, err)
+
+	// a second, unrelated CA standing in for a rotation
+	rotated, err := GenerateCA()
+	require.NoError(t, err)
+
+	tests := []struct {
+		name    string
+		leafPEM string
+		caPEM   string
+		errWant string
+	}{
+		{
+			name:    "leaf issued by the CA verifies",
+			leafPEM: leaf.CertPEM,
+			caPEM:   ca.CertPEM,
+		},
+		{
+			name:    "leaf orphaned by a CA rotation does not verify",
+			leafPEM: leaf.CertPEM,
+			caPEM:   rotated.CertPEM,
+			errWant: "signed by unknown authority",
+		},
+		{
+			name:    "unparseable leaf",
+			leafPEM: "not a certificate",
+			caPEM:   ca.CertPEM,
+			errWant: "unable to decode",
+		},
+		{
+			name:    "unparseable CA",
+			leafPEM: leaf.CertPEM,
+			caPEM:   "not a certificate",
+			errWant: "unable to decode",
+		},
+		{
+			name:    "expired leaf",
+			leafPEM: signLeafWithNotAfter(t, ca, time.Now().Add(-time.Hour)),
+			caPEM:   ca.CertPEM,
+			errWant: "expired",
+		},
+		{
+			name:    "not yet valid leaf",
+			leafPEM: signLeafWithNotAfter(t, ca, time.Now().Add(2*LeafValidity)),
+			caPEM:   ca.CertPEM,
+			errWant: "not yet valid",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := VerifyLeafAgainstCA(tt.leafPEM, tt.caPEM)
+			if tt.errWant == "" {
+				assert.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.errWant)
+		})
+	}
+}

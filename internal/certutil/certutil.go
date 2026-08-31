@@ -323,3 +323,26 @@ func parseCAKeyPair(ca KeyPair) (*x509.Certificate, *ecdsa.PrivateKey, error) {
 
 	return cert, key, nil
 }
+
+// VerifyLeafAgainstCA reports whether leafPEM was issued by caPEM and is
+// currently valid for server authentication.  Callers use this to decide
+// whether an already-persisted leaf can be reused, or has to be re-minted
+// because the CA was rotated out from under it.
+func VerifyLeafAgainstCA(leafPEM, caPEM string) error {
+	leaf, err := parseCertificate(leafPEM)
+	if err != nil {
+		return err
+	}
+	ca, err := parseCertificate(caPEM)
+	if err != nil {
+		return err
+	}
+
+	pool := x509.NewCertPool()
+	pool.AddCert(ca)
+	_, err = leaf.Verify(x509.VerifyOptions{
+		Roots:     pool,
+		KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+	})
+	return err
+}
