@@ -29,13 +29,17 @@ import (
 // output short; the docs are the single source of truth for the actual steps.
 const ecsSslTrustDocsURL = "https://synfinatic.github.io/aws-sso-cli/latest/ecs-server/#trusting-the-ca-per-os-and-runtime"
 
-// ecsSslTrustInstructions renders a short summary of the local ECS Server CA
-// at caPath plus a link to the full per-OS/per-runtime trust instructions.
-func ecsSslTrustInstructions(caPath, fingerprint string) string {
+// ecsSslTrustInstructions renders a short summary of the local ECS Server CA:
+// its fingerprint, how to export the certificate itself, and a link to the full
+// per-OS/per-runtime trust instructions. The CA lives only in the secure store,
+// so the export step is `--print-ca` rather than a path on disk.
+func ecsSslTrustInstructions(fingerprint string) string {
 	var b strings.Builder
 
-	fmt.Fprintf(&b, "\nLocal ECS Server CA certificate: %s\n", caPath)
-	fmt.Fprintf(&b, "SHA-256 fingerprint: %s\n", fingerprint)
+	fmt.Fprintf(&b, "\nLocal ECS Server CA fingerprint (SHA-256): %s\n", fingerprint)
+
+	fmt.Fprintf(&b, "\nTo export the CA certificate for your trust store:\n")
+	fmt.Fprintf(&b, "  aws-sso setup ecs ssl --print-ca > aws-sso-ecs-ca.pem\n")
 
 	fmt.Fprintf(&b, "\nFor per-OS/per-runtime trust instructions see:\n")
 	fmt.Fprintf(&b, "  %s\n", ecsSslTrustDocsURL)

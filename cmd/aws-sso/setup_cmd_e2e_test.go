@@ -32,6 +32,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/synfinatic/aws-sso-cli/internal/certutil"
+	"github.com/synfinatic/aws-sso-cli/internal/config"
 	ecsclient "github.com/synfinatic/aws-sso-cli/internal/ecs/client"
 )
 
@@ -40,7 +41,7 @@ import (
 //  1. Generate a CA (--self-signed).
 //  2. Delete the stored CA (--delete) and confirm the store is empty.
 func TestE2ESetupEcsSSL(t *testing.T) {
-	isolateHomeForCaExport(t)
+	isolateHomeForTest(t)
 
 	setup := newE2ESetup(t)
 	ctx := newRunContext(setup, AUTH_SKIP)
@@ -124,12 +125,11 @@ func TestE2EEcsServerSSL(t *testing.T) {
 	assert.NoError(t, <-done, "Run() should return nil on context cancellation")
 }
 
-// isolateHomeForCaExport points $HOME at a fresh temp dir so printCaAndInstructions's
-// write of the CA export (under config.ConfigDir()) never touches the real user's
-// home directory, while pre-creating ~/.config/aws-sso so the SecureStore's flock
-// file (also derived from config.ConfigDir(), independently of where the JSON store
-// file itself lives) can still be created.
-func isolateHomeForCaExport(t *testing.T) string {
+// isolateHomeForTest points $HOME at a fresh temp dir so nothing these tests do
+// touches the real user's home directory, while pre-creating ~/.config/aws-sso so
+// the SecureStore's flock file (derived from config.ConfigDir(), independently of
+// where the JSON store file itself lives) can still be created.
+func isolateHomeForTest(t *testing.T) string {
 	t.Helper()
 	home := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config", "aws-sso"), 0700))
@@ -144,14 +144,26 @@ func isolateHomeForCaExport(t *testing.T) string {
 // TestE2ESetupEcsSSL_SelfSigned exercises the full `setup ecs ssl --self-signed`
 // lifecycle: generate, rerun (CA reused byte-for-byte), --print-ca, and --delete.
 func TestE2ESetupEcsSSL_SelfSigned(t *testing.T) {
-	isolateHomeForCaExport(t)
+	isolateHomeForTest(t)
 
 	setup := newE2ESetup(t)
 	ctx := newRunContext(setup, AUTH_SKIP)
 
 	// --- Generate: --self-signed ---
 	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{SelfSigned: true}
-	require.NoError(t, (&EcsSSLCmd{}).Run(ctx))
+	selfSignedOut := captureStdout(func() {
+		require.NoError(t, (&EcsSSLCmd{}).Run(ctx))
+	})
+	// --self-signed is where the human-facing summary lives, since --print-ca
+	// deliberately emits nothing but the PEM.
+	assert.Contains(t, selfSignedOut, "SHA-256",
+		"--self-signed should print the CA fingerprint")
+	assert.Contains(t, selfSignedOut, "--print-ca",
+		"--self-signed should point at --print-ca for exporting the CA")
+	assert.Contains(t, selfSignedOut, ecsSslTrustDocsURL,
+		"--self-signed should link to the full trust instructions in the docs")
+	assert.NotContains(t, selfSignedOut, "BEGIN CERTIFICATE",
+		"--self-signed should not dump a PEM block on every invocation")
 
 	caCert1, err := setup.Store.GetEcsCaCert()
 	require.NoError(t, err)
@@ -166,15 +178,23 @@ func TestE2ESetupEcsSSL_SelfSigned(t *testing.T) {
 	assert.Equal(t, caCert1, caCert2, "rerunning --self-signed must not rotate the CA")
 
 	// --- Print CA: --print-ca ---
+	// stdout must be byte-for-byte the stored PEM: the documented way to trust
+	// the CA is `--print-ca > ca.pem`, so any extra line corrupts that file.
 	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{PrintCa: true}
 	output := captureStdout(func() {
 		assert.NoError(t, (&EcsSSLCmd{}).Run(ctx))
 	})
-	assert.Contains(t, output, caCert2, "--print-ca should print the CA certificate PEM")
-	assert.Contains(t, output, "SHA-256 fingerprint:",
-		"--print-ca should not error and should print trust instructions")
-	assert.Contains(t, output, ecsSslTrustDocsURL,
-		"--print-ca output should link to the full trust instructions in the docs")
+	assert.Equal(t, caCert2, output,
+		"--print-ca must print the CA certificate PEM and nothing else")
+	assert.NotContains(t, output, ecsSslTrustDocsURL,
+		"--print-ca must not print the docs link")
+	assert.NotContains(t, output, "SHA-256",
+		"--print-ca must not print the fingerprint")
+
+	// The CA is never copied out of the secure store into the config directory.
+	_, err = os.Stat(filepath.Join(config.ConfigDir(true), "ecs-ca.pem"))
+	assert.True(t, os.IsNotExist(err),
+		"the CA must not be exported to the config directory")
 
 	// --- Delete: --delete clears the CA ---
 	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{Delete: true}
@@ -190,7 +210,7 @@ func TestE2ESetupEcsSSL_SelfSigned(t *testing.T) {
 // can complete a TLS handshake against the running ECS Server, and a client that
 // trusts an unrelated CA cannot.
 func TestE2EEcsServerSSL_SelfSigned_ChainOfTrust(t *testing.T) {
-	isolateHomeForCaExport(t)
+	isolateHomeForTest(t)
 
 	setup := newE2ESetup(t)
 	ctx := newRunContext(setup, AUTH_SKIP)

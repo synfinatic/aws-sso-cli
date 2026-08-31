@@ -21,21 +21,17 @@ package main
 import (
 	"context"
 	"errors"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/synfinatic/aws-sso-cli/internal/certutil"
-	"github.com/synfinatic/aws-sso-cli/internal/config"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
 
 // storeCaForTest saves a freshly generated CA directly into ctx's store,
-// without going through EcsSSLCmd.Run (which would also export it to disk
-// and print instructions) -- these tests only need GetEcsCaCert to return
-// a real, non-empty CA cert.
+// without going through EcsSSLCmd.Run (which would also print to stdout)
+// -- these tests only need GetEcsCaCert to return a real, non-empty CA cert.
 func storeCaForTest(t *testing.T, ctx *RunContext) {
 	t.Helper()
 	ca, err := certutil.GenerateCA()
@@ -52,6 +48,7 @@ type errStore struct {
 	storage.SecureStorage
 	getEcsCaCert       func() (string, error)
 	getEcsCaKey        func() (string, error)
+	getEcsBearerToken  func() (string, error)
 	deleteEcsCaKeyPair func(ctx context.Context) error
 	saveEcsCaKeyPair   func(ctx context.Context, key, cert []byte) error
 }
@@ -68,6 +65,13 @@ func (e *errStore) GetEcsCaKey() (string, error) {
 		return e.getEcsCaKey()
 	}
 	return e.SecureStorage.GetEcsCaKey()
+}
+
+func (e *errStore) GetEcsBearerToken() (string, error) {
+	if e.getEcsBearerToken != nil {
+		return e.getEcsBearerToken()
+	}
+	return e.SecureStorage.GetEcsBearerToken()
 }
 
 func (e *errStore) DeleteEcsCaKeyPair(ctx context.Context) error {
@@ -136,51 +140,17 @@ func TestEcsSSLCmdRun_PrintCa_GetCaCertError(t *testing.T) {
 	assert.ErrorIs(t, cmd.Run(ctx), errBoom)
 }
 
-func TestEcsSSLCmdRun_PrintCa_MalformedStoredCaFailsFingerprint(t *testing.T) {
+// --print-ca no longer parses the CA at all (it just streams the stored PEM), so
+// the fingerprint failure path now belongs to --self-signed, which reuses the
+// stored CA without regenerating it and then fingerprints it for its summary.
+func TestEcsSSLCmdRun_SelfSigned_MalformedStoredCaFailsFingerprint(t *testing.T) {
 	ctx := newSelfSignedTestCtx(t)
 	ctx.Store = &errStore{
 		SecureStorage: ctx.Store,
 		getEcsCaCert:  func() (string, error) { return "not a cert", nil },
 	}
-	ctx.Cli.Setup.Ecs.SSL.PrintCa = true
+	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
 
 	cmd := &EcsSSLCmd{}
 	assert.Error(t, cmd.Run(ctx))
-}
-
-func TestEcsSSLCmdRun_PrintCa_EnsureDirExistsError(t *testing.T) {
-	ctx := newSelfSignedTestCtx(t)
-	storeCaForTest(t, ctx)
-
-	// The CA is exported under config.ConfigDir() (already pre-created as a
-	// directory by newSelfSignedTestCtx); removing it and replacing it with a
-	// regular file makes EnsureDirExists fail. Derive the path via
-	// config.ConfigDir() itself, rather than reconstructing it manually, so
-	// this can never target a different directory than the one
-	// printCaAndInstructions actually resolves at call time.
-	caDir := config.ConfigDir(true)
-	require.NoError(t, os.RemoveAll(caDir))                                  // nolint:gosec
-	require.NoError(t, os.WriteFile(caDir, []byte("not a directory"), 0600)) // nolint:gosec
-
-	ctx.Cli.Setup.Ecs.SSL.PrintCa = true
-	cmd := &EcsSSLCmd{}
-	err := cmd.Run(ctx)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "exists and is not a directory")
-}
-
-func TestEcsSSLCmdRun_PrintCa_WriteFileError(t *testing.T) {
-	ctx := newSelfSignedTestCtx(t)
-	storeCaForTest(t, ctx)
-
-	// Pre-create the CA export path itself as a directory, so the directory
-	// check/creation succeeds but writing the file to that path fails.
-	caPath := filepath.Join(config.ConfigDir(true), EcsCaExportFilename)
-	require.NoError(t, os.MkdirAll(caPath, 0700)) // nolint:gosec
-
-	ctx.Cli.Setup.Ecs.SSL.PrintCa = true
-	cmd := &EcsSSLCmd{}
-	err := cmd.Run(ctx)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "unable to write")
 }
