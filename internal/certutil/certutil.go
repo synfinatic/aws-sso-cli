@@ -92,9 +92,9 @@ var permittedIPRanges = []*net.IPNet{
 }
 
 // KeyPair holds a PEM-encoded certificate and its PEM-encoded (PKCS#8)
-// private key.  PKCS#8 is required, not just conventional: SaveEcsSslKeyPair
-// and SaveEcsCaKeyPair validate keys via x509.ParsePKCS8PrivateKey and
-// reject the SEC1 "EC PRIVATE KEY" form.
+// private key.  PKCS#8 is required, not just conventional: SaveEcsCaKeyPair
+// validates keys via x509.ParsePKCS8PrivateKey and rejects the SEC1
+// "EC PRIVATE KEY" form.
 type KeyPair struct {
 	CertPEM string
 	KeyPEM  string
