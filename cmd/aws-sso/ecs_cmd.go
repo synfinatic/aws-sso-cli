@@ -25,6 +25,12 @@ const (
 )
 
 type EcsCmd struct {
+	// SecretsDir is declared here rather than on `ecs docker secrets` so that a
+	// single setting covers everything that touches the files: writing them,
+	// bind-mounting them in `ecs docker start`, and the opportunistic leaf
+	// refresh on the client commands.
+	SecretsDir string `kong:"help='Directory holding the ECS Server Docker secrets files (default: <config dir>/ecs)',env='AWS_SSO_ECS_SECRETS_DIR',predictor='directory'"`
+
 	Server  EcsServerCmd  `kong:"cmd,help='Run the ECS Server locally'"`
 	Docker  EcsDockerCmd  `kong:"cmd,help='Start the ECS Server in a Docker container'"`
 	List    EcsListCmd    `kong:"cmd,help='List profiles loaded in the ECS Server'"`

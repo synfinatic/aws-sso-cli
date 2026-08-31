@@ -36,6 +36,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/synfinatic/aws-sso-cli/internal/certutil"
 	ssocache "github.com/synfinatic/aws-sso-cli/internal/sso/cache"
+	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	testlogger "github.com/synfinatic/flexlog/test"
 )
 
@@ -176,12 +177,12 @@ func TestCertExpiryWarning(t *testing.T) {
 		},
 		{
 			name:     "exactly at the warning window",
-			notAfter: now.Add(ecsCertExpiryWarningWindow),
+			notAfter: now.Add(ecsLeafCertExpiryWarningWindow),
 			want:     "",
 		},
 		{
 			name:     "just inside the warning window",
-			notAfter: now.Add(ecsCertExpiryWarningWindow - time.Second),
+			notAfter: now.Add(ecsLeafCertExpiryWarningWindow - time.Second),
 			want:     "SSL/TLS leaf certificate expires soon",
 		},
 		{
@@ -197,7 +198,7 @@ func TestCertExpiryWarning(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := certExpiryWarning("leaf certificate", tt.notAfter, now, ecsCertExpiryWarningWindow)
+			got := certExpiryWarning("leaf certificate", tt.notAfter, now, ecsLeafCertExpiryWarningWindow)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -212,7 +213,8 @@ func TestWarnIfCertExpiringSoon_InvalidCert(t *testing.T) {
 	defer func() { log = oldLog }()
 
 	// Not a parseable certificate: NotAfter fails, so nothing should be logged.
-	warnIfCertExpiringSoon("not a cert", "leaf certificate", "aws-sso setup ecs ssl --self-signed")
+	warnIfCertExpiringSoon("not a cert", "leaf certificate",
+		"aws-sso setup ecs ssl --self-signed", ecsLeafCertExpiryWarningWindow)
 
 	msg := testlogger.LogMessage{}
 	assert.Error(t, tLogger.GetNext(&msg), "no warning should be logged when the certificate can't be parsed")
@@ -229,7 +231,8 @@ func TestWarnIfCertExpiringSoon_NotExpiring(t *testing.T) {
 	ca, err := certutil.GenerateCA()
 	require.NoError(t, err)
 
-	warnIfCertExpiringSoon(ca.CertPEM, "CA certificate", "aws-sso setup ecs ssl --rotate-ca")
+	warnIfCertExpiringSoon(ca.CertPEM, "CA certificate",
+		"aws-sso setup ecs ssl --rotate-ca", ecsCaCertExpiryWarningWindow)
 
 	msg := testlogger.LogMessage{}
 	assert.Error(t, tLogger.GetNext(&msg), "a CA valid for 10 years should not trigger a warning")
@@ -244,7 +247,8 @@ func TestWarnIfCertExpiringSoon_Expired(t *testing.T) {
 	defer func() { log = oldLog }()
 
 	certPEM := genTestCertWithNotAfter(t, time.Now().Add(-24*time.Hour))
-	warnIfCertExpiringSoon(certPEM, "leaf certificate", "aws-sso setup ecs ssl --self-signed")
+	warnIfCertExpiringSoon(certPEM, "leaf certificate",
+		"aws-sso setup ecs ssl --self-signed", ecsLeafCertExpiryWarningWindow)
 
 	msg := testlogger.LogMessage{}
 	require.NoError(t, tLogger.GetNext(&msg))
@@ -292,6 +296,73 @@ func TestSetServerDefaultProfileNotFound(t *testing.T) {
 	}
 	// s can be nil: the function returns before touching the server on error.
 	err := setServerDefaultProfile(ctx, nil, "nonexistent-profile")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "nonexistent-profile")
+}
+
+// TestEcsServerCmdRun_NativeStoreErrors: the native path reads three secrets out
+// of the SecureStore before it can decide its security posture.  A failure on
+// any of them has to abort the start rather than fall through to a server with
+// auth or TLS silently switched off.
+func TestEcsServerCmdRun_NativeStoreErrors(t *testing.T) {
+	tests := []struct {
+		name  string
+		store func(inner storage.SecureStorage) *errStore
+	}{
+		{
+			name: "bearer token unreadable",
+			store: func(inner storage.SecureStorage) *errStore {
+				return &errStore{
+					SecureStorage:     inner,
+					getEcsBearerToken: func() (string, error) { return "", errBoom },
+				}
+			},
+		},
+		{
+			name: "CA certificate unreadable",
+			store: func(inner storage.SecureStorage) *errStore {
+				return &errStore{
+					SecureStorage: inner,
+					getEcsCaCert:  func() (string, error) { return "", errBoom },
+				}
+			},
+		},
+		{
+			name: "CA key unreadable",
+			store: func(inner storage.SecureStorage) *errStore {
+				return &errStore{
+					SecureStorage: inner,
+					getEcsCaKey:   func() (string, error) { return "", errBoom },
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := newSelfSignedTestCtx(t)
+			ctx.Store = tt.store(ctx.Store)
+			ctx.Cli.Ecs.Server = EcsServerCmd{BindIP: "127.0.0.1", Port: freeTestPort(t)}
+
+			assert.ErrorIs(t, ctx.Cli.Ecs.Server.Run(ctx), errBoom)
+		})
+	}
+}
+
+// TestEcsServerCmdRun_NativeUnknownDefaultProfile: --default names a profile
+// that isn't in the cache, so the server refuses to start rather than coming up
+// without the credentials the user asked it to preload.
+func TestEcsServerCmdRun_NativeUnknownDefaultProfile(t *testing.T) {
+	ctx := newSelfSignedTestCtx(t)
+	ctx.Settings = newMinimalSettings(&ssocache.Cache{SSO: map[string]*ssocache.SSOCache{}})
+	ctx.Cli.Ecs.Server = EcsServerCmd{
+		BindIP:      "127.0.0.1",
+		Port:        freeTestPort(t),
+		DisableAuth: true,
+		Default:     "nonexistent-profile",
+	}
+
+	err := ctx.Cli.Ecs.Server.Run(ctx)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "nonexistent-profile")
 }

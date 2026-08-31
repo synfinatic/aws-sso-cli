@@ -79,6 +79,7 @@ func NewPredictor(cacheFile, configFile string) *Predictor {
 func (p *Predictor) KongpletePredictor() map[string]complete.Predictor {
 	return map[string]complete.Predictor{
 		"allFiles":  complete.PredictFiles("*"),
+		"directory": complete.PredictDirs("*"),
 		"accountId": p.AccountComplete(),
 		"arn":       p.ArnComplete(),
 		"fieldList": p.FieldListComplete(),

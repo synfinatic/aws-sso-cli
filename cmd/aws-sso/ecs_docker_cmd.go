@@ -42,9 +42,9 @@ const (
 )
 
 type EcsDockerCmd struct {
-	Start       EcsDockerStartCmd       `kong:"cmd,help='Start the ECS Server in a Docker container'"`
-	Stop        EcsDockerStopCmd        `kong:"cmd,help='Stop the ECS Server Docker container'"`
-	WriteConfig EcsDockerWriteConfigCmd `kong:"cmd,help='Write the ECS security config file for use with Docker Compose or other non-aws-sso launchers'"`
+	Start   EcsDockerStartCmd   `kong:"cmd,help='Start the ECS Server in a Docker container'"`
+	Stop    EcsDockerStopCmd    `kong:"cmd,help='Stop the ECS Server Docker container'"`
+	Secrets EcsDockerSecretsCmd `kong:"cmd,help='Write the bearer token and SSL cert/key files used by Docker Compose or other non-aws-sso launchers'"`
 }
 
 type EcsDockerStartCmd struct {
@@ -136,14 +136,7 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 			Name:              container.RestartPolicyOnFailure,
 			MaximumRetryCount: 3, // only valid for on-failure
 		},
-		Mounts: []mount.Mount{
-			{
-				Type:     mount.TypeBind,
-				ReadOnly: false,
-				Source:   fmt.Sprintf(ecs.HOST_MOUNT_POINT_FMT, os.Getenv("HOME")),
-				Target:   ecs.CONTAINER_MOUNT_POINT,
-			},
-		},
+		Mounts: ecsContainerMounts(ctx.Cli.Ecs.SecretsDir),
 	}
 
 	resp, err := dockerClient.ContainerCreate(context.Background(), dockerclient.ContainerCreateOptions{
@@ -157,13 +150,14 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 
 	// Write security config and close before starting the container so the
 	// file is fully flushed to the shared filesystem before the container reads it.
-	if err = writeAndCloseSecurityFile(privateKey, certChain, bearerToken); err != nil {
+	if err = writeAndCloseSecurityFile(ctx.Cli.Ecs.SecretsDir, privateKey, certChain, bearerToken); err != nil {
 		_, _ = dockerClient.ContainerRemove(context.Background(), resp.ID, dockerclient.ContainerRemoveOptions{})
 		return err
 	}
 
 	if _, err = dockerClient.ContainerStart(context.Background(), resp.ID, dockerclient.ContainerStartOptions{}); err != nil {
-		os.Remove(ecs.SecurityFilePath(ecs.WRITE_ONLY)) // clean up on failure
+		// the security file is deliberately left in place: it is durable
+		// configuration now, and is just as valid for the next start attempt
 		_, _ = dockerClient.ContainerRemove(context.Background(), resp.ID, dockerclient.ContainerRemoveOptions{})
 		return err
 	}
@@ -203,29 +197,42 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 	return nil
 }
 
-type EcsDockerWriteConfigCmd struct {
+type EcsDockerSecretsCmd struct {
 	DisableAuth bool `kong:"help='Do not include the HTTP Auth bearer token in the config file'"`
 	DisableSSL  bool `kong:"help='Do not include the SSL cert/key in the config file'"`
 }
 
 // AfterApply determines if SSO auth token is required
-func (e EcsDockerWriteConfigCmd) AfterApply(runCtx *RunContext) error {
+func (e EcsDockerSecretsCmd) AfterApply(runCtx *RunContext) error {
 	runCtx.Auth = AUTH_SKIP
 	return nil
 }
 
 // Run writes the security config file consumed by the `--docker` entrypoint
-// (`ecs.CONTAINER_NAMED_FILE`, bind-mounted from `ecs.HOST_NAMED_FILE_FMT`) without
+// (`ecs.CONTAINER_NAMED_FILE`, bind-mounted from `ecs.HostMountPoint()`) without
 // starting or managing a container. This lets tools that own the container lifecycle
 // themselves, like `docker compose`, still provision the bearer token / SSL material
 // that `EcsDockerStartCmd` would otherwise write just before starting the container.
-func (cc *EcsDockerWriteConfigCmd) Run(ctx *RunContext) error {
+//
+// This is one-time setup, not a per-`docker compose up` ritual: the file persists,
+// and re-running is idempotent as far as the certificate goes -- a still-valid leaf
+// is reused rather than replaced, so re-running does not invalidate what an already
+// running container is serving.
+func (cc *EcsDockerSecretsCmd) Run(ctx *RunContext) error {
 	var privateKey, certChain, bearerToken string
 	var err error
 
+	secretsDir := ctx.Cli.Ecs.SecretsDir
+
 	if !cc.DisableSSL {
-		if privateKey, certChain, err = mintLeafFromStoredCA(ctx); err != nil {
-			return err
+		caCert, caErr := ctx.Store.GetEcsCaCert()
+		if caErr != nil {
+			return caErr
+		}
+		if privateKey, certChain = reusablePersistedLeaf(secretsDir, caCert); privateKey == "" {
+			if privateKey, certChain, err = mintLeafFromStoredCA(ctx); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -235,17 +242,138 @@ func (cc *EcsDockerWriteConfigCmd) Run(ctx *RunContext) error {
 		}
 	}
 
-	if err = writeAndCloseSecurityFile(privateKey, certChain, bearerToken); err != nil {
+	if err = writeAndCloseSecurityFile(secretsDir, privateKey, certChain, bearerToken); err != nil {
 		return err
 	}
 
-	log.Info("Wrote ECS security config", "path", ecs.SecurityFilePath(ecs.WRITE_ONLY))
+	log.Info("Wrote ECS security config", "path", ecs.HostSecurityFilePath(secretsDir))
+	if bearerToken != "" {
+		log.Info("Wrote ECS bearer token file for AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE",
+			"path", ecs.HostBearerTokenPath(secretsDir))
+	}
+	// docker compose cannot work out ConfigDir()'s XDG-vs-legacy split on its
+	// own, so name the directory it has to bind-mount explicitly
+	log.Info("Bind-mount this directory into the ECS Server container", "dir", ecs.HostMountPoint(secretsDir))
 	return nil
+}
+
+// ecsContainerMounts returns the bind mount that gives the ECS Server container
+// its security file.  Split out of EcsDockerStartCmd.Run, which needs a live
+// Docker daemon, so the --secrets-dir wiring is testable on its own.
+func ecsContainerMounts(secretsDir string) []mount.Mount {
+	return []mount.Mount{
+		{
+			Type: mount.TypeBind,
+			// the server only reads the security config; it used to delete
+			// it after reading, but the file is durable configuration now
+			ReadOnly: true,
+			Source:   ecs.HostMountPoint(secretsDir),
+			Target:   ecs.CONTAINER_MOUNT_POINT,
+		},
+	}
+}
+
+// reusablePersistedLeaf returns the leaf already in the ECS security file when it
+// is still fresh and still chains to caCert, so re-running `ecs docker secrets`
+// does not churn a new certificate -- and does not leave the file disagreeing
+// with what a running container is already serving.  Returns empty
+// strings whenever there is nothing safely reusable: no file, no SSL material, an
+// unparseable or aging leaf, or a leaf orphaned by a CA rotation.
+func reusablePersistedLeaf(secretsDir, caCert string) (privateKey, certChain string) {
+	if caCert == "" {
+		return "", ""
+	}
+
+	f, err := os.Open(ecs.HostSecurityFilePath(secretsDir)) // nolint:gosec
+	if err != nil {
+		return "", ""
+	}
+	creds, err := ecs.ReadSecurityConfig(f)
+	f.Close()
+	if err != nil || creds.PrivateKey == "" || creds.CertChain == "" {
+		return "", ""
+	}
+
+	notAfter, err := certutil.NotAfter(creds.CertChain)
+	if err != nil || time.Until(notAfter) <= leafRefreshThreshold {
+		return "", "" // unparseable, or aged enough that we should mint a fresh one
+	}
+	if err = certutil.VerifyLeafAgainstCA(creds.CertChain, caCert); err != nil {
+		return "", "" // the CA was rotated; this leaf is no longer trusted
+	}
+
+	return creds.PrivateKey, creds.CertChain
+}
+
+// leafRefreshThreshold is how much of certutil.LeafValidity must remain before
+// refreshDockerSecurityFileIfStale leaves a persisted leaf alone.  Re-minting
+// once a third of its life has elapsed keeps the certificate comfortably fresh
+// without rewriting the file on every single command.
+const leafRefreshThreshold = certutil.LeafValidity * 2 / 3
+
+// refreshDockerSecurityFileIfStale re-mints the leaf certificate inside an
+// existing ECS security file once it has aged past leafRefreshThreshold.
+//
+// The security file persists -- docker compose owns the container lifecycle, so
+// the file has to survive restarts and recreation -- which means the leaf inside
+// it ages, unlike the native `ecs server` path where a fresh leaf is minted on
+// every start.  Rather than lengthening certutil.LeafValidity to compensate, the
+// host-side ECS commands top it up opportunistically: users run `ecs
+// load`/`list`/`profile` far more often than every 30 days, so in practice the
+// persisted leaf never approaches expiry.
+//
+// This never creates the file -- only `ecs docker secrets` and `ecs docker
+// start` do -- so it is a no-op for anyone not running the server in Docker.
+// Errors are logged and swallowed: this is background maintenance on commands
+// whose real job is something else.
+func refreshDockerSecurityFileIfStale(ctx *RunContext) {
+	if ctx.Store == nil {
+		return // no SecureStore loaded, so no CA to mint from
+	}
+
+	secretsDir := ctx.Cli.Ecs.SecretsDir
+	path := ecs.HostSecurityFilePath(secretsDir)
+	f, err := os.Open(path) // nolint:gosec
+	if err != nil {
+		return // no security file: nothing to maintain
+	}
+	creds, err := ecs.ReadSecurityConfig(f)
+	f.Close()
+	if err != nil {
+		log.Debug("Unable to parse the ECS security config; leaving it alone",
+			"path", path, "error", err.Error())
+		return
+	}
+
+	if creds.PrivateKey == "" || creds.CertChain == "" {
+		return // SSL is not in use here
+	}
+
+	notAfter, err := certutil.NotAfter(creds.CertChain)
+	if err != nil || time.Until(notAfter) > leafRefreshThreshold {
+		return // unparseable, or still fresh enough to leave alone
+	}
+
+	privateKey, certChain, err := mintLeafFromStoredCA(ctx)
+	if err != nil {
+		log.Warn("Unable to refresh the ECS Server certificate", "error", err.Error())
+		return
+	}
+	if privateKey == "" || certChain == "" {
+		return // the CA has since been removed from the SecureStore
+	}
+
+	if err = writeAndCloseSecurityFile(secretsDir, privateKey, certChain, creds.BearerToken); err != nil {
+		log.Warn("Unable to write the refreshed ECS security config", "error", err.Error())
+		return
+	}
+
+	log.Info("Refreshed the ECS Server certificate; restart the container to use it", "path", path)
 }
 
 // mintLeafFromStoredCA fetches the persisted CA from the store and mints a
 // fresh, short-lived leaf from it -- the leaf itself is never persisted, so
-// this runs host-side right before every `ecs docker start`/`write-config`
+// this runs host-side right before every `ecs docker start`/`secrets`
 // invocation, mirroring the equivalent mint in EcsServerCmd.Run's native path.
 func mintLeafFromStoredCA(ctx *RunContext) (privateKey, certChain string, err error) {
 	caCert, err := ctx.Store.GetEcsCaCert()
@@ -277,8 +405,8 @@ func mintLeafFromStoredCA(ctx *RunContext) (privateKey, certChain string, err er
 // writeAndCloseSecurityFile writes the ECS security config and closes the file
 // synchronously before the container starts, ensuring the data is visible on the
 // shared filesystem (e.g. VirtioFS) before the container process reads it.
-func writeAndCloseSecurityFile(privateKey, certChain, bearerToken string) error {
-	f, err := ecs.OpenSecurityFile(ecs.WRITE_ONLY)
+func writeAndCloseSecurityFile(secretsDir, privateKey, certChain, bearerToken string) error {
+	f, err := ecs.OpenHostSecurityFile(secretsDir)
 	if err != nil {
 		return err
 	}
@@ -286,7 +414,18 @@ func writeAndCloseSecurityFile(privateKey, certChain, bearerToken string) error 
 		f.Close()
 		return err
 	}
-	return f.Close()
+	if err = f.Close(); err != nil {
+		return err
+	}
+
+	// companion file for client containers which read the bearer token via
+	// AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE rather than an env var
+	if err = ecs.WriteBearerTokenFile(secretsDir, bearerToken); err != nil {
+		return err
+	}
+
+	ecs.RemoveLegacySecurityFile()
+	return nil
 }
 
 // waitForEcsHealthcheck polls the ECS server healthcheck endpoint until it returns

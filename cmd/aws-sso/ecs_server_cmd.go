@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -33,11 +32,18 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/ecs/server"
 )
 
-// ecsCertExpiryWarningWindow is how far ahead of a CA/leaf certificate's
+// ecsCaCertExpiryWarningWindow is how far ahead of the CA certificate's
 // expiration `ecs server` starts warning on startup, giving the user time to
-// rerun `aws-sso setup ecs ssl --self-signed` (leaf) or `--rotate-ca` (CA)
-// before clients start failing TLS handshakes.
-const ecsCertExpiryWarningWindow = 30 * 24 * time.Hour
+// rerun `aws-sso setup ecs ssl --rotate-ca` -- and to redo the trust-store
+// steps on every client -- before TLS handshakes start failing.
+const ecsCaCertExpiryWarningWindow = 30 * 24 * time.Hour
+
+// ecsLeafCertExpiryWarningWindow is necessarily much shorter than the CA's: the
+// leaf is only valid for certutil.LeafValidity (30 days) to begin with, so a
+// 30-day window would warn over a leaf's entire lifetime.  Host-side ECS
+// commands refresh a persisted leaf well before this fires, so reaching it
+// means none have run in weeks.
+const ecsLeafCertExpiryWarningWindow = 7 * 24 * time.Hour
 
 type EcsServerCmd struct {
 	BindIP  string `kong:"help='Bind address for ECS Server',default='127.0.0.1'"`
@@ -75,18 +81,36 @@ func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 
 	var bearerToken, privateKey, certChain string
 	if ctx.Cli.Ecs.Server.Docker {
-		// fetch the creds from our temporary file mounted in the docker container
-		f, err := ecs.OpenSecurityFile(ecs.READ_ONLY)
+		// Read the security config bind-mounted in from the host.  The file is
+		// deliberately left in place: docker compose owns the container
+		// lifecycle, so this process can be restarted or recreated at any time
+		// and has to come back up with the same security posture.
+		f, err := ecs.OpenContainerSecurityFile()
 		if err != nil {
-			log.Warn("Failed to open ECS credentials file", "error", err.Error())
+			// Fail closed.  Tolerating a missing file here would silently serve
+			// credentials with no HTTP Auth and no TLS -- only acceptable when
+			// the user asked for exactly that.
+			if !ctx.Cli.Ecs.Server.DisableAuth || !ctx.Cli.Ecs.Server.DisableSSL {
+				// Name the container-side path, since that is what actually
+				// failed, but point at the host: the directory mounted onto
+				// CONTAINER_MOUNT_POINT is the thing that needs fixing, and
+				// this process cannot know its path on the host.
+				return fmt.Errorf("unable to read the ECS security config %s: %w\n"+
+					"Run `aws-sso ecs docker secrets` on the host and bind-mount the "+
+					"directory it names onto %s -- if you set --secrets-dir or "+
+					"AWS_SSO_ECS_SECRETS_DIR, that is the directory to mount.  Or pass "+
+					"both --disable-auth and --disable-ssl to intentionally start "+
+					"without HTTP Auth and SSL/TLS",
+					ecs.ContainerSecurityFilePath(), err, ecs.CONTAINER_MOUNT_POINT)
+			}
+			log.Warn("No ECS security config; starting without HTTP Auth or SSL/TLS as requested")
 		} else {
 			creds, err := ecs.ReadSecurityConfig(f)
+			// have to manually close since defer won't work in this case
+			f.Close()
 			if err != nil {
 				return err
 			}
-			// have to manually close since defer won't work in this case
-			f.Close()
-			os.Remove(f.Name()) // nolint:gosec
 
 			bearerToken = creds.BearerToken
 			privateKey = creds.PrivateKey
@@ -139,15 +163,16 @@ func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 	if privateKey != "" && certChain != "" {
 		log.Info("SSL/TLS: enabled")
 
-		// Docker's `ecs server --docker` process reads its leaf from the
-		// security file rather than the store, so it has no access to the CA
-		// cert here to check its expiry; threading the CA cert through the
-		// security file just for this warning is left as a follow-up.
-		if !ctx.Cli.Ecs.Server.Docker {
-			if caCert, err := ctx.Store.GetEcsCaCert(); err == nil && caCert != "" {
-				warnIfCertExpiringSoon(caCert, "CA certificate",
-					"aws-sso setup ecs ssl --rotate-ca")
-			}
+		if ctx.Cli.Ecs.Server.Docker {
+			// No CA is available inside the container, but the leaf's own expiry
+			// is right here -- and under docker the leaf is persisted in the
+			// security file rather than minted fresh per start, so it is the one
+			// that can actually go stale.
+			warnIfCertExpiringSoon(certChain, "leaf certificate",
+				"aws-sso ecs docker secrets", ecsLeafCertExpiryWarningWindow)
+		} else if caCert, err := ctx.Store.GetEcsCaCert(); err == nil && caCert != "" {
+			warnIfCertExpiringSoon(caCert, "CA certificate",
+				"aws-sso setup ecs ssl --rotate-ca", ecsCaCertExpiryWarningWindow)
 		}
 	} else if !ctx.Cli.Ecs.Server.DisableSSL {
 		log.Warn("SSL/TLS: disabled.  Use 'aws-sso setup ecs ssl' to enable")
@@ -175,17 +200,17 @@ func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 	return nil
 }
 
-// warnIfCertExpiringSoon logs a warning if certPEM expires within
-// ecsCertExpiryWarningWindow (or has already expired), naming the fixCmd the
-// user should rerun. Parse errors are ignored here: certificates loaded from
-// the SecureStore have already been validated when they were saved.
-func warnIfCertExpiringSoon(certPEM, label, fixCmd string) {
+// warnIfCertExpiringSoon logs a warning if certPEM expires within window (or
+// has already expired), naming the fixCmd the user should rerun. Parse errors
+// are ignored here: certificates loaded from the SecureStore have already been
+// validated when they were saved.
+func warnIfCertExpiringSoon(certPEM, label, fixCmd string, window time.Duration) {
 	notAfter, err := certutil.NotAfter(certPEM)
 	if err != nil {
 		return
 	}
 
-	if msg := certExpiryWarning(label, notAfter, time.Now(), ecsCertExpiryWarningWindow); msg != "" {
+	if msg := certExpiryWarning(label, notAfter, time.Now(), window); msg != "" {
 		log.Warn(msg, "expires", notAfter.Format(time.RFC3339), "fix", fixCmd)
 	}
 }

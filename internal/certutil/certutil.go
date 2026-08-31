@@ -40,10 +40,13 @@ import (
 // itself actually expires.
 const CAValidity = 10 * 365 * 24 * time.Hour
 
-// LeafValidity is intentionally short: the leaf is never persisted, it's
-// minted fresh in memory from the CA every time it's needed (native `ecs
-// server` startup, or `ecs docker start`/`write-config` before the container
-// starts), so there's no reason to make it long-lived.
+// LeafValidity is intentionally short, because in most cases the leaf is not
+// persisted at all: native `ecs server` startup and `ecs docker start` mint one
+// fresh in memory from the CA every time it's needed.  The `docker compose`
+// path is the exception -- `ecs docker secrets` persists the leaf into the
+// ECS security file because compose, not aws-sso, owns the container lifecycle.
+// That leaf is topped up opportunistically by the host-side `ecs` commands well
+// before it lapses, so it stays short-lived rather than long-lived.
 const LeafValidity = 30 * 24 * time.Hour
 
 // CACommonName identifies the generated CA in OS trust-store UIs so users

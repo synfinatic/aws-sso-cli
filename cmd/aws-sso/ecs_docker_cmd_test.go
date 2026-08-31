@@ -135,14 +135,14 @@ func TestLoadProfileToEcsServerNotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "nonexistent-profile")
 }
 
-func TestEcsDockerWriteConfigCmdAfterApply(t *testing.T) {
+func TestEcsDockerSecretsCmdAfterApply(t *testing.T) {
 	runCtx := &RunContext{}
-	err := EcsDockerWriteConfigCmd{}.AfterApply(runCtx)
+	err := EcsDockerSecretsCmd{}.AfterApply(runCtx)
 	require.NoError(t, err)
 	assert.Equal(t, AUTH_SKIP, runCtx.Auth)
 }
 
-func TestEcsDockerWriteConfigCmdRun(t *testing.T) {
+func TestEcsDockerSecretsCmdRun(t *testing.T) {
 	home := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config", "aws-sso"), 0700))
 	t.Setenv("HOME", home)
@@ -155,11 +155,11 @@ func TestEcsDockerWriteConfigCmdRun(t *testing.T) {
 	require.NoError(t, store.SaveEcsBearerToken(context.Background(), "s3cr3t"))
 	require.NoError(t, store.SaveEcsCaKeyPair(context.Background(), []byte(caKeyPEM), []byte(caCertPEM)))
 
-	ctx := &RunContext{Store: store}
-	cc := &EcsDockerWriteConfigCmd{}
+	ctx := &RunContext{Store: store, Cli: &CLI{}}
+	cc := &EcsDockerSecretsCmd{}
 	require.NoError(t, cc.Run(ctx))
 
-	path := filepath.Join(home, ".aws-sso", "mnt", "docker-ecs")
+	path := filepath.Join(home, ".config", "aws-sso", "ecs", "docker-secret.json")
 	data, err := os.ReadFile(path) // nolint:gosec
 	require.NoError(t, err)
 
@@ -182,7 +182,7 @@ func TestEcsDockerWriteConfigCmdRun(t *testing.T) {
 	assert.NoError(t, err, "written leaf should chain-verify against the stored CA")
 }
 
-func TestEcsDockerWriteConfigCmdRunDisabled(t *testing.T) {
+func TestEcsDockerSecretsCmdRunDisabled(t *testing.T) {
 	home := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config", "aws-sso"), 0700))
 	t.Setenv("HOME", home)
@@ -195,11 +195,11 @@ func TestEcsDockerWriteConfigCmdRunDisabled(t *testing.T) {
 	require.NoError(t, store.SaveEcsBearerToken(context.Background(), "s3cr3t"))
 	require.NoError(t, store.SaveEcsCaKeyPair(context.Background(), []byte(caKeyPEM), []byte(caCertPEM)))
 
-	ctx := &RunContext{Store: store}
-	cc := &EcsDockerWriteConfigCmd{DisableAuth: true, DisableSSL: true}
+	ctx := &RunContext{Store: store, Cli: &CLI{}}
+	cc := &EcsDockerSecretsCmd{DisableAuth: true, DisableSSL: true}
 	require.NoError(t, cc.Run(ctx))
 
-	path := filepath.Join(home, ".aws-sso", "mnt", "docker-ecs")
+	path := filepath.Join(home, ".config", "aws-sso", "ecs", "docker-secret.json")
 	data, err := os.ReadFile(path) // nolint:gosec
 	require.NoError(t, err)
 
@@ -210,7 +210,7 @@ func TestEcsDockerWriteConfigCmdRunDisabled(t *testing.T) {
 	assert.Empty(t, sec.CertChain)
 }
 
-func TestEcsDockerWriteConfigCmdRun_MintsFreshLeafEachRun(t *testing.T) {
+func TestEcsDockerSecretsCmdRun_ReusesStillValidLeaf(t *testing.T) {
 	home := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config", "aws-sso"), 0700))
 	t.Setenv("HOME", home)
@@ -222,9 +222,9 @@ func TestEcsDockerWriteConfigCmdRun_MintsFreshLeafEachRun(t *testing.T) {
 	caCertPEM, caKeyPEM := genTestCA(t)
 	require.NoError(t, store.SaveEcsCaKeyPair(context.Background(), []byte(caKeyPEM), []byte(caCertPEM)))
 
-	ctx := &RunContext{Store: store}
-	cc := &EcsDockerWriteConfigCmd{DisableAuth: true}
-	path := filepath.Join(home, ".aws-sso", "mnt", "docker-ecs")
+	ctx := &RunContext{Store: store, Cli: &CLI{}}
+	cc := &EcsDockerSecretsCmd{DisableAuth: true}
+	path := filepath.Join(home, ".config", "aws-sso", "ecs", "docker-secret.json")
 
 	readLeaf := func() string {
 		require.NoError(t, cc.Run(ctx))
@@ -237,10 +237,18 @@ func TestEcsDockerWriteConfigCmdRun_MintsFreshLeafEachRun(t *testing.T) {
 
 	leaf1 := readLeaf()
 	leaf2 := readLeaf()
-	assert.NotEqual(t, leaf1, leaf2, "each run should mint a fresh leaf rather than reuse a stored one")
+	assert.Equal(t, leaf1, leaf2,
+		"re-running should reuse the still-valid persisted leaf, not churn a new one")
+
+	// ...but a leaf orphaned by a CA rotation must not be reused, even though it
+	// is still well within its own validity window.
+	rotatedCert, rotatedKey := genTestCA(t)
+	require.NoError(t, store.SaveEcsCaKeyPair(context.Background(), []byte(rotatedKey), []byte(rotatedCert)))
+	leaf3 := readLeaf()
+	assert.NotEqual(t, leaf2, leaf3, "a leaf that no longer chains to the CA should be re-minted")
 }
 
-func TestEcsDockerWriteConfigCmdRun_MalformedCA_ReturnsError(t *testing.T) {
+func TestEcsDockerSecretsCmdRun_MalformedCA_ReturnsError(t *testing.T) {
 	home := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config", "aws-sso"), 0700))
 	t.Setenv("HOME", home)
@@ -249,12 +257,12 @@ func TestEcsDockerWriteConfigCmdRun_MalformedCA_ReturnsError(t *testing.T) {
 	store, err := storage.OpenJsonStore(context.Background(), filepath.Join(home, "store.json"))
 	require.NoError(t, err)
 
-	ctx := &RunContext{Store: &errStore{
+	ctx := &RunContext{Cli: &CLI{}, Store: &errStore{
 		SecureStorage: store,
 		getEcsCaCert:  func() (string, error) { return "not a cert", nil },
 		getEcsCaKey:   func() (string, error) { return "not a key", nil },
 	}}
-	cc := &EcsDockerWriteConfigCmd{DisableAuth: true}
+	cc := &EcsDockerSecretsCmd{DisableAuth: true}
 	err = cc.Run(ctx)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unable to generate leaf certificate")
