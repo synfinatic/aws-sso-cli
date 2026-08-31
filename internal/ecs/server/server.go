@@ -20,11 +20,10 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
-	"os"
-	"path/filepath"
 
 	// "github.com/davecgh/go-spew/spew"
 	"time"
@@ -184,25 +183,22 @@ func (e *EcsServer) BaseURL() string {
 // Serve starts the sever and blocks
 func (e *EcsServer) Serve() error {
 	if e.privateKey != "" && e.certChain != "" {
-		// Go sucks... have to pass the key and cert as _files_ not strings.  Why???
-		dname, err := os.MkdirTemp("", "aws-sso")
+		// Keep the key in memory: ServeTLS only reads certFile/keyFile off disk
+		// when TLSConfig has no certificate of its own, so load the PEM directly
+		// and pass empty paths.
+		cert, err := tls.X509KeyPair([]byte(e.certChain), []byte(e.privateKey))
 		if err != nil {
-			return err
-		}
-		defer os.RemoveAll(dname)
-
-		certFile := filepath.Join(dname, "cert.pem")
-		err = os.WriteFile(certFile, []byte(e.certChain), 0600)
-		if err != nil {
-			return err
-		}
-		keyFile := filepath.Join(dname, "key.pem")
-		err = os.WriteFile(keyFile, []byte(e.privateKey), 0600)
-		if err != nil {
-			return err
+			return fmt.Errorf("invalid ECS server certificate: %w", err)
 		}
 
-		return e.server.ServeTLS(e.listener, certFile, keyFile)
+		if e.server.TLSConfig == nil {
+			e.server.TLSConfig = &tls.Config{
+				MinVersion: tls.VersionTLS12,
+			}
+		}
+		e.server.TLSConfig.Certificates = []tls.Certificate{cert}
+
+		return e.server.ServeTLS(e.listener, "", "")
 	}
 	return e.server.Serve(e.listener)
 }
