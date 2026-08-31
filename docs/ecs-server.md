@@ -91,19 +91,38 @@ aws-sso setup ecs ssl --self-signed
 ```
 
 This generates (or reuses) a local CA, covering `localhost`, `127.0.0.1`,
-`::1`, and `169.254.170.2` by default. The CA certificate (never its private
-key) is stored in the secure store and also written to `ecs-ca.pem` in your
-aws-sso config directory (`~/.config/aws-sso` by default, or `~/.aws-sso` if
-you're on the legacy config path). The command then prints a short summary
-(CA path, fingerprint) and a link back to this section for the per-OS/
-per-runtime trust steps below.
+`::1`, and `169.254.170.2` by default. Both the CA certificate and its private
+key are stored in the secure store, and only there — `aws-sso` never writes a
+copy of either one next to your config files. When you need the CA certificate
+itself (to hand to the trust-store commands below), export it on demand with
+`--print-ca`. The command then prints a short summary — the CA's SHA-256
+fingerprint, the `--print-ca` export command, and a link back to this section
+for the per-OS/per-runtime trust steps below.
 
-A short-lived (30-day) leaf certificate, signed by that CA, is minted
-automatically wherever it's needed — entirely in memory, never written to
-the secure store or disk — at native `aws-sso ecs server` startup, or by
-`aws-sso ecs docker start`/`write-config` right before the container starts.
-There's nothing to rotate and nothing to rerun for the leaf itself: as long
-as the CA is trusted, every freshly minted leaf is trusted too.
+A short-lived (30-day) leaf certificate, signed by that CA, is minted wherever
+it's needed — at native `aws-sso ecs server` startup, or by
+`aws-sso ecs docker start`/`ecs docker secrets`. It is never stored in the secure
+store. `aws-sso ecs server` hands the PEM straight to Go's TLS stack in memory
+and never writes it out at all.
+
+The one place it _is_ written out is the Docker path, because a separately
+launched container has no other way to get it: `ecs docker secrets` (and
+`ecs docker start`) persist it, alongside the bearer token, in the ECS security
+file under your config directory (`~/.config/aws-sso/ecs/docker-secret.json`, or
+`~/.aws-sso/ecs/docker-secret.json` if you have a legacy `~/.aws-sso`
+directory), or wherever `--secrets-dir` / `AWS_SSO_ECS_SECRETS_DIR` points. That
+file is 0600, and it persists — `docker compose` owns its own container
+lifecycle, so the file has to survive restarts and recreation.
+
+To keep a persisted leaf from quietly aging out, the host-side ECS commands
+(`aws-sso ecs load`, `list`, and `profile`) top it up: if the file exists and its
+leaf is more than a third of the way through its life, they re-mint it in place
+and leave the bearer token untouched. Since the documented workflow already runs
+`aws-sso ecs load` after bringing the stack up, in practice the leaf never
+approaches expiry. Restart the container to pick up a refreshed leaf.
+
+There's nothing to rotate and nothing to rerun for the leaf itself: as long as
+the CA is trusted, every freshly minted leaf is trusted too.
 
 The CA uses a P-256 ECDSA key and is valid for 10 years — it's retained and
 reused indefinitely on purpose, since regenerating it (`--rotate-ca`) is the
@@ -113,7 +132,7 @@ The CA is **name-constrained** (RFC 5280): it carries a critical
 `nameConstraints` extension permitting only `localhost`, `127.0.0.0/8`,
 `::1/128`, and `169.254.170.2/32`. This matters because the steps below install
 it as a trust root. An unconstrained private CA in your trust store would let
-anyone holding its private key forge a valid certificate for *any* site
+anyone holding its private key forge a valid certificate for _any_ site
 — `sts.amazonaws.com`, your bank, your company SSO. With the constraints in
 place, a leaked CA key can only forge certificates for the loopback and ECS
 endpoints the ECS Server itself listens on. It is also marked `pathLen:0`, so
@@ -128,11 +147,19 @@ within 30 days (or already has), naming `--rotate-ca` as the fix, so you
 don't find out from a client's TLS handshake failing instead. The leaf is
 always freshly minted, so it can never be close to expiring.
 
-If you need to see the CA certificate, path, and fingerprint again — on a new
-machine, or because you forgot them — without generating anything new:
+To export the CA certificate — on a new machine, to re-trust it, or just to
+inspect it — without generating anything new:
 
 ```bash
-aws-sso setup ecs ssl --print-ca
+aws-sso setup ecs ssl --print-ca > ~/aws-sso-ecs-ca.pem
+```
+
+`--print-ca` writes the PEM to stdout and nothing else — no fingerprint, no
+instructions — so it is safe to redirect to a file or pipe into another
+command:
+
+```bash
+aws-sso setup ecs ssl --print-ca | openssl x509 -noout -text
 ```
 
 To remove the CA from the secure store (also disabling SSL/TLS until you
@@ -143,15 +170,29 @@ aws-sso setup ecs ssl --delete
 ```
 
 **Note:** A `docker compose` deployment left running longer than the leaf's
-30-day validity without a restart will have its leaf expire mid-run; restart
-the container (or rerun `write-config` and restart it) to mint a fresh one.
+30-day validity without a restart will have its leaf expire mid-run. This is
+visible rather than mysterious: the server's `/healthcheck` starts returning
+`503` with `"status": "server certificate expired"`, so `docker ps` shows the
+container unhealthy and anything using `depends_on: condition: service_healthy`
+refuses to start against it. Restart the container to pick up a fresh leaf —
+the host-side refresh described above has almost certainly already written one.
 
 ##### Trusting the CA per OS and runtime
 
 The CA is reused (not regenerated) every time you rerun `--self-signed`, so you
 only need to trust it once per machine/runtime below. Only `--rotate-ca` or
-`--delete` will require repeating these steps. Substitute the path printed by
-`--self-signed`/`--print-ca` for `<CA path>`.
+`--delete` will require repeating these steps.
+
+Every command below needs the CA as a file, so start by exporting it:
+
+```bash
+aws-sso setup ecs ssl --print-ca > ~/aws-sso-ecs-ca.pem
+```
+
+Then substitute that path (`~/aws-sso-ecs-ca.pem`, or wherever you wrote it)
+for `<CA path>` below. Once the CA is in the relevant trust store you can
+delete the exported file; the trust store keeps its own copy, and you can
+always re-export with `--print-ca`.
 
 **macOS** — trust the CA for your user (no sudo required):
 
@@ -403,23 +444,55 @@ profile name if it contains special characters).
 Unlike `aws-sso ecs docker start`, `docker compose` does not automatically provision
 your configured bearer token or SSL certificate/key into the container. If you have
 either configured (via `aws-sso setup ecs auth` and/or `aws-sso setup ecs ssl`), run
-`aws-sso ecs docker write-config --disable-ssl` before every `docker compose up` to write the
-bearer token to `~/.aws-sso/mnt/docker-ecs`, which the container reads on startup and then
-deletes.  See [Why SSL is not needed here](#why-ssl-is-not-needed-here) below for why this
-example skips the certificate.
-Otherwise the container starts with HTTP Auth disabled, and any client (including
-`aws-sso ecs list`) that still sends a bearer token from a previously configured
-SecureStore will be rejected with a `403 Forbidden`.
+`aws-sso ecs docker secrets --disable-ssl` **once** to write the bearer token into
+the ECS security file, which the container reads on startup.  See
+[Why SSL is not needed here](#why-ssl-is-not-needed-here) below for why this example
+skips the certificate.
 
 ```bash
-export AWS_SSO_ECS_TOKEN='<the token you passed to aws-sso setup ecs auth>'
-aws-sso ecs docker write-config --disable-ssl
-docker compose up &
+aws-sso setup ecs auth --bearer-token '<a token you choose>'   # once
+aws-sso ecs docker secrets --disable-ssl                       # once
+docker compose up -d
 aws-sso ecs load ...
 ```
 
-The example below reads `AWS_SSO_ECS_TOKEN` from your shell rather than hard coding the bearer
-token into `compose.yaml`, so the secret does not end up in version control.
+`ecs docker secrets` is one-time setup, not a per-`docker compose up` ritual:
+the files it writes persist, so `docker compose down && docker compose up` keeps working. Re-run it
+only after changing the bearer token or the CA — and re-running is safe, since a
+still-valid leaf certificate is reused rather than replaced.
+
+If the security file is missing, the container **fails to start** with an error naming
+the file and the command that creates it. It does not fall back to starting with HTTP
+Auth and SSL/TLS silently disabled — a credential server that quietly comes up
+unauthenticated is worse than one that refuses to come up. To intentionally run with
+neither, pass both `--disable-auth` and `--disable-ssl` to `ecs server`.
+
+`ecs docker secrets` also writes a companion `bearer-token` file containing just the HTTP
+`Authorization` header value. The example below bind-mounts that file into `myapp` and
+points `AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE` at it, rather than passing the token as
+`AWS_CONTAINER_AUTHORIZATION_TOKEN`: environment variables are visible in
+`docker inspect` for the container's whole life and are inherited by every child
+process, whereas the file is 0600 and mounted read-only.
+
+`docker compose` cannot work out for itself whether your config lives in
+`~/.config/aws-sso` or a legacy `~/.aws-sso`, so the example takes the directory from
+`AWS_SSO_ECS_SECRETS_DIR`, defaulting to the XDG location. `ecs docker secrets` prints
+the directory it actually used; set the variable if it differs.
+
+`AWS_SSO_ECS_SECRETS_DIR` is read by `aws-sso` itself, not just by `docker
+compose` — it is the environment form of `--secrets-dir` — so exporting it is
+enough to move the files somewhere else entirely and keep both sides pointing at
+the same directory:
+
+```bash
+export AWS_SSO_ECS_SECRETS_DIR=~/projects/myapp/.aws-sso-secrets
+aws-sso ecs docker secrets --disable-ssl
+docker compose up -d
+```
+
+`aws-sso` creates that directory 0700 if it does not exist. If you create it
+yourself, make sure other users cannot read it: the files hold the bearer token
+and the SSL private key in plaintext.
 
 #### Why SSL is not needed here
 
@@ -436,10 +509,11 @@ instead, and `myapp` would have to use `https://169.254.170.2:4144` with a certi
 SDK trusts _for that IP address_ -- which no public CA will issue.
 
 ```yaml
-# Run `aws-sso ecs docker write-config --disable-ssl` before every `docker compose up`
-# to provision the bearer token into ${HOME}/.aws-sso/mnt/docker-ecs (deleted by the
-# container after it reads it), otherwise this starts with HTTP Auth disabled and any
-# client still sending a configured bearer token will get a 403.
+# Run `aws-sso ecs docker secrets --disable-ssl` once to provision the bearer
+# token into $AWS_SSO_ECS_SECRETS_DIR (the default below assumes the XDG config
+# layout; run `ecs docker secrets` to see the path it actually used).  The files
+# persist, so this is setup, not something to repeat before every
+# `docker compose up`.
 networks:
   aws-sso-ecs:
     driver: bridge
@@ -457,8 +531,9 @@ services:
         ipv4_address: "169.254.170.2"
       default: {}
     volumes:
-      # necessary for the container to read the security config written by write-config
-      - ${HOME}/.aws-sso/mnt:/app/.aws-sso/mnt
+      # necessary for the container to read the security config written by
+      # `ecs docker secrets`; read-only because the server only ever reads it
+      - ${AWS_SSO_ECS_SECRETS_DIR:-${HOME}/.config/aws-sso/ecs}:/app/.aws-sso/ecs:ro
     ports:
       # necessary for local management
       - "127.0.0.1:4144:4144"
@@ -471,11 +546,18 @@ services:
       aws-sso:
         # ensures this container doesn't start until credentials have been loaded in the ecs server
         condition: service_healthy
+    volumes:
+      # Mount just the token rather than passing it as an environment variable:
+      # `docker inspect` exposes env vars for the container's whole life, and every
+      # child process inherits them.
+      - ${AWS_SSO_ECS_SECRETS_DIR:-${HOME}/.config/aws-sso/ecs}/bearer-token:/run/secrets/aws-sso-token:ro
     environment:
       AWS_CONTAINER_CREDENTIALS_FULL_URI: http://169.254.170.2:4144
-      # must match the token stored via `aws-sso setup ecs auth`.  Omit this (and run
-      # `write-config --disable-auth`) only if you are not using HTTP Auth.
-      AWS_CONTAINER_AUTHORIZATION_TOKEN: "Bearer ${AWS_SSO_ECS_TOKEN}"
+      # The AWS SDKs send this file's contents verbatim as the Authorization header,
+      # which is why `ecs docker secrets` writes the "Bearer " prefix into it and
+      # no trailing newline.  Drop both this and the volume above if you ran
+      # `ecs docker secrets --disable-auth`.
+      AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE: /run/secrets/aws-sso-token
     networks:
       aws-sso-ecs: {}
       default: {}

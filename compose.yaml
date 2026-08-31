@@ -1,0 +1,62 @@
+# Setup, once -- not before every `docker compose up`:
+#
+#   aws-sso setup ecs auth --bearer-token <token>   # optional, but recommended
+#   aws-sso ecs docker secrets --disable-ssl
+#
+# `ecs docker secrets` provisions the bearer token (and, without --disable-ssl,
+# the SSL cert/key) and prints the exact directory it used.  The files persist,
+# so container restarts and recreation keep working; re-run it only after
+# changing the token or the CA.
+#
+# The default below assumes the XDG config layout.  Set AWS_SSO_ECS_SECRETS_DIR
+# to put the files somewhere else -- aws-sso reads that variable too, so both
+# sides stay in sync:
+#
+#   export AWS_SSO_ECS_SECRETS_DIR=/path/to/secrets
+#
+# You also need it if you have a legacy ~/.aws-sso directory, since aws-sso
+# writes there instead: set it to the path `ecs docker secrets` printed.
+networks:
+  aws-sso-ecs:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: "169.254.170.0/24"
+          gateway: "169.254.170.1"
+services:
+  aws-sso:
+    image: synfinatic/aws-sso-cli-ecs-server
+    networks:
+      aws-sso-ecs:
+        # This special IP address is recognized by the AWS SDKs and AWS CLI
+        ipv4_address: "169.254.170.2"
+      default: {}
+    volumes:
+      # the security config written by `ecs docker secrets`; read-only because
+      # the server only ever reads it
+      - ${AWS_SSO_ECS_SECRETS_DIR:-${HOME}/.config/aws-sso/ecs}:/app/.aws-sso/ecs:ro
+    ports:
+      - "127.0.0.1:4144:4144"
+
+  myapp:
+    image: amazon/aws-cli # replace with your service
+    entrypoint: ""
+    command: /usr/local/bin/aws sts get-caller-identity
+    depends_on:
+      aws-sso:
+        condition: service_healthy
+    volumes:
+      # Mount just the token rather than passing it as an environment variable:
+      # `docker inspect` exposes env vars for the container's whole life, and
+      # every child process inherits them.
+      - ${AWS_SSO_ECS_SECRETS_DIR:-${HOME}/.config/aws-sso/ecs}/bearer-token:/run/secrets/aws-sso-token:ro
+    environment:
+      AWS_CONTAINER_CREDENTIALS_FULL_URI: http://169.254.170.2:4144
+      # The AWS SDKs send this file's contents verbatim as the Authorization
+      # header, which is why `ecs docker secrets` writes the "Bearer " prefix
+      # into it and no trailing newline.  Drop both this and the volume above
+      # if you ran `ecs docker secrets --disable-auth`.
+      AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE: /run/secrets/aws-sso-token
+    networks:
+      aws-sso-ecs: {}
+      default: {}
