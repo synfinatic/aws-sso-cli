@@ -24,8 +24,10 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"time"
 
 	// "github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/certutil"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	"github.com/synfinatic/aws-sso-cli/internal/logger"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
@@ -46,6 +48,16 @@ type EcsServer struct {
 	slottedCreds map[string]*ecs.ECSClientRequest
 	privateKey   string
 	certChain    string
+	// certNotAfter is the serving certificate's expiration, parsed once at
+	// construction so the healthcheck doesn't re-parse the PEM per request.
+	// Zero when TLS is disabled.
+	certNotAfter time.Time
+}
+
+// CertExpired reports whether the serving certificate has expired.  Always
+// false when TLS is disabled, since there is no certificate to expire.
+func (e *EcsServer) CertExpired() bool {
+	return !e.certNotAfter.IsZero() && time.Now().After(e.certNotAfter)
 }
 
 type ExpiredCredentials struct{}
@@ -65,6 +77,18 @@ func NewEcsServer(ctx context.Context, authToken string, listen net.Listener, pr
 		slottedCreds: map[string]*ecs.ECSClientRequest{},
 		privateKey:   privateKey,
 		certChain:    certChain,
+	}
+
+	// Parse the leaf's expiry once so /healthcheck can report an expired
+	// certificate without re-parsing the PEM on every probe.  A parse failure
+	// is not fatal here: Serve() validates the pair properly via
+	// tls.X509KeyPair and will fail loudly there instead.
+	if certChain != "" {
+		if notAfter, err := certutil.NotAfter(certChain); err == nil {
+			e.certNotAfter = notAfter
+		} else {
+			log.Warn("Unable to parse the ECS Server certificate expiration", "error", err.Error())
+		}
 	}
 
 	// inner router: all auth-protected credential routes

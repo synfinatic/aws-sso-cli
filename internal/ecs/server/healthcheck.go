@@ -26,6 +26,13 @@ import (
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 )
 
+// certExpiredStatus is reported before any credential check: an expired serving
+// certificate breaks every TLS client regardless of what is loaded, and the
+// container cannot fix it itself.  Failing the healthcheck surfaces it through
+// `docker ps` and blocks `depends_on: condition: service_healthy`, instead of
+// letting client containers start and fail with opaque TLS errors.
+const certExpiredStatus = "server certificate expired"
+
 type HealthCheckHandler struct {
 	ecs *EcsServer
 }
@@ -63,6 +70,11 @@ func (h HealthCheckHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h HealthCheckHandler) getDefault(w http.ResponseWriter) {
+	if h.ecs.CertExpired() {
+		writeHealthCheck(w, healthCheckResponse{Status: certExpiredStatus}, http.StatusServiceUnavailable)
+		return
+	}
+
 	creds := h.ecs.DefaultCreds
 	if creds.ProfileName == "" {
 		writeHealthCheck(w, healthCheckResponse{Status: "no credentials loaded"}, http.StatusServiceUnavailable)
@@ -80,6 +92,11 @@ func (h HealthCheckHandler) getDefault(w http.ResponseWriter) {
 }
 
 func (h HealthCheckHandler) getSlot(w http.ResponseWriter, profile string) {
+	if h.ecs.CertExpired() {
+		writeHealthCheck(w, healthCheckResponse{Status: certExpiredStatus}, http.StatusServiceUnavailable)
+		return
+	}
+
 	creds, err := h.ecs.GetSlottedCreds(profile)
 	if err != nil {
 		writeHealthCheck(w, healthCheckResponse{Status: "slot not found"}, http.StatusServiceUnavailable)
