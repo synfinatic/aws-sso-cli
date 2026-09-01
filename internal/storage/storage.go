@@ -230,6 +230,9 @@ func (sc *StaticCredentials) AccountIdStr() string {
 // ValidateSSLCertificate ensures we have a valid SSL certificate
 func ValidateSSLCertificate(certChain []byte) error {
 	block, _ := pem.Decode(certChain)
+	if block == nil {
+		return fmt.Errorf("certificate chain file is not a valid certificate: not PEM encoded")
+	}
 
 	if _, err := x509.ParseCertificate(block.Bytes); err != nil {
 		return fmt.Errorf("certificate chain file is not a valid certificate: %w", err)
@@ -244,6 +247,9 @@ func ValidateSSLPrivateKey(privateKey []byte) error {
 		return nil
 	}
 	block, _ := pem.Decode(privateKey)
+	if block == nil {
+		return fmt.Errorf("private key file is not a valid private key: not PEM encoded")
+	}
 
 	if _, err := x509.ParsePKCS8PrivateKey(block.Bytes); err != nil {
 		return fmt.Errorf("private key file is not a valid private key: %s", err)

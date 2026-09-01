@@ -109,11 +109,9 @@ func GenerateCA() (KeyPair, error) {
 }
 
 // GenerateLeaf creates a new leaf certificate signed by the given CA, for
-// the ECS Server to present over TLS.  extraSANs may contain additional DNS
-// names or IP addresses (parsed via net.ParseIP; anything that doesn't
-// parse as an IP is treated as a DNS name) to include alongside the
-// defaults in DefaultDNSNames/DefaultIPs.
-func GenerateLeaf(ca KeyPair, extraSANs []string) (KeyPair, error) {
+// the ECS Server to present over TLS, covering the SANs in
+// DefaultDNSNames/DefaultIPs.
+func GenerateLeaf(ca KeyPair) (KeyPair, error) {
 	caCert, caKey, err := parseCAKeyPair(ca)
 	if err != nil {
 		return KeyPair{}, err
@@ -129,7 +127,8 @@ func GenerateLeaf(ca KeyPair, extraSANs []string) (KeyPair, error) {
 		return KeyPair{}, err
 	}
 
-	dnsNames, ips := mergeSANs(extraSANs)
+	dnsNames := append([]string{}, DefaultDNSNames...)
+	ips := append([]net.IP{}, DefaultIPs...)
 
 	now := time.Now()
 	template := &x509.Certificate{
@@ -177,36 +176,6 @@ func newSerialNumber() (*big.Int, error) {
 		return nil, fmt.Errorf("unable to generate certificate serial number: %w", err)
 	}
 	return serial, nil
-}
-
-func mergeSANs(extraSANs []string) ([]string, []net.IP) {
-	dnsNames := append([]string{}, DefaultDNSNames...)
-	ips := append([]net.IP{}, DefaultIPs...)
-
-	seenDNS := map[string]bool{}
-	for _, d := range dnsNames {
-		seenDNS[d] = true
-	}
-	seenIP := map[string]bool{}
-	for _, ip := range ips {
-		seenIP[ip.String()] = true
-	}
-
-	for _, san := range extraSANs {
-		if ip := net.ParseIP(san); ip != nil {
-			if !seenIP[ip.String()] {
-				ips = append(ips, ip)
-				seenIP[ip.String()] = true
-			}
-			continue
-		}
-		if !seenDNS[san] {
-			dnsNames = append(dnsNames, san)
-			seenDNS[san] = true
-		}
-	}
-
-	return dnsNames, ips
 }
 
 func encodeKeyPair(certDER []byte, key *ecdsa.PrivateKey) (KeyPair, error) {

@@ -24,18 +24,17 @@ Flags:
 
 #### setup ecs ssl
 
- Configures the SSL Certificate and Private Key to enable SSL/TLS.  Saves the
- SSL certificate and private key to the SecureStore.
+Configures SSL/TLS for the ECS Server using a local, internal CA managed by `aws-sso`.
+Saves the generated SSL certificate and private key to the SecureStore.
 
- **Note:** At this time, this feature is not recommended due to a bug
- in the [AWS SDK](https://github.com/boto/boto3/issues/4188).
+Flags:
 
- Flags:
+* `--self-signed` -- Generate (or reuse) a local CA and issue a new leaf certificate for the ECS Server (recommended)
+* `--print-ca` -- Print the local self-signed CA certificate in PEM format
+* `--delete` -- Disables SSL and deletes both the SSL certificate/key and the local CA from the Secure Store
 
-* `--delete` -- Disables SSL and deletes both the SSL certificate and private key from the Secure Store
-* `--print` -- Prints the SSL certificate
-* `--certificate` -- Path to SSL certificate file in PEM format
-* `--private-key` -- Path to SSL private key in PEM format
+`--self-signed` prints a link to the [Trusting the CA](ecs-server.md#trusting-the-ca). To force generation of
+a brand new CA (requiring re-trusting on every client), run `--delete` followed by `--self-signed`.
 
 ---
 

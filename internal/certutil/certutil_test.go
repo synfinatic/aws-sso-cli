@@ -20,6 +20,8 @@ package certutil
 
 import (
 	"crypto/ecdsa"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
@@ -63,7 +65,7 @@ func TestGenerateLeaf_SignedByCA(t *testing.T) {
 	ca, err := GenerateCA()
 	require.NoError(t, err)
 
-	leaf, err := GenerateLeaf(ca, nil)
+	leaf, err := GenerateLeaf(ca)
 	require.NoError(t, err)
 
 	caCert := parsePEMCert(t, ca.CertPEM)
@@ -85,7 +87,7 @@ func TestGenerateLeaf_DefaultSANs(t *testing.T) {
 	ca, err := GenerateCA()
 	require.NoError(t, err)
 
-	leaf, err := GenerateLeaf(ca, nil)
+	leaf, err := GenerateLeaf(ca)
 	require.NoError(t, err)
 
 	cert := parsePEMCert(t, leaf.CertPEM)
@@ -101,28 +103,6 @@ func TestGenerateLeaf_DefaultSANs(t *testing.T) {
 	assert.Contains(t, ips, "169.254.170.2")
 }
 
-func TestGenerateLeaf_ExtraSANs(t *testing.T) {
-	t.Parallel()
-
-	ca, err := GenerateCA()
-	require.NoError(t, err)
-
-	leaf, err := GenerateLeaf(ca, []string{"myhost.local", "10.0.0.5", "localhost"})
-	require.NoError(t, err)
-
-	cert := parsePEMCert(t, leaf.CertPEM)
-
-	assert.Contains(t, cert.DNSNames, "myhost.local")
-	// "localhost" was already a default SAN and should not be duplicated.
-	assert.Equal(t, 1, countOccurrences(cert.DNSNames, "localhost"))
-
-	ips := make([]string, len(cert.IPAddresses))
-	for i, ip := range cert.IPAddresses {
-		ips[i] = ip.String()
-	}
-	assert.Contains(t, ips, "10.0.0.5")
-}
-
 func TestGenerateLeaf_UntrustedCARejected(t *testing.T) {
 	t.Parallel()
 
@@ -131,7 +111,7 @@ func TestGenerateLeaf_UntrustedCARejected(t *testing.T) {
 	ca2, err := GenerateCA()
 	require.NoError(t, err)
 
-	leaf, err := GenerateLeaf(ca1, nil)
+	leaf, err := GenerateLeaf(ca1)
 	require.NoError(t, err)
 
 	leafCert := parsePEMCert(t, leaf.CertPEM)
@@ -167,6 +147,66 @@ func TestFingerprint(t *testing.T) {
 	assert.Equal(t, expected, fp)
 }
 
+func TestFingerprint_InvalidPEM(t *testing.T) {
+	t.Parallel()
+
+	_, err := Fingerprint("not a pem block")
+	assert.ErrorContains(t, err, "unable to decode PEM certificate")
+}
+
+func TestFingerprint_InvalidCertificateBytes(t *testing.T) {
+	t.Parallel()
+
+	badCertPEM := string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: []byte("not a real cert")}))
+	_, err := Fingerprint(badCertPEM)
+	assert.ErrorContains(t, err, "unable to parse certificate")
+}
+
+func TestGenerateLeaf_InvalidCACertPEM(t *testing.T) {
+	t.Parallel()
+
+	_, err := GenerateLeaf(KeyPair{CertPEM: "not a pem block", KeyPEM: "also not a pem block"})
+	assert.ErrorContains(t, err, "unable to parse CA certificate")
+}
+
+func TestGenerateLeaf_InvalidCAKeyPEM(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+	ca.KeyPEM = "not a pem block"
+
+	_, err = GenerateLeaf(ca)
+	assert.ErrorContains(t, err, "unable to decode PEM CA private key")
+}
+
+func TestGenerateLeaf_CAKeyNotPKCS8(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+	ca.KeyPEM = string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: []byte("not a real key")}))
+
+	_, err = GenerateLeaf(ca)
+	assert.ErrorContains(t, err, "unable to parse CA private key")
+}
+
+func TestGenerateLeaf_CAKeyNotECDSA(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	rsaKeyDER, err := x509.MarshalPKCS8PrivateKey(rsaKey)
+	require.NoError(t, err)
+	ca.KeyPEM = string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: rsaKeyDER}))
+
+	_, err = GenerateLeaf(ca)
+	assert.ErrorContains(t, err, "CA private key is not an ECDSA key")
+}
+
 func parsePEMCert(t *testing.T, certPEM string) *x509.Certificate {
 	t.Helper()
 	block, _ := pem.Decode([]byte(certPEM))
@@ -174,14 +214,4 @@ func parsePEMCert(t *testing.T, certPEM string) *x509.Certificate {
 	cert, err := x509.ParseCertificate(block.Bytes)
 	require.NoError(t, err)
 	return cert
-}
-
-func countOccurrences(items []string, target string) int {
-	count := 0
-	for _, item := range items {
-		if item == target {
-			count++
-		}
-	}
-	return count
 }

@@ -1,17 +1,101 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/synfinatic/aws-sso-cli/internal/certutil"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
+
+// errStore wraps a real SecureStorage and lets tests force a specific method
+// to fail, without having to hand-implement the entire SecureStorage
+// interface just to exercise a handful of error-return branches.
+type errStore struct {
+	storage.SecureStorage
+	getEcsSslCertErr       error
+	getEcsCaCertErr        error
+	getEcsCaKeyErr         error
+	saveEcsCaKeyPairErr    error
+	saveEcsSslKeyPairErr   error
+	deleteEcsSslKeyPairErr error
+}
+
+func (e *errStore) GetEcsSslCert() (string, error) {
+	if e.getEcsSslCertErr != nil {
+		return "", e.getEcsSslCertErr
+	}
+	return e.SecureStorage.GetEcsSslCert()
+}
+
+func (e *errStore) GetEcsCaCert() (string, error) {
+	if e.getEcsCaCertErr != nil {
+		return "", e.getEcsCaCertErr
+	}
+	return e.SecureStorage.GetEcsCaCert()
+}
+
+func (e *errStore) GetEcsCaKey() (string, error) {
+	if e.getEcsCaKeyErr != nil {
+		return "", e.getEcsCaKeyErr
+	}
+	return e.SecureStorage.GetEcsCaKey()
+}
+
+func (e *errStore) SaveEcsCaKeyPair(ctx context.Context, key, cert []byte) error {
+	if e.saveEcsCaKeyPairErr != nil {
+		return e.saveEcsCaKeyPairErr
+	}
+	return e.SecureStorage.SaveEcsCaKeyPair(ctx, key, cert)
+}
+
+func (e *errStore) SaveEcsSslKeyPair(ctx context.Context, key, cert []byte) error {
+	if e.saveEcsSslKeyPairErr != nil {
+		return e.saveEcsSslKeyPairErr
+	}
+	return e.SecureStorage.SaveEcsSslKeyPair(ctx, key, cert)
+}
+
+func (e *errStore) DeleteEcsSslKeyPair(ctx context.Context) error {
+	if e.deleteEcsSslKeyPairErr != nil {
+		return e.deleteEcsSslKeyPairErr
+	}
+	return e.SecureStorage.DeleteEcsSslKeyPair(ctx)
+}
+
+// captureTestStdout runs fn with os.Stdout redirected and returns everything
+// written to it, restoring os.Stdout afterward even if fn panics.
+func captureTestStdout(t *testing.T, fn func()) string {
+	t.Helper()
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	old := os.Stdout
+	os.Stdout = w
+
+	func() {
+		defer func() {
+			w.Close()
+			os.Stdout = old
+		}()
+		fn()
+	}()
+
+	var buf bytes.Buffer
+	_, err = buf.ReadFrom(r)
+	require.NoError(t, err)
+	return buf.String()
+}
 
 func openTestStore(t *testing.T) storage.SecureStorage {
 	t.Helper()
@@ -42,19 +126,18 @@ func TestEcsSSLCmdRun_Delete(t *testing.T) {
 	assert.NoError(t, cmd.Run(ctx))
 }
 
-func TestEcsSSLCmdRun_Print_NoCert(t *testing.T) {
+func TestEcsSSLCmdRun_NoFlagSet(t *testing.T) {
 	store := openTestStore(t)
 	ctx := &RunContext{
 		Cli:   &CLI{},
 		Store: store,
 		Ctx:   context.Background(),
 	}
-	ctx.Cli.Setup.Ecs.SSL.Print = true
 
 	cmd := &EcsSSLCmd{}
-	// No certificate stored; Run should return an error.
 	err := cmd.Run(ctx)
-	assert.Error(t, err)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "must specify one of --delete, --print-ca, or --self-signed")
 }
 
 func newSelfSignedTestCtx(t *testing.T) *RunContext {
@@ -135,46 +218,6 @@ func TestEcsSSLCmdRun_SelfSigned_RerunReusesCA(t *testing.T) {
 	assert.NotEqual(t, leafCert1, leafCert2, "leaf certificate should rotate on rerun")
 }
 
-func TestEcsSSLCmdRun_SelfSigned_RotateCa(t *testing.T) {
-	ctx := newSelfSignedTestCtx(t)
-	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
-
-	cmd := &EcsSSLCmd{}
-	require.NoError(t, cmd.Run(ctx))
-
-	caCert1, err := ctx.Store.GetEcsCaCert()
-	require.NoError(t, err)
-
-	ctx.Cli.Setup.Ecs.SSL.RotateCa = true
-	require.NoError(t, cmd.Run(ctx))
-
-	caCert2, err := ctx.Store.GetEcsCaCert()
-	require.NoError(t, err)
-
-	assert.NotEqual(t, caCert1, caCert2, "--rotate-ca should generate a brand new CA")
-}
-
-func TestEcsSSLCmdRun_SelfSigned_San(t *testing.T) {
-	ctx := newSelfSignedTestCtx(t)
-	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
-	ctx.Cli.Setup.Ecs.SSL.San = []string{"myhost.example.com", "10.1.2.3"}
-
-	cmd := &EcsSSLCmd{}
-	require.NoError(t, cmd.Run(ctx))
-
-	leafCert, err := ctx.Store.GetEcsSslCert()
-	require.NoError(t, err)
-	cert := parsePEMCertForTest(t, leafCert)
-
-	assert.Contains(t, cert.DNSNames, "myhost.example.com")
-
-	ips := make([]string, len(cert.IPAddresses))
-	for i, ip := range cert.IPAddresses {
-		ips[i] = ip.String()
-	}
-	assert.Contains(t, ips, "10.1.2.3")
-}
-
 func TestEcsSSLCmdRun_Delete_ClearsCaAndLeaf(t *testing.T) {
 	ctx := newSelfSignedTestCtx(t)
 	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
@@ -214,6 +257,141 @@ func TestEcsSSLCmdRun_PrintCa_AfterSelfSigned(t *testing.T) {
 	ctx.Cli.Setup.Ecs.SSL.SelfSigned = false
 	ctx.Cli.Setup.Ecs.SSL.PrintCa = true
 	assert.NoError(t, cmd.Run(ctx))
+}
+
+func TestEcsSSLCmdRun_PrintCa_OutputsOnlyPEM(t *testing.T) {
+	ctx := newSelfSignedTestCtx(t)
+	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
+
+	cmd := &EcsSSLCmd{}
+	require.NoError(t, cmd.Run(ctx))
+
+	caCert, err := ctx.Store.GetEcsCaCert()
+	require.NoError(t, err)
+
+	ctx.Cli.Setup.Ecs.SSL.SelfSigned = false
+	ctx.Cli.Setup.Ecs.SSL.PrintCa = true
+
+	var runErr error
+	output := captureTestStdout(t, func() {
+		runErr = cmd.Run(ctx)
+	})
+	require.NoError(t, runErr)
+
+	assert.Equal(t, strings.TrimSpace(caCert), strings.TrimSpace(output),
+		"--print-ca should print only the CA certificate PEM, nothing else")
+}
+
+func TestEcsSSLCmdRun_SelfSigned_PrintsDocsURL(t *testing.T) {
+	ctx := newSelfSignedTestCtx(t)
+	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
+
+	cmd := &EcsSSLCmd{}
+	var runErr error
+	output := captureTestStdout(t, func() {
+		runErr = cmd.Run(ctx)
+	})
+	require.NoError(t, runErr)
+
+	assert.Contains(t, output, EcsCaTrustDocsURL,
+		"--self-signed should point the user at the docs instead of printing instructions inline")
+	assert.NotContains(t, output, "== macOS ==",
+		"--self-signed should no longer print inline per-OS trust instructions")
+}
+
+func TestEcsSSLCmdRun_Delete_DeleteSslKeyPairError(t *testing.T) {
+	ctx := newSelfSignedTestCtx(t)
+	ctx.Store = &errStore{SecureStorage: ctx.Store, deleteEcsSslKeyPairErr: errors.New("boom")}
+	ctx.Cli.Setup.Ecs.SSL.Delete = true
+
+	err := (&EcsSSLCmd{}).Run(ctx)
+	assert.ErrorContains(t, err, "boom")
+}
+
+func TestEcsSSLCmdRun_PrintCa_GetCaCertError(t *testing.T) {
+	ctx := newSelfSignedTestCtx(t)
+	ctx.Store = &errStore{SecureStorage: ctx.Store, getEcsCaCertErr: errors.New("boom")}
+	ctx.Cli.Setup.Ecs.SSL.PrintCa = true
+
+	err := (&EcsSSLCmd{}).Run(ctx)
+	assert.ErrorContains(t, err, "boom")
+}
+
+func TestEcsSSLCmdRun_SelfSigned_GetCaCertError(t *testing.T) {
+	ctx := newSelfSignedTestCtx(t)
+	ctx.Store = &errStore{SecureStorage: ctx.Store, getEcsCaCertErr: errors.New("boom")}
+	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
+
+	err := (&EcsSSLCmd{}).Run(ctx)
+	assert.ErrorContains(t, err, "boom")
+}
+
+func TestEcsSSLCmdRun_SelfSigned_GetCaKeyError(t *testing.T) {
+	ctx := newSelfSignedTestCtx(t)
+	ctx.Store = &errStore{SecureStorage: ctx.Store, getEcsCaKeyErr: errors.New("boom")}
+	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
+
+	err := (&EcsSSLCmd{}).Run(ctx)
+	assert.ErrorContains(t, err, "boom")
+}
+
+func TestEcsSSLCmdRun_SelfSigned_SaveCaKeyPairError(t *testing.T) {
+	ctx := newSelfSignedTestCtx(t)
+	ctx.Store = &errStore{SecureStorage: ctx.Store, saveEcsCaKeyPairErr: errors.New("boom")}
+	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
+
+	err := (&EcsSSLCmd{}).Run(ctx)
+	assert.ErrorContains(t, err, "unable to save CA")
+}
+
+func TestEcsSSLCmdRun_SelfSigned_SaveSslKeyPairError(t *testing.T) {
+	ctx := newSelfSignedTestCtx(t)
+	ctx.Store = &errStore{SecureStorage: ctx.Store, saveEcsSslKeyPairErr: errors.New("boom")}
+	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
+
+	err := (&EcsSSLCmd{}).Run(ctx)
+	assert.ErrorContains(t, err, "unable to save leaf certificate")
+}
+
+func TestEcsSSLCmdRun_SelfSigned_GenerateLeafError(t *testing.T) {
+	ctx := newSelfSignedTestCtx(t)
+	// Pre-seed a CA that loadOrGenerateCa will happily reuse (both fields
+	// non-empty, and each individually valid enough to pass the store's own
+	// PEM validation) but paired together are not a usable CA: an RSA key
+	// can't sign as the ECDSA key certutil expects, forcing the
+	// GenerateLeaf error branch in runSelfSigned.
+	ca, err := certutil.GenerateCA()
+	require.NoError(t, err)
+
+	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	rsaKeyDER, err := x509.MarshalPKCS8PrivateKey(rsaKey)
+	require.NoError(t, err)
+	rsaKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: rsaKeyDER})
+
+	require.NoError(t, ctx.Store.SaveEcsCaKeyPair(ctx.Ctx, rsaKeyPEM, []byte(ca.CertPEM)))
+	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
+
+	err = (&EcsSSLCmd{}).Run(ctx)
+	assert.ErrorContains(t, err, "unable to generate leaf certificate")
+}
+
+func TestEcsSSLCmdRun_SelfSigned_DoesNotWriteCaFile(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config", "aws-sso"), 0700))
+	store := openTestStore(t)
+	ctx := &RunContext{
+		Cli:   &CLI{},
+		Store: store,
+		Ctx:   context.Background(),
+	}
+	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
+
+	require.NoError(t, (&EcsSSLCmd{}).Run(ctx))
+
+	_, err := os.Stat(filepath.Join(home, ".aws-sso", "ecs-ca.pem"))
+	assert.True(t, os.IsNotExist(err), "--self-signed must not write the CA certificate to disk")
 }
 
 func TestEcsAuthCmdAfterApply(t *testing.T) {

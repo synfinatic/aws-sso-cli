@@ -23,14 +23,15 @@ Whenever modifying a markdown file, always wrap lines at 100 characters.
 Whenever modifying a markdown file, add an empty line after a paragraph
 before starting an ordered or unordered list.
 
-Whenever adding new CLI options or commands, be sure to update the documenatation in docs to
+Whenever adding new CLI options or commands, be sure to update the documentation in docs to
 cover that change.
 
 Whenever modifying the config file data structure definition, be sure to update
 the docs to cover that change.
 
-Whenever adding a new feature, fixing a bug or changing behavior add an entry to the CHANGELOG.md
-under the Unreleased section under the apporpriate `New Features`, `Bugs` or `Changes` sub-section.
+Whenever adding a new feature, fixing a bug or changing behavior add a brief (1-2 line) entry to
+the CHANGELOG.md under the Unreleased section under the appropriate `New Features`, `Bugs` or
+`Changes` sub-section.
 
 Never run `go build ...` directly to build the aws-sso binary.  Use `make`
 instead which places it in the `dist` directory.
