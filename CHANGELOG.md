@@ -6,7 +6,9 @@
 ### New Features
 
 * Add `setup ecs ssl --self-signed` to create a self-signed CA and leaf SSL cert for
-  the ECS Server
+  the ECS Server.  The CA is scoped via X.509 name constraints and a `serverAuth` EKU so
+  trusting it can not grant the ability to sign for other hosts.  It also prints the CA's
+  SHA-256 fingerprint so you can verify what you are trusting in your OS/runtime trust store
 * Add `login --force` to start a new SSO session, resetting its duration #1455
 * Add `ecs docker write-config`
 
@@ -21,11 +23,14 @@
 * Fix the Docker Compose example provisioning an SSL cert while connecting over `http://`,
   and show the bearer token being passed to the client container
 * `ecs docker stop` no longer requires reading from the config/SecureStore
+* A SecureStore `SaveEcsSslKeyPair`/`SaveEcsCaKeyPair` that fails private key validation no longer
+  caches the certificate in memory, where the rest of the command could read a cert that was
+  never actually stored
 
 ### Changes
 
-* Remove `setup ecs ssl --certificate`, `--private-key`; only the internal self-signed CA
-  (`--self-signed`) is supported now
+* Remove `setup ecs ssl --certificate`, `--private-key`, `--print`; only the internal
+  self-signed CA (`--self-signed`) is supported now
 
 ## [v2.3.2] -- 2026-07-29
 

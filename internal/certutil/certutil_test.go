@@ -20,12 +20,15 @@ package certutil
 
 import (
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"net"
 	"strings"
 	"testing"
 	"time"
@@ -57,6 +60,96 @@ func TestGenerateCA(t *testing.T) {
 	require.NoError(t, err)
 	_, ok := rawKey.(*ecdsa.PrivateKey)
 	assert.True(t, ok, "CA private key should be an ECDSA key")
+}
+
+func TestGenerateCA_NameConstraints(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	cert := parsePEMCert(t, ca.CertPEM)
+
+	assert.True(t, cert.PermittedDNSDomainsCritical)
+	assert.Equal(t, []string{"localhost"}, cert.PermittedDNSDomains)
+
+	ranges := make([]string, len(cert.PermittedIPRanges))
+	for i, r := range cert.PermittedIPRanges {
+		ranges[i] = r.String()
+	}
+	assert.Contains(t, ranges, "127.0.0.1/32")
+	assert.Contains(t, ranges, "::1/128")
+	assert.Contains(t, ranges, "169.254.170.2/32")
+	assert.Len(t, cert.PermittedIPRanges, 3)
+
+	// No excluded subtrees: the only way to exclude a whole name form is an
+	// empty subtree, which the JVM refuses to parse -- see the NOTE in
+	// GenerateCA.  Asserting their absence keeps that from being "fixed" by
+	// someone who hasn't read it.
+	assert.Empty(t, cert.ExcludedEmailAddresses)
+	assert.Empty(t, cert.ExcludedURIDomains)
+}
+
+// TestGenerateCA_ServerAuthOnly guards the CA's ExtKeyUsage, which declares the
+// CA usable only for TLS server auth.  Enforcement is verifier-dependent:
+// neither Go (EKU nesting checks were removed) nor OpenSSL (`verify -purpose
+// codesign` still passes) honor it, but Windows CryptoAPI and the macOS
+// Security framework do, so it is worth stating.  This asserts the extension is
+// present rather than that any particular verifier rejects.
+func TestGenerateCA_ServerAuthOnly(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	cert := parsePEMCert(t, ca.CertPEM)
+	assert.Equal(t, []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}, cert.ExtKeyUsage)
+}
+
+func TestGenerateLeaf_RejectsOutOfConstraintDNSSAN(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	leafCert := signLeafTemplate(t, ca, &x509.Certificate{
+		Subject:     pkix.Name{CommonName: "evil"},
+		DNSNames:    []string{"evil.com"},
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+	})
+
+	caCert := parsePEMCert(t, ca.CertPEM)
+	pool := x509.NewCertPool()
+	pool.AddCert(caCert)
+
+	_, err = leafCert.Verify(x509.VerifyOptions{
+		Roots:     pool,
+		KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+	})
+	assert.Error(t, err, "leaf with an out-of-constraint DNS SAN should not verify against the CA")
+}
+
+func TestGenerateLeaf_RejectsOutOfConstraintIPSAN(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	leafCert := signLeafTemplate(t, ca, &x509.Certificate{
+		Subject:     pkix.Name{CommonName: "evil"},
+		IPAddresses: []net.IP{net.ParseIP("8.8.8.8")},
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+	})
+
+	caCert := parsePEMCert(t, ca.CertPEM)
+	pool := x509.NewCertPool()
+	pool.AddCert(caCert)
+
+	_, err = leafCert.Verify(x509.VerifyOptions{
+		Roots:     pool,
+		KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+	})
+	assert.Error(t, err, "leaf with an out-of-constraint IP SAN should not verify against the CA")
 }
 
 func TestGenerateLeaf_SignedByCA(t *testing.T) {
@@ -212,6 +305,33 @@ func parsePEMCert(t *testing.T, certPEM string) *x509.Certificate {
 	block, _ := pem.Decode([]byte(certPEM))
 	require.NotNil(t, block)
 	cert, err := x509.ParseCertificate(block.Bytes)
+	require.NoError(t, err)
+	return cert
+}
+
+// signLeafTemplate signs an arbitrary leaf template with the given CA's key,
+// bypassing GenerateLeaf's fixed default SANs so tests can exercise SANs
+// that fall outside the CA's name constraints.
+func signLeafTemplate(t *testing.T, ca KeyPair, template *x509.Certificate) *x509.Certificate {
+	t.Helper()
+
+	caCert, caKey, err := parseCAKeyPair(ca)
+	require.NoError(t, err)
+
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+
+	template.SerialNumber, err = newSerialNumber()
+	require.NoError(t, err)
+	template.NotBefore = time.Now().Add(-time.Minute)
+	template.NotAfter = time.Now().Add(LeafValidity)
+	template.KeyUsage = x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment
+	template.BasicConstraintsValid = true
+
+	certDER, err := x509.CreateCertificate(rand.Reader, template, caCert, &key.PublicKey, caKey)
+	require.NoError(t, err)
+
+	cert, err := x509.ParseCertificate(certDER)
 	require.NoError(t, err)
 	return cert
 }

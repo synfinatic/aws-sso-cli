@@ -516,14 +516,17 @@ func (kr *KeyringStore) DeleteEcsBearerToken(ctx context.Context) error {
 
 // SaveEcsSslKeyPair stores the private key and certificate chain in the keyring
 func (kr *KeyringStore) SaveEcsSslKeyPair(ctx context.Context, privateKey, certChain []byte) error {
+	// Validate both halves before storing either: a save that returns an error
+	// must not leave the cert behind in the cache, where it would be readable
+	// by this process but was never written to the keyring.
 	if err := ValidateSSLCertificate(certChain); err != nil {
 		return err
 	}
-	kr.cache.EcsCertChain = string(certChain)
-
 	if err := ValidateSSLPrivateKey(privateKey); err != nil {
 		return err
 	}
+
+	kr.cache.EcsCertChain = string(certChain)
 	kr.cache.EcsPrivateKey = string(privateKey)
 	return kr.saveStorageData(ctx)
 }
@@ -547,14 +550,15 @@ func (kr *KeyringStore) DeleteEcsSslKeyPair(ctx context.Context) error {
 
 // SaveEcsCaKeyPair stores the private CA key and certificate in the keyring
 func (kr *KeyringStore) SaveEcsCaKeyPair(ctx context.Context, privateKey, certChain []byte) error {
+	// see SaveEcsSslKeyPair: validate both halves before storing either.
 	if err := ValidateSSLCertificate(certChain); err != nil {
 		return err
 	}
-	kr.cache.EcsCaCert = string(certChain)
-
 	if err := ValidateSSLPrivateKey(privateKey); err != nil {
 		return err
 	}
+
+	kr.cache.EcsCaCert = string(certChain)
 	kr.cache.EcsCaKey = string(privateKey)
 	return kr.saveStorageData(ctx)
 }

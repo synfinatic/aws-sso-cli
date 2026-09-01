@@ -29,12 +29,14 @@ Saves the generated SSL certificate and private key to the SecureStore.
 
 Flags:
 
-* `--self-signed` -- Generate (or reuse) a local CA and issue a new leaf certificate for the ECS Server (recommended)
+* `--self-signed` -- Generate (or reuse) a local CA and issue a new leaf certificate for the ECS
+  Server (recommended)
 * `--print-ca` -- Print the local self-signed CA certificate in PEM format
-* `--delete` -- Disables SSL and deletes both the SSL certificate/key and the local CA from the Secure Store
+* `--delete` -- Disables SSL and deletes both the SSL certificate/key and the local CA from the
+  Secure Store
 
-`--self-signed` prints a link to the [Trusting the CA](ecs-server.md#trusting-the-ca). To force generation of
-a brand new CA (requiring re-trusting on every client), run `--delete` followed by `--self-signed`.
+To force regeneration of a brand new CA (requiring re-trusting on every client), run
+`--delete` followed by `--self-signed`.
 
 ---
 

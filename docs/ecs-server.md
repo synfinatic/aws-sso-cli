@@ -73,7 +73,7 @@ in the most secure means possible.
 host's loopback interface (`127.0.0.1`), but you can enable it listening on
 other interfaces using the `--bind-ip` flag.
 
-### ECS Server security
+## ECS Server security
 
 The ECS Server supports both SSL/TLS encryption as well as HTTP Authentication.
 Together, they allow using the `aws-sso` ECS Server on multi-user systems in a
@@ -82,14 +82,14 @@ secure manner.
 **Important:** Failure to configure HTTP Authentication _and_ SSL/TLS encryption
 risks exposing your AWS IAM authentication tokens to other users on the system.
 
-#### ECS Server SSL Certificate
+### ECS Server SSL Certificate
 
 No public CA (DigiCert, Let's Encrypt, etc.) will issue a certificate for
 `localhost`, `127.0.0.1`, or the special ECS credentials IP `169.254.170.2`, so
 getting SSL/TLS working here means running your own private CA. `aws-sso` can do
 this for you.
 
-##### `--self-signed` (recommended)
+### Generating the CA and (re)generating the SSL Certificate
 
 ```bash
 aws-sso setup ecs ssl --self-signed
@@ -105,18 +105,33 @@ the leaf is close to expiring (30 days). If you need to force a brand new CA,
 run `--delete` followed by `--self-signed`, which does require repeating the
 trust steps everywhere.
 
+Once you have generated the CA/leaf certificate, future invocations of the aws-sso
+ECS Server will automatically disable HTTP and enable HTTPS unless the user specifies
+`--disable-ssl`.
+
+**Note:** `aws-sso` provides no command to export the CA private key — `--print-ca` prints only the
+certificate. How well the key itself is protected is down to your
+[secure store](config.md): the OS keychain and 1Password backends encrypt it, while the
+`json` store keeps it in plaintext like everything else it holds.
+
+See [Trusting the CA](#trusting-the-ca) below for how to trust this certificate in your OS and
+in each AWS SDK runtime.
+
+### Deleting the CA
+
 To remove both the CA and the leaf certificate/key from the secure store:
 
 ```bash
 aws-sso setup ecs ssl --delete
 ```
 
-**Note:** There is no way to extract the CA Private Key from the Secure Store.
+This will automatically disable HTTPS and re-enable HTTP for the ECS Server.
 
-See [Trusting the CA](#trusting-the-ca) below for how to trust this certificate in your OS and
-in each AWS SDK runtime.
+This only removes the CA from the secure store — anything you trusted it in keeps trusting it.
+See [Untrusting the CA](#untrusting-the-ca) below, and note the fingerprint printed by
+`--self-signed` before you delete the CA: afterwards there is no way to recover it.
 
-##### Trusting the CA
+### Trusting the CA
 
 First export the local CA certificate to a file (see above):
 
@@ -128,59 +143,47 @@ The CA is reused (not regenerated) every time you rerun `--self-signed`, so you 
 export and trust it once per machine/runtime below — only `--delete` followed by `--self-signed`
 will require repeating these steps.
 
-**macOS** — trust the CA for your user (no sudo required):
+`--self-signed` prints the CA's SHA-256 fingerprint on every run. Compare it with the fingerprint
+your OS or runtime trust store shows for `aws-sso-cli ECS Server CA` to confirm you trusted the
+right certificate, or check the exported file directly:
 
 ```bash
-security add-trusted-cert -d -r trustRoot -k ~/Library/Keychains/login.keychain-db \
-  /tmp/ecs-ca.pem
+openssl x509 -in /tmp/ecs-ca.pem -noout -fingerprint -sha256
 ```
 
-To trust it for every user on the machine instead, add it to the System keychain (requires sudo):
+The CA is scoped as narrowly as X.509 allows: Name Constraints restrict it to only ever sign
+certificates for `localhost`, `127.0.0.1`, `::1`, and `169.254.170.2` — the same fixed set of
+names the leaf certificate above always uses — an Extended Key Usage of `serverAuth` declares it
+usable only for TLS servers, and a path length of 0 prevents it from signing another CA. On a
+verifier that enforces those constraints, trusting it system-wide does not grant it (or aws-sso)
+the ability to impersonate other sites.
 
-```bash
-sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain \
-  /tmp/ecs-ca.pem
-```
+**How much of that is actually enforced depends on the verifier.** RFC 5280 treats a trust anchor
+as an input to path validation rather than as a certificate to validate, so honoring a self-signed
+root's own name constraints is implementation-specific rather than required.  Covering how each
+X.509 library implementation handles this is beyond the scope of this documentation.
 
-**Linux** — Debian/Ubuntu:
+#### Do not use `AWS_CA_BUNDLE`
 
-```bash
-sudo cp /tmp /usr/local/share/ca-certificates/aws-sso-ecs-ca.crt
-sudo update-ca-certificates
-```
+`AWS_CA_BUNDLE` looks like the obvious way to point an AWS SDK at this CA, but it _replaces_ the
+trust store used by every AWS API call that SDK makes rather than adding to it:
 
-RHEL/Fedora/CentOS:
+* the Go SDK reads the bundle into a fresh, empty certificate pool (`resolveCustomCABundle` in
+  `aws-sdk-go-v2/config`)
+* botocore assigns the one path to `conn.ca_certs`, displacing the `certifi`/vendored bundle it
+  would otherwise use
 
-```bash
-sudo cp /tmp/ecs-ca.pem /etc/pki/ca-trust/source/anchors/aws-sso-ecs-ca.pem
-sudo update-ca-trust extract
-```
+So `export AWS_CA_BUNDLE=/tmp/ecs-ca.pem` makes the process trust this CA and _nothing else_ — its
+real calls to `sts.amazonaws.com` and friends then fail certificate verification with
+`x509: certificate signed by unknown authority` (Go) or `CERTIFICATE_VERIFY_FAILED` (Python).
 
-**Windows**:
+Use the per-runtime and per-OS instructions below instead. If you genuinely need one process to
+trust both this CA and the public roots through `AWS_CA_BUNDLE`, concatenate them into a single
+file and point it at that.
 
-```bash
-certutil -addstore -user Root %USERPROFILE%\ecs-ca.pem
-```
+#### Python / AWS CLI
 
-**Node.js** — unlike `AWS_CA_BUNDLE`, this is additive to Node's existing trust store, so your
-real AWS API calls are unaffected. Set it in the environment of the process using the SDK (not
-just your shell):
-
-```bash
-mv /tmp/ecs-ca.pem ~/.aws-sso/
-export NODE_EXTRA_CA_CERTS=~/.aws-sso/ecs-ca.pem
-```
-
-**Java / JVM**:
-
-```bash
-keytool -importcert -alias aws-sso-ecs-ca -keystore <path to cacerts> -file /tmp/ecs-ca.pem
-```
-
-**.NET** uses the OS trust store, so no separate step is needed beyond the macOS/Linux/Windows
-instructions above.
-
-**Python / AWS CLI — important caveat:** botocore's container-credentials fetcher hardcodes
+**Important caveat:** botocore's container-credentials fetcher hardcodes
 certificate verification against a bundle it resolves internally — pip's `certifi` package if
 importable in that exact Python environment, otherwise a `cacert.pem` file vendored inside the
 botocore install itself (never the system trust store, and not the same file a bare
@@ -203,7 +206,148 @@ Note that that command must be run every time you update the AWS Python SDK!
 required for the "https to any hostname" short-circuit; older versions reject non-loopback
 hostnames outright regardless of certificate trust.
 
-#### ECS Server HTTP Authentication
+#### Go
+
+Go's `crypto/x509` uses the platform trust store on macOS and Windows, and the usual certificate
+files/directories on Linux, so for most programs the OS instructions below are all that is needed.
+
+**Avoid `SSL_CERT_FILE` for this.** Go honors `SSL_CERT_FILE` / `SSL_CERT_DIR` — on Linux always,
+and as of Go 1.27 on macOS and Windows as well — but `SSL_CERT_FILE` _replaces_ the trust store
+instead of adding to it — the same trap as [`AWS_CA_BUNDLE`](#do-not-use-aws_ca_bundle) above.
+Pointing it at the CA makes the process trust this CA and nothing else, so its real AWS API calls
+then fail with `x509: certificate signed by unknown authority`.
+
+To trust the CA in one Go program without touching the OS trust store, append it to a copy of the
+system pool (`x509.SystemCertPool()` + `AppendCertsFromPEM`) and pass that pool as `RootCAs` in
+the `http.Client` you hand to `config.LoadDefaultConfig(ctx, config.WithHTTPClient(client))`.
+Unlike the environment variables above, this is additive, so the program's real AWS API calls are
+unaffected.
+
+**Note:** the `aws-sso ecs` client commands need no trust configuration at all, but they do not
+work the way the paragraph above describes. They read the ECS Server's _leaf_ certificate — not
+the CA — from the secure store and put it straight into `RootCAs` (`newClient` in
+`cmd/aws-sso/ecs_client_cmd.go`, `NewHTTPClient` in `internal/ecs/client/client.go`). Go's
+verifier accepts a leaf that is itself present in the root pool, so this pins that one
+certificate rather than trusting the CA to sign anything. `NewHTTPClient` seeds the pool from
+`x509.SystemCertPool()`, but that is incidental — on macOS it returns an empty pool — and it is
+safe here only because that client talks to nothing but the ECS Server. Don't copy the pattern
+into a client that also makes real AWS API calls.
+
+#### Node.js
+
+Unlike [`AWS_CA_BUNDLE`](#do-not-use-aws_ca_bundle), this is additive to Node's existing trust
+store, so your
+real AWS API calls are unaffected. Set it in the environment of the process using the SDK (not
+just your shell):
+
+```bash
+mv /tmp/ecs-ca.pem ~/.aws-sso/
+export NODE_EXTRA_CA_CERTS=~/.aws-sso/ecs-ca.pem
+```
+
+#### Java
+
+```bash
+keytool -importcert -alias aws-sso-ecs-ca -keystore <path to cacerts> -file /tmp/ecs-ca.pem
+```
+
+#### .NET
+
+Uses the OS trust store, so no separate step is needed beyond the macOS/Linux/Windows
+instructions above.
+
+#### macOS
+
+Trust the CA for your user (no sudo required). `-p ssl` limits the trust to the SSL
+policy, so the CA is not trusted for code signing, S/MIME, or anything else:
+
+```bash
+security add-trusted-cert -d -r trustRoot -p ssl -k ~/Library/Keychains/login.keychain-db \
+  /tmp/ecs-ca.pem
+```
+
+To trust it for every user on the machine instead, add it to the System keychain (requires sudo):
+
+```bash
+sudo security add-trusted-cert -d -r trustRoot -p ssl -k /Library/Keychains/System.keychain \
+  /tmp/ecs-ca.pem
+```
+
+#### Debian/Ubuntu
+
+```bash
+sudo cp /tmp/ecs-ca.pem /usr/local/share/ca-certificates/aws-sso-ecs-ca.crt
+sudo update-ca-certificates
+```
+
+#### RHEL/Fedora/CentOS
+
+```bash
+sudo cp /tmp/ecs-ca.pem /etc/pki/ca-trust/source/anchors/aws-sso-ecs-ca.pem
+sudo update-ca-trust extract
+```
+
+#### Windows
+
+```bash
+certutil -addstore -user Root %USERPROFILE%\ecs-ca.pem
+```
+
+### Untrusting the CA
+
+`aws-sso setup ecs ssl --delete` removes the CA from the secure store, but nothing outside
+`aws-sso` learns about that — every copy you installed above stays trusted. Since forcing a new CA
+means `--delete` followed by `--self-signed`, rotating without removing the old root leaves a dead
+trusted CA behind each time, so undo the steps above before generating a replacement.
+
+Every generated CA shares the common name `aws-sso-cli ECS Server CA`, so if several have already
+accumulated, use the SHA-256 fingerprint to tell them apart. `--self-signed` prints it, and
+`openssl x509 -in /tmp/ecs-ca.pem -noout -fingerprint -sha256` reads it back from an exported
+copy — but do that _before_ `--delete`, which leaves you with no way to work out which stored
+certificate was which.
+
+**macOS** — `-t` removes the trust setting as well as the certificate itself:
+
+```bash
+security delete-certificate -t -c "aws-sso-cli ECS Server CA" ~/Library/Keychains/login.keychain-db
+```
+
+Use `sudo` and `/Library/Keychains/System.keychain` instead if you trusted it machine-wide. `-c`
+requires the name to match exactly one certificate; where it doesn't, select by fingerprint with
+`-Z <sha256>` (hex only, no colons).
+
+**Debian/Ubuntu:**
+
+```bash
+sudo rm /usr/local/share/ca-certificates/aws-sso-ecs-ca.crt
+sudo update-ca-certificates --fresh
+```
+
+**RHEL/Fedora/CentOS:**
+
+```bash
+sudo rm /etc/pki/ca-trust/source/anchors/aws-sso-ecs-ca.pem
+sudo update-ca-trust extract
+```
+
+**Windows:**
+
+```bash
+certutil -delstore -user Root "aws-sso-cli ECS Server CA"
+```
+
+**Java:**
+
+```bash
+keytool -delete -alias aws-sso-ecs-ca -keystore <path to cacerts>
+```
+
+**Node.js:** unset `NODE_EXTRA_CA_CERTS` (or point it at something else) in the environment of the
+process using the SDK, and delete `~/.aws-sso/ecs-ca.pem`.
+
+**Go and .NET** use the OS trust store, so the OS steps above are all that is needed.
+
+## ECS Server HTTP Authentication
 
 The way to configure HTTP Authentication is with a
 [bearer token](https://datatracker.ietf.org/doc/html/rfc6750#section-2.1)
@@ -215,6 +359,11 @@ you can load it into the Secure Store via:
 ```bash
 aws-sso setup ecs auth --bearer-token '<token>`
 ```
+
+Once loaded, all future invocations of the aws-sso ECS Server will require a bearer token to
+read/write to the service.  The aws-sso client will automatically provide the bearer token
+by reading the SecureStore, but you will need to configure any other AWS SDK/cli tool to
+use it to read loaded IAM role credentials.
 
 **Note:** Unlike the `$AWS_CONTAINER_AUTHORIZATION_TOKEN` variable, do not include the
 <!--  markdownlint-disable-next-line MD038 -->
@@ -237,7 +386,7 @@ AWS clients and `aws-sso` should use:
 ### $AWS\_CONTAINER\_CREDENTIALS\_RELATIVE\_URI
 
 It is important to _not_ set `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`
-as that takes precidence for `AWS_CONTAINER_CREDENTIALS_FULL_URI` and it is not
+as that takes precedence for `AWS_CONTAINER_CREDENTIALS_FULL_URI` and it is not
 compatible with `aws-sso`.
 
 ### $AWS\_CONTAINER\_AUTHORIZATION\_TOKEN
@@ -330,9 +479,9 @@ The ECS server exposes a `/healthcheck` endpoint that does **not** require
 authentication, making it suitable for k8s probes and Docker Compose `healthcheck:`
 commands.
 
-- `GET /healthcheck` — returns `200 OK` when the default slot has valid credentials,
+* `GET /healthcheck` — returns `200 OK` when the default slot has valid credentials,
   `503` otherwise.
-- `GET /healthcheck/slot/<profile>` — returns `200 OK` when the named slot has valid
+* `GET /healthcheck/slot/<profile>` — returns `200 OK` when the named slot has valid
   credentials, `503` otherwise.
 
 ### Kubernetes example

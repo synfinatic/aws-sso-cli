@@ -10,7 +10,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -119,9 +118,7 @@ func TestEcsSSLCmdRun_Delete(t *testing.T) {
 		Store: store,
 		Ctx:   context.Background(),
 	}
-	ctx.Cli.Setup.Ecs.SSL.Delete = true
-
-	cmd := &EcsSSLCmd{}
+	cmd := &EcsSSLCmd{Delete: true}
 	// Store is empty; DeleteEcsSslKeyPair on an empty store still returns nil.
 	assert.NoError(t, cmd.Run(ctx))
 }
@@ -167,9 +164,7 @@ func parsePEMCertForTest(t *testing.T, certPEM string) *x509.Certificate {
 
 func TestEcsSSLCmdRun_SelfSigned_FreshCA(t *testing.T) {
 	ctx := newSelfSignedTestCtx(t)
-	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
-
-	cmd := &EcsSSLCmd{}
+	cmd := &EcsSSLCmd{SelfSigned: true}
 	require.NoError(t, cmd.Run(ctx))
 
 	caCert, err := ctx.Store.GetEcsCaCert()
@@ -197,9 +192,7 @@ func TestEcsSSLCmdRun_SelfSigned_FreshCA(t *testing.T) {
 
 func TestEcsSSLCmdRun_SelfSigned_RerunReusesCA(t *testing.T) {
 	ctx := newSelfSignedTestCtx(t)
-	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
-
-	cmd := &EcsSSLCmd{}
+	cmd := &EcsSSLCmd{SelfSigned: true}
 	require.NoError(t, cmd.Run(ctx))
 
 	caCert1, err := ctx.Store.GetEcsCaCert()
@@ -220,14 +213,8 @@ func TestEcsSSLCmdRun_SelfSigned_RerunReusesCA(t *testing.T) {
 
 func TestEcsSSLCmdRun_Delete_ClearsCaAndLeaf(t *testing.T) {
 	ctx := newSelfSignedTestCtx(t)
-	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
-
-	cmd := &EcsSSLCmd{}
-	require.NoError(t, cmd.Run(ctx))
-
-	ctx.Cli.Setup.Ecs.SSL.SelfSigned = false
-	ctx.Cli.Setup.Ecs.SSL.Delete = true
-	require.NoError(t, cmd.Run(ctx))
+	require.NoError(t, (&EcsSSLCmd{SelfSigned: true}).Run(ctx))
+	require.NoError(t, (&EcsSSLCmd{Delete: true}).Run(ctx))
 
 	caCert, err := ctx.Store.GetEcsCaCert()
 	require.NoError(t, err)
@@ -240,53 +227,39 @@ func TestEcsSSLCmdRun_Delete_ClearsCaAndLeaf(t *testing.T) {
 
 func TestEcsSSLCmdRun_PrintCa_NoCa(t *testing.T) {
 	ctx := newSelfSignedTestCtx(t)
-	ctx.Cli.Setup.Ecs.SSL.PrintCa = true
-
-	cmd := &EcsSSLCmd{}
+	cmd := &EcsSSLCmd{PrintCa: true}
 	err := cmd.Run(ctx)
 	assert.Error(t, err)
 }
 
 func TestEcsSSLCmdRun_PrintCa_AfterSelfSigned(t *testing.T) {
 	ctx := newSelfSignedTestCtx(t)
-	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
-
-	cmd := &EcsSSLCmd{}
-	require.NoError(t, cmd.Run(ctx))
-
-	ctx.Cli.Setup.Ecs.SSL.SelfSigned = false
-	ctx.Cli.Setup.Ecs.SSL.PrintCa = true
-	assert.NoError(t, cmd.Run(ctx))
+	require.NoError(t, (&EcsSSLCmd{SelfSigned: true}).Run(ctx))
+	assert.NoError(t, (&EcsSSLCmd{PrintCa: true}).Run(ctx))
 }
 
 func TestEcsSSLCmdRun_PrintCa_OutputsOnlyPEM(t *testing.T) {
 	ctx := newSelfSignedTestCtx(t)
-	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
-
-	cmd := &EcsSSLCmd{}
-	require.NoError(t, cmd.Run(ctx))
+	require.NoError(t, (&EcsSSLCmd{SelfSigned: true}).Run(ctx))
 
 	caCert, err := ctx.Store.GetEcsCaCert()
 	require.NoError(t, err)
 
-	ctx.Cli.Setup.Ecs.SSL.SelfSigned = false
-	ctx.Cli.Setup.Ecs.SSL.PrintCa = true
-
 	var runErr error
 	output := captureTestStdout(t, func() {
-		runErr = cmd.Run(ctx)
+		runErr = (&EcsSSLCmd{PrintCa: true}).Run(ctx)
 	})
 	require.NoError(t, runErr)
 
-	assert.Equal(t, strings.TrimSpace(caCert), strings.TrimSpace(output),
+	// Byte-for-byte, not trimmed: the stored PEM already ends in a newline, so
+	// `--print-ca > ca.pem` must not append a second one.
+	assert.Equal(t, caCert, output,
 		"--print-ca should print only the CA certificate PEM, nothing else")
 }
 
 func TestEcsSSLCmdRun_SelfSigned_PrintsDocsURL(t *testing.T) {
 	ctx := newSelfSignedTestCtx(t)
-	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
-
-	cmd := &EcsSSLCmd{}
+	cmd := &EcsSSLCmd{SelfSigned: true}
 	var runErr error
 	output := captureTestStdout(t, func() {
 		runErr = cmd.Run(ctx)
@@ -299,57 +272,70 @@ func TestEcsSSLCmdRun_SelfSigned_PrintsDocsURL(t *testing.T) {
 		"--self-signed should no longer print inline per-OS trust instructions")
 }
 
+func TestEcsSSLCmdRun_SelfSigned_PrintsCaFingerprint(t *testing.T) {
+	ctx := newSelfSignedTestCtx(t)
+	cmd := &EcsSSLCmd{SelfSigned: true}
+	var runErr error
+	output := captureTestStdout(t, func() {
+		runErr = cmd.Run(ctx)
+	})
+	require.NoError(t, runErr)
+
+	caCert, err := ctx.Store.GetEcsCaCert()
+	require.NoError(t, err)
+	want, err := certutil.Fingerprint(caCert)
+	require.NoError(t, err)
+	assert.Contains(t, output, want,
+		"--self-signed should print the CA fingerprint so the user can verify what they trust")
+
+	// The CA is reused on rerun, so the fingerprint the user compares against
+	// their trust store has to stay the same.
+	rerun := captureTestStdout(t, func() {
+		runErr = cmd.Run(ctx)
+	})
+	require.NoError(t, runErr)
+	assert.Contains(t, rerun, want, "the reused CA's fingerprint must not change across reruns")
+}
+
 func TestEcsSSLCmdRun_Delete_DeleteSslKeyPairError(t *testing.T) {
 	ctx := newSelfSignedTestCtx(t)
 	ctx.Store = &errStore{SecureStorage: ctx.Store, deleteEcsSslKeyPairErr: errors.New("boom")}
-	ctx.Cli.Setup.Ecs.SSL.Delete = true
-
-	err := (&EcsSSLCmd{}).Run(ctx)
+	err := (&EcsSSLCmd{Delete: true}).Run(ctx)
 	assert.ErrorContains(t, err, "boom")
 }
 
 func TestEcsSSLCmdRun_PrintCa_GetCaCertError(t *testing.T) {
 	ctx := newSelfSignedTestCtx(t)
 	ctx.Store = &errStore{SecureStorage: ctx.Store, getEcsCaCertErr: errors.New("boom")}
-	ctx.Cli.Setup.Ecs.SSL.PrintCa = true
-
-	err := (&EcsSSLCmd{}).Run(ctx)
+	err := (&EcsSSLCmd{PrintCa: true}).Run(ctx)
 	assert.ErrorContains(t, err, "boom")
 }
 
 func TestEcsSSLCmdRun_SelfSigned_GetCaCertError(t *testing.T) {
 	ctx := newSelfSignedTestCtx(t)
 	ctx.Store = &errStore{SecureStorage: ctx.Store, getEcsCaCertErr: errors.New("boom")}
-	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
-
-	err := (&EcsSSLCmd{}).Run(ctx)
+	err := (&EcsSSLCmd{SelfSigned: true}).Run(ctx)
 	assert.ErrorContains(t, err, "boom")
 }
 
 func TestEcsSSLCmdRun_SelfSigned_GetCaKeyError(t *testing.T) {
 	ctx := newSelfSignedTestCtx(t)
 	ctx.Store = &errStore{SecureStorage: ctx.Store, getEcsCaKeyErr: errors.New("boom")}
-	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
-
-	err := (&EcsSSLCmd{}).Run(ctx)
+	err := (&EcsSSLCmd{SelfSigned: true}).Run(ctx)
 	assert.ErrorContains(t, err, "boom")
 }
 
 func TestEcsSSLCmdRun_SelfSigned_SaveCaKeyPairError(t *testing.T) {
 	ctx := newSelfSignedTestCtx(t)
 	ctx.Store = &errStore{SecureStorage: ctx.Store, saveEcsCaKeyPairErr: errors.New("boom")}
-	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
-
-	err := (&EcsSSLCmd{}).Run(ctx)
+	err := (&EcsSSLCmd{SelfSigned: true}).Run(ctx)
 	assert.ErrorContains(t, err, "unable to save CA")
 }
 
 func TestEcsSSLCmdRun_SelfSigned_SaveSslKeyPairError(t *testing.T) {
 	ctx := newSelfSignedTestCtx(t)
 	ctx.Store = &errStore{SecureStorage: ctx.Store, saveEcsSslKeyPairErr: errors.New("boom")}
-	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
-
-	err := (&EcsSSLCmd{}).Run(ctx)
+	err := (&EcsSSLCmd{SelfSigned: true}).Run(ctx)
 	assert.ErrorContains(t, err, "unable to save leaf certificate")
 }
 
@@ -370,9 +356,7 @@ func TestEcsSSLCmdRun_SelfSigned_GenerateLeafError(t *testing.T) {
 	rsaKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: rsaKeyDER})
 
 	require.NoError(t, ctx.Store.SaveEcsCaKeyPair(ctx.Ctx, rsaKeyPEM, []byte(ca.CertPEM)))
-	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
-
-	err = (&EcsSSLCmd{}).Run(ctx)
+	err = (&EcsSSLCmd{SelfSigned: true}).Run(ctx)
 	assert.ErrorContains(t, err, "unable to generate leaf certificate")
 }
 
@@ -386,9 +370,7 @@ func TestEcsSSLCmdRun_SelfSigned_DoesNotWriteCaFile(t *testing.T) {
 		Store: store,
 		Ctx:   context.Background(),
 	}
-	ctx.Cli.Setup.Ecs.SSL.SelfSigned = true
-
-	require.NoError(t, (&EcsSSLCmd{}).Run(ctx))
+	require.NoError(t, (&EcsSSLCmd{SelfSigned: true}).Run(ctx))
 
 	_, err := os.Stat(filepath.Join(home, ".aws-sso", "ecs-ca.pem"))
 	assert.True(t, os.IsNotExist(err), "--self-signed must not write the CA certificate to disk")

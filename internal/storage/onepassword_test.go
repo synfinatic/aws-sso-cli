@@ -270,6 +270,15 @@ func (suite *OnePasswordSuite) TestEcsSslKeyPair() { //nolint:dupl
 	keyBytes, err := os.ReadFile("../ecs/server/testdata/localhost.key")
 	assert.NoError(t, err)
 
+	// A save that fails key validation must leave nothing behind: the cert was
+	// never persisted, so reporting it from the in-memory cache would hand this
+	// process a cert no other process can see.
+	assert.Error(t, suite.store.SaveEcsSslKeyPair(context.Background(), certBytes, certBytes))
+
+	cert, err = suite.store.GetEcsSslCert()
+	assert.NoError(t, err)
+	assert.Empty(t, cert)
+
 	assert.NoError(t, suite.store.SaveEcsSslKeyPair(context.Background(), []byte{}, certBytes))
 	assert.NoError(t, suite.store.SaveEcsSslKeyPair(context.Background(), keyBytes, certBytes))
 	assert.Error(t, suite.store.SaveEcsSslKeyPair(context.Background(), keyBytes, keyBytes))
@@ -309,6 +318,13 @@ func (suite *OnePasswordSuite) TestEcsCaKeyPair() { //nolint:dupl
 	assert.NoError(t, err)
 	certBytes := []byte(ca.CertPEM)
 	keyBytes := []byte(ca.KeyPEM)
+
+	// see TestEcsSslKeyPair: a failed key validation must not cache the cert.
+	assert.Error(t, suite.store.SaveEcsCaKeyPair(context.Background(), certBytes, certBytes))
+
+	cert, err = suite.store.GetEcsCaCert()
+	assert.NoError(t, err)
+	assert.Empty(t, cert)
 
 	assert.NoError(t, suite.store.SaveEcsCaKeyPair(context.Background(), []byte{}, certBytes))
 	assert.NoError(t, suite.store.SaveEcsCaKeyPair(context.Background(), keyBytes, certBytes))

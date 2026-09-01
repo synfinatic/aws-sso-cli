@@ -57,8 +57,7 @@ func TestE2ESetupEcsSSL_SelfSigned(t *testing.T) {
 	ctx := newRunContext(setup, AUTH_SKIP)
 
 	// --- Generate: --self-signed ---
-	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{SelfSigned: true}
-	require.NoError(t, (&EcsSSLCmd{}).Run(ctx))
+	require.NoError(t, (&EcsSSLCmd{SelfSigned: true}).Run(ctx))
 
 	caCert1, err := setup.Store.GetEcsCaCert()
 	require.NoError(t, err)
@@ -68,8 +67,7 @@ func TestE2ESetupEcsSSL_SelfSigned(t *testing.T) {
 	assert.NotEmpty(t, leafCert1)
 
 	// --- Rerun: CA is reused byte-for-byte, leaf rotates ---
-	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{SelfSigned: true}
-	require.NoError(t, (&EcsSSLCmd{}).Run(ctx))
+	require.NoError(t, (&EcsSSLCmd{SelfSigned: true}).Run(ctx))
 
 	caCert2, err := setup.Store.GetEcsCaCert()
 	require.NoError(t, err)
@@ -79,18 +77,16 @@ func TestE2ESetupEcsSSL_SelfSigned(t *testing.T) {
 	assert.NotEqual(t, leafCert1, leafCert2, "rerunning --self-signed should rotate the leaf")
 
 	// --- Print CA: --print-ca ---
-	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{PrintCa: true}
 	caOutput := captureStdout(func() {
-		assert.NoError(t, (&EcsSSLCmd{}).Run(ctx))
+		assert.NoError(t, (&EcsSSLCmd{PrintCa: true}).Run(ctx))
 	})
 	assert.Contains(t, caOutput, "BEGIN CERTIFICATE",
 		"--print-ca should output the CA's PEM certificate block")
-	assert.Equal(t, caCert2+"\n", caOutput,
-		"--print-ca should print only the CA certificate PEM, nothing else")
+	assert.Equal(t, caCert2, caOutput,
+		"--print-ca should print the CA certificate PEM and nothing else, not even a trailing newline")
 
 	// --- Delete: --delete clears both CA and leaf ---
-	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{Delete: true}
-	require.NoError(t, (&EcsSSLCmd{}).Run(ctx))
+	require.NoError(t, (&EcsSSLCmd{Delete: true}).Run(ctx))
 
 	afterCA, err := setup.Store.GetEcsCaCert()
 	require.NoError(t, err)
@@ -111,8 +107,7 @@ func TestE2EEcsServerSSL_SelfSigned_ChainOfTrust(t *testing.T) {
 	setup := newE2ESetup(t)
 	ctx := newRunContext(setup, AUTH_SKIP)
 
-	ctx.Cli.Setup.Ecs.SSL = EcsSSLCmd{SelfSigned: true}
-	require.NoError(t, (&EcsSSLCmd{}).Run(ctx))
+	require.NoError(t, (&EcsSSLCmd{SelfSigned: true}).Run(ctx))
 
 	caCertPEM, err := setup.Store.GetEcsCaCert()
 	require.NoError(t, err)

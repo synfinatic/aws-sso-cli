@@ -248,6 +248,16 @@ func (s *JsonStoreTestSuite) TestEcsSslKeyPair() { // nolint: dupl
 	keyBytes, err := os.ReadFile("../ecs/server/testdata/localhost.key")
 	assert.NoError(t, err)
 
+	// A save that fails key validation must leave nothing behind: the cert was
+	// never written to disk, so reporting it from the in-memory cache would
+	// hand this process a cert no other process can see.
+	err = s.json.SaveEcsSslKeyPair(context.Background(), certBytes, certBytes)
+	assert.Error(t, err)
+
+	cert, err = s.json.GetEcsSslCert()
+	assert.NoError(t, err)
+	assert.Empty(t, cert)
+
 	err = s.json.SaveEcsSslKeyPair(context.Background(), []byte{}, certBytes)
 	assert.NoError(t, err)
 
@@ -294,6 +304,14 @@ func (s *JsonStoreTestSuite) TestEcsCaKeyPair() { // nolint: dupl
 	assert.NoError(t, err)
 	certBytes := []byte(ca.CertPEM)
 	keyBytes := []byte(ca.KeyPEM)
+
+	// see TestEcsSslKeyPair: a failed key validation must not cache the cert.
+	err = s.json.SaveEcsCaKeyPair(context.Background(), certBytes, certBytes)
+	assert.Error(t, err)
+
+	cert, err = s.json.GetEcsCaCert()
+	assert.NoError(t, err)
+	assert.Empty(t, cert)
 
 	err = s.json.SaveEcsCaKeyPair(context.Background(), []byte{}, certBytes)
 	assert.NoError(t, err)

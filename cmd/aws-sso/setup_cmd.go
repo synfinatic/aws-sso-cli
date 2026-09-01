@@ -84,13 +84,13 @@ func (e EcsSSLCmd) AfterApply(runCtx *RunContext) error {
 
 func (cc *EcsSSLCmd) Run(ctx *RunContext) error {
 	switch {
-	case ctx.Cli.Setup.Ecs.SSL.Delete:
+	case cc.Delete:
 		if err := ctx.Store.DeleteEcsSslKeyPair(ctx.Ctx); err != nil {
 			return err
 		}
 		return ctx.Store.DeleteEcsCaKeyPair(ctx.Ctx)
 
-	case ctx.Cli.Setup.Ecs.SSL.PrintCa:
+	case cc.PrintCa:
 		caCert, err := ctx.Store.GetEcsCaCert()
 		if err != nil {
 			return err
@@ -98,10 +98,12 @@ func (cc *EcsSSLCmd) Run(ctx *RunContext) error {
 		if caCert == "" {
 			return fmt.Errorf("no local CA found; run 'aws-sso setup ecs ssl --self-signed' first")
 		}
-		fmt.Println(caCert)
+		// Print, not Println: the stored PEM already ends in a newline and
+		// `--print-ca > ca.pem` should not gain a trailing blank line.
+		fmt.Print(caCert)
 		return nil
 
-	case ctx.Cli.Setup.Ecs.SSL.SelfSigned:
+	case cc.SelfSigned:
 		return cc.runSelfSigned(ctx)
 
 	default:
@@ -134,6 +136,15 @@ func (cc *EcsSSLCmd) runSelfSigned(ctx *RunContext) error {
 		log.Info("Reused the existing local CA and issued a new leaf certificate for the ECS Server.")
 		log.Info("The CA has not changed, so no trust-store changes are needed.")
 	}
+
+	// Printed on every run, not just when the CA is new: it is what the user
+	// compares against the entry their OS/runtime trust store shows, both when
+	// first trusting the CA and when checking later that it is still the same one.
+	fingerprint, err := certutil.Fingerprint(ca.CertPEM)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("\nCA SHA-256 fingerprint:\n  %s\n", fingerprint)
 
 	fmt.Printf("\nFor instructions on exporting and trusting this CA, see:\n  %s\n", EcsCaTrustDocsURL)
 	return nil

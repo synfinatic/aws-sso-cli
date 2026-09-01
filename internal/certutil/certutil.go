@@ -76,6 +76,13 @@ type KeyPair struct {
 
 // GenerateCA creates a new self-signed CA certificate/key suitable for
 // signing ECS Server leaf certificates via GenerateLeaf.
+//
+// Users are told to install this CA into their OS trust store, so it is
+// deliberately scoped as narrowly as the X.509 extensions allow: it can only
+// sign for the names in DefaultDNSNames/DefaultIPs, only for TLS server
+// authentication, and cannot sign a subordinate CA.  Enforcement is up to the
+// verifier — see the "Trusting the CA" section of docs/ecs-server.md for which
+// ones honor a trust anchor's own name constraints.
 func GenerateCA() (KeyPair, error) {
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
@@ -89,16 +96,30 @@ func GenerateCA() (KeyPair, error) {
 
 	now := time.Now()
 	template := &x509.Certificate{
-		SerialNumber:          serial,
-		Subject:               pkix.Name{CommonName: CACommonName},
-		NotBefore:             now.Add(-time.Minute),
-		NotAfter:              now.Add(CAValidity),
-		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
-		BasicConstraintsValid: true,
-		IsCA:                  true,
-		MaxPathLen:            0,
-		MaxPathLenZero:        true,
+		SerialNumber:                serial,
+		Subject:                     pkix.Name{CommonName: CACommonName},
+		NotBefore:                   now.Add(-time.Minute),
+		NotAfter:                    now.Add(CAValidity),
+		KeyUsage:                    x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
+		BasicConstraintsValid:       true,
+		IsCA:                        true,
+		MaxPathLen:                  0,
+		MaxPathLenZero:              true,
+		ExtKeyUsage:                 []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		PermittedDNSDomains:         append([]string{}, DefaultDNSNames...),
+		PermittedDNSDomainsCritical: true,
+		PermittedIPRanges:           singleHostIPRanges(DefaultIPs),
 	}
+	// NOTE: RFC 5280 name constraints only bound the name forms they actually
+	// name, so a leaf whose only SAN is an email address or a URI is
+	// unconstrained by the permitted subtrees above rather than rejected.
+	// There is no portable way to close that: excluding a whole name form
+	// requires an empty excluded subtree, which Go reads as "matches
+	// everything" but OpenSSL reads as "matches nothing", and which the JVM
+	// refuses to parse at all ("RFC822Name may not be null or empty"),
+	// breaking the CA for every Java client.  ExtKeyUsage above is the
+	// portable half of this — see docs/ecs-server.md for the residual gap and
+	// for the trust-store flags that narrow it per-platform.
 
 	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
 	if err != nil {
@@ -167,6 +188,22 @@ func Fingerprint(certPEM string) (string, error) {
 		parts = append(parts, fmt.Sprintf("%02X", b))
 	}
 	return strings.Join(parts, ":"), nil
+}
+
+// singleHostIPRanges converts each IP into a single-host CIDR (/32 for IPv4,
+// /128 for IPv6) so DefaultIPs can double as the CA's PermittedIPRanges
+// without a separately maintained list.
+func singleHostIPRanges(ips []net.IP) []*net.IPNet {
+	ranges := make([]*net.IPNet, len(ips))
+	for i, ip := range ips {
+		bits := 128
+		if v4 := ip.To4(); v4 != nil {
+			ip = v4
+			bits = 32
+		}
+		ranges[i] = &net.IPNet{IP: ip, Mask: net.CIDRMask(bits, bits)}
+	}
+	return ranges
 }
 
 func newSerialNumber() (*big.Int, error) {
