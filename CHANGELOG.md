@@ -7,14 +7,9 @@
 
 * Add official support for using SSL with ECS Server mode
 * Add support for generating self-signed certificates for ECS server
-* Add `aws-sso ecs docker secrets` for ECS Server in Docker Compose.  This is
-  one-time setup: the security config it writes persists, so `docker compose` restarts
-  and container recreation keep working without re-running it.  It also writes a
-  `bearer-token` file for client containers using
-  `AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE`, which keeps the token out of `docker inspect`
-* Add `aws-sso ecs --secrets-dir` (env `AWS_SSO_ECS_SECRETS_DIR`) to choose where the
-  ECS Server Docker secrets files are written, instead of always using the config
-  directory
+* Add `aws-sso ecs docker secrets` for ECS Server in Docker Compose / manual launch.
+* Add `aws-sso ecs --secrets-dir` to choose where the ECS Server Docker secrets are 
+  written, instead of always using the config directory
 * The host-side `aws-sso ecs load`/`list`/`profile` commands now opportunistically
   re-mint an aging persisted ECS Server leaf certificate, so a `docker compose`
   deployment does not silently lapse after 30 days
@@ -26,10 +21,6 @@
 
 ### Bugs
 
-* **Security:** `aws-sso ecs server --docker` no longer starts with HTTP Auth and SSL/TLS
-  silently disabled when the ECS security config is missing.  It now fails with an error
-  naming the file and the command that creates it, unless both `--disable-auth` and
-  `--disable-ssl` were passed
 * Remove invalid `--no-config-check` and `--sts-refresh` from the documented `login` flags #1451
 * Fix documentation / examples related to using the ECS server with Docker Compose #1462
 * Fix the ECS server container healthcheck failing when SSL/TLS is enabled, which left the
@@ -45,6 +36,9 @@
   automatically.  Update the bind mount in your `compose.yaml` accordingly
 * The ECS Server container no longer deletes the security config after reading it, and
   can mount it read-only
+* `aws-sso ecs server --docker` no longer accepts `--disable-auth`/
+  `--disable-ssl` -- the security file is now the sole source of truth for HTTP Auth
+  and SSL/TLS in Docker mode. 
 
 ## [v2.3.2] -- 2026-07-29
 

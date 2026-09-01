@@ -51,8 +51,8 @@ type EcsServerCmd struct {
 	Default string `kong:"short='d',help='Profile name to load as default credentials on start',predictor='profile'"`
 	// hidden flags are for internal use only when running in a docker container
 	Docker      bool `kong:"hidden"`
-	DisableAuth bool `kong:"help='Disable HTTP Auth for the ECS Server'"`
-	DisableSSL  bool `kong:"help='Disable SSL/TLS for the ECS Server'"`
+	DisableAuth bool `kong:"help='Disable HTTP Auth for the ECS Server (ignored with --docker; use \"ecs docker secrets --disable-auth\")'"`
+	DisableSSL  bool `kong:"help='Disable SSL/TLS for the ECS Server (ignored with --docker; use \"ecs docker secrets --disable-ssl\")'"`
 }
 
 // AfterApply determines if SSO auth token is required
@@ -80,41 +80,62 @@ func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 	}
 
 	var bearerToken, privateKey, certChain string
+	var disableSSL, disableAuth bool
 	if ctx.Cli.Ecs.Server.Docker {
+		if ctx.Cli.Ecs.Server.DisableSSL || ctx.Cli.Ecs.Server.DisableAuth {
+			log.Warn("--disable-ssl/--disable-auth have no effect under --docker: the " +
+				"security config written by `aws-sso ecs docker secrets` is the source " +
+				"of truth for TLS and HTTP Auth in this mode")
+		}
+
 		// Read the security config bind-mounted in from the host.  The file is
 		// deliberately left in place: docker compose owns the container
 		// lifecycle, so this process can be restarted or recreated at any time
 		// and has to come back up with the same security posture.
 		f, err := ecs.OpenContainerSecurityFile()
 		if err != nil {
-			// Fail closed.  Tolerating a missing file here would silently serve
-			// credentials with no HTTP Auth and no TLS -- only acceptable when
-			// the user asked for exactly that.
-			if !ctx.Cli.Ecs.Server.DisableAuth || !ctx.Cli.Ecs.Server.DisableSSL {
-				// Name the container-side path, since that is what actually
-				// failed, but point at the host: the directory mounted onto
-				// CONTAINER_MOUNT_POINT is the thing that needs fixing, and
-				// this process cannot know its path on the host.
-				return fmt.Errorf("unable to read the ECS security config %s: %w\n"+
-					"Run `aws-sso ecs docker secrets` on the host and bind-mount the "+
-					"directory it names onto %s -- if you set --secrets-dir or "+
-					"AWS_SSO_ECS_SECRETS_DIR, that is the directory to mount.  Or pass "+
-					"both --disable-auth and --disable-ssl to intentionally start "+
-					"without HTTP Auth and SSL/TLS",
-					ecs.ContainerSecurityFilePath(), err, ecs.CONTAINER_MOUNT_POINT)
-			}
-			log.Warn("No ECS security config; starting without HTTP Auth or SSL/TLS as requested")
-		} else {
-			creds, err := ecs.ReadSecurityConfig(f)
-			// have to manually close since defer won't work in this case
-			f.Close()
-			if err != nil {
-				return err
-			}
+			// Fail closed, unconditionally: Docker mode no longer takes this
+			// decision from its own CLI flags at all, since the security file
+			// -- always written by `ecs docker secrets`/`ecs docker start`,
+			// even when nothing is configured -- is the sole source of truth.
+			// Name the container-side path, since that is what actually
+			// failed, but point at the host: the directory mounted onto
+			// CONTAINER_MOUNT_POINT is the thing that needs fixing, and this
+			// process cannot know its path on the host.
+			return fmt.Errorf("unable to read the ECS security config %s: %w\n"+
+				"Run `aws-sso ecs docker secrets` on the host and bind-mount the "+
+				"directory it names onto %s -- if you set --secrets-dir or "+
+				"AWS_SSO_ECS_SECRETS_DIR, that is the directory to mount.  Pass "+
+				"--disable-auth/--disable-ssl to that command to intentionally start "+
+				"without HTTP Auth and/or SSL/TLS",
+				ecs.ContainerSecurityFilePath(), err, ecs.CONTAINER_MOUNT_POINT)
+		}
+		creds, err := ecs.ReadSecurityConfig(f)
+		// have to manually close since defer won't work in this case
+		f.Close()
+		if err != nil {
+			return err
+		}
 
-			bearerToken = creds.BearerToken
-			privateKey = creds.PrivateKey
-			certChain = creds.CertChain
+		bearerToken = creds.BearerToken
+		privateKey = creds.PrivateKey
+		certChain = creds.CertChain
+		disableSSL = creds.DisableSSL
+		disableAuth = creds.DisableAuth
+
+		if (privateKey == "" || certChain == "") && !disableSSL {
+			return fmt.Errorf("the ECS security config %s has no SSL/TLS material, and it "+
+				"was not written with --disable-ssl -- refusing to start without TLS.  Run "+
+				"`aws-sso setup ecs ssl --self-signed` then `aws-sso ecs docker secrets`, or "+
+				"`aws-sso ecs docker secrets --disable-ssl` to start without TLS intentionally",
+				ecs.ContainerSecurityFilePath())
+		}
+		if bearerToken == "" && !disableAuth {
+			return fmt.Errorf("the ECS security config %s has no HTTP Auth bearer token, and "+
+				"it was not written with --disable-auth -- refusing to start without HTTP "+
+				"Auth.  Run `aws-sso setup ecs auth` then `aws-sso ecs docker secrets`, or "+
+				"`aws-sso ecs docker secrets --disable-auth` to start without HTTP Auth "+
+				"intentionally", ecs.ContainerSecurityFilePath())
 		}
 	} else {
 		if bearerToken, err = ctx.Store.GetEcsBearerToken(); err != nil {
@@ -142,19 +163,21 @@ func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 			}
 			privateKey, certChain = leaf.KeyPEM, leaf.CertPEM
 		}
+
+		disableSSL = ctx.Cli.Ecs.Server.DisableSSL
+		disableAuth = ctx.Cli.Ecs.Server.DisableAuth
+
+		// Disable SSL, even if configured
+		if disableSSL {
+			privateKey = ""
+			certChain = ""
+		}
+		if disableAuth {
+			bearerToken = ""
+		}
 	}
 
-	// Disable SSL, even if configure
-	if ctx.Cli.Ecs.Server.DisableSSL {
-		privateKey = ""
-		certChain = ""
-	}
-
-	if ctx.Cli.Ecs.Server.DisableAuth {
-		bearerToken = ""
-	}
-
-	if bearerToken == "" && !ctx.Cli.Ecs.Server.DisableAuth {
+	if bearerToken == "" && !disableAuth {
 		log.Warn("HTTP Auth: disabled. Use 'aws-sso setup ecs auth' to enable")
 	} else {
 		log.Info("HTTP Auth: enabled")
@@ -174,7 +197,7 @@ func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 			warnIfCertExpiringSoon(caCert, "CA certificate",
 				"aws-sso setup ecs ssl --rotate-ca", ecsCaCertExpiryWarningWindow)
 		}
-	} else if !ctx.Cli.Ecs.Server.DisableSSL {
+	} else if !disableSSL {
 		log.Warn("SSL/TLS: disabled.  Use 'aws-sso setup ecs ssl' to enable")
 	}
 

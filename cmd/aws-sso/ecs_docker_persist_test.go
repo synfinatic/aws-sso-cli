@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -219,9 +220,80 @@ func TestRefreshDockerSecurityFileIfStale_NoSSLMaterial(t *testing.T) {
 	require.NoError(t, (&EcsDockerSecretsCmd{DisableSSL: true}).Run(ctx))
 	before := readSecurityFileForTest(t, secPath)
 	require.Empty(t, before.CertChain)
+	assert.True(t, before.DisableSSL, "the flag was passed, so the file must record it as intentional")
 
 	refreshDockerSecurityFileIfStale(ctx)
 	assert.Equal(t, before, readSecurityFileForTest(t, secPath))
+}
+
+// TestEcsDockerSecretsCmdRun_NoCARecordsUnintentional: no CA configured and
+// --disable-ssl not passed must not be recorded the same way as an explicit
+// opt-out -- ecs server --docker relies on this bit to fail closed here and
+// start open on a genuine --disable-ssl file.
+func TestEcsDockerSecretsCmdRun_NoCARecordsUnintentional(t *testing.T) {
+	tLogger := testlogger.NewTestLogger("DEBUG")
+	defer tLogger.Close()
+	oldLog := log
+	log = tLogger
+	defer func() { log = oldLog }()
+
+	ctx := newSelfSignedTestCtx(t)
+	secPath := filepath.Join(ecs.HostMountPoint(""), "docker-secret.json")
+
+	require.NoError(t, (&EcsDockerSecretsCmd{}).Run(ctx))
+
+	sec := readSecurityFileForTest(t, secPath)
+	assert.Empty(t, sec.CertChain)
+	assert.False(t, sec.DisableSSL, "the flag was not passed, so this must not read as intentional")
+	assert.Empty(t, sec.BearerToken)
+	assert.False(t, sec.DisableAuth, "the flag was not passed, so this must not read as intentional")
+
+	var messages []string
+	for {
+		msg := testlogger.LogMessage{}
+		if err := tLogger.GetNext(&msg); err != nil {
+			break
+		}
+		messages = append(messages, msg.Message)
+	}
+	assert.Contains(t, messages, "No CA found in the SecureStore, and --disable-ssl was not passed: "+
+		"the ECS Server will refuse to start until you either run "+
+		"`aws-sso setup ecs ssl --self-signed`, or pass --disable-ssl here to record that no TLS is intentional.")
+	assert.Contains(t, messages, "No bearer token configured, and --disable-auth was not passed: "+
+		"the ECS Server will refuse to start until you either run "+
+		"`aws-sso setup ecs auth`, or pass --disable-auth here to record that no HTTP Auth is intentional.")
+}
+
+// TestEcsDockerSecretsCmdRun_DisableFlagsRecordIntentional is the flip side:
+// passing --disable-ssl/--disable-auth must set the corresponding bit and
+// must not warn, since the empty fields are exactly what was asked for.
+func TestEcsDockerSecretsCmdRun_DisableFlagsRecordIntentional(t *testing.T) {
+	tLogger := testlogger.NewTestLogger("DEBUG")
+	defer tLogger.Close()
+	oldLog := log
+	log = tLogger
+	defer func() { log = oldLog }()
+
+	ctx, secPath, _ := newDockerPersistTestCtx(t)
+
+	require.NoError(t, (&EcsDockerSecretsCmd{DisableSSL: true, DisableAuth: true}).Run(ctx))
+
+	sec := readSecurityFileForTest(t, secPath)
+	assert.True(t, sec.DisableSSL)
+	assert.True(t, sec.DisableAuth)
+
+	var messages []string
+	for {
+		msg := testlogger.LogMessage{}
+		if err := tLogger.GetNext(&msg); err != nil {
+			break
+		}
+		messages = append(messages, msg.Message)
+	}
+	for _, m := range messages {
+		assert.NotContains(t, m, "will refuse to start",
+			"an explicit --disable-ssl/--disable-auth needs no warning")
+	}
 }
 
 // TestRefreshDockerSecurityFileIfStale_Unparseable: background maintenance must
@@ -259,17 +331,20 @@ func TestRefreshDockerSecurityFileIfStale_UnparseableCert(t *testing.T) {
 // TestEcsServerCmdRun_DockerFailsClosed is the regression this whole change
 // exists for.  With a missing security config the server used to log a warning
 // and start anyway -- serving AWS credentials with no HTTP Auth and no TLS.
-// A missing file is now fatal unless the user asked for exactly that posture by
-// passing *both* --disable-auth and --disable-ssl.
+// A missing file is now unconditionally fatal: Docker mode no longer reads its
+// own --disable-auth/--disable-ssl CLI flags at all, so there is no flag
+// combination that lets a missing file start an open server -- the security
+// file, written by `ecs docker secrets`, is the only way to ask for that.
 func TestEcsServerCmdRun_DockerFailsClosed(t *testing.T) {
 	tests := []struct {
 		name        string
 		disableAuth bool
 		disableSSL  bool
 	}{
-		{name: "neither disabled"},
-		{name: "auth disabled, SSL still expected", disableAuth: true},
-		{name: "SSL disabled, token still expected", disableSSL: true},
+		{name: "neither CLI flag set"},
+		{name: "--disable-auth set (ignored under --docker)", disableAuth: true},
+		{name: "--disable-ssl set (ignored under --docker)", disableSSL: true},
+		{name: "both CLI flags set (still ignored -- file is the source of truth)", disableAuth: true, disableSSL: true},
 	}
 
 	for _, tt := range tests {
@@ -295,10 +370,19 @@ func TestEcsServerCmdRun_DockerFailsClosed(t *testing.T) {
 }
 
 // TestEcsServerCmdRun_DockerBothDisabledStartsOpen confirms the deliberate
-// opt-out still works: asking for no auth and no TLS needs no security config.
+// opt-out still works: asking for no auth and no TLS needs a security file
+// that records both bits, written by `ecs docker secrets --disable-auth
+// --disable-ssl` -- the CLI flags on `ecs server` itself are no longer read
+// under --docker.
 func TestEcsServerCmdRun_DockerBothDisabledStartsOpen(t *testing.T) {
-	ctx, _, _ := newDockerPersistTestCtx(t)
+	ctx, secPath, _ := newDockerPersistTestCtx(t)
 	ctx.Cli = &CLI{}
+
+	require.NoError(t, (&EcsDockerSecretsCmd{DisableAuth: true, DisableSSL: true}).Run(ctx))
+	// the container reads from a path baked into the image; point it at the
+	// host file this command just wrote, as the bind mount would in production
+	ecs.TestContainerFilePathOverride = secPath
+	t.Cleanup(func() { ecs.TestContainerFilePathOverride = "" })
 
 	cctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
@@ -306,11 +390,9 @@ func TestEcsServerCmdRun_DockerBothDisabledStartsOpen(t *testing.T) {
 
 	port := freeTestPort(t)
 	ctx.Cli.Ecs.Server = EcsServerCmd{
-		BindIP:      "127.0.0.1",
-		Port:        port,
-		Docker:      true,
-		DisableAuth: true,
-		DisableSSL:  true,
+		BindIP: "127.0.0.1",
+		Port:   port,
+		Docker: true,
 	}
 	cc := &ctx.Cli.Ecs.Server
 
@@ -322,6 +404,200 @@ func TestEcsServerCmdRun_DockerBothDisabledStartsOpen(t *testing.T) {
 
 	cancel()
 	assert.NoError(t, <-done)
+}
+
+// TestEcsServerCmdRun_DockerUnexplainedEmptySSLFailsClosed is the direct
+// regression test for the file-present-but-empty case: a security file with no
+// SSL material and DisableSSL not set must not start an open server just
+// because the file could be read.
+func TestEcsServerCmdRun_DockerUnexplainedEmptySSLFailsClosed(t *testing.T) {
+	ctx, _, _ := newDockerPersistTestCtx(t)
+	writeDockerSecurityFileForTest(t, ecs.ECSSecurity{
+		BearerToken: "s3cr3t",
+	})
+
+	ctx.Cli = &CLI{}
+	ctx.Ctx = context.Background()
+	ctx.Cli.Ecs.Server = EcsServerCmd{BindIP: "127.0.0.1", Port: freeTestPort(t), Docker: true}
+
+	err := ctx.Cli.Ecs.Server.Run(ctx)
+	require.Error(t, err, "empty SSL material with DisableSSL unset must fail closed")
+	assert.Contains(t, err.Error(), "--disable-ssl")
+}
+
+// TestEcsServerCmdRun_DockerUnexplainedEmptyAuthFailsClosed is the Auth
+// counterpart: an empty bearer token with DisableAuth not set must not start
+// an open server.
+func TestEcsServerCmdRun_DockerUnexplainedEmptyAuthFailsClosed(t *testing.T) {
+	ctx, _, _ := newDockerPersistTestCtx(t)
+
+	caCert, err := ctx.Store.GetEcsCaCert()
+	require.NoError(t, err)
+	caKey, err := ctx.Store.GetEcsCaKey()
+	require.NoError(t, err)
+	leaf, err := certutil.GenerateLeaf(certutil.KeyPair{CertPEM: caCert, KeyPEM: caKey})
+	require.NoError(t, err)
+
+	writeDockerSecurityFileForTest(t, ecs.ECSSecurity{
+		PrivateKey: leaf.KeyPEM,
+		CertChain:  leaf.CertPEM,
+	})
+
+	ctx.Cli = &CLI{}
+	ctx.Ctx = context.Background()
+	ctx.Cli.Ecs.Server = EcsServerCmd{BindIP: "127.0.0.1", Port: freeTestPort(t), Docker: true}
+
+	err = ctx.Cli.Ecs.Server.Run(ctx)
+	require.Error(t, err, "empty bearer token with DisableAuth unset must fail closed")
+	assert.Contains(t, err.Error(), "--disable-auth")
+}
+
+// TestEcsServerCmdRun_DockerExplainedEmptySSLStartsOpen: DisableSSL: true in
+// the file is the file's own record that no TLS material is expected, so the
+// server must start and serve plain HTTP rather than erroring.
+func TestEcsServerCmdRun_DockerExplainedEmptySSLStartsOpen(t *testing.T) {
+	ctx, _, _ := newDockerPersistTestCtx(t)
+	writeDockerSecurityFileForTest(t, ecs.ECSSecurity{
+		BearerToken: "s3cr3t",
+		DisableSSL:  true,
+	})
+
+	ctx.Cli = &CLI{}
+	cctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	ctx.Ctx = cctx
+
+	port := freeTestPort(t)
+	ctx.Cli.Ecs.Server = EcsServerCmd{BindIP: "127.0.0.1", Port: port, Docker: true}
+	cc := &ctx.Cli.Ecs.Server
+
+	done := make(chan error, 1)
+	go func() { done <- cc.Run(ctx) }()
+
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	require.NoError(t, waitForEcsServerUp("http", addr, "", 5*time.Second))
+
+	cancel()
+	assert.NoError(t, <-done)
+}
+
+// TestEcsServerCmdRun_DockerExplainedEmptyAuthStartsOpen: DisableAuth: true in
+// the file must start the server with no auth enforced, not error.
+func TestEcsServerCmdRun_DockerExplainedEmptyAuthStartsOpen(t *testing.T) {
+	ctx, _, _ := newDockerPersistTestCtx(t)
+
+	caCert, err := ctx.Store.GetEcsCaCert()
+	require.NoError(t, err)
+	caKey, err := ctx.Store.GetEcsCaKey()
+	require.NoError(t, err)
+	leaf, err := certutil.GenerateLeaf(certutil.KeyPair{CertPEM: caCert, KeyPEM: caKey})
+	require.NoError(t, err)
+
+	writeDockerSecurityFileForTest(t, ecs.ECSSecurity{
+		PrivateKey:  leaf.KeyPEM,
+		CertChain:   leaf.CertPEM,
+		DisableAuth: true,
+	})
+
+	ctx.Cli = &CLI{}
+	cctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	ctx.Ctx = cctx
+
+	port := freeTestPort(t)
+	ctx.Cli.Ecs.Server = EcsServerCmd{BindIP: "127.0.0.1", Port: port, Docker: true}
+	cc := &ctx.Cli.Ecs.Server
+
+	done := make(chan error, 1)
+	go func() { done <- cc.Run(ctx) }()
+
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	require.NoError(t, waitForEcsServerUp("https", addr, caCert, 5*time.Second))
+
+	// no auth enforced: an empty bearer token must not be rejected as
+	// unauthorized (403). It still 404s -- no default profile was set -- but
+	// that is the profile handler, reached only once auth was bypassed.
+	c := client.NewECSClient(addr, "", caCert)
+	_, err = c.GetProfile()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "404")
+	assert.NotContains(t, err.Error(), "403", "DisableAuth: true in the file means no auth is enforced")
+
+	cancel()
+	assert.NoError(t, <-done)
+}
+
+// TestEcsServerCmdRun_DockerCLIDisableFlagsIgnoredWithFileOverride: the file's
+// real material must win over stale/irrelevant CLI flags, and a warning must
+// name that the flags have no effect under --docker.
+func TestEcsServerCmdRun_DockerCLIDisableFlagsIgnoredWithFileOverride(t *testing.T) {
+	tLogger := testlogger.NewTestLogger("DEBUG")
+	defer tLogger.Close()
+	oldLog := log
+	log = tLogger
+	defer func() { log = oldLog }()
+
+	ctx, _, _ := newDockerPersistTestCtx(t)
+
+	caCert, err := ctx.Store.GetEcsCaCert()
+	require.NoError(t, err)
+	caKey, err := ctx.Store.GetEcsCaKey()
+	require.NoError(t, err)
+	leaf, err := certutil.GenerateLeaf(certutil.KeyPair{CertPEM: caCert, KeyPEM: caKey})
+	require.NoError(t, err)
+
+	writeDockerSecurityFileForTest(t, ecs.ECSSecurity{
+		PrivateKey:  leaf.KeyPEM,
+		CertChain:   leaf.CertPEM,
+		BearerToken: "s3cr3t",
+	})
+
+	ctx.Cli = &CLI{}
+	cctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	ctx.Ctx = cctx
+
+	port := freeTestPort(t)
+	ctx.Cli.Ecs.Server = EcsServerCmd{
+		BindIP:      "127.0.0.1",
+		Port:        port,
+		Docker:      true,
+		DisableSSL:  true,
+		DisableAuth: true,
+	}
+	cc := &ctx.Cli.Ecs.Server
+
+	done := make(chan error, 1)
+	go func() { done <- cc.Run(ctx) }()
+
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	require.NoError(t, waitForEcsServerUp("https", addr, caCert, 5*time.Second),
+		"the file's real SSL material must win over the CLI flag")
+
+	c := client.NewECSClient(addr, "wrong-token", caCert)
+	_, err = c.GetProfile()
+	require.Error(t, err, "the file's real bearer token must still be enforced")
+	assert.Contains(t, err.Error(), "403")
+
+	cancel()
+	assert.NoError(t, <-done)
+
+	var messages []string
+	for {
+		msg := testlogger.LogMessage{}
+		if err := tLogger.GetNext(&msg); err != nil {
+			break
+		}
+		messages = append(messages, msg.Message)
+	}
+	found := false
+	for _, m := range messages {
+		if strings.Contains(m, "--docker") && strings.Contains(m, "no effect") {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "expected a warning that --disable-ssl/--disable-auth have no effect under --docker, got: %v", messages)
 }
 
 // TestReusablePersistedLeaf exercises the reuse decision directly, one branch

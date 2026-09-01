@@ -81,12 +81,22 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 		if err != nil {
 			return err
 		}
+		if privateKey == "" {
+			log.Warn("No CA found in the SecureStore, and --disable-ssl was not passed: " +
+				"the ECS Server will refuse to start until you either run " +
+				"`aws-sso setup ecs ssl --self-signed`, or pass --disable-ssl here to record that no TLS is intentional.")
+		}
 	}
 
 	if !ctx.Cli.Ecs.Docker.Start.DisableAuth {
 		bearerToken, err = ctx.Store.GetEcsBearerToken()
 		if err != nil {
 			return err
+		}
+		if bearerToken == "" {
+			log.Warn("No bearer token configured, and --disable-auth was not passed: " +
+				"the ECS Server will refuse to start until you either run " +
+				"`aws-sso setup ecs auth`, or pass --disable-auth here to record that no HTTP Auth is intentional.")
 		}
 	}
 
@@ -150,7 +160,8 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 
 	// Write security config and close before starting the container so the
 	// file is fully flushed to the shared filesystem before the container reads it.
-	if err = writeAndCloseSecurityFile(ctx.Cli.Ecs.SecretsDir, privateKey, certChain, bearerToken); err != nil {
+	if err = writeAndCloseSecurityFile(ctx.Cli.Ecs.SecretsDir, privateKey, certChain, bearerToken,
+		ctx.Cli.Ecs.Docker.Start.DisableSSL, ctx.Cli.Ecs.Docker.Start.DisableAuth); err != nil {
 		_, _ = dockerClient.ContainerRemove(context.Background(), resp.ID, dockerclient.ContainerRemoveOptions{})
 		return err
 	}
@@ -234,15 +245,25 @@ func (cc *EcsDockerSecretsCmd) Run(ctx *RunContext) error {
 				return err
 			}
 		}
+		if privateKey == "" {
+			log.Warn("No CA found in the SecureStore, and --disable-ssl was not passed: " +
+				"the ECS Server will refuse to start until you either run " +
+				"`aws-sso setup ecs ssl --self-signed`, or pass --disable-ssl here to record that no TLS is intentional.")
+		}
 	}
 
 	if !cc.DisableAuth {
 		if bearerToken, err = ctx.Store.GetEcsBearerToken(); err != nil {
 			return err
 		}
+		if bearerToken == "" {
+			log.Warn("No bearer token configured, and --disable-auth was not passed: " +
+				"the ECS Server will refuse to start until you either run " +
+				"`aws-sso setup ecs auth`, or pass --disable-auth here to record that no HTTP Auth is intentional.")
+		}
 	}
 
-	if err = writeAndCloseSecurityFile(secretsDir, privateKey, certChain, bearerToken); err != nil {
+	if err = writeAndCloseSecurityFile(secretsDir, privateKey, certChain, bearerToken, cc.DisableSSL, cc.DisableAuth); err != nil {
 		return err
 	}
 
@@ -363,7 +384,8 @@ func refreshDockerSecurityFileIfStale(ctx *RunContext) {
 		return // the CA has since been removed from the SecureStore
 	}
 
-	if err = writeAndCloseSecurityFile(secretsDir, privateKey, certChain, creds.BearerToken); err != nil {
+	if err = writeAndCloseSecurityFile(secretsDir, privateKey, certChain, creds.BearerToken,
+		creds.DisableSSL, creds.DisableAuth); err != nil {
 		log.Warn("Unable to write the refreshed ECS security config", "error", err.Error())
 		return
 	}
@@ -405,12 +427,12 @@ func mintLeafFromStoredCA(ctx *RunContext) (privateKey, certChain string, err er
 // writeAndCloseSecurityFile writes the ECS security config and closes the file
 // synchronously before the container starts, ensuring the data is visible on the
 // shared filesystem (e.g. VirtioFS) before the container process reads it.
-func writeAndCloseSecurityFile(secretsDir, privateKey, certChain, bearerToken string) error {
+func writeAndCloseSecurityFile(secretsDir, privateKey, certChain, bearerToken string, disableSSL, disableAuth bool) error {
 	f, err := ecs.OpenHostSecurityFile(secretsDir)
 	if err != nil {
 		return err
 	}
-	if err = ecs.WriteSecurityConfig(f, privateKey, certChain, bearerToken); err != nil {
+	if err = ecs.WriteSecurityConfig(f, privateKey, certChain, bearerToken, disableSSL, disableAuth); err != nil {
 		f.Close()
 		return err
 	}

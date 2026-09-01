@@ -170,6 +170,10 @@ Flags:
 * `--disable-auth` -- Disables HTTP Authentication, even if a Bearer Token is available
 * `--disable-ssl` -- Disables SSL/TLS, even if a certificate and private key are available
 
+`--disable-auth`/`--disable-ssl` apply only to this foreground command; they have no
+effect with `--docker`, where the security file written by `ecs docker secrets` is
+the source of truth instead -- pass `--disable-auth`/`--disable-ssl` to that command.
+
 ---
 
 ### ecs unload

@@ -49,7 +49,7 @@ func TestReadWriteSecurityConfig(t *testing.T) {
 	f, err := os.CreateTemp("", "security_test")
 	assert.NoError(t, err)
 
-	assert.NoError(t, WriteSecurityConfig(f, "foo", "bar", "baz"))
+	assert.NoError(t, WriteSecurityConfig(f, "foo", "bar", "baz", true, false))
 	assert.NoError(t, f.Close())
 
 	f, err = os.Open(f.Name()) // nolint:gosec
@@ -61,6 +61,25 @@ func TestReadWriteSecurityConfig(t *testing.T) {
 	assert.Equal(t, "foo", values.PrivateKey)
 	assert.Equal(t, "bar", values.CertChain)
 	assert.Equal(t, "baz", values.BearerToken)
+	assert.True(t, values.DisableSSL)
+	assert.False(t, values.DisableAuth)
+}
+
+func TestReadWriteSecurityConfigDisableAuth(t *testing.T) {
+	f, err := os.CreateTemp("", "security_test")
+	assert.NoError(t, err)
+
+	assert.NoError(t, WriteSecurityConfig(f, "", "", "", false, true))
+	assert.NoError(t, f.Close())
+
+	f, err = os.Open(f.Name()) // nolint:gosec
+	assert.NoError(t, err)
+
+	values, err := ReadSecurityConfig(f)
+	assert.NoError(t, err)
+	assert.NoError(t, f.Close())
+	assert.False(t, values.DisableSSL)
+	assert.True(t, values.DisableAuth)
 }
 
 func TestReadSecurityFailure(t *testing.T) {

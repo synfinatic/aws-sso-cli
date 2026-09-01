@@ -461,11 +461,14 @@ the files it writes persist, so `docker compose down && docker compose up` keeps
 only after changing the bearer token or the CA — and re-running is safe, since a
 still-valid leaf certificate is reused rather than replaced.
 
-If the security file is missing, the container **fails to start** with an error naming
-the file and the command that creates it. It does not fall back to starting with HTTP
-Auth and SSL/TLS silently disabled — a credential server that quietly comes up
-unauthenticated is worse than one that refuses to come up. To intentionally run with
-neither, pass both `--disable-auth` and `--disable-ssl` to `ecs server`.
+The security file is the sole source of truth for HTTP Auth and SSL/TLS under
+`--docker` — any `--disable-auth`/`--disable-ssl` flags on `ecs server` itself are
+ignored. If the file is missing, the container **fails to start** with an error naming
+the file and the command that creates it; if it is present but has no bearer token
+or SSL material and doesn't record that as intentional, the container also fails to
+start rather than quietly coming up unauthenticated. To intentionally run with
+neither, pass both `--disable-auth` and `--disable-ssl` to `ecs docker secrets` when
+writing the file.
 
 `ecs docker secrets` also writes a companion `bearer-token` file containing just the HTTP
 `Authorization` header value. The example below bind-mounts that file into `myapp` and

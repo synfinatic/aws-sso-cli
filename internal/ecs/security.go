@@ -114,6 +114,13 @@ type ECSSecurity struct {
 	PrivateKey  string `json:"privateKey"` // nolint:gosec
 	CertChain   string `json:"certChain"`
 	BearerToken string `json:"bearerToken"` // nolint:gosec
+	// DisableSSL records that --disable-ssl was passed when this file was
+	// written, so an empty PrivateKey/CertChain above is intentional. Readers
+	// use this to distinguish that from the "not configured yet" case, where
+	// the fields are empty but this is false, and should fail closed.
+	DisableSSL bool `json:"disableSSL"`
+	// DisableAuth is the equivalent bit for BearerToken / --disable-auth.
+	DisableAuth bool `json:"disableAuth"`
 }
 
 // WriteBearerTokenFile writes just the HTTP Authorization header value to a
@@ -151,11 +158,13 @@ func WriteBearerTokenFile(dir, bearerToken string) error {
 // WriteSecurityConfig writes the security configuration to a regular file
 // since the ECS container can't read from named pipes when the host is Windows
 // or MacOS
-func WriteSecurityConfig(f *os.File, privateKey, certChain, bearerToken string) error {
+func WriteSecurityConfig(f *os.File, privateKey, certChain, bearerToken string, disableSSL, disableAuth bool) error {
 	ecsSecurity := &ECSSecurity{
 		PrivateKey:  privateKey,
 		CertChain:   certChain,
 		BearerToken: bearerToken,
+		DisableSSL:  disableSSL,
+		DisableAuth: disableAuth,
 	}
 
 	data, _ := json.Marshal(ecsSecurity)
