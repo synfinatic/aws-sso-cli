@@ -3,6 +3,8 @@
 
 ## [Unreleased]
 
+## [v2.4.0]
+
 ### New Features
 
 * Add `aws-sso login --force` to start a new SSO session, resetting its duration #1455
@@ -18,6 +20,7 @@
   container permanently unhealthy and blocked `depends_on: service_healthy`
 * Fix the Docker Compose example provisioning an SSL cert while connecting over `http://`,
   and show the bearer token being passed to the client container
+* `ecs docker stop` no longer requires reading from the config/SecureStore
 
 ## [v2.3.2] -- 2026-07-29
 
