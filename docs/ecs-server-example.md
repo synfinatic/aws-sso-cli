@@ -5,6 +5,11 @@ application container, then load AWS credentials into the server using
 `aws-sso ecs load`.   Note that this example does not include any support for
 authentication or encryption via ([aws-sso setup ecs](commands.md#setup-ecs)).
 
+The bind mount source assumes the XDG config layout; if you have a legacy
+`~/.aws-sso` directory, use `$HOME/.aws-sso/ecs` instead.  `aws-sso ecs docker
+secrets` prints the directory it actually used, and `--secrets-dir` (or
+`AWS_SSO_ECS_SECRETS_DIR`) overrides it.
+
 ## Sample docker-compose.yaml
 
 ```yaml
@@ -16,9 +21,9 @@ services:
     - "127.0.0.1:4144:4144"
   volumes:
     - type: bind
-      source: $HOME/.aws-sso/mnt
-      target: /app/.aws-sso/mnt
-      read_only: false
+      source: $HOME/.config/aws-sso/ecs
+      target: /app/.aws-sso/ecs
+      read_only: true
 
  app:
   image: yourorg/your-custom-service:latest

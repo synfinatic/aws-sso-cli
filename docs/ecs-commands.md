@@ -24,18 +24,22 @@ Flags:
 
 #### setup ecs ssl
 
- Configures the SSL Certificate and Private Key to enable SSL/TLS.  Saves the
- SSL certificate and private key to the SecureStore.
-
- **Note:** At this time, this feature is not recommended due to a bug
- in the [AWS SDK](https://github.com/boto/boto3/issues/4188).
+ Generates (or reuses) a local CA for the ECS Server, saving it to the
+ SecureStore. The leaf certificate is minted fresh in memory wherever it is
+ needed and is never stored. See
+ [ecs-server.md](ecs-server.md#ecs-server-ssl-certificate) for the full walkthrough,
+ including per-runtime trust instructions and the Python/AWS CLI caveat.
 
  Flags:
 
-* `--delete` -- Disables SSL and deletes both the SSL certificate and private key from the Secure Store
-* `--print` -- Prints the SSL certificate
-* `--certificate` -- Path to SSL certificate file in PEM format
-* `--private-key` -- Path to SSL private key in PEM format
+* `--self-signed` -- Generate (or reuse) a local CA for the ECS Server. This is the default
+  action when no other flag is given.
+* `--rotate-ca` -- Force generation of a brand new CA instead of reusing the existing one (requires
+  re-trusting on every client)
+* `--print-ca` -- Prints the local CA certificate PEM to stdout and nothing else, so it can be
+  redirected to a file for your trust store:
+  `aws-sso setup ecs ssl --print-ca > ~/aws-sso-ecs-ca.pem`
+* `--delete` -- Disables SSL and deletes the CA certificate/private key from the Secure Store
 
 ---
 
@@ -49,8 +53,12 @@ Flags:
 * `--disable-ssl` -- Disables SSL/TLS, even if a certificate and private key are available.
 * `--bind-ip` -- IP address to bind the service to.  (default 127.0.0.1)
 * `--port` -- Port to listen on.  (default 4144)
-* `--image` -- Docker image to use.  (default `synfinatic/aws-sso-cli-ecs-version`)
+* `--image` -- Docker image to use.  (default `synfinatic/aws-sso-cli-ecs-server`)
 * `--version` -- Version of the docker image to use (default matches `aws-sso` binary version)
+* `--default <profile>`, `-d` -- Profile name to load as default credentials on start
+* `--secrets-dir` -- Bind-mount this directory into the container instead of the default
+  (env: `AWS_SSO_ECS_SECRETS_DIR`).  See
+  [Choosing where the files go](#choosing-where-the-files-go).
 
 ---
 
@@ -58,22 +66,54 @@ Flags:
 
 Stops the ECS Server Docker container.
 
+Flags:
+
+* `--version` -- Version of the docker image to stop (default `latest`)
+
 ---
 
-### ecs docker write-config
+### ecs docker secrets
 
 Writes the bearer token and/or SSL certificate/private key from the SecureStore
-to the security config file (`~/.aws-sso/mnt/docker-ecs`) read by the ECS Server
-Docker image on startup, without starting or managing a container itself. Use
-this when launching the ECS Server container via `docker compose` or another
-tool instead of `ecs docker start`, so the container still picks up your
-configured HTTP Auth and/or TLS material. The file is deleted by the container
-once read, so re-run this command before every `docker compose up`.
+to the ECS security config file (`~/.config/aws-sso/ecs/docker-secret.json`, or
+`~/.aws-sso/ecs/docker-secret.json` if you have a legacy `~/.aws-sso`
+directory) read by the ECS Server Docker image on startup, without starting or
+managing a container itself. Use this when launching the ECS Server container
+via `docker compose` or another tool instead of `ecs docker start`, so the
+container still picks up your configured HTTP Auth and/or TLS material.
+
+This is one-time setup: the file persists, so container restarts and recreation
+keep working. Re-run it only after changing the bearer token or the CA.
+Re-running is safe — a still-valid leaf certificate is reused rather than
+replaced, so a running container's certificate is not invalidated.
+
+Unless `--disable-auth` is given, it also writes a companion `bearer-token` file
+in the same directory containing just the HTTP `Authorization` header value, for
+client containers using `AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE`.
+
+Both files are mode 0600. The command prints the directory to bind-mount into
+the container.
 
 Flags:
 
 * `--disable-auth` -- Do not include the HTTP Auth bearer token in the config file
 * `--disable-ssl` -- Do not include the SSL cert/key in the config file
+* `--secrets-dir` -- Write the files to this directory instead of the default
+  (env: `AWS_SSO_ECS_SECRETS_DIR`).  See below.
+
+#### Choosing where the files go
+
+`--secrets-dir` overrides the default location for every `ecs` command that
+touches these files: `ecs docker secrets` writes them there, `ecs docker start`
+bind-mounts that directory into the container, and `ecs load`/`list`/`profile`
+refresh the certificate there as it ages.  Set it once via
+`AWS_SSO_ECS_SECRETS_DIR` so a `docker compose` stack and the CLI agree.
+
+A relative path is resolved against the working directory, since Docker bind
+mounts require an absolute source.  aws-sso creates the directory 0700 if it
+does not exist; a directory you created yourself keeps the permissions you gave
+it, so make sure it is not readable by other users -- the files hold the bearer
+token and the SSL private key in plaintext.
 
 ---
 
@@ -83,7 +123,7 @@ List the AWS Profiles stored in the ECS Server.
 
 Flags:
 
-* `--server` -- host:port of the ECS Server (default `localhost:4144`)
+* `--server` -- host:port of the ECS Server (default `localhost:4144`) (`$AWS_SSO_ECS_SERVER`)
 
 ---
 
@@ -97,8 +137,9 @@ Flags:
 * `--account <account>`, `-A` -- AWS AccountID of role to assume (`$AWS_SSO_ACCOUNT_ID`)
 * `--role <role>`, `-R` -- Name of AWS Role to assume (requires `--account`) (`$AWS_SSO_ROLE_NAME`)
 * `--profile <profile>`, `-p` -- Name of AWS Profile to assume
-* `--server` -- host:port of the ECS Server (default `localhost:4144`)
-* `--slotted` -- Load the IAM credentials into a unique slot using the ProfileName as the key
+* `--sts-refresh` -- Force refresh of STS Token Credentials
+* `--server` -- host:port of the ECS Server (default `localhost:4144`) (`$AWS_SSO_ECS_SERVER`)
+* `--slotted`, `-s` -- Load the IAM credentials into a unique slot using the ProfileName as the key
 
 You can provide `--profile` or `--arn` or (`--account` and `--role`) to specify the IAM role to load.
 
@@ -113,7 +154,7 @@ Fetches the ProfileName of the role stored in the default slot of the ECS Server
 
 Flags:
 
-* `--slotted` -- Load the IAM credentials into a unique slot using the ProfileName as the key
+* `--server` -- host:port of the ECS Server (default `localhost:4144`) (`$AWS_SSO_ECS_SERVER`)
 
 ---
 
@@ -123,8 +164,15 @@ Starts the ECS Server in the foreground.
 
 Flags:
 
+* `--bind-ip` -- IP address to bind the service to.  (default 127.0.0.1)
+* `--port` -- Port to listen on.  (default 4144)
+* `--default <profile>`, `-d` -- Profile name to load as default credentials on start
 * `--disable-auth` -- Disables HTTP Authentication, even if a Bearer Token is available
 * `--disable-ssl` -- Disables SSL/TLS, even if a certificate and private key are available
+
+`--disable-auth`/`--disable-ssl` apply only to this foreground command; they have no
+effect with `--docker`, where the security file written by `ecs docker secrets` is
+the source of truth instead -- pass `--disable-auth`/`--disable-ssl` to that command.
 
 ---
 
@@ -135,7 +183,7 @@ Removes the AWS IAM Role credentials from the ECS Server and makes them unavaila
 Flags:
 
 * `--profile <profile>`, `-p` -- Slot of AWS Profile to unload
-* `--server` -- host:port of the ECS Server (default `localhost:4144`)
+* `--server` -- host:port of the ECS Server (default `localhost:4144`) (`$AWS_SSO_ECS_SERVER`)
 
 By default, this will unload the IAM credentials for the default role.  Passing in
 `--profile <profile name>` will unload the credentials in the named slot.

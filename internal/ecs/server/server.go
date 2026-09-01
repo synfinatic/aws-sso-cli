@@ -20,13 +20,14 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
-	"os"
-	"path/filepath"
+	"time"
 
 	// "github.com/davecgh/go-spew/spew"
+	"github.com/synfinatic/aws-sso-cli/internal/certutil"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	"github.com/synfinatic/aws-sso-cli/internal/logger"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
@@ -47,6 +48,16 @@ type EcsServer struct {
 	slottedCreds map[string]*ecs.ECSClientRequest
 	privateKey   string
 	certChain    string
+	// certNotAfter is the serving certificate's expiration, parsed once at
+	// construction so the healthcheck doesn't re-parse the PEM per request.
+	// Zero when TLS is disabled.
+	certNotAfter time.Time
+}
+
+// CertExpired reports whether the serving certificate has expired.  Always
+// false when TLS is disabled, since there is no certificate to expire.
+func (e *EcsServer) CertExpired() bool {
+	return !e.certNotAfter.IsZero() && time.Now().After(e.certNotAfter)
 }
 
 type ExpiredCredentials struct{}
@@ -66,6 +77,18 @@ func NewEcsServer(ctx context.Context, authToken string, listen net.Listener, pr
 		slottedCreds: map[string]*ecs.ECSClientRequest{},
 		privateKey:   privateKey,
 		certChain:    certChain,
+	}
+
+	// Parse the leaf's expiry once so /healthcheck can report an expired
+	// certificate without re-parsing the PEM on every probe.  A parse failure
+	// is not fatal here: Serve() validates the pair properly via
+	// tls.X509KeyPair and will fail loudly there instead.
+	if certChain != "" {
+		if notAfter, err := certutil.NotAfter(certChain); err == nil {
+			e.certNotAfter = notAfter
+		} else {
+			log.Warn("Unable to parse the ECS Server certificate expiration", "error", err.Error())
+		}
 	}
 
 	// inner router: all auth-protected credential routes
@@ -156,25 +179,22 @@ func (e *EcsServer) BaseURL() string {
 // Serve starts the sever and blocks
 func (e *EcsServer) Serve() error {
 	if e.privateKey != "" && e.certChain != "" {
-		// Go sucks... have to pass the key and cert as _files_ not strings.  Why???
-		dname, err := os.MkdirTemp("", "aws-sso")
+		// Keep the key in memory: ServeTLS only reads certFile/keyFile off disk
+		// when TLSConfig has no certificate of its own, so load the PEM directly
+		// and pass empty paths.
+		cert, err := tls.X509KeyPair([]byte(e.certChain), []byte(e.privateKey))
 		if err != nil {
-			return err
-		}
-		defer os.RemoveAll(dname)
-
-		certFile := filepath.Join(dname, "cert.pem")
-		err = os.WriteFile(certFile, []byte(e.certChain), 0600)
-		if err != nil {
-			return err
-		}
-		keyFile := filepath.Join(dname, "key.pem")
-		err = os.WriteFile(keyFile, []byte(e.privateKey), 0600)
-		if err != nil {
-			return err
+			return fmt.Errorf("invalid ECS server certificate: %w", err)
 		}
 
-		return e.server.ServeTLS(e.listener, certFile, keyFile)
+		if e.server.TLSConfig == nil {
+			e.server.TLSConfig = &tls.Config{
+				MinVersion: tls.VersionTLS12,
+			}
+		}
+		e.server.TLSConfig.Certificates = []tls.Certificate{cert}
+
+		return e.server.ServeTLS(e.listener, "", "")
 	}
 	return e.server.Serve(e.listener)
 }

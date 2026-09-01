@@ -227,10 +227,12 @@ func TestVersionCmdRun(t *testing.T) {
 
 func TestParseArgsFrom(t *testing.T) {
 	tests := []struct {
-		name         string
-		args         []string
-		wantOverride sso.OverrideSettings
-		wantCommand  string
+		name           string
+		args           []string
+		env            map[string]string
+		wantOverride   sso.OverrideSettings
+		wantCommand    string
+		wantSecretsDir string
 	}{
 		{
 			name:        "default list command",
@@ -293,10 +295,48 @@ func TestParseArgsFrom(t *testing.T) {
 			},
 			wantCommand: "list",
 		},
+		{
+			name:        "ecs docker secrets",
+			args:        []string{"ecs", "docker", "secrets"},
+			wantCommand: "ecs docker secrets",
+		},
+		{
+			// --secrets-dir is declared on the `ecs` parent, but users will
+			// type it at the end of the line, so that has to parse too.
+			name:           "secrets-dir after the subcommand",
+			args:           []string{"ecs", "docker", "secrets", "--secrets-dir", "/srv/x"},
+			wantCommand:    "ecs docker secrets",
+			wantSecretsDir: "/srv/x",
+		},
+		{
+			name:           "secrets-dir before the subcommand",
+			args:           []string{"ecs", "--secrets-dir", "/srv/x", "docker", "secrets"},
+			wantCommand:    "ecs docker secrets",
+			wantSecretsDir: "/srv/x",
+		},
+		{
+			// the ancestor flag has to be in scope for the client commands too:
+			// they run refreshDockerSecurityFileIfStale against the same dir.
+			name:           "secrets-dir from the environment on a client command",
+			args:           []string{"ecs", "load", "--profile", "p"},
+			env:            map[string]string{"AWS_SSO_ECS_SECRETS_DIR": "/env/x"},
+			wantCommand:    "ecs load",
+			wantSecretsDir: "/env/x",
+		},
+		{
+			name:           "explicit secrets-dir beats the environment",
+			args:           []string{"ecs", "docker", "secrets", "--secrets-dir", "/srv/x"},
+			env:            map[string]string{"AWS_SSO_ECS_SECRETS_DIR": "/env/x"},
+			wantCommand:    "ecs docker secrets",
+			wantSecretsDir: "/srv/x",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			for k, v := range tt.env {
+				t.Setenv(k, v)
+			}
 			ctx := &RunContext{
 				Cli:  &CLI{},
 				Auth: AUTH_UNKNOWN,
@@ -305,6 +345,7 @@ func TestParseArgsFrom(t *testing.T) {
 			assert.Equal(t, tt.wantOverride, override)
 			require.NotNil(t, ctx.Kctx)
 			assert.Equal(t, tt.wantCommand, ctx.Kctx.Command())
+			assert.Equal(t, tt.wantSecretsDir, ctx.Cli.Ecs.SecretsDir)
 		})
 	}
 }

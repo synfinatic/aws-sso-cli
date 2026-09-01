@@ -51,6 +51,8 @@ func (e EcsLoadCmd) AfterApply(runCtx *RunContext) error {
 }
 
 func (cc *EcsLoadCmd) Run(ctx *RunContext) error {
+	refreshDockerSecurityFileIfStale(ctx)
+
 	sci := NewSelectCliArgs(ctx.Cli.Ecs.Load.Arn, int64(ctx.Cli.Ecs.Load.AccountId), ctx.Cli.Ecs.Load.Role, ctx.Cli.Ecs.Load.Profile)
 	if err := sci.Update(ctx); err == nil {
 		// successful lookup?
@@ -74,6 +76,8 @@ func (e EcsProfileCmd) AfterApply(runCtx *RunContext) error {
 }
 
 func (cc *EcsProfileCmd) Run(ctx *RunContext) error {
+	refreshDockerSecurityFileIfStale(ctx)
+
 	c := newClient(ctx.Cli.Ecs.Profile.Server, ctx)
 
 	// ignore the error because the 404 is not user friendly
@@ -131,6 +135,8 @@ func (e EcsListCmd) AfterApply(runCtx *RunContext) error {
 }
 
 func (cc *EcsListCmd) Run(ctx *RunContext) error {
+	refreshDockerSecurityFileIfStale(ctx)
+
 	c := newClient(ctx.Cli.Ecs.List.Server, ctx)
 
 	profiles, err := c.ListProfiles()
@@ -183,9 +189,9 @@ func listProfiles(profiles []ecs.ListProfilesResponse) error {
 }
 
 func newClient(server string, ctx *RunContext) *client.ECSClient {
-	certChain, err := ctx.Store.GetEcsSslCert()
+	certChain, err := ctx.Store.GetEcsCaCert()
 	if err != nil {
-		log.Fatal("Unable to get ECS SSL cert", "error", err.Error())
+		log.Fatal("Unable to get ECS CA cert", "error", err.Error())
 	}
 	bearerToken, err := ctx.Store.GetEcsBearerToken()
 	if err != nil {

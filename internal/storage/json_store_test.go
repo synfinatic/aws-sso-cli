@@ -26,6 +26,7 @@ import (
 	// "github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"github.com/synfinatic/aws-sso-cli/internal/certutil"
 )
 
 const TEST_JSON_STORE_FILE = "./testdata/store.json"
@@ -231,49 +232,49 @@ func (s *JsonStoreTestSuite) TestEcsBearerToken() {
 	assert.Empty(t, token)
 }
 
-func (s *JsonStoreTestSuite) TestEcsSslKeyPair() { // nolint: dupl
+func (s *JsonStoreTestSuite) TestEcsCaKeyPair() { // nolint: dupl
 	t := s.T()
 
-	cert, err := s.json.GetEcsSslCert()
+	cert, err := s.json.GetEcsCaCert()
 	assert.NoError(t, err)
 	assert.Empty(t, cert)
 
-	key, err := s.json.GetEcsSslKey()
+	key, err := s.json.GetEcsCaKey()
 	assert.NoError(t, err)
 	assert.Empty(t, key)
 
-	certBytes, err := os.ReadFile("../ecs/server/testdata/localhost.crt")
+	ca, err := certutil.GenerateCA()
 	assert.NoError(t, err)
-	keyBytes, err := os.ReadFile("../ecs/server/testdata/localhost.key")
+	certBytes := []byte(ca.CertPEM)
+	keyBytes := []byte(ca.KeyPEM)
+
+	err = s.json.SaveEcsCaKeyPair(context.Background(), []byte{}, certBytes)
 	assert.NoError(t, err)
 
-	err = s.json.SaveEcsSslKeyPair(context.Background(), []byte{}, certBytes)
+	err = s.json.SaveEcsCaKeyPair(context.Background(), keyBytes, certBytes)
 	assert.NoError(t, err)
 
-	err = s.json.SaveEcsSslKeyPair(context.Background(), keyBytes, certBytes)
-	assert.NoError(t, err)
-
-	err = s.json.SaveEcsSslKeyPair(context.Background(), keyBytes, keyBytes)
+	err = s.json.SaveEcsCaKeyPair(context.Background(), keyBytes, keyBytes)
 	assert.Error(t, err)
-	err = s.json.SaveEcsSslKeyPair(context.Background(), certBytes, certBytes)
+	err = s.json.SaveEcsCaKeyPair(context.Background(), certBytes, certBytes)
 	assert.Error(t, err)
 
-	cert, err = s.json.GetEcsSslCert()
+	cert, err = s.json.GetEcsCaCert()
 	assert.NoError(t, err)
 	assert.Equal(t, string(certBytes), cert)
 
-	key, err = s.json.GetEcsSslKey()
+	key, err = s.json.GetEcsCaKey()
 	assert.NoError(t, err)
 	assert.Equal(t, string(keyBytes), key)
 
-	err = s.json.DeleteEcsSslKeyPair(context.Background())
+	err = s.json.DeleteEcsCaKeyPair(context.Background())
 	assert.NoError(t, err)
 
-	cert, err = s.json.GetEcsSslCert()
+	cert, err = s.json.GetEcsCaCert()
 	assert.NoError(t, err)
 	assert.Empty(t, cert)
 
-	key, err = s.json.GetEcsSslKey()
+	key, err = s.json.GetEcsCaKey()
 	assert.NoError(t, err)
 	assert.Empty(t, key)
 }

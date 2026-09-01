@@ -1,23 +1,44 @@
 <!-- markdownlint-disable MD024 -->
 # AWS SSO CLI Changelog
 
-## [Unreleased]
+## [v2.4.0]
 
 ### New Features
 
+* Add official support for using SSL with ECS Server mode
+* Add support for generating self-signed certificates for ECS server
+* Add `aws-sso ecs docker secrets` for ECS Server in Docker Compose / manual launch.
+* Add `aws-sso ecs --secrets-dir` to choose where the ECS Server Docker secrets are 
+  written, instead of always using the config directory
+* The host-side `aws-sso ecs load`/`list`/`profile` commands now opportunistically
+  re-mint an aging persisted ECS Server leaf certificate, so a `docker compose`
+  deployment does not silently lapse after 30 days
+* The ECS Server `/healthcheck` endpoint now returns `503 server certificate expired`
+  when its own serving certificate has expired, so `docker ps` and
+  `depends_on: condition: service_healthy` report the problem instead of client
+  containers failing with opaque TLS errors
 * Add `aws-sso login --force` to start a new SSO session, resetting its duration #1455
-* Add `aws-sso ecs docker write-config`
 
 ### Bugs
 
-* Remove `--no-config-check` and `--sts-refresh` from the documented `login` flags #1451
+* Remove invalid `--no-config-check` and `--sts-refresh` from the documented `login` flags #1451
 * Fix documentation / examples related to using the ECS server with Docker Compose #1462
-* Document `ssh -o ExitOnForwardFailure=yes` to prevent another user on the remote host from
-  hijacking the forwarded ECS server port
 * Fix the ECS server container healthcheck failing when SSL/TLS is enabled, which left the
   container permanently unhealthy and blocked `depends_on: service_healthy`
-* Fix the Docker Compose example provisioning an SSL cert while connecting over `http://`,
-  and show the bearer token being passed to the client container
+
+### Changes
+
+* Removed experimental support for importing SSL cert/key for ECS Server mode
+* The ECS Server security config moved from `~/.aws-sso/mnt/docker-ecs` to the `ecs/`
+  subdirectory of your config directory (`~/.config/aws-sso/ecs/docker-secret.json`, or
+  `~/.aws-sso/ecs/docker-secret.json` for legacy layouts), and is now named for the
+  subsystem rather than the bind mount.  Any obsolete file at the old path is removed
+  automatically.  Update the bind mount in your `compose.yaml` accordingly
+* The ECS Server container no longer deletes the security config after reading it, and
+  can mount it read-only
+* `aws-sso ecs server --docker` no longer accepts `--disable-auth`/
+  `--disable-ssl` -- the security file is now the sole source of truth for HTTP Auth
+  and SSL/TLS in Docker mode. 
 
 ## [v2.3.2] -- 2026-07-29
 

@@ -31,6 +31,7 @@ import (
 	onepassword "github.com/1password/onepassword-sdk-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"github.com/synfinatic/aws-sso-cli/internal/certutil"
 )
 
 // mockItemsAPI is a minimal in-memory implementation of onePasswordItemsAPI.
@@ -253,42 +254,42 @@ func (suite *OnePasswordSuite) TestEcsBearerToken() {
 	assert.Empty(t, token)
 }
 
-func (suite *OnePasswordSuite) TestEcsSslKeyPair() { //nolint:dupl
+func (suite *OnePasswordSuite) TestEcsCaKeyPair() { //nolint:dupl
 	t := suite.T()
 
-	cert, err := suite.store.GetEcsSslCert()
+	cert, err := suite.store.GetEcsCaCert()
 	assert.NoError(t, err)
 	assert.Empty(t, cert)
 
-	key, err := suite.store.GetEcsSslKey()
+	key, err := suite.store.GetEcsCaKey()
 	assert.NoError(t, err)
 	assert.Empty(t, key)
 
-	certBytes, err := os.ReadFile("../ecs/server/testdata/localhost.crt")
+	ca, err := certutil.GenerateCA()
 	assert.NoError(t, err)
-	keyBytes, err := os.ReadFile("../ecs/server/testdata/localhost.key")
-	assert.NoError(t, err)
+	certBytes := []byte(ca.CertPEM)
+	keyBytes := []byte(ca.KeyPEM)
 
-	assert.NoError(t, suite.store.SaveEcsSslKeyPair(context.Background(), []byte{}, certBytes))
-	assert.NoError(t, suite.store.SaveEcsSslKeyPair(context.Background(), keyBytes, certBytes))
-	assert.Error(t, suite.store.SaveEcsSslKeyPair(context.Background(), keyBytes, keyBytes))
-	assert.Error(t, suite.store.SaveEcsSslKeyPair(context.Background(), certBytes, certBytes))
+	assert.NoError(t, suite.store.SaveEcsCaKeyPair(context.Background(), []byte{}, certBytes))
+	assert.NoError(t, suite.store.SaveEcsCaKeyPair(context.Background(), keyBytes, certBytes))
+	assert.Error(t, suite.store.SaveEcsCaKeyPair(context.Background(), keyBytes, keyBytes))
+	assert.Error(t, suite.store.SaveEcsCaKeyPair(context.Background(), certBytes, certBytes))
 
-	cert, err = suite.store.GetEcsSslCert()
+	cert, err = suite.store.GetEcsCaCert()
 	assert.NoError(t, err)
 	assert.Equal(t, string(certBytes), cert)
 
-	key, err = suite.store.GetEcsSslKey()
+	key, err = suite.store.GetEcsCaKey()
 	assert.NoError(t, err)
 	assert.Equal(t, string(keyBytes), key)
 
-	assert.NoError(t, suite.store.DeleteEcsSslKeyPair(context.Background()))
+	assert.NoError(t, suite.store.DeleteEcsCaKeyPair(context.Background()))
 
-	cert, err = suite.store.GetEcsSslCert()
+	cert, err = suite.store.GetEcsCaCert()
 	assert.NoError(t, err)
 	assert.Empty(t, cert)
 
-	key, err = suite.store.GetEcsSslKey()
+	key, err = suite.store.GetEcsCaKey()
 	assert.NoError(t, err)
 	assert.Empty(t, key)
 }

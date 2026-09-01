@@ -432,6 +432,10 @@ The following environment variables are honored by `aws-sso`:
      `eval --refresh`.
 * `AWS_SSO_FIELD_SORT` -- Used by `list` command to select which field to sort by.
 * `AWS_SSO_FIELD_SORT_REVERSE` -- Used to reverse the `list` sort order.  Set to `1` to enable.
+* `AWS_SSO_ECS_SERVER` -- Used for `--server` with the `ecs list`/`load`/`profile`/`unload`
+     commands.
+* `AWS_SSO_ECS_SECRETS_DIR` -- Environment form of `ecs --secrets-dir`; sets the directory
+     holding the [ECS Server Docker secrets files](ecs-commands.md#ecs-docker-secrets).
 
 The `file` SecureStore will use the `AWS_SSO_FILE_PASSWORD` environment
 variable for the password if it is set. (Not recommended.)

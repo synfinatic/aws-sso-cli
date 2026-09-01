@@ -62,8 +62,8 @@ type StorageData struct {
 	RoleCredentials     map[string]RoleCredentials
 	StaticCredentials   map[string]StaticCredentials
 	EcsBearerToken      string
-	EcsPrivateKey       string
-	EcsCertChain        string
+	EcsCaKey            string
+	EcsCaCert           string
 }
 
 func NewStorageData() StorageData {
@@ -73,8 +73,8 @@ func NewStorageData() StorageData {
 		RoleCredentials:     map[string]RoleCredentials{},
 		StaticCredentials:   map[string]StaticCredentials{},
 		EcsBearerToken:      "",
-		EcsPrivateKey:       "",
-		EcsCertChain:        "",
+		EcsCaKey:            "",
+		EcsCaCert:           "",
 	}
 }
 
@@ -510,33 +510,33 @@ func (kr *KeyringStore) DeleteEcsBearerToken(ctx context.Context) error {
 	return kr.saveStorageData(ctx)
 }
 
-// SaveEcsSslKeyPair stores the private key and certificate chain in the keyring
-func (kr *KeyringStore) SaveEcsSslKeyPair(ctx context.Context, privateKey, certChain []byte) error {
+// SaveEcsCaKeyPair stores the private CA key and certificate in the keyring
+func (kr *KeyringStore) SaveEcsCaKeyPair(ctx context.Context, privateKey, certChain []byte) error {
 	if err := ValidateSSLCertificate(certChain); err != nil {
 		return err
 	}
-	kr.cache.EcsCertChain = string(certChain)
+	kr.cache.EcsCaCert = string(certChain)
 
 	if err := ValidateSSLPrivateKey(privateKey); err != nil {
 		return err
 	}
-	kr.cache.EcsPrivateKey = string(privateKey)
+	kr.cache.EcsCaKey = string(privateKey)
 	return kr.saveStorageData(ctx)
 }
 
-// GetEcsSslCert retrieves the private key and cert chain from the keyring
-func (kr *KeyringStore) GetEcsSslCert() (string, error) {
-	return kr.cache.EcsCertChain, nil
+// GetEcsCaCert retrieves the CA certificate from the keyring
+func (kr *KeyringStore) GetEcsCaCert() (string, error) {
+	return kr.cache.EcsCaCert, nil
 }
 
-// GetEcsSslKey retrieves the private key from the keyring
-func (kr *KeyringStore) GetEcsSslKey() (string, error) {
-	return kr.cache.EcsPrivateKey, nil
+// GetEcsCaKey retrieves the CA private key from the keyring
+func (kr *KeyringStore) GetEcsCaKey() (string, error) {
+	return kr.cache.EcsCaKey, nil
 }
 
-// DeleteEcsSslKeyPair deletes the private key and cert chain from the keyring
-func (kr *KeyringStore) DeleteEcsSslKeyPair(ctx context.Context) error {
-	kr.cache.EcsCertChain = ""
-	kr.cache.EcsPrivateKey = ""
+// DeleteEcsCaKeyPair deletes the CA private key and certificate from the keyring
+func (kr *KeyringStore) DeleteEcsCaKeyPair(ctx context.Context) error {
+	kr.cache.EcsCaCert = ""
+	kr.cache.EcsCaKey = ""
 	return kr.saveStorageData(ctx)
 }

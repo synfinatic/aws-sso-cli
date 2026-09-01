@@ -8,37 +8,40 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSecurityFilePath(t *testing.T) {
-	assert.NotEqual(t, "", SecurityFilePath(WRITE_ONLY))
-	assert.NotEqual(t, "", SecurityFilePath(READ_ONLY))
+func TestContainerSecurityFilePath(t *testing.T) {
+	assert.Equal(t, CONTAINER_NAMED_FILE, ContainerSecurityFilePath())
 
+	TestContainerFilePathOverride = "/somewhere/else"
+	defer func() { TestContainerFilePathOverride = "" }()
+	assert.Equal(t, "/somewhere/else", ContainerSecurityFilePath())
+}
+
+func TestHostSecurityFilePathNoHome(t *testing.T) {
 	home := os.Getenv("HOME")
 	defer os.Setenv("HOME", home)
 	os.Setenv("HOME", "")
-	assert.Panics(t, func() { SecurityFilePath(WRITE_ONLY) })
+
+	// resolving the default location needs a home directory; an explicit
+	// --secrets-dir does not
+	assert.Panics(t, func() { HostSecurityFilePath("") })
+	assert.NotPanics(t, func() { HostSecurityFilePath("/srv/secrets") })
 }
 
-func TestOpenSecurityFile(t *testing.T) {
+func TestOpenContainerSecurityFile(t *testing.T) {
 	tempFile, err := os.CreateTemp("", "security_test")
 	assert.NoError(t, err)
-	testOpenSecurityFilePath = tempFile.Name()
+	TestContainerFilePathOverride = tempFile.Name()
 	defer func() {
-		testOpenSecurityFilePath = ""
+		TestContainerFilePathOverride = ""
 		os.Remove(tempFile.Name()) // nolint:gosec
 	}()
 
-	_, err = OpenSecurityFile(READ_ONLY)
+	f, err := OpenContainerSecurityFile()
 	assert.NoError(t, err)
+	assert.NoError(t, f.Close())
 
-	_, err = OpenSecurityFile(WRITE_ONLY)
-	assert.NoError(t, err)
-
-	testOpenSecurityFilePath = "/dev/null/invalid"
-
-	_, err = OpenSecurityFile(READ_ONLY)
-	assert.Error(t, err)
-
-	_, err = OpenSecurityFile(WRITE_ONLY)
+	TestContainerFilePathOverride = "/dev/null/invalid"
+	_, err = OpenContainerSecurityFile()
 	assert.Error(t, err)
 }
 
@@ -46,7 +49,7 @@ func TestReadWriteSecurityConfig(t *testing.T) {
 	f, err := os.CreateTemp("", "security_test")
 	assert.NoError(t, err)
 
-	assert.NoError(t, WriteSecurityConfig(f, "foo", "bar", "baz"))
+	assert.NoError(t, WriteSecurityConfig(f, "foo", "bar", "baz", true, false))
 	assert.NoError(t, f.Close())
 
 	f, err = os.Open(f.Name()) // nolint:gosec
@@ -58,6 +61,25 @@ func TestReadWriteSecurityConfig(t *testing.T) {
 	assert.Equal(t, "foo", values.PrivateKey)
 	assert.Equal(t, "bar", values.CertChain)
 	assert.Equal(t, "baz", values.BearerToken)
+	assert.True(t, values.DisableSSL)
+	assert.False(t, values.DisableAuth)
+}
+
+func TestReadWriteSecurityConfigDisableAuth(t *testing.T) {
+	f, err := os.CreateTemp("", "security_test")
+	assert.NoError(t, err)
+
+	assert.NoError(t, WriteSecurityConfig(f, "", "", "", false, true))
+	assert.NoError(t, f.Close())
+
+	f, err = os.Open(f.Name()) // nolint:gosec
+	assert.NoError(t, err)
+
+	values, err := ReadSecurityConfig(f)
+	assert.NoError(t, err)
+	assert.NoError(t, f.Close())
+	assert.False(t, values.DisableSSL)
+	assert.True(t, values.DisableAuth)
 }
 
 func TestReadSecurityFailure(t *testing.T) {

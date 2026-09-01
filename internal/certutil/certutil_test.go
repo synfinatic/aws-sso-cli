@@ -1,0 +1,527 @@
+package certutil
+
+/*
+ * AWS SSO CLI
+ * Copyright (c) 2021-2026 Aaron Turner  <synfinatic at gmail dot com>
+ *
+ * This program is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or with the authors permission any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"fmt"
+	"math/big"
+	"net"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestGenerateCA(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	block, _ := pem.Decode([]byte(ca.CertPEM))
+	require.NotNil(t, block)
+	cert, err := x509.ParseCertificate(block.Bytes)
+	require.NoError(t, err)
+
+	assert.True(t, cert.IsCA)
+	assert.True(t, cert.BasicConstraintsValid)
+	assert.NotZero(t, cert.KeyUsage&x509.KeyUsageCertSign)
+	assert.Equal(t, CACommonName, cert.Subject.CommonName)
+	assert.WithinDuration(t, cert.NotBefore.Add(CAValidity), cert.NotAfter, time.Minute)
+
+	keyBlock, _ := pem.Decode([]byte(ca.KeyPEM))
+	require.NotNil(t, keyBlock)
+	rawKey, err := x509.ParsePKCS8PrivateKey(keyBlock.Bytes)
+	require.NoError(t, err)
+	_, ok := rawKey.(*ecdsa.PrivateKey)
+	assert.True(t, ok, "CA private key should be an ECDSA key")
+}
+
+func TestGenerateLeaf_SignedByCA(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	leaf, err := GenerateLeaf(ca)
+	require.NoError(t, err)
+
+	caCert := parsePEMCert(t, ca.CertPEM)
+	leafCert := parsePEMCert(t, leaf.CertPEM)
+
+	pool := x509.NewCertPool()
+	pool.AddCert(caCert)
+
+	_, err = leafCert.Verify(x509.VerifyOptions{
+		Roots:     pool,
+		KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+	})
+	assert.NoError(t, err, "leaf certificate should chain-verify against its issuing CA")
+}
+
+func TestGenerateLeaf_DefaultSANs(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	leaf, err := GenerateLeaf(ca)
+	require.NoError(t, err)
+
+	cert := parsePEMCert(t, leaf.CertPEM)
+
+	assert.Contains(t, cert.DNSNames, "localhost")
+
+	ips := make([]string, len(cert.IPAddresses))
+	for i, ip := range cert.IPAddresses {
+		ips[i] = ip.String()
+	}
+	assert.Contains(t, ips, "127.0.0.1")
+	assert.Contains(t, ips, "::1")
+	assert.Contains(t, ips, "169.254.170.2")
+}
+
+func TestGenerateLeaf_Validity(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	leaf, err := GenerateLeaf(ca)
+	require.NoError(t, err)
+
+	cert := parsePEMCert(t, leaf.CertPEM)
+	assert.WithinDuration(t, cert.NotBefore.Add(LeafValidity), cert.NotAfter, time.Minute)
+}
+
+func TestGenerateLeaf_UntrustedCARejected(t *testing.T) {
+	t.Parallel()
+
+	ca1, err := GenerateCA()
+	require.NoError(t, err)
+	ca2, err := GenerateCA()
+	require.NoError(t, err)
+
+	leaf, err := GenerateLeaf(ca1)
+	require.NoError(t, err)
+
+	leafCert := parsePEMCert(t, leaf.CertPEM)
+	unrelatedCACert := parsePEMCert(t, ca2.CertPEM)
+
+	pool := x509.NewCertPool()
+	pool.AddCert(unrelatedCACert)
+
+	_, err = leafCert.Verify(x509.VerifyOptions{
+		Roots:     pool,
+		KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+	})
+	assert.Error(t, err, "leaf should not verify against an unrelated CA")
+}
+
+func TestFingerprint(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	fp, err := Fingerprint(ca.CertPEM)
+	require.NoError(t, err)
+
+	cert := parsePEMCert(t, ca.CertPEM)
+	sum := sha256.Sum256(cert.Raw)
+	parts := make([]string, 0, len(sum))
+	for _, b := range sum {
+		parts = append(parts, fmt.Sprintf("%02X", b))
+	}
+	expected := strings.Join(parts, ":")
+
+	assert.Equal(t, expected, fp)
+}
+
+func TestGenerateLeaf_InvalidCACert(t *testing.T) {
+	t.Parallel()
+
+	_, err := GenerateLeaf(KeyPair{CertPEM: "not a cert", KeyPEM: "not a key"})
+	assert.Error(t, err)
+}
+
+func TestGenerateLeaf_InvalidCAKeyPEM(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	_, err = GenerateLeaf(KeyPair{CertPEM: ca.CertPEM, KeyPEM: "not a key"})
+	assert.Error(t, err)
+}
+
+func TestGenerateLeaf_UnparsableCAKey(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	badKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: []byte("garbage")})
+	_, err = GenerateLeaf(KeyPair{CertPEM: ca.CertPEM, KeyPEM: string(badKeyPEM)})
+	assert.Error(t, err)
+}
+
+func TestGenerateLeaf_NonECDSACAKey(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	der, err := x509.MarshalPKCS8PrivateKey(rsaKey)
+	require.NoError(t, err)
+	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: der})
+
+	_, err = GenerateLeaf(KeyPair{CertPEM: ca.CertPEM, KeyPEM: string(keyPEM)})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not an ECDSA key")
+}
+
+func TestFingerprint_ValidPEMInvalidDER(t *testing.T) {
+	t.Parallel()
+
+	badCertPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: []byte("garbage")})
+	_, err := Fingerprint(string(badCertPEM))
+	assert.Error(t, err)
+}
+
+func TestNotAfter(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	notAfter, err := NotAfter(ca.CertPEM)
+	require.NoError(t, err)
+
+	cert := parsePEMCert(t, ca.CertPEM)
+	assert.Equal(t, cert.NotAfter, notAfter)
+
+	_, err = NotAfter("not a cert")
+	assert.Error(t, err)
+}
+
+func parsePEMCert(t *testing.T, certPEM string) *x509.Certificate {
+	t.Helper()
+	block, _ := pem.Decode([]byte(certPEM))
+	require.NotNil(t, block)
+	cert, err := x509.ParseCertificate(block.Bytes)
+	require.NoError(t, err)
+	return cert
+}
+
+func TestZeroSecret(t *testing.T) {
+	t.Parallel()
+
+	// Build the string from a freshly-allocated []byte (not a literal) so it
+	// isn't interned/shared. string(b) copies, so we can't observe the
+	// zeroing through b itself -- instead take fresh []byte(s) snapshots
+	// before and after: each snapshot copies whatever s's backing array
+	// holds *at that moment*, so the second one reflects ZeroSecret's edit.
+	b := make([]byte, 32)
+	for i := range b {
+		b[i] = byte(i + 1)
+	}
+	s := string(b)
+
+	before := []byte(s)
+	require.NotZero(t, before[0], "sanity check: string should start non-zero")
+
+	ZeroSecret(s)
+
+	after := []byte(s)
+	for i, v := range after {
+		assert.Zerof(t, v, "byte %d was not zeroed", i)
+	}
+}
+
+func TestZeroSecret_Empty(t *testing.T) {
+	t.Parallel()
+
+	assert.NotPanics(t, func() { ZeroSecret("") })
+}
+
+func TestZeroPrivateKey(t *testing.T) {
+	t.Parallel()
+
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	require.NotZero(t, key.D.Sign()) // nolint:staticcheck
+
+	// Hold onto the scalar's backing word array so we can prove the secret is
+	// actually gone from memory, not merely that the big.Int now reads as
+	// zero. big.Int.SetInt64(0) would satisfy the Sign() check below while
+	// leaving every one of these words intact.
+	words := key.D.Bits() // nolint:staticcheck
+	require.NotEmpty(t, words)
+	before := append([]big.Word{}, words...)
+	require.NotEqual(t, make([]big.Word, len(before)), before)
+
+	zeroPrivateKey(key)
+
+	assert.Zero(t, key.D.Sign()) // nolint:staticcheck
+	assert.Equal(t, make([]big.Word, len(before)), words[:len(before)],
+		"secret scalar must be overwritten in its backing array, not just resliced away")
+}
+
+func TestZeroPrivateKey_Nil(t *testing.T) {
+	t.Parallel()
+
+	assert.NotPanics(t, func() { zeroPrivateKey(nil) })
+}
+
+func TestGenerateCA_NameConstraints(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	cert := parsePEMCert(t, ca.CertPEM)
+
+	require.True(t, cert.PermittedDNSDomainsCritical,
+		"name constraints must be critical so validators cannot silently ignore them")
+	assert.Equal(t, []string{"localhost"}, cert.PermittedDNSDomains)
+
+	// Both constraint types must be present: RFC 5280 leaves a name type
+	// entirely unconstrained when no constraint of that type is given.
+	require.Len(t, cert.PermittedIPRanges, 3)
+	ranges := make([]string, len(cert.PermittedIPRanges))
+	for i, r := range cert.PermittedIPRanges {
+		ranges[i] = r.String()
+	}
+	assert.Contains(t, ranges, "127.0.0.0/8")
+	assert.Contains(t, ranges, "::1/128")
+	assert.Contains(t, ranges, "169.254.170.2/32")
+}
+
+// TestGenerateCA_ConstraintsCoverDefaultSANs guards the invariant called out
+// on permittedDNSDomains: every name GenerateLeaf puts in a leaf must be
+// permitted by the CA that signs it, or the CA cannot sign its own leaves.
+func TestGenerateCA_ConstraintsCoverDefaultSANs(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+	leaf, err := GenerateLeaf(ca)
+	require.NoError(t, err)
+
+	pool := x509.NewCertPool()
+	pool.AddCert(parsePEMCert(t, ca.CertPEM))
+	leafCert := parsePEMCert(t, leaf.CertPEM)
+
+	for _, name := range DefaultDNSNames {
+		_, err := leafCert.Verify(x509.VerifyOptions{
+			Roots: pool, DNSName: name,
+			KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		})
+		assert.NoError(t, err, "default DNS SAN %q must be permitted by the CA", name)
+	}
+	for _, ip := range DefaultIPs {
+		_, err := leafCert.Verify(x509.VerifyOptions{
+			Roots: pool, DNSName: ip.String(),
+			KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		})
+		assert.NoError(t, err, "default IP SAN %q must be permitted by the CA", ip)
+	}
+}
+
+// TestGenerateCA_ConstraintsBlockForeignNames is the point of the name
+// constraints: even holding the CA private key, an attacker cannot mint a
+// certificate this CA is authorized to sign for a name outside the ECS
+// Server's own loopback/ECS endpoints.
+func TestGenerateCA_ConstraintsBlockForeignNames(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	caCert := parsePEMCert(t, ca.CertPEM)
+	_, caKey, err := parseCAKeyPair(ca)
+	require.NoError(t, err)
+
+	pool := x509.NewCertPool()
+	pool.AddCert(caCert)
+
+	tests := []struct {
+		name string
+		dns  []string
+		ips  []net.IP
+	}{
+		{name: "www.google.com", dns: []string{"www.google.com"}},
+		{name: "sts.amazonaws.com", dns: []string{"sts.amazonaws.com"}},
+		{name: "wildcard", dns: []string{"*.internal.corp"}},
+		{name: "public IP", ips: []net.IP{net.ParseIP("8.8.8.8")}},
+		{name: "private LAN IP", ips: []net.IP{net.ParseIP("10.0.0.5")}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+			require.NoError(t, err)
+			serial, err := newSerialNumber()
+			require.NoError(t, err)
+
+			now := time.Now()
+			tmpl := &x509.Certificate{
+				SerialNumber:          serial,
+				Subject:               pkix.Name{CommonName: "forged"},
+				NotBefore:             now.Add(-time.Minute),
+				NotAfter:              now.Add(LeafValidity),
+				KeyUsage:              x509.KeyUsageDigitalSignature,
+				ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+				BasicConstraintsValid: true,
+				DNSNames:              tc.dns,
+				IPAddresses:           tc.ips,
+			}
+			der, err := x509.CreateCertificate(rand.Reader, tmpl, caCert, &key.PublicKey, caKey)
+			require.NoError(t, err, "signing itself is expected to succeed; verification is what must fail")
+
+			forged, err := x509.ParseCertificate(der)
+			require.NoError(t, err)
+
+			verifyName := ""
+			if len(tc.dns) > 0 {
+				verifyName = tc.dns[0]
+			} else {
+				verifyName = tc.ips[0].String()
+			}
+
+			_, err = forged.Verify(x509.VerifyOptions{
+				Roots: pool, DNSName: verifyName,
+				KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+			})
+			require.Error(t, err, "CA must not be authorized to sign for %q", verifyName)
+			assert.Contains(t, err.Error(), "not permitted by any constraint")
+		})
+	}
+}
+
+// signLeafWithNotAfter mints a leaf signed by the given CA with an arbitrary
+// expiration, so VerifyLeafAgainstCA's time-validity behavior can be tested
+// without waiting out LeafValidity.  The SANs match DefaultDNSNames/DefaultIPs
+// so the CA's name constraints permit it.
+func signLeafWithNotAfter(t *testing.T, ca KeyPair, notAfter time.Time) string {
+	t.Helper()
+
+	caCert, caKey, err := parseCAKeyPair(ca)
+	require.NoError(t, err)
+
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	serial, err := newSerialNumber()
+	require.NoError(t, err)
+
+	tmpl := &x509.Certificate{
+		SerialNumber:          serial,
+		Subject:               pkix.Name{CommonName: LeafCommonName},
+		NotBefore:             notAfter.Add(-LeafValidity),
+		NotAfter:              notAfter,
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+		DNSNames:              DefaultDNSNames,
+		IPAddresses:           DefaultIPs,
+	}
+	der, err := x509.CreateCertificate(rand.Reader, tmpl, caCert, &key.PublicKey, caKey)
+	require.NoError(t, err)
+
+	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}))
+}
+
+func TestVerifyLeafAgainstCA(t *testing.T) {
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+	leaf, err := GenerateLeaf(ca)
+	require.NoError(t, err)
+
+	// a second, unrelated CA standing in for a rotation
+	rotated, err := GenerateCA()
+	require.NoError(t, err)
+
+	tests := []struct {
+		name    string
+		leafPEM string
+		caPEM   string
+		errWant string
+	}{
+		{
+			name:    "leaf issued by the CA verifies",
+			leafPEM: leaf.CertPEM,
+			caPEM:   ca.CertPEM,
+		},
+		{
+			name:    "leaf orphaned by a CA rotation does not verify",
+			leafPEM: leaf.CertPEM,
+			caPEM:   rotated.CertPEM,
+			errWant: "signed by unknown authority",
+		},
+		{
+			name:    "unparseable leaf",
+			leafPEM: "not a certificate",
+			caPEM:   ca.CertPEM,
+			errWant: "unable to decode",
+		},
+		{
+			name:    "unparseable CA",
+			leafPEM: leaf.CertPEM,
+			caPEM:   "not a certificate",
+			errWant: "unable to decode",
+		},
+		{
+			name:    "expired leaf",
+			leafPEM: signLeafWithNotAfter(t, ca, time.Now().Add(-time.Hour)),
+			caPEM:   ca.CertPEM,
+			errWant: "expired",
+		},
+		{
+			name:    "not yet valid leaf",
+			leafPEM: signLeafWithNotAfter(t, ca, time.Now().Add(2*LeafValidity)),
+			caPEM:   ca.CertPEM,
+			errWant: "not yet valid",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := VerifyLeafAgainstCA(tt.leafPEM, tt.caPEM)
+			if tt.errWant == "" {
+				assert.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.errWant)
+		})
+	}
+}
