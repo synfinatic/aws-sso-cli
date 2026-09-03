@@ -190,6 +190,15 @@ func Fingerprint(certPEM string) (string, error) {
 	return strings.Join(parts, ":"), nil
 }
 
+// Expiry returns the NotAfter time of a PEM-encoded certificate.
+func Expiry(certPEM string) (time.Time, error) {
+	cert, err := parseCertificate(certPEM)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return cert.NotAfter, nil
+}
+
 // singleHostIPRanges converts each IP into a single-host CIDR (/32 for IPv4,
 // /128 for IPv6) so DefaultIPs can double as the CA's PermittedIPRanges
 // without a separately maintained list.

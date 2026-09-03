@@ -27,11 +27,18 @@ import (
 	"path/filepath"
 
 	// "github.com/davecgh/go-spew/spew"
+	"time"
+
+	"github.com/synfinatic/aws-sso-cli/internal/certutil"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	"github.com/synfinatic/aws-sso-cli/internal/logger"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
 	"github.com/synfinatic/flexlog"
 )
+
+// CertExpiryWarning is how far ahead of a TLS cert's expiration the ECS
+// server starts warning on every credential load.
+const CertExpiryWarning = 5 * 24 * time.Hour
 
 var log flexlog.FlexLogger
 
@@ -124,8 +131,29 @@ func (e *EcsServer) PutSlottedCreds(creds *ecs.ECSClientRequest) error {
 		return fmt.Errorf("expired creds")
 	}
 
+	e.warnIfCertExpiringSoon()
 	e.slottedCreds[creds.ProfileName] = creds
 	return nil
+}
+
+// warnIfCertExpiringSoon logs a warning if the server's TLS cert (if any)
+// expires within CertExpiryWarning.
+func (e *EcsServer) warnIfCertExpiringSoon() {
+	if e.certChain == "" {
+		return
+	}
+
+	notAfter, err := certutil.Expiry(e.certChain)
+	if err != nil {
+		log.Error("unable to check ECS server TLS cert expiry", "error", err.Error())
+		return
+	}
+
+	if remaining := time.Until(notAfter); remaining < CertExpiryWarning {
+		log.Warn("ECS server TLS cert is expiring soon",
+			"expires", notAfter.Format(time.RFC3339),
+			"hint", "run `aws-sso setup ecs ssl --self-signed` to rotate it")
+	}
 }
 
 // ListSlottedCreds returns the list of roles in our slots

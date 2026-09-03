@@ -105,6 +105,9 @@ the leaf is close to expiring (30 days). If you need to force a brand new CA,
 run `--delete` followed by `--self-signed`, which does require repeating the
 trust steps everywhere.
 
+Once the leaf has fewer than 5 days of validity left, `aws-sso ecs server` logs a warning
+every time new IAM role credentials are loaded, as a reminder to rerun `--self-signed`.
+
 Once you have generated the CA/leaf certificate, future invocations of the aws-sso
 ECS Server will automatically disable HTTP and enable HTTPS unless the user specifies
 `--disable-ssl`.
