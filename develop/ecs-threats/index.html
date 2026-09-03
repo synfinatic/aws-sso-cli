@@ -1477,6 +1477,13 @@ be secured as much as possible.  Unfortunately, the
 which impliments this API on <code>localhost</code>.</p>
 <p>But <a href="https://letsencrypt.org/docs/certificates-for-localhost/">public CA's will not create certificates for localhost</a>.</p>
 <h2 id="solution">Solution</h2>
+<p><strong>Note:</strong> <code>aws-sso setup ecs ssl --self-signed</code> (see <a href="../ecs-server/#ecs-server-ssl-certificate">docs/ecs-server.md</a>) already implements a simpler alternative to the
+hosted CSR-signing service proposed below: a private CA generated and stored locally, with
+no account, API key, or public DNS registration required. It works for every AWS SDK except
+Python/the AWS CLI, which is tracked upstream at
+<a href="https://github.com/aws/aws-cli/issues/9016">aws/aws-cli#9016</a>. The hosted service below
+remains a possible future option for zero-touch trust distribution across multiple users or
+machines, which <code>--self-signed</code>'s per-machine private CA does not solve.</p>
 <p>In order to support <code>aws-sso</code> users who wish to run their own endpoint for
 <code>AWS_CONTAINER_CREDENTIALS_FULL_URI</code>, we need to create a new public web service which:</p>
 <hr />

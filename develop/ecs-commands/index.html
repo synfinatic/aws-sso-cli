@@ -1475,17 +1475,18 @@ AWS SDK will require <a href="https://docs.aws.amazon.com/sdkref/latest/guide/fe
 </ul>
 <hr />
 <h4 id="setup-ecs-ssl">setup ecs ssl</h4>
-<p>Configures the SSL Certificate and Private Key to enable SSL/TLS.  Saves the
- SSL certificate and private key to the SecureStore.</p>
-<p><strong>Note:</strong> At this time, this feature is not recommended due to a bug
- in the <a href="https://github.com/boto/boto3/issues/4188">AWS SDK</a>.</p>
+<p>Configures SSL/TLS for the ECS Server using a local, internal CA managed by <code>aws-sso</code>.
+Saves the generated SSL certificate and private key to the SecureStore.</p>
 <p>Flags:</p>
 <ul>
-<li><code>--delete</code> -- Disables SSL and deletes both the SSL certificate and private key from the Secure Store</li>
-<li><code>--print</code> -- Prints the SSL certificate</li>
-<li><code>--certificate</code> -- Path to SSL certificate file in PEM format</li>
-<li><code>--private-key</code> -- Path to SSL private key in PEM format</li>
+<li><code>--self-signed</code> -- Generate (or reuse) a local CA and issue a new leaf certificate for the ECS
+  Server (recommended)</li>
+<li><code>--print-ca</code> -- Print the local self-signed CA certificate in PEM format</li>
+<li><code>--delete</code> -- Disables SSL and deletes both the SSL certificate/key and the local CA from the
+  Secure Store</li>
 </ul>
+<p>To force regeneration of a brand new CA (requiring re-trusting on every client), run
+<code>--delete</code> followed by <code>--self-signed</code>.</p>
 <hr />
 <h3 id="ecs-docker-start">ecs docker start</h3>
 <p>Starts the ECS Server in a Docker container.</p>

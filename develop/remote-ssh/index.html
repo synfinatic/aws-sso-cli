@@ -1302,7 +1302,9 @@ that is protection from someone capturing loopback traffic, which requires <code
 or root on macOS -- and an attacker with that much access has better options available to them.</p>
 <h2 id="on-your-local-system">On your local system</h2>
 <ol>
-<li>Follow the <a href="../ecs-server/#ecs-server-security">directions to enable HTTP Authentication and Encryption</a>.</li>
+<li>Follow the <a href="../ecs-server/#ecs-server-security">directions to enable HTTP Authentication and Encryption</a>.
+   For encryption, <a href="../ecs-server/#ecs-server-ssl-certificate"><code>aws-sso setup ecs ssl --self-signed</code></a>
+   is the easiest way to get a trusted certificate for <code>localhost</code>.</li>
 <li>Start the ECS Server:<ol>
 <li>In a Docker container: <code>aws-sso ecs docker start</code></li>
 <li>Or you can use a <a href="https://www.hostinger.com/tutorials/how-to-install-and-use-linux-screen">screen</a>
