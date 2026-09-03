@@ -37,7 +37,6 @@ type EcsServerCmd struct {
 	// hidden flags are for internal use only when running in a docker container
 	Docker      bool `kong:"hidden"`
 	DisableAuth bool `kong:"help='Disable HTTP Auth for the ECS Server'"`
-	DisableSSL  bool `kong:"help='Disable SSL/TLS for the ECS Server'"`
 }
 
 // AfterApply determines if SSO auth token is required
@@ -98,12 +97,6 @@ func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 		}
 	}
 
-	// Disable SSL, even if configure
-	if ctx.Cli.Ecs.Server.DisableSSL {
-		privateKey = ""
-		certChain = ""
-	}
-
 	if ctx.Cli.Ecs.Server.DisableAuth {
 		bearerToken = ""
 	}
@@ -116,7 +109,7 @@ func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 
 	if privateKey != "" && certChain != "" {
 		log.Info("SSL/TLS: enabled")
-	} else if !ctx.Cli.Ecs.Server.DisableSSL {
+	} else {
 		log.Warn("SSL/TLS: disabled.  Use 'aws-sso setup ecs ssl' to enable")
 	}
 

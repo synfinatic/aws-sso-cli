@@ -49,7 +49,8 @@ func isolateHomeForCaExport(t *testing.T) string {
 }
 
 // TestE2ESetupEcsSSL_SelfSigned exercises the full `setup ecs ssl --self-signed`
-// lifecycle: generate, rerun (CA reused, leaf rotates), --print, --print-ca, and --delete.
+// lifecycle: generate, rerun (CA reused, leaf rotates), --print-ca, --delete
+// (leaf only), and --delete-ca (leaf must already be gone).
 func TestE2ESetupEcsSSL_SelfSigned(t *testing.T) {
 	isolateHomeForCaExport(t)
 
@@ -85,16 +86,23 @@ func TestE2ESetupEcsSSL_SelfSigned(t *testing.T) {
 	assert.Equal(t, caCert2, caOutput,
 		"--print-ca should print the CA certificate PEM and nothing else, not even a trailing newline")
 
-	// --- Delete: --delete clears both CA and leaf ---
+	// --- Delete: --delete clears only the leaf, CA stays intact ---
 	require.NoError(t, (&EcsSSLCmd{Delete: true}).Run(ctx))
 
-	afterCA, err := setup.Store.GetEcsCaCert()
+	afterDeleteCA, err := setup.Store.GetEcsCaCert()
 	require.NoError(t, err)
-	assert.Empty(t, afterCA)
+	assert.NotEmpty(t, afterDeleteCA, "--delete must not remove the CA")
 
-	afterLeaf, err := setup.Store.GetEcsSslCert()
+	afterDeleteLeaf, err := setup.Store.GetEcsSslCert()
 	require.NoError(t, err)
-	assert.Empty(t, afterLeaf)
+	assert.Empty(t, afterDeleteLeaf)
+
+	// --- Delete CA: --delete-ca now succeeds since the leaf is already gone ---
+	require.NoError(t, (&EcsSSLCmd{DeleteCa: true}).Run(ctx))
+
+	afterDeleteCaCA, err := setup.Store.GetEcsCaCert()
+	require.NoError(t, err)
+	assert.Empty(t, afterDeleteCaCA)
 }
 
 // TestE2EEcsServerSSL_SelfSigned_ChainOfTrust proves real chain-of-trust (not

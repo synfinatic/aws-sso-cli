@@ -189,7 +189,11 @@ func TestEcsDockerWriteConfigCmdRun(t *testing.T) {
 	assert.Equal(t, certPEM, sec.CertChain)
 }
 
-func TestEcsDockerWriteConfigCmdRunDisabled(t *testing.T) {
+// TestEcsDockerWriteConfigCmdRunDisableAuth verifies --disable-auth omits the
+// bearer token from the written config, while the SSL cert/key already in the
+// store is still written unconditionally: SSL is no longer independently
+// toggleable here, only controlled by whether a cert is stored.
+func TestEcsDockerWriteConfigCmdRunDisableAuth(t *testing.T) {
 	home := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config", "aws-sso"), 0700))
 	t.Setenv("HOME", home)
@@ -202,7 +206,7 @@ func TestEcsDockerWriteConfigCmdRunDisabled(t *testing.T) {
 	require.NoError(t, store.SaveEcsSslKeyPair(context.Background(), []byte(keyPEM), []byte(certPEM)))
 
 	ctx := &RunContext{Store: store}
-	cc := &EcsDockerWriteConfigCmd{DisableAuth: true, DisableSSL: true}
+	cc := &EcsDockerWriteConfigCmd{DisableAuth: true}
 	require.NoError(t, cc.Run(ctx))
 
 	path := filepath.Join(home, ".aws-sso", "mnt", "docker-ecs")
@@ -212,6 +216,6 @@ func TestEcsDockerWriteConfigCmdRunDisabled(t *testing.T) {
 	sec := &ecs.ECSSecurity{}
 	require.NoError(t, json.Unmarshal(data, sec))
 	assert.Empty(t, sec.BearerToken)
-	assert.Empty(t, sec.PrivateKey)
-	assert.Empty(t, sec.CertChain)
+	assert.Equal(t, keyPEM, sec.PrivateKey)
+	assert.Equal(t, certPEM, sec.CertChain)
 }

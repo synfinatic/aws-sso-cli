@@ -29,6 +29,7 @@ type errStore struct {
 	saveEcsCaKeyPairErr    error
 	saveEcsSslKeyPairErr   error
 	deleteEcsSslKeyPairErr error
+	deleteEcsCaKeyPairErr  error
 }
 
 func (e *errStore) GetEcsSslCert() (string, error) {
@@ -71,6 +72,13 @@ func (e *errStore) DeleteEcsSslKeyPair(ctx context.Context) error {
 		return e.deleteEcsSslKeyPairErr
 	}
 	return e.SecureStorage.DeleteEcsSslKeyPair(ctx)
+}
+
+func (e *errStore) DeleteEcsCaKeyPair(ctx context.Context) error {
+	if e.deleteEcsCaKeyPairErr != nil {
+		return e.deleteEcsCaKeyPairErr
+	}
+	return e.SecureStorage.DeleteEcsCaKeyPair(ctx)
 }
 
 // captureTestStdout runs fn with os.Stdout redirected and returns everything
@@ -134,7 +142,7 @@ func TestEcsSSLCmdRun_NoFlagSet(t *testing.T) {
 	cmd := &EcsSSLCmd{}
 	err := cmd.Run(ctx)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "must specify one of --delete, --print-ca, or --self-signed")
+	assert.Contains(t, err.Error(), "must specify one of --delete, --delete-ca, --print-ca, or --self-signed")
 }
 
 func newSelfSignedTestCtx(t *testing.T) *RunContext {
@@ -211,18 +219,62 @@ func TestEcsSSLCmdRun_SelfSigned_RerunReusesCA(t *testing.T) {
 	assert.NotEqual(t, leafCert1, leafCert2, "leaf certificate should rotate on rerun")
 }
 
-func TestEcsSSLCmdRun_Delete_ClearsCaAndLeaf(t *testing.T) {
+func TestEcsSSLCmdRun_Delete_ClearsLeafOnly(t *testing.T) {
 	ctx := newSelfSignedTestCtx(t)
 	require.NoError(t, (&EcsSSLCmd{SelfSigned: true}).Run(ctx))
 	require.NoError(t, (&EcsSSLCmd{Delete: true}).Run(ctx))
 
+	// --delete must not touch the CA: rotating/removing the leaf shouldn't
+	// force every client to re-trust a new CA.
 	caCert, err := ctx.Store.GetEcsCaCert()
 	require.NoError(t, err)
-	assert.Empty(t, caCert)
+	assert.NotEmpty(t, caCert)
 
 	leafCert, err := ctx.Store.GetEcsSslCert()
 	require.NoError(t, err)
 	assert.Empty(t, leafCert)
+}
+
+func TestEcsSSLCmdRun_DeleteCa_RequiresLeafDeletedFirst(t *testing.T) {
+	ctx := newSelfSignedTestCtx(t)
+	require.NoError(t, (&EcsSSLCmd{SelfSigned: true}).Run(ctx))
+
+	err := (&EcsSSLCmd{DeleteCa: true}).Run(ctx)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "--delete")
+
+	// Nothing should have been deleted.
+	caCert, err := ctx.Store.GetEcsCaCert()
+	require.NoError(t, err)
+	assert.NotEmpty(t, caCert)
+}
+
+func TestEcsSSLCmdRun_DeleteCa_Succeeds(t *testing.T) {
+	ctx := newSelfSignedTestCtx(t)
+	require.NoError(t, (&EcsSSLCmd{SelfSigned: true}).Run(ctx))
+	require.NoError(t, (&EcsSSLCmd{Delete: true}).Run(ctx))
+	require.NoError(t, (&EcsSSLCmd{DeleteCa: true}).Run(ctx))
+
+	caCert, err := ctx.Store.GetEcsCaCert()
+	require.NoError(t, err)
+	assert.Empty(t, caCert)
+}
+
+func TestEcsSSLCmdRun_DeleteCa_GetSslCertError(t *testing.T) {
+	ctx := newSelfSignedTestCtx(t)
+	ctx.Store = &errStore{SecureStorage: ctx.Store, getEcsSslCertErr: errors.New("boom")}
+	err := (&EcsSSLCmd{DeleteCa: true}).Run(ctx)
+	assert.ErrorContains(t, err, "boom")
+}
+
+func TestEcsSSLCmdRun_DeleteCa_DeleteError(t *testing.T) {
+	ctx := newSelfSignedTestCtx(t)
+	require.NoError(t, (&EcsSSLCmd{SelfSigned: true}).Run(ctx))
+	require.NoError(t, (&EcsSSLCmd{Delete: true}).Run(ctx))
+
+	ctx.Store = &errStore{SecureStorage: ctx.Store, deleteEcsCaKeyPairErr: errors.New("boom")}
+	err := (&EcsSSLCmd{DeleteCa: true}).Run(ctx)
+	assert.ErrorContains(t, err, "boom")
 }
 
 func TestEcsSSLCmdRun_PrintCa_NoCa(t *testing.T) {
