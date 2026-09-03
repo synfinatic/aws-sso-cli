@@ -20,19 +20,53 @@ package server
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"fmt"
+	"math/big"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/synfinatic/aws-sso-cli/internal/certutil"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs/client"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
+	testlogger "github.com/synfinatic/flexlog/test"
 	"golang.org/x/net/nettest"
 )
+
+// selfSignedCertPEM generates a self-signed leaf cert PEM with the given
+// NotAfter, for exercising warnIfCertExpiringSoon without waiting on
+// certutil's fixed LeafValidity.
+func selfSignedCertPEM(t *testing.T, notAfter time.Time) string {
+	t.Helper()
+
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject:      pkix.Name{CommonName: "localhost"},
+		NotBefore:    time.Now().Add(-time.Minute),
+		NotAfter:     notAfter,
+	}
+
+	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	require.NoError(t, err)
+
+	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER}))
+}
 
 func newRequest(now time.Time) *ecs.ECSClientRequest {
 	return &ecs.ECSClientRequest{
@@ -192,4 +226,121 @@ func TestServerWithSSL(t *testing.T) {
 	assert.NoError(t, err)
 	// nothing was loaded yet, so 404
 	assert.Equal(t, http.StatusNotFound, res.StatusCode)
+}
+
+func withTestLogger(t *testing.T) *testlogger.TestLogger {
+	t.Helper()
+
+	tLogger := testlogger.NewTestLogger("DEBUG")
+	oldLogger := log.Copy()
+	log = tLogger
+	t.Cleanup(func() {
+		log = oldLogger
+		tLogger.Close()
+	})
+	return tLogger
+}
+
+func TestWarnIfCertExpiringSoon_NoCert(t *testing.T) {
+	tLogger := withTestLogger(t)
+
+	es := &EcsServer{}
+	es.warnIfCertExpiringSoon()
+
+	msg := testlogger.LogMessage{}
+	assert.Error(t, tLogger.GetNext(&msg), "no log messages expected when no cert is configured")
+}
+
+func TestWarnIfCertExpiringSoon_FarFromExpiry(t *testing.T) {
+	tLogger := withTestLogger(t)
+
+	ca, err := certutil.GenerateCA()
+	require.NoError(t, err)
+	leaf, err := certutil.GenerateLeaf(ca)
+	require.NoError(t, err)
+
+	es := &EcsServer{certChain: leaf.CertPEM}
+	es.warnIfCertExpiringSoon()
+
+	msg := testlogger.LogMessage{}
+	assert.Error(t, tLogger.GetNext(&msg), "no log messages expected for a cert that isn't close to expiry")
+}
+
+func TestWarnIfCertExpiringSoon_NearExpiry(t *testing.T) {
+	tLogger := withTestLogger(t)
+
+	certPEM := selfSignedCertPEM(t, time.Now().Add(2*24*time.Hour))
+	es := &EcsServer{certChain: certPEM}
+	es.warnIfCertExpiringSoon()
+
+	msg := testlogger.LogMessage{}
+	require.NoError(t, tLogger.GetNext(&msg))
+	assert.Equal(t, "WARN", strings.TrimSpace(msg.LevelStr))
+	assert.Contains(t, msg.Message, "expiring soon")
+}
+
+func TestWarnIfCertExpiringSoon_InvalidCert(t *testing.T) {
+	tLogger := withTestLogger(t)
+
+	es := &EcsServer{certChain: "not a pem block"}
+	es.warnIfCertExpiringSoon()
+
+	msg := testlogger.LogMessage{}
+	require.NoError(t, tLogger.GetNext(&msg))
+	assert.Equal(t, "ERROR", strings.TrimSpace(msg.LevelStr))
+}
+
+func TestDefaultHandlerPut_WarnsOnNearExpiryCert(t *testing.T) {
+	tLogger := withTestLogger(t)
+
+	certPEM := selfSignedCertPEM(t, time.Now().Add(2*24*time.Hour))
+	dh := DefaultHandler{
+		ecs: &EcsServer{
+			certChain: certPEM,
+			DefaultCreds: &ecs.ECSClientRequest{
+				Creds: &storage.RoleCredentials{},
+			},
+		},
+	}
+	ts := httptest.NewServer(&dh)
+	defer ts.Close()
+
+	cr := ecs.ECSClientRequest{
+		ProfileName: "TestProfileName",
+		Creds: &storage.RoleCredentials{
+			AccountId:       1111111,
+			RoleName:        "myrole",
+			AccessKeyId:     "AccessKeyId",
+			SecretAccessKey: "SecretAccessKey",
+			SessionToken:    "SessionToken",
+			Expiration:      time.Now().Add(90 * time.Second).UnixMilli(),
+		},
+	}
+	url := fmt.Sprintf("%s%s", ts.URL, ecs.DEFAULT_ROUTE)
+	resp, err := submitRequest(t, url, cr)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	msg := testlogger.LogMessage{}
+	require.NoError(t, tLogger.GetNext(&msg))
+	assert.Equal(t, "WARN", strings.TrimSpace(msg.LevelStr))
+	assert.Contains(t, msg.Message, "expiring soon")
+}
+
+func TestPutSlottedCreds_WarnsOnNearExpiryCert(t *testing.T) {
+	tLogger := withTestLogger(t)
+
+	certPEM := selfSignedCertPEM(t, time.Now().Add(2*24*time.Hour))
+	es := &EcsServer{
+		certChain:    certPEM,
+		slottedCreds: map[string]*ecs.ECSClientRequest{},
+	}
+
+	err := es.PutSlottedCreds(newRequest(time.Now().Add(90 * time.Second)))
+	require.NoError(t, err)
+
+	msg := testlogger.LogMessage{}
+	require.NoError(t, tLogger.GetNext(&msg))
+	assert.Equal(t, "WARN", strings.TrimSpace(msg.LevelStr))
+	assert.Contains(t, msg.Message, "expiring soon")
 }

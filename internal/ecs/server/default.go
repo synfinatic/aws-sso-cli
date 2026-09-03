@@ -65,6 +65,7 @@ func (p DefaultHandler) Put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	p.ecs.warnIfCertExpiringSoon()
 	p.ecs.DefaultCreds = creds
 	ecs.OK(w)
 }

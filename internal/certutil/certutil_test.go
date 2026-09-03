@@ -300,6 +300,36 @@ func TestGenerateLeaf_CAKeyNotECDSA(t *testing.T) {
 	assert.ErrorContains(t, err, "CA private key is not an ECDSA key")
 }
 
+func TestExpiry(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+
+	leaf, err := GenerateLeaf(ca)
+	require.NoError(t, err)
+
+	notAfter, err := Expiry(leaf.CertPEM)
+	require.NoError(t, err)
+
+	assert.WithinDuration(t, time.Now().Add(LeafValidity), notAfter, time.Minute)
+}
+
+func TestExpiry_InvalidPEM(t *testing.T) {
+	t.Parallel()
+
+	_, err := Expiry("not a pem block")
+	assert.ErrorContains(t, err, "unable to decode PEM certificate")
+}
+
+func TestExpiry_InvalidCertificateBytes(t *testing.T) {
+	t.Parallel()
+
+	badCertPEM := string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: []byte("not a real cert")}))
+	_, err := Expiry(badCertPEM)
+	assert.ErrorContains(t, err, "unable to parse certificate")
+}
+
 func parsePEMCert(t *testing.T, certPEM string) *x509.Certificate {
 	t.Helper()
 	block, _ := pem.Decode([]byte(certPEM))
