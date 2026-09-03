@@ -527,19 +527,19 @@ profile name if it contains special characters).
 Unlike `aws-sso ecs docker start`, `docker compose` does not automatically provision
 your configured bearer token or SSL certificate/key into the container. If you have
 either configured (via `aws-sso setup ecs auth` and/or `aws-sso setup ecs ssl`), run
-`aws-sso ecs docker write-config` before every `docker compose up` to write whatever is
+`aws-sso ecs docker write-secrets` before every `docker compose up` to write whatever is
 currently in the SecureStore to `~/.aws-sso/mnt/docker-ecs`, which the container reads
 on startup and then deletes. This example intentionally has no SSL certificate
 configured (see [Why SSL is not needed here](#why-ssl-is-not-needed-here) below) — if
 you previously ran `--self-signed`, run `aws-sso setup ecs ssl --delete` first so
-`write-config` has no certificate to pick up.
+`write-secrets` has no certificate to pick up.
 Otherwise the container starts with HTTP Auth disabled, and any client (including
 `aws-sso ecs list`) that still sends a bearer token from a previously configured
 SecureStore will be rejected with a `403 Forbidden`.
 
 ```bash
 export AWS_SSO_ECS_TOKEN='<the token you passed to aws-sso setup ecs auth>'
-aws-sso ecs docker write-config
+aws-sso ecs docker write-secrets
 docker compose up &
 aws-sso ecs load ...
 ```
@@ -563,7 +563,7 @@ it), the container serves HTTPS instead, and `myapp` would have to use
 address_ -- which no public CA will issue.
 
 ```yaml
-# Run `aws-sso ecs docker write-config` before every `docker compose up` to provision
+# Run `aws-sso ecs docker write-secrets` before every `docker compose up` to provision
 # the bearer token into ${HOME}/.aws-sso/mnt/docker-ecs (deleted by the container after
 # it reads it), otherwise this starts with HTTP Auth disabled and any client still
 # sending a configured bearer token will get a 403.
@@ -584,7 +584,7 @@ services:
         ipv4_address: "169.254.170.2"
       default: {}
     volumes:
-      # necessary for the container to read the security config written by write-config
+      # necessary for the container to read the security config written by write-secrets
       - ${HOME}/.aws-sso/mnt:/app/.aws-sso/mnt
     ports:
       # necessary for local management
@@ -601,7 +601,7 @@ services:
     environment:
       AWS_CONTAINER_CREDENTIALS_FULL_URI: http://169.254.170.2:4144
       # must match the token stored via `aws-sso setup ecs auth`.  Omit this (and run
-      # `write-config --disable-auth`) only if you are not using HTTP Auth.
+      # `write-secrets --disable-auth`) only if you are not using HTTP Auth.
       AWS_CONTAINER_AUTHORIZATION_TOKEN: "Bearer ${AWS_SSO_ECS_TOKEN}"
     networks:
       aws-sso-ecs: {}

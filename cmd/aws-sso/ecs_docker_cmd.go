@@ -40,9 +40,9 @@ const (
 )
 
 type EcsDockerCmd struct {
-	Start       EcsDockerStartCmd       `kong:"cmd,help='Start the ECS Server in a Docker container'"`
-	Stop        EcsDockerStopCmd        `kong:"cmd,help='Stop the ECS Server Docker container'"`
-	WriteConfig EcsDockerWriteConfigCmd `kong:"cmd,help='Write the ECS security config file for use with Docker Compose or other non-aws-sso launchers'"`
+	Start        EcsDockerStartCmd        `kong:"cmd,help='Start the ECS Server in a Docker container'"`
+	Stop         EcsDockerStopCmd         `kong:"cmd,help='Stop the ECS Server Docker container'"`
+	WriteSecrets EcsDockerWriteSecretsCmd `kong:"cmd,help='Write the ECS security config file for use with Docker Compose or other non-aws-sso launchers'"`
 }
 
 type EcsDockerStartCmd struct {
@@ -198,12 +198,12 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 	return nil
 }
 
-type EcsDockerWriteConfigCmd struct {
+type EcsDockerWriteSecretsCmd struct {
 	DisableAuth bool `kong:"help='Do not include the HTTP Auth bearer token in the config file'"`
 }
 
 // AfterApply determines if SSO auth token is required
-func (e EcsDockerWriteConfigCmd) AfterApply(runCtx *RunContext) error {
+func (e EcsDockerWriteSecretsCmd) AfterApply(runCtx *RunContext) error {
 	runCtx.Auth = AUTH_SKIP
 	return nil
 }
@@ -213,7 +213,7 @@ func (e EcsDockerWriteConfigCmd) AfterApply(runCtx *RunContext) error {
 // starting or managing a container. This lets tools that own the container lifecycle
 // themselves, like `docker compose`, still provision the bearer token / SSL material
 // that `EcsDockerStartCmd` would otherwise write just before starting the container.
-func (cc *EcsDockerWriteConfigCmd) Run(ctx *RunContext) error {
+func (cc *EcsDockerWriteSecretsCmd) Run(ctx *RunContext) error {
 	var privateKey, certChain, bearerToken string
 	var err error
 

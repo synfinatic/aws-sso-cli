@@ -155,14 +155,14 @@ func TestLoadProfileToEcsServerNotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "nonexistent-profile")
 }
 
-func TestEcsDockerWriteConfigCmdAfterApply(t *testing.T) {
+func TestEcsDockerWriteSecretsCmdAfterApply(t *testing.T) {
 	runCtx := &RunContext{}
-	err := EcsDockerWriteConfigCmd{}.AfterApply(runCtx)
+	err := EcsDockerWriteSecretsCmd{}.AfterApply(runCtx)
 	require.NoError(t, err)
 	assert.Equal(t, AUTH_SKIP, runCtx.Auth)
 }
 
-func TestEcsDockerWriteConfigCmdRun(t *testing.T) {
+func TestEcsDockerWriteSecretsCmdRun(t *testing.T) {
 	home := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config", "aws-sso"), 0700))
 	t.Setenv("HOME", home)
@@ -175,7 +175,7 @@ func TestEcsDockerWriteConfigCmdRun(t *testing.T) {
 	require.NoError(t, store.SaveEcsSslKeyPair(context.Background(), []byte(keyPEM), []byte(certPEM)))
 
 	ctx := &RunContext{Store: store}
-	cc := &EcsDockerWriteConfigCmd{}
+	cc := &EcsDockerWriteSecretsCmd{}
 	require.NoError(t, cc.Run(ctx))
 
 	path := filepath.Join(home, ".aws-sso", "mnt", "docker-ecs")
@@ -189,11 +189,11 @@ func TestEcsDockerWriteConfigCmdRun(t *testing.T) {
 	assert.Equal(t, certPEM, sec.CertChain)
 }
 
-// TestEcsDockerWriteConfigCmdRunDisableAuth verifies --disable-auth omits the
+// TestEcsDockerWriteSecretsCmdRunDisableAuth verifies --disable-auth omits the
 // bearer token from the written config, while the SSL cert/key already in the
 // store is still written unconditionally: SSL is no longer independently
 // toggleable here, only controlled by whether a cert is stored.
-func TestEcsDockerWriteConfigCmdRunDisableAuth(t *testing.T) {
+func TestEcsDockerWriteSecretsCmdRunDisableAuth(t *testing.T) {
 	home := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config", "aws-sso"), 0700))
 	t.Setenv("HOME", home)
@@ -206,7 +206,7 @@ func TestEcsDockerWriteConfigCmdRunDisableAuth(t *testing.T) {
 	require.NoError(t, store.SaveEcsSslKeyPair(context.Background(), []byte(keyPEM), []byte(certPEM)))
 
 	ctx := &RunContext{Store: store}
-	cc := &EcsDockerWriteConfigCmd{DisableAuth: true}
+	cc := &EcsDockerWriteSecretsCmd{DisableAuth: true}
 	require.NoError(t, cc.Run(ctx))
 
 	path := filepath.Join(home, ".aws-sso", "mnt", "docker-ecs")

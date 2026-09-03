@@ -61,7 +61,7 @@ Stops the ECS Server Docker container.
 
 ---
 
-### ecs docker write-config
+### ecs docker write-secrets
 
 Writes the bearer token and/or SSL certificate/private key from the SecureStore
 to the security config file (`~/.aws-sso/mnt/docker-ecs`) read by the ECS Server
