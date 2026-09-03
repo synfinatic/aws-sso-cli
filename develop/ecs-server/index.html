@@ -679,6 +679,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#deleting-the-certificate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deleting the certificate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#deleting-the-ca" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1750,6 +1761,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#deleting-the-certificate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deleting the certificate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#deleting-the-ca" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2248,24 +2270,33 @@ same place <code>aws-sso ecs server</code> reads the leaf cert/key from.</p>
 <p>Rerunning <code>--self-signed</code> reuses the existing CA and only issues a new leaf, so
 after the first run you never need to re-trust anything — just rerun it whenever
 the leaf is close to expiring (30 days). If you need to force a brand new CA,
-run <code>--delete</code> followed by <code>--self-signed</code>, which does require repeating the
-trust steps everywhere.</p>
+run <code>--delete</code>, then <code>--delete-ca</code>, then <code>--self-signed</code>, which does require
+repeating the trust steps everywhere.</p>
 <p>Once the leaf has fewer than 5 days of validity left, <code>aws-sso ecs server</code> logs a warning
 every time new IAM role credentials are loaded, as a reminder to rerun <code>--self-signed</code>.</p>
 <p>Once you have generated the CA/leaf certificate, future invocations of the aws-sso
-ECS Server will automatically disable HTTP and enable HTTPS unless the user specifies
-<code>--disable-ssl</code>.</p>
+ECS Server will automatically disable HTTP and enable HTTPS. There is no flag to
+force HTTP while a certificate is stored — run <code>aws-sso setup ecs ssl --delete</code>
+to disable SSL/TLS instead (see <a href="#deleting-the-certificate">Deleting the certificate</a>
+below).</p>
 <p><strong>Note:</strong> <code>aws-sso</code> provides no command to export the CA private key — <code>--print-ca</code> prints only the
 certificate. How well the key itself is protected is down to your
 <a href="../config/">secure store</a>: the OS keychain and 1Password backends encrypt it, while the
 <code>json</code> store keeps it in plaintext like everything else it holds.</p>
 <p>See <a href="#trusting-the-ca">Trusting the CA</a> below for how to trust this certificate in your OS and
 in each AWS SDK runtime.</p>
-<h3 id="deleting-the-ca">Deleting the CA</h3>
-<p>To remove both the CA and the leaf certificate/key from the secure store:</p>
+<h3 id="deleting-the-certificate">Deleting the certificate</h3>
+<p>To remove just the leaf certificate/key from the secure store, leaving the CA intact:</p>
 <pre><code class="language-bash">aws-sso setup ecs ssl --delete
 </code></pre>
-<p>This will automatically disable HTTPS and re-enable HTTP for the ECS Server.</p>
+<p>This will automatically disable HTTPS and re-enable HTTP for the ECS Server. Since the
+CA is untouched, rerunning <code>--self-signed</code> afterward reissues a leaf from the same CA
+and nothing needs to be re-trusted.</p>
+<h3 id="deleting-the-ca">Deleting the CA</h3>
+<p>The CA can only be deleted once the leaf certificate/key is already gone (run
+<code>--delete</code> first, above):</p>
+<pre><code class="language-bash">aws-sso setup ecs ssl --delete-ca
+</code></pre>
 <p>This only removes the CA from the secure store — anything you trusted it in keeps trusting it.
 See <a href="#untrusting-the-ca">Untrusting the CA</a> below, and note the fingerprint printed by
 <code>--self-signed</code> before you delete the CA: afterwards there is no way to recover it.</p>
@@ -2274,8 +2305,8 @@ See <a href="#untrusting-the-ca">Untrusting the CA</a> below, and note the finge
 <pre><code class="language-bash">aws-sso setup ecs ssl --print-ca &gt; /tmp/ecs-ca.pem
 </code></pre>
 <p>The CA is reused (not regenerated) every time you rerun <code>--self-signed</code>, so you only need to
-export and trust it once per machine/runtime below — only <code>--delete</code> followed by <code>--self-signed</code>
-will require repeating these steps.</p>
+export and trust it once per machine/runtime below — only <code>--delete</code>, <code>--delete-ca</code>, and then
+<code>--self-signed</code> will require repeating these steps.</p>
 <p><code>--self-signed</code> prints the CA's SHA-256 fingerprint on every run. Compare it with the fingerprint
 your OS or runtime trust store shows for <code>aws-sso-cli ECS Server CA</code> to confirm you trusted the
 right certificate, or check the exported file directly:</p>
@@ -2382,14 +2413,15 @@ sudo update-ca-trust extract
 <pre><code class="language-bash">certutil -addstore -user Root %USERPROFILE%\ecs-ca.pem
 </code></pre>
 <h3 id="untrusting-the-ca">Untrusting the CA</h3>
-<p><code>aws-sso setup ecs ssl --delete</code> removes the CA from the secure store, but nothing outside
+<p><code>aws-sso setup ecs ssl --delete-ca</code> removes the CA from the secure store, but nothing outside
 <code>aws-sso</code> learns about that — every copy you installed above stays trusted. Since forcing a new CA
-means <code>--delete</code> followed by <code>--self-signed</code>, rotating without removing the old root leaves a dead
-trusted CA behind each time, so undo the steps above before generating a replacement.</p>
+means <code>--delete</code>, <code>--delete-ca</code>, and then <code>--self-signed</code>, rotating without removing the old root
+leaves a dead trusted CA behind each time, so undo the steps above before generating a
+replacement.</p>
 <p>Every generated CA shares the common name <code>aws-sso-cli ECS Server CA</code>, so if several have already
 accumulated, use the SHA-256 fingerprint to tell them apart. <code>--self-signed</code> prints it, and
 <code>openssl x509 -in /tmp/ecs-ca.pem -noout -fingerprint -sha256</code> reads it back from an exported
-copy — but do that <em>before</em> <code>--delete</code>, which leaves you with no way to work out which stored
+copy — but do that <em>before</em> <code>--delete-ca</code>, which leaves you with no way to work out which stored
 certificate was which.</p>
 <p><strong>macOS</strong> — <code>-t</code> removes the trust setting as well as the certificate itself:</p>
 <pre><code class="language-bash">security delete-certificate -t -c &quot;aws-sso-cli ECS Server CA&quot; ~/Library/Keychains/login.keychain-db
@@ -2520,15 +2552,17 @@ profile name if it contains special characters).</p>
 <p>Unlike <code>aws-sso ecs docker start</code>, <code>docker compose</code> does not automatically provision
 your configured bearer token or SSL certificate/key into the container. If you have
 either configured (via <code>aws-sso setup ecs auth</code> and/or <code>aws-sso setup ecs ssl</code>), run
-<code>aws-sso ecs docker write-config --disable-ssl</code> before every <code>docker compose up</code> to write the
-bearer token to <code>~/.aws-sso/mnt/docker-ecs</code>, which the container reads on startup and then
-deletes.  See <a href="#why-ssl-is-not-needed-here">Why SSL is not needed here</a> below for why this
-example skips the certificate.
+<code>aws-sso ecs docker write-config</code> before every <code>docker compose up</code> to write whatever is
+currently in the SecureStore to <code>~/.aws-sso/mnt/docker-ecs</code>, which the container reads
+on startup and then deletes. This example intentionally has no SSL certificate
+configured (see <a href="#why-ssl-is-not-needed-here">Why SSL is not needed here</a> below) — if
+you previously ran <code>--self-signed</code>, run <code>aws-sso setup ecs ssl --delete</code> first so
+<code>write-config</code> has no certificate to pick up.
 Otherwise the container starts with HTTP Auth disabled, and any client (including
 <code>aws-sso ecs list</code>) that still sends a bearer token from a previously configured
 SecureStore will be rejected with a <code>403 Forbidden</code>.</p>
 <pre><code class="language-bash">export AWS_SSO_ECS_TOKEN='&lt;the token you passed to aws-sso setup ecs auth&gt;'
-aws-sso ecs docker write-config --disable-ssl
+aws-sso ecs docker write-config
 docker compose up &amp;
 aws-sso ecs load ...
 </code></pre>
@@ -2542,13 +2576,14 @@ which is otherwise more setup than needed for a local endpoint (see
 <a href="#ecs-server-ssl-certificate"><code>--self-signed</code></a> if you do want SSL/TLS here — its default SANs
 already include <code>169.254.170.2</code>).
 Credentials stay on the Docker bridge network and access is controlled by the bearer token.</p>
-<p>If you leave off <code>--disable-ssl</code> while you have a certificate loaded, the container serves HTTPS
-instead, and <code>myapp</code> would have to use <code>https://169.254.170.2:4144</code> with a certificate the AWS
-SDK trusts <em>for that IP address</em> -- which no public CA will issue.</p>
-<pre><code class="language-yaml"># Run `aws-sso ecs docker write-config --disable-ssl` before every `docker compose up`
-# to provision the bearer token into ${HOME}/.aws-sso/mnt/docker-ecs (deleted by the
-# container after it reads it), otherwise this starts with HTTP Auth disabled and any
-# client still sending a configured bearer token will get a 403.
+<p>If you still have a certificate loaded (run <code>aws-sso setup ecs ssl --delete</code> to remove
+it), the container serves HTTPS instead, and <code>myapp</code> would have to use
+<code>https://169.254.170.2:4144</code> with a certificate the AWS SDK trusts <em>for that IP
+address</em> -- which no public CA will issue.</p>
+<pre><code class="language-yaml"># Run `aws-sso ecs docker write-config` before every `docker compose up` to provision
+# the bearer token into ${HOME}/.aws-sso/mnt/docker-ecs (deleted by the container after
+# it reads it), otherwise this starts with HTTP Auth disabled and any client still
+# sending a configured bearer token will get a 403.
 networks:
   aws-sso-ecs:
     driver: bridge

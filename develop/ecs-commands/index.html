@@ -1482,18 +1482,18 @@ Saves the generated SSL certificate and private key to the SecureStore.</p>
 <li><code>--self-signed</code> -- Generate (or reuse) a local CA and issue a new leaf certificate for the ECS
   Server (recommended)</li>
 <li><code>--print-ca</code> -- Print the local self-signed CA certificate in PEM format</li>
-<li><code>--delete</code> -- Disables SSL and deletes both the SSL certificate/key and the local CA from the
-  Secure Store</li>
+<li><code>--delete</code> -- Deletes the current SSL leaf certificate/key from the Secure Store</li>
+<li><code>--delete-ca</code> -- Deletes the local CA from the Secure Store; requires the SSL leaf
+  certificate/key to already be deleted with <code>--delete</code></li>
 </ul>
 <p>To force regeneration of a brand new CA (requiring re-trusting on every client), run
-<code>--delete</code> followed by <code>--self-signed</code>.</p>
+<code>--delete</code>, then <code>--delete-ca</code>, then <code>--self-signed</code>.</p>
 <hr />
 <h3 id="ecs-docker-start">ecs docker start</h3>
 <p>Starts the ECS Server in a Docker container.</p>
 <p>Flags:</p>
 <ul>
 <li><code>--disable-auth</code> -- Disables HTTP Auth, even if a bearer token is available</li>
-<li><code>--disable-ssl</code> -- Disables SSL/TLS, even if a certificate and private key are available.</li>
 <li><code>--bind-ip</code> -- IP address to bind the service to.  (default 127.0.0.1)</li>
 <li><code>--port</code> -- Port to listen on.  (default 4144)</li>
 <li><code>--image</code> -- Docker image to use.  (default <code>synfinatic/aws-sso-cli-ecs-version</code>)</li>
@@ -1514,7 +1514,6 @@ once read, so re-run this command before every <code>docker compose up</code>.</
 <p>Flags:</p>
 <ul>
 <li><code>--disable-auth</code> -- Do not include the HTTP Auth bearer token in the config file</li>
-<li><code>--disable-ssl</code> -- Do not include the SSL cert/key in the config file</li>
 </ul>
 <hr />
 <h3 id="ecs-list">ecs list</h3>
@@ -1551,7 +1550,6 @@ would like to load multiple roles, specify <code>--slotted</code> and the role w
 <p>Flags:</p>
 <ul>
 <li><code>--disable-auth</code> -- Disables HTTP Authentication, even if a Bearer Token is available</li>
-<li><code>--disable-ssl</code> -- Disables SSL/TLS, even if a certificate and private key are available</li>
 </ul>
 <hr />
 <h3 id="ecs-unload">ecs unload</h3>
