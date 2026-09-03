@@ -8,7 +8,7 @@
 * Add `setup ecs ssl --self-signed` to create a self-signed CA and leaf cert for the ECS Server,
   scoped so it can't sign for other hosts; prints the CA's SHA-256 fingerprint for verification
 * Add `login --force` to start a new SSO session, resetting its duration #1455
-* Add `ecs docker write-config`
+* Add `ecs docker write-secrets`
 * The ECS Server now logs a warning whenever IAM role credentials are loaded if its
   TLS cert has fewer than 5 days of validity left
 
@@ -32,7 +32,7 @@
   self-signed CA (`--self-signed`) is supported now
 * `setup ecs ssl --delete` now only deletes the SSL leaf cert/key; add `setup ecs ssl
   --delete-ca` to delete the CA, which requires the leaf to already be deleted
-* Remove `ecs server --disable-ssl`, `ecs docker start --disable-ssl`, and `ecs docker write-config
+* Remove `ecs server --disable-ssl`, `ecs docker start --disable-ssl`, and `ecs docker write-secrets
   --disable-ssl` -- SSL is now controlled by whether a certificate is stored
 
 ## [v2.3.2] -- 2026-07-29
