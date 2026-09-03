@@ -33,6 +33,11 @@
 
 * Remove `setup ecs ssl --certificate`, `--private-key`, `--print`; only the internal
   self-signed CA (`--self-signed`) is supported now
+* `setup ecs ssl --delete` now only deletes the SSL leaf cert/key; add `setup ecs ssl
+  --delete-ca` to delete the CA, which requires the leaf to already be deleted
+* Remove `ecs server --disable-ssl`, `ecs docker start --disable-ssl`, and `ecs docker
+  write-config --disable-ssl` -- SSL is now controlled purely by whether a certificate
+  is stored (`setup ecs ssl --delete`/`--self-signed`)
 
 ## [v2.3.2] -- 2026-07-29
 

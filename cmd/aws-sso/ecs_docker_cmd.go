@@ -47,7 +47,6 @@ type EcsDockerCmd struct {
 
 type EcsDockerStartCmd struct {
 	DisableAuth bool   `kong:"help='Disable HTTP Auth for the ECS Docker Server'"`
-	DisableSSL  bool   `kong:"help='Disable SSL/TLS for the ECS Docker Server'"`
 	BindIP      string `kong:"help='Host IP address to bind to the ECS Server',default='127.0.0.1'"`
 	Port        string `kong:"help='Host port to bind to the ECS Server',default='4144'"`
 	Image       string `kong:"help='ECS Server docker image',default='synfinatic/aws-sso-cli-ecs-server'"`
@@ -74,15 +73,13 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 
 	var privateKey, certChain, bearerToken string
 
-	if !ctx.Cli.Ecs.Docker.Start.DisableSSL {
-		privateKey, err = ctx.Store.GetEcsSslKey()
-		if err != nil {
-			return err
-		}
-		certChain, err = ctx.Store.GetEcsSslCert()
-		if err != nil {
-			return err
-		}
+	privateKey, err = ctx.Store.GetEcsSslKey()
+	if err != nil {
+		return err
+	}
+	certChain, err = ctx.Store.GetEcsSslCert()
+	if err != nil {
+		return err
 	}
 
 	if !ctx.Cli.Ecs.Docker.Start.DisableAuth {
@@ -174,7 +171,7 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 		// Use http when no cert chain is configured — the server requires both privateKey
 		// and certChain to enable TLS; certChain alone is not sufficient.
 		proto := "http"
-		if !cc.DisableSSL && privateKey != "" && certChain != "" {
+		if privateKey != "" && certChain != "" {
 			proto = "https"
 		}
 		serverAddr := fmt.Sprintf("%s:%s", cc.BindIP, cc.Port)
@@ -203,7 +200,6 @@ func (cc *EcsDockerStartCmd) Run(ctx *RunContext) error {
 
 type EcsDockerWriteConfigCmd struct {
 	DisableAuth bool `kong:"help='Do not include the HTTP Auth bearer token in the config file'"`
-	DisableSSL  bool `kong:"help='Do not include the SSL cert/key in the config file'"`
 }
 
 // AfterApply determines if SSO auth token is required
@@ -221,13 +217,11 @@ func (cc *EcsDockerWriteConfigCmd) Run(ctx *RunContext) error {
 	var privateKey, certChain, bearerToken string
 	var err error
 
-	if !cc.DisableSSL {
-		if privateKey, err = ctx.Store.GetEcsSslKey(); err != nil {
-			return err
-		}
-		if certChain, err = ctx.Store.GetEcsSslCert(); err != nil {
-			return err
-		}
+	if privateKey, err = ctx.Store.GetEcsSslKey(); err != nil {
+		return err
+	}
+	if certChain, err = ctx.Store.GetEcsSslCert(); err != nil {
+		return err
 	}
 
 	if !cc.DisableAuth {

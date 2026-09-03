@@ -409,7 +409,6 @@ func TestE2EEcsServerRun(t *testing.T) {
 		BindIP:      "127.0.0.1",
 		Port:        port,
 		DisableAuth: true,
-		DisableSSL:  true,
 	}
 	cc := &ctx.Cli.Ecs.Server
 
@@ -454,7 +453,6 @@ func TestE2EEcsServerRunWithDefault(t *testing.T) {
 		BindIP:      "127.0.0.1",
 		Port:        port,
 		DisableAuth: true,
-		DisableSSL:  true,
 		Default:     "123456789012:ReadOnly",
 	}
 	cc := &ctx.Cli.Ecs.Server
@@ -513,9 +511,8 @@ func TestE2EEcsServerRunWithAuth(t *testing.T) {
 		Ctx:      cctx,
 	}
 	ctx.Cli.Ecs.Server = EcsServerCmd{
-		BindIP:     "127.0.0.1",
-		Port:       port,
-		DisableSSL: true,
+		BindIP: "127.0.0.1",
+		Port:   port,
 		// DisableAuth is false: bearer token from store will be enforced.
 	}
 	cc := &ctx.Cli.Ecs.Server

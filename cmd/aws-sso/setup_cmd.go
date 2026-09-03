@@ -71,7 +71,8 @@ func (cc *EcsAuthCmd) Run(ctx *RunContext) error {
 const EcsCaTrustDocsURL = "https://github.com/synfinatic/aws-sso-cli/blob/main/docs/ecs-server.md#trusting-the-ca"
 
 type EcsSSLCmd struct {
-	Delete     bool `kong:"short=d,help='Disable SSL and delete the current SSL cert/key and CA',xor='flag'"`
+	Delete     bool `kong:"short=d,help='Delete the current SSL leaf cert/key',xor='flag'"`
+	DeleteCa   bool `kong:"help='Delete the local CA (requires the SSL cert to already be deleted)',xor='flag'"`
 	PrintCa    bool `kong:"help='Print the local self-signed CA certificate in PEM format',xor='flag'"`
 	SelfSigned bool `kong:"help='Generate (or reuse) a local CA and issue a new leaf certificate for the ECS Server',xor='flag'"`
 }
@@ -85,10 +86,10 @@ func (e EcsSSLCmd) AfterApply(runCtx *RunContext) error {
 func (cc *EcsSSLCmd) Run(ctx *RunContext) error {
 	switch {
 	case cc.Delete:
-		if err := ctx.Store.DeleteEcsSslKeyPair(ctx.Ctx); err != nil {
-			return err
-		}
-		return ctx.Store.DeleteEcsCaKeyPair(ctx.Ctx)
+		return ctx.Store.DeleteEcsSslKeyPair(ctx.Ctx)
+
+	case cc.DeleteCa:
+		return cc.runDeleteCa(ctx)
 
 	case cc.PrintCa:
 		caCert, err := ctx.Store.GetEcsCaCert()
@@ -107,8 +108,23 @@ func (cc *EcsSSLCmd) Run(ctx *RunContext) error {
 		return cc.runSelfSigned(ctx)
 
 	default:
-		return fmt.Errorf("must specify one of --delete, --print-ca, or --self-signed")
+		return fmt.Errorf("must specify one of --delete, --delete-ca, --print-ca, or --self-signed")
 	}
+}
+
+// runDeleteCa deletes the local CA, but only once the leaf cert it signed has
+// already been deleted. Deleting the CA out from under a live leaf can't be
+// undone, so requiring the leaf to go first forces that destructive step to be
+// explicit rather than implicit.
+func (cc *EcsSSLCmd) runDeleteCa(ctx *RunContext) error {
+	sslCert, err := ctx.Store.GetEcsSslCert()
+	if err != nil {
+		return err
+	}
+	if sslCert != "" {
+		return fmt.Errorf("the SSL cert must be deleted first; run 'aws-sso setup ecs ssl --delete' before --delete-ca")
+	}
+	return ctx.Store.DeleteEcsCaKeyPair(ctx.Ctx)
 }
 
 // runSelfSigned reuses the existing local CA (generating one if none exists

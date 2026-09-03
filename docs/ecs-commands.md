@@ -32,11 +32,12 @@ Flags:
 * `--self-signed` -- Generate (or reuse) a local CA and issue a new leaf certificate for the ECS
   Server (recommended)
 * `--print-ca` -- Print the local self-signed CA certificate in PEM format
-* `--delete` -- Disables SSL and deletes both the SSL certificate/key and the local CA from the
-  Secure Store
+* `--delete` -- Deletes the current SSL leaf certificate/key from the Secure Store
+* `--delete-ca` -- Deletes the local CA from the Secure Store; requires the SSL leaf
+  certificate/key to already be deleted with `--delete`
 
 To force regeneration of a brand new CA (requiring re-trusting on every client), run
-`--delete` followed by `--self-signed`.
+`--delete`, then `--delete-ca`, then `--self-signed`.
 
 ---
 
@@ -47,7 +48,6 @@ Starts the ECS Server in a Docker container.
 Flags:
 
 * `--disable-auth` -- Disables HTTP Auth, even if a bearer token is available
-* `--disable-ssl` -- Disables SSL/TLS, even if a certificate and private key are available.
 * `--bind-ip` -- IP address to bind the service to.  (default 127.0.0.1)
 * `--port` -- Port to listen on.  (default 4144)
 * `--image` -- Docker image to use.  (default `synfinatic/aws-sso-cli-ecs-version`)
@@ -74,7 +74,6 @@ once read, so re-run this command before every `docker compose up`.
 Flags:
 
 * `--disable-auth` -- Do not include the HTTP Auth bearer token in the config file
-* `--disable-ssl` -- Do not include the SSL cert/key in the config file
 
 ---
 
@@ -125,7 +124,6 @@ Starts the ECS Server in the foreground.
 Flags:
 
 * `--disable-auth` -- Disables HTTP Authentication, even if a Bearer Token is available
-* `--disable-ssl` -- Disables SSL/TLS, even if a certificate and private key are available
 
 ---
 
