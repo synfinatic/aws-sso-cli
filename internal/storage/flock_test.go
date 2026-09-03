@@ -63,9 +63,8 @@ func TestFlockBlockerWithCtx(t *testing.T) {
 	})
 
 	t.Run("expired deadline returns error wrapping context.DeadlineExceeded", func(t *testing.T) {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Millisecond))
 		defer cancel()
-		time.Sleep(5 * time.Millisecond)
 		blocker := FlockBlockerWithCtx(ctx)
 		err := blocker()
 		assert.Error(t, err)

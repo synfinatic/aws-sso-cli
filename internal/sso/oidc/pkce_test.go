@@ -183,7 +183,7 @@ func TestWaitForPKCECallback(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		client := NewAWSWithAPI(&mockOIDCAPI{})
-		redirectURI := testPKCERedirectURI(t)
+		ln, redirectURI := testPKCEListener(t)
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
@@ -193,6 +193,7 @@ func TestWaitForPKCECallback(t *testing.T) {
 			callback, err := client.WaitForPKCECallback(ctx, WaitForPKCECallbackInput{
 				RedirectURI:   redirectURI,
 				ExpectedState: "expected-state",
+				Listener:      ln,
 			})
 			if err != nil {
 				errCh <- err
@@ -200,8 +201,6 @@ func TestWaitForPKCECallback(t *testing.T) {
 			}
 			resultCh <- callback
 		}()
-
-		waitForPKCEListener(t, redirectURI)
 
 		resp, err := http.Get(fmt.Sprintf("%s?code=auth-code&state=expected-state", redirectURI))
 		assert.NoError(t, err)
@@ -233,12 +232,10 @@ func TestWaitForPKCECallback(t *testing.T) {
 
 	t.Run("redirect uri without path exercises default path", func(t *testing.T) {
 		client := NewAWSWithAPI(&mockOIDCAPI{})
-		// Allocate a free port, then use a redirect URI with no path so path defaults to "/"
+		// Redirect URI with no path so path defaults to "/"
 		ln, err := net.Listen("tcp", "127.0.0.1:0")
 		assert.NoError(t, err)
-		port := ln.Addr().(*net.TCPAddr).Port
-		_ = ln.Close()
-		redirectURI := fmt.Sprintf("http://127.0.0.1:%d", port)
+		redirectURI := fmt.Sprintf("http://%s", ln.Addr().String())
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
@@ -249,6 +246,7 @@ func TestWaitForPKCECallback(t *testing.T) {
 			callback, err := client.WaitForPKCECallback(ctx, WaitForPKCECallbackInput{
 				RedirectURI:   redirectURI,
 				ExpectedState: "my-state",
+				Listener:      ln,
 			})
 			if err != nil {
 				errCh <- err
@@ -256,8 +254,6 @@ func TestWaitForPKCECallback(t *testing.T) {
 			}
 			resultCh <- callback
 		}()
-
-		waitForPKCEListener(t, redirectURI+"/")
 
 		resp, err := http.Get(fmt.Sprintf("%s/?code=my-code&state=my-state", redirectURI))
 		assert.NoError(t, err)
@@ -277,7 +273,7 @@ func TestWaitForPKCECallback(t *testing.T) {
 
 	t.Run("context canceled before callback", func(t *testing.T) {
 		client := NewAWSWithAPI(&mockOIDCAPI{})
-		redirectURI := testPKCERedirectURI(t)
+		ln, redirectURI := testPKCEListener(t)
 		ctx, cancel := context.WithCancel(context.Background())
 
 		errCh := make(chan error, 1)
@@ -285,11 +281,11 @@ func TestWaitForPKCECallback(t *testing.T) {
 			_, err := client.WaitForPKCECallback(ctx, WaitForPKCECallbackInput{
 				RedirectURI:   redirectURI,
 				ExpectedState: "expected-state",
+				Listener:      ln,
 			})
 			errCh <- err
 		}()
 
-		waitForPKCEListener(t, redirectURI)
 		cancel()
 
 		select {
@@ -328,8 +324,6 @@ func TestWaitForPKCECallback(t *testing.T) {
 			}
 			resultCh <- callback
 		}()
-
-		waitForPKCEListener(t, redirectURI)
 
 		// Bounded client so a regression (rebinding the held port) fails fast
 		// instead of blocking on a socket whose server never starts.
@@ -395,31 +389,15 @@ func TestValidatePKCEState(t *testing.T) {
 	assert.Contains(t, err.Error(), "state mismatch")
 }
 
-func testPKCERedirectURI(t *testing.T) string {
+// testPKCEListener binds a TCP listener synchronously and returns it along with the
+// callback redirect URI derived from its address, so the caller can pass it into
+// WaitForPKCECallbackInput.Listener -- the port is guaranteed open before any request
+// is issued, with no need to poll for the server to start.
+func testPKCEListener(t *testing.T) (net.Listener, string) {
 	t.Helper()
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	assert.NoError(t, err)
-	addr := listener.Addr().String()
-	_ = listener.Close()
-	return fmt.Sprintf("http://%s/callback", addr)
-}
-
-func waitForPKCEListener(t *testing.T, redirectURI string) {
-	t.Helper()
-	u, err := url.Parse(redirectURI)
-	assert.NoError(t, err)
-
-	deadline := time.Now().Add(2 * time.Second)
-	for time.Now().Before(deadline) {
-		conn, dialErr := net.DialTimeout("tcp", u.Host, 50*time.Millisecond)
-		if dialErr == nil {
-			_ = conn.Close()
-			return
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
-
-	t.Fatalf("pkce listener did not start for %s", redirectURI)
+	return listener, fmt.Sprintf("http://%s/callback", listener.Addr().String())
 }
 
 // pkceCallbackError starts a WaitForPKCECallback listener, sends an HTTP GET with
@@ -427,7 +405,7 @@ func waitForPKCEListener(t *testing.T, redirectURI string) {
 func pkceCallbackError(t *testing.T, expectedState, query string) error {
 	t.Helper()
 	client := NewAWSWithAPI(&mockOIDCAPI{})
-	redirectURI := testPKCERedirectURI(t)
+	ln, redirectURI := testPKCEListener(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -436,11 +414,10 @@ func pkceCallbackError(t *testing.T, expectedState, query string) error {
 		_, err := client.WaitForPKCECallback(ctx, WaitForPKCECallbackInput{
 			RedirectURI:   redirectURI,
 			ExpectedState: expectedState,
+			Listener:      ln,
 		})
 		errCh <- err
 	}()
-
-	waitForPKCEListener(t, redirectURI)
 
 	resp, err := http.Get(redirectURI + query) //nolint:noctx
 	assert.NoError(t, err)

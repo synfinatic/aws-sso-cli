@@ -72,16 +72,19 @@ func TestAccountIDUnmarshalText(t *testing.T) {
 // channel) stop() is a no-op for the exit path.
 func TestWatchSignalsCleanStopDoesNotExit(t *testing.T) {
 	orig := osExit
-	var exited int32
-	osExit = func(int) { atomic.StoreInt32(&exited, 1) }
+	exitCalled := make(chan struct{})
+	osExit = func(int) { close(exitCalled) }
 	t.Cleanup(func() { osExit = orig })
 
 	_, stop := watchSignals()
-	stop()                             // normal, successful-exit path
-	time.Sleep(100 * time.Millisecond) // give the goroutine time to (wrongly) fire
+	stop() // normal, successful-exit path
 
-	assert.Equal(t, int32(0), atomic.LoadInt32(&exited),
-		"a clean stop() must not call os.Exit -- would break credential_process")
+	select {
+	case <-exitCalled:
+		t.Fatal("a clean stop() must not call os.Exit -- would break credential_process")
+	case <-time.After(100 * time.Millisecond):
+		// the goroutine had its chance to (wrongly) fire and didn't -- pass
+	}
 }
 
 // TestHardExitOnSignalExitsOnSignal verifies the intended behaviour from #1379: an actual
