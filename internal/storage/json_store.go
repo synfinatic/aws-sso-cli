@@ -42,6 +42,8 @@ type JsonStore struct {
 	EcsBearerToken      string                         `json:"EcsBearerToken,omitempty"`
 	EcsPrivateKey       string                         `json:"EcsPrivateKey,omitempty"`
 	EcsCertChain        string                         `json:"EcsCertChain,omitempty"`
+	EcsCaKey            string                         `json:"EcsCaKey,omitempty"`
+	EcsCaCert           string                         `json:"EcsCaCert,omitempty"`
 }
 
 // OpenJsonStore opens our insecure JSON storage backend
@@ -57,6 +59,8 @@ func OpenJsonStore(ctx context.Context, filename string) (SecureStorage, error) 
 		EcsBearerToken:      "",
 		EcsPrivateKey:       "",
 		EcsCertChain:        "",
+		EcsCaKey:            "",
+		EcsCaCert:           "",
 	}
 
 	lockCtx, cancel := context.WithTimeout(ctx, flockWaitTimeout)
@@ -241,14 +245,17 @@ func (jc *JsonStore) DeleteEcsBearerToken(ctx context.Context) error {
 
 // SaveEcsSslKeyPair stores the SSL private key and certificate chain in the json file
 func (jc *JsonStore) SaveEcsSslKeyPair(ctx context.Context, privateKey, certChain []byte) error {
+	// Validate both halves before storing either: a save that returns an error
+	// must not leave the cert behind in memory, where it would be readable by
+	// this process but was never written to the file.
 	if err := ValidateSSLCertificate(certChain); err != nil {
 		return err
 	}
-	jc.EcsCertChain = string(certChain)
-
 	if err := ValidateSSLPrivateKey(privateKey); err != nil {
 		return err
 	}
+
+	jc.EcsCertChain = string(certChain)
 	jc.EcsPrivateKey = string(privateKey)
 	return jc.save(ctx)
 }
@@ -267,5 +274,37 @@ func (jc *JsonStore) GetEcsSslKey() (string, error) {
 func (jc *JsonStore) DeleteEcsSslKeyPair(ctx context.Context) error {
 	jc.EcsPrivateKey = ""
 	jc.EcsCertChain = ""
+	return jc.save(ctx)
+}
+
+// SaveEcsCaKeyPair stores the CA private key and certificate in the json file
+func (jc *JsonStore) SaveEcsCaKeyPair(ctx context.Context, privateKey, certChain []byte) error {
+	// see SaveEcsSslKeyPair: validate both halves before storing either.
+	if err := ValidateSSLCertificate(certChain); err != nil {
+		return err
+	}
+	if err := ValidateSSLPrivateKey(privateKey); err != nil {
+		return err
+	}
+
+	jc.EcsCaCert = string(certChain)
+	jc.EcsCaKey = string(privateKey)
+	return jc.save(ctx)
+}
+
+// GetEcsCaCert retrieves the CA certificate from the json file
+func (jc *JsonStore) GetEcsCaCert() (string, error) {
+	return jc.EcsCaCert, nil
+}
+
+// GetEcsCaKey retrieves the CA private key from the json file
+func (jc *JsonStore) GetEcsCaKey() (string, error) {
+	return jc.EcsCaKey, nil
+}
+
+// DeleteEcsCaKeyPair deletes the CA private key and certificate from the json file
+func (jc *JsonStore) DeleteEcsCaKeyPair(ctx context.Context) error {
+	jc.EcsCaKey = ""
+	jc.EcsCaCert = ""
 	return jc.save(ctx)
 }

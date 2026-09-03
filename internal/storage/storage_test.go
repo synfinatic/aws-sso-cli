@@ -278,6 +278,12 @@ func TestValidateSSLCertificate(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestValidateSSLCertificate_NotPEM(t *testing.T) {
+	t.Parallel()
+	err := ValidateSSLCertificate([]byte("not a pem block"))
+	assert.ErrorContains(t, err, "not a valid certificate")
+}
+
 func TestValidateSSLPrivateKey(t *testing.T) {
 	t.Parallel()
 	key, err := os.ReadFile("../ecs/server/testdata/localhost.key")
@@ -291,4 +297,10 @@ func TestValidateSSLPrivateKey(t *testing.T) {
 
 	err = ValidateSSLPrivateKey(key)
 	assert.Error(t, err)
+}
+
+func TestValidateSSLPrivateKey_NotPEM(t *testing.T) {
+	t.Parallel()
+	err := ValidateSSLPrivateKey([]byte("not a pem block"))
+	assert.ErrorContains(t, err, "not a valid private key")
 }

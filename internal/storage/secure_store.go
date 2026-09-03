@@ -54,4 +54,10 @@ type SecureStorage interface {
 	DeleteEcsSslKeyPair(ctx context.Context) error
 	GetEcsSslCert() (string, error)
 	GetEcsSslKey() (string, error)
+
+	// ECS Server private CA (used only by `setup ecs ssl --self-signed`)
+	SaveEcsCaKeyPair(ctx context.Context, privateKey []byte, certChain []byte) error
+	DeleteEcsCaKeyPair(ctx context.Context) error
+	GetEcsCaCert() (string, error)
+	GetEcsCaKey() (string, error)
 }

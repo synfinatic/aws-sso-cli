@@ -337,10 +337,6 @@ func parseArgsFrom(ctx *RunContext, args []string) sso.OverrideSettings {
 			Title: "Commands requiring login:",
 			Key:   "login-required",
 		},
-		{
-			Title: "Add SSL Certificate/Key:",
-			Key:   "add-ssl",
-		},
 	}
 
 	cli := ctx.Cli

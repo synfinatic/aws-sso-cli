@@ -18,6 +18,15 @@ https://letsencrypt.org/docs/certificates-for-localhost/).
 
 ## Solution
 
+**Note:** `aws-sso setup ecs ssl --self-signed` (see [docs/ecs-server.md](
+ecs-server.md#ecs-server-ssl-certificate)) already implements a simpler alternative to the
+hosted CSR-signing service proposed below: a private CA generated and stored locally, with
+no account, API key, or public DNS registration required. It works for every AWS SDK except
+Python/the AWS CLI, which is tracked upstream at
+[aws/aws-cli#9016](https://github.com/aws/aws-cli/issues/9016). The hosted service below
+remains a possible future option for zero-touch trust distribution across multiple users or
+machines, which `--self-signed`'s per-machine private CA does not solve.
+
 In order to support `aws-sso` users who wish to run their own endpoint for
 `AWS_CONTAINER_CREDENTIALS_FULL_URI`, we need to create a new public web service which:
 

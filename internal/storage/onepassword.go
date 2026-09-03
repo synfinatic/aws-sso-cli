@@ -317,13 +317,17 @@ func (op *OnePasswordStore) DeleteEcsBearerToken(ctx context.Context) error {
 }
 
 func (op *OnePasswordStore) SaveEcsSslKeyPair(ctx context.Context, privateKey, certChain []byte) error {
+	// Validate both halves before storing either: a save that returns an error
+	// must not leave the cert behind in the cache, where it would be readable
+	// by this process but was never written to 1Password.
 	if err := ValidateSSLCertificate(certChain); err != nil {
 		return err
 	}
-	op.cache.EcsCertChain = string(certChain)
 	if err := ValidateSSLPrivateKey(privateKey); err != nil {
 		return err
 	}
+
+	op.cache.EcsCertChain = string(certChain)
 	op.cache.EcsPrivateKey = string(privateKey)
 	return op.saveStorageData(ctx)
 }
@@ -339,5 +343,33 @@ func (op *OnePasswordStore) GetEcsSslKey() (string, error) {
 func (op *OnePasswordStore) DeleteEcsSslKeyPair(ctx context.Context) error {
 	op.cache.EcsCertChain = ""
 	op.cache.EcsPrivateKey = ""
+	return op.saveStorageData(ctx)
+}
+
+func (op *OnePasswordStore) SaveEcsCaKeyPair(ctx context.Context, privateKey, certChain []byte) error {
+	// see SaveEcsSslKeyPair: validate both halves before storing either.
+	if err := ValidateSSLCertificate(certChain); err != nil {
+		return err
+	}
+	if err := ValidateSSLPrivateKey(privateKey); err != nil {
+		return err
+	}
+
+	op.cache.EcsCaCert = string(certChain)
+	op.cache.EcsCaKey = string(privateKey)
+	return op.saveStorageData(ctx)
+}
+
+func (op *OnePasswordStore) GetEcsCaCert() (string, error) {
+	return op.cache.EcsCaCert, nil
+}
+
+func (op *OnePasswordStore) GetEcsCaKey() (string, error) {
+	return op.cache.EcsCaKey, nil
+}
+
+func (op *OnePasswordStore) DeleteEcsCaKeyPair(ctx context.Context) error {
+	op.cache.EcsCaCert = ""
+	op.cache.EcsCaKey = ""
 	return op.saveStorageData(ctx)
 }

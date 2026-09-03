@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"strings"
+
+	"github.com/synfinatic/aws-sso-cli/internal/certutil"
 )
 
 /*
@@ -63,12 +64,16 @@ func (cc *EcsAuthCmd) Run(ctx *RunContext) error {
 	return ctx.Store.SaveEcsBearerToken(ctx.Ctx, ctx.Cli.Setup.Ecs.Auth.BearerToken)
 }
 
+// EcsCaTrustDocsURL points to the docs section with the OS/runtime-specific
+// steps for trusting the local ECS Server CA certificate. Kept out-of-band in
+// the docs (rather than printed inline) so it can't drift out of sync with
+// the actual set of supported SDKs/OSes without a docs review.
+const EcsCaTrustDocsURL = "https://github.com/synfinatic/aws-sso-cli/blob/main/docs/ecs-server.md#trusting-the-ca"
+
 type EcsSSLCmd struct {
-	Delete      bool   `kong:"short=d,help='Disable SSL and delete the current SSL cert/key',xor='flag,cert,key'"`
-	Print       bool   `kong:"short=p,help='Print the current SSL certificate',xor='flag,cert,key'"`
-	Certificate string `kong:"short=c,type='existingfile',help='Path to certificate chain PEM file',predictor='allFiles',group='add-ssl',xor='cert'"`
-	PrivateKey  string `kong:"short=k,type='existingfile',help='Path to private key file PEM file',predictor='allFiles',group='add-ssl',xor='key'"` // nolint:gosec
-	Force       bool   `kong:"hidden,help='Force loading the certificate'"`
+	Delete     bool `kong:"short=d,help='Disable SSL and delete the current SSL cert/key and CA',xor='flag'"`
+	PrintCa    bool `kong:"help='Print the local self-signed CA certificate in PEM format',xor='flag'"`
+	SelfSigned bool `kong:"help='Generate (or reuse) a local CA and issue a new leaf certificate for the ECS Server',xor='flag'"`
 }
 
 // AfterApply determines if SSO auth token is required
@@ -78,40 +83,95 @@ func (e EcsSSLCmd) AfterApply(runCtx *RunContext) error {
 }
 
 func (cc *EcsSSLCmd) Run(ctx *RunContext) error {
-	if ctx.Cli.Setup.Ecs.SSL.Delete {
-		return ctx.Store.DeleteEcsSslKeyPair(ctx.Ctx)
-	} else if ctx.Cli.Setup.Ecs.SSL.Print {
-		cert, err := ctx.Store.GetEcsSslCert()
+	switch {
+	case cc.Delete:
+		if err := ctx.Store.DeleteEcsSslKeyPair(ctx.Ctx); err != nil {
+			return err
+		}
+		return ctx.Store.DeleteEcsCaKeyPair(ctx.Ctx)
+
+	case cc.PrintCa:
+		caCert, err := ctx.Store.GetEcsCaCert()
 		if err != nil {
 			return err
 		}
-		if cert == "" {
-			return fmt.Errorf("no certificate found")
+		if caCert == "" {
+			return fmt.Errorf("no local CA found; run 'aws-sso setup ecs ssl --self-signed' first")
 		}
-		fmt.Println(cert)
+		// Print, not Println: the stored PEM already ends in a newline and
+		// `--print-ca > ca.pem` should not gain a trailing blank line.
+		fmt.Print(caCert)
 		return nil
+
+	case cc.SelfSigned:
+		return cc.runSelfSigned(ctx)
+
+	default:
+		return fmt.Errorf("must specify one of --delete, --print-ca, or --self-signed")
 	}
+}
 
-	var privateKey, certChain []byte
-	var err error
-
-	if !ctx.Cli.Setup.Ecs.SSL.Force {
-		log.Warn("This feature is experimental and may not work as expected.")
-		log.Warn("Please read https://github.com/synfinatic/aws-sso-cli/issues/936 before contiuing.")
-		log.Fatal("Use `--force` to continue anyways.")
-	}
-
-	certChain, err = os.ReadFile(ctx.Cli.Setup.Ecs.SSL.Certificate)
+// runSelfSigned reuses the existing local CA (generating one if none exists
+// yet) to issue a fresh leaf certificate for the ECS Server. Reusing the CA is
+// the entire renewal story: since the CA never changes on a normal rerun,
+// nothing needs to be re-trusted in the OS/runtime trust stores.
+func (cc *EcsSSLCmd) runSelfSigned(ctx *RunContext) error {
+	ca, freshCa, err := cc.loadOrGenerateCa(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to read certificate chain file: %w", err)
+		return err
 	}
 
-	if ctx.Cli.Setup.Ecs.SSL.PrivateKey != "" {
-		privateKey, err = os.ReadFile(ctx.Cli.Setup.Ecs.SSL.PrivateKey)
-		if err != nil {
-			return fmt.Errorf("failed to read private key file: %w", err)
-		}
+	leaf, err := certutil.GenerateLeaf(ca)
+	if err != nil {
+		return fmt.Errorf("unable to generate leaf certificate: %w", err)
 	}
 
-	return ctx.Store.SaveEcsSslKeyPair(ctx.Ctx, privateKey, certChain)
+	if err := ctx.Store.SaveEcsSslKeyPair(ctx.Ctx, []byte(leaf.KeyPEM), []byte(leaf.CertPEM)); err != nil {
+		return fmt.Errorf("unable to save leaf certificate: %w", err)
+	}
+
+	if freshCa {
+		log.Info("Generated a new local CA and leaf certificate for the ECS Server.")
+	} else {
+		log.Info("Reused the existing local CA and issued a new leaf certificate for the ECS Server.")
+		log.Info("The CA has not changed, so no trust-store changes are needed.")
+	}
+
+	// Printed on every run, not just when the CA is new: it is what the user
+	// compares against the entry their OS/runtime trust store shows, both when
+	// first trusting the CA and when checking later that it is still the same one.
+	fingerprint, err := certutil.Fingerprint(ca.CertPEM)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("\nCA SHA-256 fingerprint:\n  %s\n", fingerprint)
+
+	fmt.Printf("\nFor instructions on exporting and trusting this CA, see:\n  %s\n", EcsCaTrustDocsURL)
+	return nil
+}
+
+// loadOrGenerateCa returns the existing stored CA, or generates and saves a
+// new one if none is stored yet. The bool return indicates whether a new CA
+// was generated (true) or an existing one was reused (false).
+func (cc *EcsSSLCmd) loadOrGenerateCa(ctx *RunContext) (certutil.KeyPair, bool, error) {
+	caCert, err := ctx.Store.GetEcsCaCert()
+	if err != nil {
+		return certutil.KeyPair{}, false, err
+	}
+	caKey, err := ctx.Store.GetEcsCaKey()
+	if err != nil {
+		return certutil.KeyPair{}, false, err
+	}
+	if caCert != "" && caKey != "" {
+		return certutil.KeyPair{CertPEM: caCert, KeyPEM: caKey}, false, nil
+	}
+
+	ca, err := certutil.GenerateCA()
+	if err != nil {
+		return certutil.KeyPair{}, false, fmt.Errorf("unable to generate CA: %w", err)
+	}
+	if err := ctx.Store.SaveEcsCaKeyPair(ctx.Ctx, []byte(ca.KeyPEM), []byte(ca.CertPEM)); err != nil {
+		return certutil.KeyPair{}, false, fmt.Errorf("unable to save CA: %w", err)
+	}
+	return ca, true, nil
 }

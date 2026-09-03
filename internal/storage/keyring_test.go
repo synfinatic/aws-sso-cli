@@ -31,6 +31,7 @@ import (
 	"github.com/99designs/keyring"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"github.com/synfinatic/aws-sso-cli/internal/certutil"
 	testlogger "github.com/synfinatic/flexlog/test"
 )
 
@@ -191,6 +192,16 @@ func (suite *KeyringSuite) TestEcsSslKeyPair() { // nolint: dupl
 	keyBytes, err := os.ReadFile("../ecs/server/testdata/localhost.key")
 	assert.NoError(t, err)
 
+	// A save that fails key validation must leave nothing behind: the cert was
+	// never persisted, so reporting it from the in-memory cache would hand this
+	// process a cert no other process can see.
+	err = suite.store.SaveEcsSslKeyPair(context.Background(), certBytes, certBytes)
+	assert.Error(t, err)
+
+	cert, err = suite.store.GetEcsSslCert()
+	assert.NoError(t, err)
+	assert.Empty(t, cert)
+
 	err = suite.store.SaveEcsSslKeyPair(context.Background(), []byte{}, certBytes)
 	assert.NoError(t, err)
 
@@ -219,6 +230,62 @@ func (suite *KeyringSuite) TestEcsSslKeyPair() { // nolint: dupl
 	assert.Empty(t, cert)
 
 	key, err = suite.store.GetEcsSslKey()
+	assert.NoError(t, err)
+	assert.Empty(t, key)
+}
+
+func (suite *KeyringSuite) TestEcsCaKeyPair() { // nolint: dupl
+	t := suite.T()
+
+	cert, err := suite.store.GetEcsCaCert()
+	assert.NoError(t, err)
+	assert.Empty(t, cert)
+
+	key, err := suite.store.GetEcsCaKey()
+	assert.NoError(t, err)
+	assert.Empty(t, key)
+
+	ca, err := certutil.GenerateCA()
+	assert.NoError(t, err)
+	certBytes := []byte(ca.CertPEM)
+	keyBytes := []byte(ca.KeyPEM)
+
+	// see TestEcsSslKeyPair: a failed key validation must not cache the cert.
+	err = suite.store.SaveEcsCaKeyPair(context.Background(), certBytes, certBytes)
+	assert.Error(t, err)
+
+	cert, err = suite.store.GetEcsCaCert()
+	assert.NoError(t, err)
+	assert.Empty(t, cert)
+
+	err = suite.store.SaveEcsCaKeyPair(context.Background(), []byte{}, certBytes)
+	assert.NoError(t, err)
+
+	err = suite.store.SaveEcsCaKeyPair(context.Background(), keyBytes, certBytes)
+	assert.NoError(t, err)
+
+	err = suite.store.SaveEcsCaKeyPair(context.Background(), keyBytes, keyBytes)
+	assert.Error(t, err)
+
+	err = suite.store.SaveEcsCaKeyPair(context.Background(), certBytes, certBytes)
+	assert.Error(t, err)
+
+	cert, err = suite.store.GetEcsCaCert()
+	assert.NoError(t, err)
+	assert.Equal(t, string(certBytes), cert)
+
+	key, err = suite.store.GetEcsCaKey()
+	assert.NoError(t, err)
+	assert.Equal(t, string(keyBytes), key)
+
+	err = suite.store.DeleteEcsCaKeyPair(context.Background())
+	assert.NoError(t, err)
+
+	cert, err = suite.store.GetEcsCaCert()
+	assert.NoError(t, err)
+	assert.Empty(t, cert)
+
+	key, err = suite.store.GetEcsCaKey()
 	assert.NoError(t, err)
 	assert.Empty(t, key)
 }
