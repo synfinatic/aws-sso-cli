@@ -45,6 +45,7 @@ func isolateHomeForCaExport(t *testing.T) string {
 	home := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config", "aws-sso"), 0700))
 	t.Setenv("HOME", home)
+	unsetEnvForTest(t, "XDG_CONFIG_HOME")
 	return home
 }
 
