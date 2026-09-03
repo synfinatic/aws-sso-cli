@@ -5,10 +5,8 @@
 
 ### New Features
 
-* Add `setup ecs ssl --self-signed` to create a self-signed CA and leaf SSL cert for
-  the ECS Server.  The CA is scoped via X.509 name constraints and a `serverAuth` EKU so
-  trusting it can not grant the ability to sign for other hosts.  It also prints the CA's
-  SHA-256 fingerprint so you can verify what you are trusting in your OS/runtime trust store
+* Add `setup ecs ssl --self-signed` to create a self-signed CA and leaf cert for the ECS Server,
+  scoped so it can't sign for other hosts; prints the CA's SHA-256 fingerprint for verification
 * Add `login --force` to start a new SSO session, resetting its duration #1455
 * Add `ecs docker write-config`
 * The ECS Server now logs a warning whenever IAM role credentials are loaded if its
@@ -26,8 +24,7 @@
   and show the bearer token being passed to the client container
 * `ecs docker stop` no longer requires reading from the config/SecureStore
 * A SecureStore `SaveEcsSslKeyPair`/`SaveEcsCaKeyPair` that fails private key validation no longer
-  caches the certificate in memory, where the rest of the command could read a cert that was
-  never actually stored
+  caches the cert in memory, avoiding a stale cert being read as if it were stored
 
 ### Changes
 
@@ -35,9 +32,8 @@
   self-signed CA (`--self-signed`) is supported now
 * `setup ecs ssl --delete` now only deletes the SSL leaf cert/key; add `setup ecs ssl
   --delete-ca` to delete the CA, which requires the leaf to already be deleted
-* Remove `ecs server --disable-ssl`, `ecs docker start --disable-ssl`, and `ecs docker
-  write-config --disable-ssl` -- SSL is now controlled purely by whether a certificate
-  is stored (`setup ecs ssl --delete`/`--self-signed`)
+* Remove `ecs server --disable-ssl`, `ecs docker start --disable-ssl`, and `ecs docker write-config
+  --disable-ssl` -- SSL is now controlled by whether a certificate is stored
 
 ## [v2.3.2] -- 2026-07-29
 
