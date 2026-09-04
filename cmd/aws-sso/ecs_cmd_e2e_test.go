@@ -27,12 +27,14 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs/server"
+	testlogger "github.com/synfinatic/flexlog/test"
 	"golang.org/x/net/nettest"
 )
 
@@ -546,6 +548,46 @@ func TestE2EEcsServerRunWithAuth(t *testing.T) {
 	authResp.Body.Close()
 	assert.Equal(t, http.StatusNotFound, authResp.StatusCode,
 		"authenticated request should reach the credential handler (404: no creds loaded)")
+
+	cancel()
+	assert.NoError(t, <-done, "Run() should return nil on context cancellation")
+}
+
+// TestE2EEcsServerRunBindIPWarning exercises the --bind-ip startup warning in
+// EcsServerCmd.Run(): binding to an address outside the self-signed cert's SANs
+// (loopback, 169.254.170.2) logs a Warn before the server starts serving.
+func TestE2EEcsServerRunBindIPWarning(t *testing.T) {
+	setup := newE2ESetup(t)
+	tLogger := withTestLogger(t)
+
+	cctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	port := freePort(t)
+	ctx := &RunContext{
+		Cli:      &CLI{},
+		Settings: setup.Settings,
+		Store:    setup.Store,
+		Auth:     AUTH_SKIP,
+		Ctx:      cctx,
+	}
+	ctx.Cli.Ecs.Server = EcsServerCmd{
+		BindIP:      "0.0.0.0",
+		Port:        port,
+		DisableAuth: true,
+	}
+	cc := &ctx.Cli.Ecs.Server
+
+	done := make(chan error, 1)
+	go func() { done <- cc.Run(ctx) }()
+
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	require.NoError(t, waitForEcsServerUp("http", addr, "", 5*time.Second))
+
+	msg := testlogger.LogMessage{}
+	require.NoError(t, tLogger.GetNext(&msg))
+	assert.Equal(t, "WARN", strings.TrimSpace(msg.LevelStr))
+	assert.Contains(t, msg.Message, "0.0.0.0 is not localhost or 169.254.170.2")
 
 	cancel()
 	assert.NoError(t, <-done, "Run() should return nil on context cancellation")

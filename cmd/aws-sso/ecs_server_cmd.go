@@ -25,7 +25,9 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"slices"
 
+	"github.com/synfinatic/aws-sso-cli/internal/certutil"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs/server"
 )
@@ -61,6 +63,15 @@ func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", bindIP, ctx.Cli.Ecs.Server.Port))
 	if err != nil {
 		return err
+	}
+
+	// The Docker entrypoint always binds 0.0.0.0 internally and relies on the container's
+	// network IP (e.g. 169.254.170.2, per docs/ecs-server.md) for the actual security
+	// properties, so this warning would just be noise there.
+	if !ctx.Cli.Ecs.Server.Docker {
+		if msg := bindIPWarning(bindIP); msg != "" {
+			log.Warn(msg)
+		}
 	}
 
 	var bearerToken, privateKey, certChain string
@@ -133,6 +144,23 @@ func (cc *EcsServerCmd) Run(ctx *RunContext) error {
 		return err
 	}
 	return nil
+}
+
+// bindIPWarning returns a non-empty warning message if bindIP is not one of the addresses
+// covered by the self-signed cert's SANs (certutil.DefaultIPs). TLS (if enabled) will fail to
+// verify for any other address, and compliant AWS SDKs silently drop the Bearer Token for
+// requests to a host outside that same fixed set, so binding elsewhere breaks both of
+// aws-sso's own protections.
+func bindIPWarning(bindIP string) string {
+	ip := net.ParseIP(bindIP)
+	if ip == nil {
+		return ""
+	}
+	if slices.ContainsFunc(certutil.DefaultIPs, ip.Equal) {
+		return ""
+	}
+	return fmt.Sprintf("--bind-ip %s is not localhost or 169.254.170.2: TLS (if configured) "+
+		"will not verify and AWS SDKs may silently drop the Bearer Token for this address", bindIP)
 }
 
 // setServerDefaultProfile resolves a profile name to credentials and injects them

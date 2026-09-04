@@ -48,7 +48,7 @@ possible to limit who can fetch AWS IAM security tokens from the service.
 
 For multi-user systems where the network/root user is not trusted,
 `aws-sso setup ecs ssl --self-signed` (see below) makes SSL/TLS practical to enable for
-most AWS SDKs, but Python/the AWS CLI [cannot easily trust a private CA for this endpoint](
+most AWS SDKs, but the Python Boto SDK/AWS CLI [cannot easily trust a private CA for this endpoint](
 https://github.com/boto/boto3/issues/4188).
 
 ## Starting the ECS Server
@@ -60,6 +60,13 @@ The server runs in the foreground to make it easy to start via systemd and Docke
 Will start the server on `localhost:4144`.   For security purposes, the `aws-sso`
 ECS Server will default listen on localhost (127.0.0.1) port 4144.  You may select
 an alternative IP/port via the `--bind-ip` and `--port` flags.
+
+**Note:** `aws-sso ecs server` logs a warning at startup if `--bind-ip` is anything other than
+`127.0.0.1`, `::1`, or `169.254.170.2`, the only addresses covered by the self-signed cert's
+SANs (see [ECS Server SSL Certificate](#ecs-server-ssl-certificate)) and by the AWS SDKs'
+SSRF-related allow-list for sending the Bearer Token (see
+[docs/ecs-threats.md](ecs-threats.md#ssrf-mitigation-built-into-the-aws-sdks)). Binding elsewhere
+means TLS won't verify and the Bearer Token may be silently dropped by the connecting SDK.
 
 ### Running the ECS Server in the background
 
@@ -80,7 +87,8 @@ Together, they allow using the `aws-sso` ECS Server on multi-user systems in a
 secure manner.
 
 **Important:** Failure to configure HTTP Authentication _and_ SSL/TLS encryption
-risks exposing your AWS IAM authentication tokens to other users on the system.
+risks exposing your AWS IAM authentication tokens to other users on the system or
+when traversing untrusted network links.
 
 ### ECS Server SSL Certificate
 
@@ -117,10 +125,8 @@ force HTTP while a certificate is stored — run `aws-sso setup ecs ssl --delete
 to disable SSL/TLS instead (see [Deleting the certificate](#deleting-the-certificate)
 below).
 
-**Note:** `aws-sso` provides no command to export the CA private key — `--print-ca` prints only the
-certificate. How well the key itself is protected is down to your
-[secure store](config.md): the OS keychain and 1Password backends encrypt it, while the
-`json` store keeps it in plaintext like everything else it holds.
+**Note:** `aws-sso` provides no command to export the CA private key; `--print-ca` prints only the
+certificate.  The CA private key is kept securely in the [secure store](config.md#securestore--jsonstore).
 
 See [Trusting the CA](#trusting-the-ca) below for how to trust this certificate in your OS and
 in each AWS SDK runtime.
@@ -152,15 +158,14 @@ See [Untrusting the CA](#untrusting-the-ca) below, and note the fingerprint prin
 
 ### Trusting the CA
 
-First export the local CA certificate to a file (see above):
+First export the local CA certificate to a file:
 
 ```bash
 aws-sso setup ecs ssl --print-ca > /tmp/ecs-ca.pem
 ```
 
 The CA is reused (not regenerated) every time you rerun `--self-signed`, so you only need to
-export and trust it once per machine/runtime below — only `--delete`, `--delete-ca`, and then
-`--self-signed` will require repeating these steps.
+export and trust it once per machine/runtime below.
 
 `--self-signed` prints the CA's SHA-256 fingerprint on every run. Compare it with the fingerprint
 your OS or runtime trust store shows for `aws-sso-cli ECS Server CA` to confirm you trusted the
@@ -605,6 +610,10 @@ services:
       AWS_CONTAINER_CREDENTIALS_FULL_URI: http://169.254.170.2:4144
       # must match the token stored via `aws-sso setup ecs auth`.  Omit this (and run
       # `write-secrets --disable-auth`) only if you are not using HTTP Auth.
+      # Note that this exposes the bearer token via `docker inspect`.  For additional security
+      # consider passing in the bearer token via a mount or via docker compose secrets
+      # and AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE
+      # https://docs.docker.com/compose/how-tos/use-secrets/
       AWS_CONTAINER_AUTHORIZATION_TOKEN: "Bearer ${AWS_SSO_ECS_TOKEN}"
     networks:
       aws-sso-ecs: {}
