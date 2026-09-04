@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // unsetEnvForTest unsets key for the duration of the test, restoring it afterward.
@@ -139,7 +140,7 @@ func TestCheckAwsEnvironment(t *testing.T) {
 		}
 		t.Setenv("AWS_ACCESS_KEY_ID", "AKIATEST")
 		err := checkAwsEnvironment()
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "AWS_ACCESS_KEY_ID")
 	})
 
@@ -149,7 +150,7 @@ func TestCheckAwsEnvironment(t *testing.T) {
 		}
 		t.Setenv("AWS_SECRET_ACCESS_KEY", "secret")
 		err := checkAwsEnvironment()
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "AWS_SECRET_ACCESS_KEY")
 	})
 
@@ -159,7 +160,7 @@ func TestCheckAwsEnvironment(t *testing.T) {
 		}
 		t.Setenv("AWS_PROFILE", "myprofile")
 		err := checkAwsEnvironment()
-		assert.Error(t, err)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "AWS_PROFILE")
 	})
 }

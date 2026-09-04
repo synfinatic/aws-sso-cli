@@ -149,6 +149,10 @@ func newSelfSignedTestCtx(t *testing.T) *RunContext {
 	t.Helper()
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	// CI runners export a real XDG_CONFIG_HOME (e.g. /home/runner/.config), which
+	// config.ConfigDir() prefers over $HOME, so it must be cleared or this test's
+	// $HOME override leaks outside its isolated tmp dir.
+	unsetEnvForTest(t, "XDG_CONFIG_HOME")
 	// FlockFile() derives its path from config.ConfigDir(), which in turn
 	// resolves against $HOME; the lock file's parent directory must exist
 	// before any SecureStorage Save*/Delete* call runs.
@@ -415,6 +419,7 @@ func TestEcsSSLCmdRun_SelfSigned_GenerateLeafError(t *testing.T) {
 func TestEcsSSLCmdRun_SelfSigned_DoesNotWriteCaFile(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	unsetEnvForTest(t, "XDG_CONFIG_HOME")
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config", "aws-sso"), 0700))
 	store := openTestStore(t)
 	ctx := &RunContext{

@@ -166,6 +166,7 @@ func TestEcsDockerWriteSecretsCmdRun(t *testing.T) {
 	home := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config", "aws-sso"), 0700))
 	t.Setenv("HOME", home)
+	unsetEnvForTest(t, "XDG_CONFIG_HOME")
 
 	store, err := storage.OpenJsonStore(context.Background(), filepath.Join(home, "store.json"))
 	require.NoError(t, err)
@@ -197,6 +198,7 @@ func TestEcsDockerWriteSecretsCmdRunDisableAuth(t *testing.T) {
 	home := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config", "aws-sso"), 0700))
 	t.Setenv("HOME", home)
+	unsetEnvForTest(t, "XDG_CONFIG_HOME")
 
 	store, err := storage.OpenJsonStore(context.Background(), filepath.Join(home, "store.json"))
 	require.NoError(t, err)
