@@ -106,7 +106,10 @@ run `--delete`, then `--delete-ca`, then `--self-signed`, which does require
 repeating the trust steps everywhere.
 
 Once the leaf has fewer than 5 days of validity left, `aws-sso ecs server` logs a warning
-every time new IAM role credentials are loaded, as a reminder to rerun `--self-signed`.
+every time new IAM role credentials are loaded, as a reminder to rerun `--self-signed`. The
+`aws-sso ecs load`/`list`/`profile`/`unload` client commands log the same warning locally
+whenever they read a soon-to-expire leaf cert from the secure store, so you see the reminder
+even if you aren't watching the server's own log output.
 
 Once you have generated the CA/leaf certificate, future invocations of the aws-sso
 ECS Server will automatically disable HTTP and enable HTTPS. There is no flag to

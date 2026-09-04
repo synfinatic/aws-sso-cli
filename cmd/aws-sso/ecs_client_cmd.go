@@ -23,9 +23,11 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
+	"github.com/synfinatic/aws-sso-cli/internal/certutil"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs/client"
 	"github.com/synfinatic/gotable"
@@ -187,9 +189,32 @@ func newClient(server string, ctx *RunContext) *client.ECSClient {
 	if err != nil {
 		log.Fatal("Unable to get ECS SSL cert", "error", err.Error())
 	}
+	warnIfCertExpiringSoon(certChain)
+
 	bearerToken, err := ctx.Store.GetEcsBearerToken()
 	if err != nil {
 		log.Fatal("Unable to get ECS bearer token", "error", err)
 	}
 	return client.NewECSClient(server, bearerToken, certChain)
+}
+
+// warnIfCertExpiringSoon logs a warning if the ECS server's TLS cert (if any)
+// expires within certutil.CertExpiryWarning, so users driving the server via
+// the aws-sso client see the same reminder the server itself logs.
+func warnIfCertExpiringSoon(certChain string) {
+	if certChain == "" {
+		return
+	}
+
+	soon, notAfter, err := certutil.ExpiringSoon(certChain)
+	if err != nil {
+		log.Error("unable to check ECS server TLS cert expiry", "error", err.Error())
+		return
+	}
+
+	if soon {
+		log.Warn("ECS server TLS cert is expiring soon",
+			"expires", notAfter.Format(time.RFC3339),
+			"hint", "run `aws-sso setup ecs ssl --self-signed` to rotate it")
+	}
 }

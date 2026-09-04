@@ -44,6 +44,10 @@ const CAValidity = 10 * 365 * 24 * time.Hour
 // requires re-trusting anything, so there's no reason to make it long-lived.
 const LeafValidity = 30 * 24 * time.Hour
 
+// CertExpiryWarning is how far ahead of a leaf cert's expiration ExpiringSoon
+// starts reporting true, so callers can warn users to rotate it.
+const CertExpiryWarning = 5 * 24 * time.Hour
+
 // CACommonName identifies the generated CA in OS trust-store UIs so users
 // can find (and remove) it later.
 const CACommonName = "aws-sso-cli ECS Server CA"
@@ -197,6 +201,16 @@ func Expiry(certPEM string) (time.Time, error) {
 		return time.Time{}, err
 	}
 	return cert.NotAfter, nil
+}
+
+// ExpiringSoon reports whether a PEM-encoded certificate has less than
+// CertExpiryWarning validity remaining, along with its NotAfter time.
+func ExpiringSoon(certPEM string) (bool, time.Time, error) {
+	notAfter, err := Expiry(certPEM)
+	if err != nil {
+		return false, time.Time{}, err
+	}
+	return time.Until(notAfter) < CertExpiryWarning, notAfter, nil
 }
 
 // singleHostIPRanges converts each IP into a single-host CIDR (/32 for IPv4,
