@@ -9,8 +9,8 @@
   scoped so it can't sign for other hosts; prints the CA's SHA-256 fingerprint for verification
 * Add `login --force` to start a new SSO session, resetting its duration #1455
 * Add `ecs docker write-secrets`
-* The ECS Server now logs a warning whenever IAM role credentials are loaded if its
-  TLS cert has fewer than 5 days of validity left
+* The ECS Server and `ecs load`/`list`/`profile`/`unload` now log a warning if the
+  server's TLS cert has fewer than 5 days of validity left
 
 ### Bugs
 

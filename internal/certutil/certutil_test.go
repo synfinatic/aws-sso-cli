@@ -28,6 +28,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"math/big"
 	"net"
 	"strings"
 	"testing"
@@ -328,6 +329,60 @@ func TestExpiry_InvalidCertificateBytes(t *testing.T) {
 	badCertPEM := string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: []byte("not a real cert")}))
 	_, err := Expiry(badCertPEM)
 	assert.ErrorContains(t, err, "unable to parse certificate")
+}
+
+func TestExpiringSoon_False(t *testing.T) {
+	t.Parallel()
+
+	ca, err := GenerateCA()
+	require.NoError(t, err)
+	leaf, err := GenerateLeaf(ca)
+	require.NoError(t, err)
+
+	soon, notAfter, err := ExpiringSoon(leaf.CertPEM)
+	require.NoError(t, err)
+	assert.False(t, soon)
+	assert.WithinDuration(t, time.Now().Add(LeafValidity), notAfter, time.Minute)
+}
+
+func TestExpiringSoon_True(t *testing.T) {
+	t.Parallel()
+
+	certPEM := selfSignedCertPEM(t, time.Now().Add(2*24*time.Hour))
+
+	soon, notAfter, err := ExpiringSoon(certPEM)
+	require.NoError(t, err)
+	assert.True(t, soon)
+	assert.WithinDuration(t, time.Now().Add(2*24*time.Hour), notAfter, time.Minute)
+}
+
+func TestExpiringSoon_InvalidPEM(t *testing.T) {
+	t.Parallel()
+
+	_, _, err := ExpiringSoon("not a pem block")
+	assert.ErrorContains(t, err, "unable to decode PEM certificate")
+}
+
+// selfSignedCertPEM generates a self-signed leaf cert PEM with the given
+// NotAfter, for exercising ExpiringSoon without waiting on the fixed
+// LeafValidity used by GenerateLeaf.
+func selfSignedCertPEM(t *testing.T, notAfter time.Time) string {
+	t.Helper()
+
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject:      pkix.Name{CommonName: "localhost"},
+		NotBefore:    time.Now().Add(-time.Minute),
+		NotAfter:     notAfter,
+	}
+
+	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	require.NoError(t, err)
+
+	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER}))
 }
 
 func parsePEMCert(t *testing.T, certPEM string) *x509.Certificate {

@@ -35,10 +35,6 @@ import (
 	"github.com/synfinatic/flexlog"
 )
 
-// CertExpiryWarning is how far ahead of a TLS cert's expiration the ECS
-// server starts warning on every credential load.
-const CertExpiryWarning = 5 * 24 * time.Hour
-
 var log flexlog.FlexLogger
 
 func init() {
@@ -136,19 +132,19 @@ func (e *EcsServer) PutSlottedCreds(creds *ecs.ECSClientRequest) error {
 }
 
 // warnIfCertExpiringSoon logs a warning if the server's TLS cert (if any)
-// expires within CertExpiryWarning.
+// expires within certutil.CertExpiryWarning.
 func (e *EcsServer) warnIfCertExpiringSoon() {
 	if e.certChain == "" {
 		return
 	}
 
-	notAfter, err := certutil.Expiry(e.certChain)
+	soon, notAfter, err := certutil.ExpiringSoon(e.certChain)
 	if err != nil {
 		log.Error("unable to check ECS server TLS cert expiry", "error", err.Error())
 		return
 	}
 
-	if remaining := time.Until(notAfter); remaining < CertExpiryWarning {
+	if soon {
 		log.Warn("ECS server TLS cert is expiring soon",
 			"expires", notAfter.Format(time.RFC3339),
 			"hint", "run `aws-sso setup ecs ssl --self-signed` to rotate it")
