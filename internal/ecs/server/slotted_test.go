@@ -25,12 +25,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
+	testlogger "github.com/synfinatic/flexlog/test"
 )
 
 func TestSlottedGet(t *testing.T) {
@@ -170,6 +173,8 @@ func TestSlottedDelete(t *testing.T) {
 }
 
 func TestSlottedDefault(t *testing.T) {
+	tLogger := withTestLogger(t)
+
 	sh := SlottedHandler{
 		ecs: &EcsServer{},
 	}
@@ -180,6 +185,11 @@ func TestSlottedDefault(t *testing.T) {
 	res, err := http.Head(url) //nolint
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+
+	msg := testlogger.LogMessage{}
+	require.NoError(t, tLogger.GetNext(&msg))
+	assert.Equal(t, "ERROR", strings.TrimSpace(msg.LevelStr))
+	assert.Equal(t, "Invalid request", msg.Message)
 }
 
 func TestGetProfileName(t *testing.T) {

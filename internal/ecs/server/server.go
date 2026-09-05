@@ -22,8 +22,10 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	stdlog "log"
 	"net"
 	"net/http"
+	"strings"
 
 	// "github.com/davecgh/go-spew/spew"
 	"time"
@@ -97,8 +99,19 @@ func NewEcsServer(ctx context.Context, authToken string, listen net.Listener, pr
 	outerRouter.Handle(fmt.Sprintf("%s/", ecs.HEALTHCHECK_ROUTE), healthHandler)
 	outerRouter.Handle(ecs.DEFAULT_ROUTE, WithAuthorizationCheck(authTokenHeader, innerRouter.ServeHTTP))
 	e.server.Handler = withLogging(outerRouter)
+	e.server.ErrorLog = stdlog.New(ecsServerErrorLog{}, "", 0)
 
 	return e, nil
+}
+
+// ecsServerErrorLog is an io.Writer bridge so http.Server.ErrorLog (which only
+// accepts a stdlib *log.Logger) routes through our structured logger instead
+// of stderr -- otherwise TLS handshake failures never reach flexlog.
+type ecsServerErrorLog struct{}
+
+func (ecsServerErrorLog) Write(p []byte) (int, error) {
+	log.Error("http server error", "error", strings.TrimSpace(string(p)))
+	return len(p), nil
 }
 
 // deleteCreds removes our slotted credentials from the cache
@@ -112,7 +125,7 @@ func (e *EcsServer) DeleteSlottedCreds(profile string) error {
 
 // getCreds fetches the named profile from the cache.
 func (e *EcsServer) GetSlottedCreds(profile string) (*ecs.ECSClientRequest, error) {
-	log.Debug("fetching creds", "profile", profile)
+	log.Info("fetching creds", "profile", profile)
 	c, ok := e.slottedCreds[profile]
 	if !ok {
 		return c, fmt.Errorf("%s is not found", profile)
@@ -203,6 +216,7 @@ func (e *EcsServer) Serve() error {
 func WithAuthorizationCheck(authToken string, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != authToken {
+			log.Warn("invalid authorization token", "remote", r.RemoteAddr, "method", r.Method, "url", r.URL.String())
 			ecs.WriteMessage(w, "Invalid authorization token", http.StatusForbidden)
 			return
 		}

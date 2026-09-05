@@ -129,9 +129,3 @@ traffic, they can obtain the Bearer Token or AWS API credentials.
   * Caveat: this protection lives in the SDK, not in `aws-sso`, and was only added to some SDKs
     in 2023-2024, so an outdated SDK version may not enforce it. See `docs/ecs-server.md` for the
     minimum botocore version note.
-
-## Suggestions
-
-* Add extensive logging since we're low traffic and anything interesting will show up easily.
-* Consider certificate revocation if multi-machine/multi-user trust distribution is ever
-  revisited.

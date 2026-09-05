@@ -13,6 +13,8 @@
   server's TLS cert has fewer than 5 days of validity left
 * `ecs server` now logs a warning at startup if `--bind-ip` is not `127.0.0.1`, `::1`, or
   `169.254.170.2` -- TLS won't verify and AWS SDKs may silently drop the Bearer Token elsewhere
+* The ECS Server now logs invalid bearer-token attempts, request remote addresses, and TLS/server
+  errors, and logs successful credential fetches at Info instead of Debug
 
 ### Bugs
 
