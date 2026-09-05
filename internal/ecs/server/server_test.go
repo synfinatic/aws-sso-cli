@@ -139,6 +139,49 @@ func TestSlottedCreds(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestGetSlottedCreds_LogsAtInfo(t *testing.T) {
+	tLogger := withTestLogger(t)
+
+	es := &EcsServer{
+		slottedCreds: map[string]*ecs.ECSClientRequest{
+			"1234:FooBar": newRequest(time.Now().Add(95 * time.Second)),
+		},
+	}
+
+	_, err := es.GetSlottedCreds("1234:FooBar")
+	assert.NoError(t, err)
+
+	msg := testlogger.LogMessage{}
+	require.NoError(t, tLogger.GetNext(&msg))
+	assert.Equal(t, "INFO", strings.TrimSpace(msg.LevelStr))
+	assert.Equal(t, "fetching creds", msg.Message)
+}
+
+func TestEcsServerErrorLog_LogsError(t *testing.T) {
+	tLogger := withTestLogger(t)
+
+	n, err := ecsServerErrorLog{}.Write([]byte("tls: bad record\n"))
+	assert.NoError(t, err)
+	assert.Equal(t, len("tls: bad record\n"), n)
+
+	msg := testlogger.LogMessage{}
+	require.NoError(t, tLogger.GetNext(&msg))
+	assert.Equal(t, "ERROR", strings.TrimSpace(msg.LevelStr))
+	assert.Equal(t, "http server error", msg.Message)
+	assert.Equal(t, "tls: bad record", msg.Error)
+}
+
+func TestNewEcsServer_SetsErrorLog(t *testing.T) {
+	l, err := nettest.NewLocalListener("tcp")
+	assert.NoError(t, err)
+
+	s, err := NewEcsServer(context.TODO(), "", l, "", "")
+	assert.NoError(t, err)
+	defer s.Close()
+
+	assert.NotNil(t, s.server.ErrorLog)
+}
+
 func TestBaseURL(t *testing.T) {
 	l, err := nettest.NewLocalListener("tcp")
 	assert.NoError(t, err)
@@ -164,6 +207,8 @@ func TestExpiredCredentials(t *testing.T) {
 }
 
 func TestServerWithAuth(t *testing.T) {
+	tLogger := withTestLogger(t)
+
 	l, err := nettest.NewLocalListener("tcp")
 	assert.NoError(t, err)
 
@@ -178,6 +223,11 @@ func TestServerWithAuth(t *testing.T) {
 	res, err := http.Get(fmt.Sprintf("http://%s/", l.Addr()))
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusForbidden, res.StatusCode)
+
+	msg := testlogger.LogMessage{}
+	require.NoError(t, tLogger.GetNext(&msg))
+	assert.Equal(t, "WARN", strings.TrimSpace(msg.LevelStr))
+	assert.Equal(t, "invalid authorization token", msg.Message)
 }
 
 func TestServerWithoutAuth(t *testing.T) {

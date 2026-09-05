@@ -24,15 +24,20 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
+	testlogger "github.com/synfinatic/flexlog/test"
 )
 
 func TestDefaultGet(t *testing.T) {
+	tLogger := withTestLogger(t)
+
 	dh := DefaultHandler{
 		ecs: &EcsServer{
 			DefaultCreds: &ecs.ECSClientRequest{
@@ -48,6 +53,11 @@ func TestDefaultGet(t *testing.T) {
 	res, err := http.Get(url) //nolint
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusNotFound, res.StatusCode)
+
+	msg := testlogger.LogMessage{}
+	require.NoError(t, tLogger.GetNext(&msg))
+	assert.Equal(t, "INFO", strings.TrimSpace(msg.LevelStr))
+	assert.Equal(t, "fetching default creds", msg.Message)
 
 	soon := time.Now().Add(90 * time.Second)
 	dh.ecs.DefaultCreds.ProfileName = "MyProfile"
@@ -69,17 +79,32 @@ func TestDefaultGet(t *testing.T) {
 	assert.Equal(t, "SessionToken", creds["Token"])
 	assert.Equal(t, "AccessKeyId", creds["AccessKeyId"])
 
+	msg = testlogger.LogMessage{}
+	require.NoError(t, tLogger.GetNext(&msg))
+	assert.Equal(t, "INFO", strings.TrimSpace(msg.LevelStr))
+	assert.Equal(t, "fetching default creds", msg.Message)
+
 	// check expired
 	dh.ecs.DefaultCreds.Creds.Expiration = time.Now().UnixMilli()
 	res, err = http.Get(url) //nolint
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusNotFound, res.StatusCode)
 
+	msg = testlogger.LogMessage{}
+	require.NoError(t, tLogger.GetNext(&msg))
+	assert.Equal(t, "INFO", strings.TrimSpace(msg.LevelStr))
+	assert.Equal(t, "fetching default creds", msg.Message)
+
 	// invalid request
 	url = fmt.Sprintf("%s/foo", ts.URL)
 	res, err = http.Get(url) //nolint
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusNotFound, res.StatusCode)
+
+	msg = testlogger.LogMessage{}
+	require.NoError(t, tLogger.GetNext(&msg))
+	assert.Equal(t, "ERROR", strings.TrimSpace(msg.LevelStr))
+	assert.Equal(t, "Invalid request", msg.Message)
 }
 
 func submitRequest(t *testing.T, url string, cr ecs.ECSClientRequest) (*http.Response, error) {
@@ -171,6 +196,8 @@ func TestDefaultDelete(t *testing.T) {
 }
 
 func TestDefaultDefault(t *testing.T) {
+	tLogger := withTestLogger(t)
+
 	dh := DefaultHandler{
 		ecs: &EcsServer{},
 	}
@@ -181,4 +208,9 @@ func TestDefaultDefault(t *testing.T) {
 	res, err := http.Head(url) //nolint
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+
+	msg := testlogger.LogMessage{}
+	require.NoError(t, tLogger.GetNext(&msg))
+	assert.Equal(t, "ERROR", strings.TrimSpace(msg.LevelStr))
+	assert.Equal(t, "Invalid request", msg.Message)
 }

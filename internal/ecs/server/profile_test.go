@@ -23,15 +23,20 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/synfinatic/aws-sso-cli/internal/ecs"
 	"github.com/synfinatic/aws-sso-cli/internal/storage"
+	testlogger "github.com/synfinatic/flexlog/test"
 )
 
 func TestProfileGet(t *testing.T) {
+	tLogger := withTestLogger(t)
+
 	ph := ProfileHandler{
 		ecs: &EcsServer{
 			DefaultCreds: &ecs.ECSClientRequest{
@@ -52,6 +57,11 @@ func TestProfileGet(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, fmt.Sprintf("%d", http.StatusNotFound), msg.Code)
 
+	logMsg := testlogger.LogMessage{}
+	require.NoError(t, tLogger.GetNext(&logMsg))
+	assert.Equal(t, "INFO", strings.TrimSpace(logMsg.LevelStr))
+	assert.Equal(t, "fetching default profile", logMsg.Message)
+
 	soon := time.Now().Add(90 * time.Second)
 	ph.ecs.DefaultCreds.ProfileName = "000001111111:ProfileName"
 	ph.ecs.DefaultCreds.Creds = &storage.RoleCredentials{
@@ -71,6 +81,11 @@ func TestProfileGet(t *testing.T) {
 	assert.Equal(t, "000001111111:ProfileName", lpr.ProfileName)
 	assert.Equal(t, "ProfileName", lpr.RoleName)
 
+	logMsg = testlogger.LogMessage{}
+	require.NoError(t, tLogger.GetNext(&logMsg))
+	assert.Equal(t, "INFO", strings.TrimSpace(logMsg.LevelStr))
+	assert.Equal(t, "fetching default profile", logMsg.Message)
+
 	ph.ecs.DefaultCreds.Creds.Expiration = time.Now().UnixMilli()
 	res, err = http.Get(url) //nolint
 	assert.NoError(t, err)
@@ -78,7 +93,17 @@ func TestProfileGet(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, fmt.Sprintf("%d", http.StatusNotFound), msg.Code)
 
+	logMsg = testlogger.LogMessage{}
+	require.NoError(t, tLogger.GetNext(&logMsg))
+	assert.Equal(t, "INFO", strings.TrimSpace(logMsg.LevelStr))
+	assert.Equal(t, "fetching default profile", logMsg.Message)
+
 	res, err = http.Head(url) //nolint
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+
+	logMsg = testlogger.LogMessage{}
+	require.NoError(t, tLogger.GetNext(&logMsg))
+	assert.Equal(t, "ERROR", strings.TrimSpace(logMsg.LevelStr))
+	assert.Equal(t, "Invalid request", logMsg.Message)
 }
