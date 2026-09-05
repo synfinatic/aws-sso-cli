@@ -2234,13 +2234,19 @@ is dependent on nobody else being able to talk to the server.</p>
 possible to limit who can fetch AWS IAM security tokens from the service.</p>
 <p>For multi-user systems where the network/root user is not trusted,
 <code>aws-sso setup ecs ssl --self-signed</code> (see below) makes SSL/TLS practical to enable for
-most AWS SDKs, but Python/the AWS CLI <a href="https://github.com/boto/boto3/issues/4188">cannot easily trust a private CA for this endpoint</a>.</p>
+most AWS SDKs, but the Python Boto SDK/AWS CLI <a href="https://github.com/boto/boto3/issues/4188">cannot easily trust a private CA for this endpoint</a>.</p>
 <h2 id="starting-the-ecs-server">Starting the ECS Server</h2>
 <p>The server runs in the foreground to make it easy to start via systemd and Docker.</p>
 <p><code>aws-sso ecs server</code></p>
 <p>Will start the server on <code>localhost:4144</code>.   For security purposes, the <code>aws-sso</code>
 ECS Server will default listen on localhost (127.0.0.1) port 4144.  You may select
 an alternative IP/port via the <code>--bind-ip</code> and <code>--port</code> flags.</p>
+<p><strong>Note:</strong> <code>aws-sso ecs server</code> logs a warning at startup if <code>--bind-ip</code> is anything other than
+<code>127.0.0.1</code>, <code>::1</code>, or <code>169.254.170.2</code>, the only addresses covered by the self-signed cert's
+SANs (see <a href="#ecs-server-ssl-certificate">ECS Server SSL Certificate</a>) and by the AWS SDKs'
+SSRF-related allow-list for sending the Bearer Token (see
+<a href="../ecs-threats/#ssrf-mitigation-built-into-the-aws-sdks">docs/ecs-threats.md</a>). Binding elsewhere
+means TLS won't verify and the Bearer Token may be silently dropped by the connecting SDK.</p>
 <h3 id="running-the-ecs-server-in-the-background">Running the ECS Server in the background</h3>
 <p>The recommended way to run the ECS server in the background is via the
 <a href="https://hub.docker.com/repository/docker/synfinatic/aws-sso-cli-ecs-server/general">aws-sso-cli-ecs-server</a>
@@ -2255,7 +2261,8 @@ other interfaces using the <code>--bind-ip</code> flag.</p>
 Together, they allow using the <code>aws-sso</code> ECS Server on multi-user systems in a
 secure manner.</p>
 <p><strong>Important:</strong> Failure to configure HTTP Authentication <em>and</em> SSL/TLS encryption
-risks exposing your AWS IAM authentication tokens to other users on the system.</p>
+risks exposing your AWS IAM authentication tokens to other users on the system or
+when traversing untrusted network links.</p>
 <h3 id="ecs-server-ssl-certificate">ECS Server SSL Certificate</h3>
 <p>No public CA (DigiCert, Let's Encrypt, etc.) will issue a certificate for
 <code>localhost</code>, <code>127.0.0.1</code>, or the special ECS credentials IP <code>169.254.170.2</code>, so
@@ -2282,10 +2289,8 @@ ECS Server will automatically disable HTTP and enable HTTPS. There is no flag to
 force HTTP while a certificate is stored — run <code>aws-sso setup ecs ssl --delete</code>
 to disable SSL/TLS instead (see <a href="#deleting-the-certificate">Deleting the certificate</a>
 below).</p>
-<p><strong>Note:</strong> <code>aws-sso</code> provides no command to export the CA private key — <code>--print-ca</code> prints only the
-certificate. How well the key itself is protected is down to your
-<a href="../config/">secure store</a>: the OS keychain and 1Password backends encrypt it, while the
-<code>json</code> store keeps it in plaintext like everything else it holds.</p>
+<p><strong>Note:</strong> <code>aws-sso</code> provides no command to export the CA private key; <code>--print-ca</code> prints only the
+certificate.  The CA private key is kept securely in the <a href="../config/#securestore--jsonstore">secure store</a>.</p>
 <p>See <a href="#trusting-the-ca">Trusting the CA</a> below for how to trust this certificate in your OS and
 in each AWS SDK runtime.</p>
 <h3 id="deleting-the-certificate">Deleting the certificate</h3>
@@ -2304,12 +2309,11 @@ and nothing needs to be re-trusted.</p>
 See <a href="#untrusting-the-ca">Untrusting the CA</a> below, and note the fingerprint printed by
 <code>--self-signed</code> before you delete the CA: afterwards there is no way to recover it.</p>
 <h3 id="trusting-the-ca">Trusting the CA</h3>
-<p>First export the local CA certificate to a file (see above):</p>
+<p>First export the local CA certificate to a file:</p>
 <pre><code class="language-bash">aws-sso setup ecs ssl --print-ca &gt; /tmp/ecs-ca.pem
 </code></pre>
 <p>The CA is reused (not regenerated) every time you rerun <code>--self-signed</code>, so you only need to
-export and trust it once per machine/runtime below — only <code>--delete</code>, <code>--delete-ca</code>, and then
-<code>--self-signed</code> will require repeating these steps.</p>
+export and trust it once per machine/runtime below.</p>
 <p><code>--self-signed</code> prints the CA's SHA-256 fingerprint on every run. Compare it with the fingerprint
 your OS or runtime trust store shows for <code>aws-sso-cli ECS Server CA</code> to confirm you trusted the
 right certificate, or check the exported file directly:</p>
@@ -2622,6 +2626,10 @@ services:
       AWS_CONTAINER_CREDENTIALS_FULL_URI: http://169.254.170.2:4144
       # must match the token stored via `aws-sso setup ecs auth`.  Omit this (and run
       # `write-secrets --disable-auth`) only if you are not using HTTP Auth.
+      # Note that this exposes the bearer token via `docker inspect`.  For additional security
+      # consider passing in the bearer token via a mount or via docker compose secrets
+      # and AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE
+      # https://docs.docker.com/compose/how-tos/use-secrets/
       AWS_CONTAINER_AUTHORIZATION_TOKEN: &quot;Bearer ${AWS_SSO_ECS_TOKEN}&quot;
     networks:
       aws-sso-ecs: {}

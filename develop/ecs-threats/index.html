@@ -1115,13 +1115,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Problem Description">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ssrf-mitigation-built-into-the-aws-sdks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSRF mitigation built into the AWS SDKs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
-  <a href="#solution" class="md-nav__link">
+  <a href="#solution-implemented" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Solution
+        Solution (implemented)
       
     </span>
   </a>
@@ -1207,10 +1224,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#attacker-can-posion-dns-or-etchosts" class="md-nav__link">
+  <a href="#attacker-can-poison-dns-or-etchosts" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Attacker can posion DNS or /etc/hosts
+        Attacker can poison DNS or /etc/hosts
       
     </span>
   </a>
@@ -1218,21 +1235,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#attacker-can-dos-the-certificate-signing-service" class="md-nav__link">
+  <a href="#attacker-controlled-host-tries-to-leak-the-bearer-token-via-aws_container_credentials_full_uri" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Attacker can DoS the certificate signing service
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#attacker-can-exploit-the-certificate-signing-service" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Attacker can exploit the certificate signing service
+        Attacker-controlled host tries to leak the Bearer Token via AWS_CONTAINER_CREDENTIALS_FULL_URI
       
     </span>
   </a>
@@ -1306,13 +1312,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Problem Description">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ssrf-mitigation-built-into-the-aws-sdks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSRF mitigation built into the AWS SDKs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
-  <a href="#solution" class="md-nav__link">
+  <a href="#solution-implemented" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Solution
+        Solution (implemented)
       
     </span>
   </a>
@@ -1398,10 +1421,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#attacker-can-posion-dns-or-etchosts" class="md-nav__link">
+  <a href="#attacker-can-poison-dns-or-etchosts" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Attacker can posion DNS or /etc/hosts
+        Attacker can poison DNS or /etc/hosts
       
     </span>
   </a>
@@ -1409,21 +1432,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#attacker-can-dos-the-certificate-signing-service" class="md-nav__link">
+  <a href="#attacker-controlled-host-tries-to-leak-the-bearer-token-via-aws_container_credentials_full_uri" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Attacker can DoS the certificate signing service
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#attacker-can-exploit-the-certificate-signing-service" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Attacker can exploit the certificate signing service
+        Attacker-controlled host tries to leak the Bearer Token via AWS_CONTAINER_CREDENTIALS_FULL_URI
       
     </span>
   </a>
@@ -1468,123 +1480,62 @@
 
 <h1 id="ecs-server-threat-model">ECS Server Threat Model</h1>
 <h2 id="problem-description">Problem Description</h2>
-<p>The AWS SDK supports fetching the IAM Credentials used for making calls to the AWS API
-the HTTP endpoint defined by the <a href="https://docs.aws.amazon.com/sdkref/latest/guide/feature-container-credentials.html">AWS_CONTAINER_CREDENTIALS_FULL_URI</a>
+<p>The AWS SDK supports fetching the IAM Credentials used for making calls to the AWS API via the
+HTTP endpoint defined by the <a href="https://docs.aws.amazon.com/sdkref/latest/guide/feature-container-credentials.html">AWS_CONTAINER_CREDENTIALS_FULL_URI</a>
 environment variable.</p>
 <p>This connection will expose the AWS API credentials for one or more IAM Roles and should
 be secured as much as possible.  Unfortunately, the
 <a href="https://github.com/aws/aws-sdk/issues/774">AWS SDK only supports public Certificates of Authority</a> to enable users to run their own local service
-which impliments this API on <code>localhost</code>.</p>
-<p>But <a href="https://letsencrypt.org/docs/certificates-for-localhost/">public CA's will not create certificates for localhost</a>.</p>
-<h2 id="solution">Solution</h2>
-<p><strong>Note:</strong> <code>aws-sso setup ecs ssl --self-signed</code> (see <a href="../ecs-server/#ecs-server-ssl-certificate">docs/ecs-server.md</a>) already implements a simpler alternative to the
-hosted CSR-signing service proposed below: a private CA generated and stored locally, with
-no account, API key, or public DNS registration required. It works for every AWS SDK except
-Python/the AWS CLI, which is tracked upstream at
-<a href="https://github.com/aws/aws-cli/issues/9016">aws/aws-cli#9016</a>. The hosted service below
-remains a possible future option for zero-touch trust distribution across multiple users or
-machines, which <code>--self-signed</code>'s per-machine private CA does not solve.</p>
-<p>In order to support <code>aws-sso</code> users who wish to run their own endpoint for
-<code>AWS_CONTAINER_CREDENTIALS_FULL_URI</code>, we need to create a new public web service which:</p>
-<hr />
-<p>Scenario: A user wishes to create an account</p>
+which implements this API on <code>localhost</code>.</p>
+<p>But <a href="https://letsencrypt.org/docs/certificates-for-localhost/">public CA's will not create certificates for localhost</a>, nor for <code>169.254.170.2</code> (the
+special ECS credentials IP, see below).</p>
+<h3 id="ssrf-mitigation-built-into-the-aws-sdks">SSRF mitigation built into the AWS SDKs</h3>
+<p>Because <code>AWS_CONTAINER_CREDENTIALS_FULL_URI</code> can be pointed at an arbitrary URL, a
+misconfigured or compromised environment could leak the <code>AWS_CONTAINER_AUTHORIZATION_TOKEN</code>
+bearer token to a host the attacker controls. To close this off, AWS SDKs (botocore, the Go SDK,
+Java v2, JS v3, etc.) only attach the <code>Authorization</code> header when the URI's host is one of a
+fixed allow-list:</p>
 <ul>
-<li>Given: A new user who has never enabled SSL before</li>
-<li>When: The user chooses a unique username and password</li>
-<li>And: Provides a valid email address</li>
-<li>Then: The service creates an account for the user</li>
+<li><code>169.254.170.2</code>, the real ECS Task Metadata/Credentials endpoint</li>
+<li><code>169.254.170.23</code>, the EKS Pod Identity agent</li>
+<li><code>fd00:ec2::23</code>, the IPv6 equivalent of the above</li>
+<li>any loopback address (<code>127.0.0.0/8</code>, <code>::1</code>)</li>
 </ul>
-<p>Note: I generally need to think about the onboarding workflow so this may change.</p>
-<hr />
-<p>Scenario: A user wishes to register a FQDN for a SSL certificate</p>
-<ul>
-<li>Given: A valid user who has logged in</li>
-<li>When: The user chooses a <em>unique hostname</em> for <code>aws-sso-cli.org</code></li>
-<li>Then: Service creates a DNS A record for <em>hostname.aws-sso-cli.org</em> pointing to <code>127.0.0.1</code></li>
-<li>And: The user runs the command locally: <code>aws-sso setup ecs cert fqdn &lt;fqdn&gt;</code></li>
-</ul>
-<hr />
-<p>Scenario: A user wishes to enable CSR signing for the ECS Server certificates</p>
-<ul>
-<li>Given: A valid user who has logged in</li>
-<li>When: The user asks for a new API Key via the web interface</li>
-<li>Then: Web service generates a new API key for the user</li>
-<li>And: The user runs the command locally <code>aws-sso setup ecs cert api-key &lt;api key&gt;</code></li>
-</ul>
-<hr />
-<p>Scenario: A user wishes to get a signed certificate from the web service</p>
-<ul>
-<li>Given: A valid API key for a user has been configured</li>
-<li>When: The user runs <code>aws-sso setup ecs cert sign-csr</code></li>
-<li>Then: A new private key / certificate signing request will be generated locally</li>
-<li>And: The private key will be stored in the SecureStore</li>
-<li>And: The CSR will be uploaded to the webservice, using the configured API key for authentication</li>
-</ul>
-<hr />
-<p>Scenario: A user has requested a signed certificate from the web service</p>
-<ul>
-<li>Given: The user has run <code>aws-sso setup ecs cert sign-csr</code></li>
-<li>When: The service validates the API key is assigned to the FQDN in the CSR</li>
-<li>Then: The service asks Let's Encrypt to sign the CSR via ACME DNS-01</li>
-<li>And: Let's Encrypt signs the CSR</li>
-<li>And: Service returns the signed Certificate to the user.</li>
-</ul>
-<hr />
-<p>Scenario: A user has their own CA they'd like to use to sign the certificate</p>
-<ul>
-<li>Given: The user does not wish to use the public web service to manage their certificate</li>
-<li>When: A user runs <code>aws-sso setup ecs cert export-csr</code></li>
-<li>Then: A new private key / certificate signing request will be generated locally</li>
-<li>And: The private key will be stored in the SecureStore</li>
-<li>And: The CSR will be written to a file</li>
-</ul>
-<hr />
-<p>Scenario: A user has signed the CSR with their own CA</p>
-<ul>
-<li>Given: The user has exported a CSR and has had it signed by a CA</li>
-<li>When: The user runs <code>aws-sso setup ecs cert load &lt;file&gt;</code></li>
-<li>Then: <code>aws-sso</code> will store the certificate for the ECS Server</li>
-</ul>
-<hr />
-<p>Scenario: A user wishes to use ECS Server in SSL mode</p>
-<ul>
-<li>Given: <code>aws-sso</code> has a valid private key and certificate configured</li>
-<li>When: The user runs the command <code>aws-sso ecs docker start</code></li>
-<li>Then: The ECS Server runs locally</li>
-<li>And: Uses the configured SSL private key/certificate</li>
-<li>And: Uses the configured Bearer Token</li>
-</ul>
-<hr />
-<p>Scenario: A user wishes to use the ECS Server in SSL mode</p>
-<ul>
-<li>Given: The user is locally running the ECS Server in SSL Mode</li>
-<li>And: The user has configured a Bearer Token for the AWS SDK</li>
-<li>And: The user has loaded one or more AWS API credentials via <code>aws-sso ecs load ...</code></li>
-<li>When: The user has defined <code>AWS_CREDENTIALS_FULL_URI=https://&lt;fqdn&gt;:4144</code> in the current shell</li>
-<li>And: The AWS SDK attempts to connect to the ECS Server via <code>127.0.0.1:4144</code> to retrive the AWS API credentials</li>
-<li>Then: The connection to retrieve the AWS API credentials will be e2e encrypted</li>
-<li>And: The AWS SDK will use SSL to verify the identity of the ECS Server</li>
-<li>And: The ECS Server will use the Bearer Token to verify the identiy of the AWS SDK</li>
-<li>And: The ECS Server will provide the requested API credentials</li>
-<li>And: The AWS SDK will use the provided AWS API credentials in its request</li>
-</ul>
-<hr />
-<p>Scenario: A user wishes to use the AWS SDK on a remote host</p>
-<ul>
-<li>Given: The user is locally running the ECS Server in SSL Mode</li>
-<li>And: The user has configured a Bearer Token for the AWS SDK</li>
-<li>And: The user has loaded one or more AWS API credentials via <code>aws-sso ecs load ...</code></li>
-<li>When: The user runs <code>ssh -R 4144:localhost:4144 &lt;host&gt;</code></li>
-<li>And: The user has defined <code>AWS_CREDENTIALS_FULL_URI=https://&lt;fqdn&gt;:4144</code> in the remote shell</li>
-<li>And: The AWS SDK attempts to connect to the ECS Server via <code>127.0.0.1:4144</code> to retrive the AWS API credentials</li>
-<li>Then: The connection will be proxied by ssh to the users local system where the ECS Server is running</li>
-<li>And: The AWS SDK will use SSL to verify the identity of the ECS Server</li>
-<li>And: The ECS Server will use the Bearer Token to verify the identiy of the AWS SDK</li>
-<li>And: The ECS Server will provide the requested API credentials</li>
-<li>And: The AWS SDK will use the provided AWS API credentials in its request</li>
-</ul>
-<hr />
+<p>The first two are AWS-specific addresses within <code>169.254.0.0/16</code>, the IPv4 link-local block
+reserved by <a href="https://www.rfc-editor.org/rfc/rfc3927">RFC 3927</a>: not routable off the local
+link, which is why the SDKs trust that block enough to send the bearer token there.</p>
+<p><code>169.254.170.23</code>/<code>fd00:ec2::23</code> (EKS Pod Identity) are out of scope for <code>aws-sso</code>: it only
+emulates the ECS Task Metadata/Credentials endpoint, not the EKS Pod Identity agent, and neither
+address is covered by the self-signed cert's SANs (below). <code>aws-sso</code>'s own supported set is
+narrower than the full SDK allow-list: just loopback (<code>127.0.0.1</code>/<code>::1</code>) and <code>169.254.170.2</code>.</p>
+<p>If the host doesn't match, most SDKs still make the request but silently drop the
+<code>Authorization</code> header rather than refusing outright, so pointing an SDK's
+<code>AWS_CONTAINER_CREDENTIALS_FULL_URI</code> at a non-allow-listed host doesn't leak the bearer token,
+but it also means the ECS Server's HTTP Authentication silently stops working: requests will
+fail with a <code>403</code>/<code>401</code> that looks like a config error rather than a network error. This is
+why <code>aws-sso ecs server</code> defaults to binding <code>127.0.0.1</code>, and why the Docker workflow (see
+<a href="../ecs-server/#why-ssl-is-not-needed-here">Why SSL is not needed here</a>) assigns the container
+<code>169.254.170.2</code> instead of an arbitrary bridge IP, since both are on the allow-list, so the bearer
+token still gets sent. Binding anywhere else works for fetching credentials over plain HTTP,
+but silently disables Bearer token auth and can't be covered by the self-signed cert either.
+<code>aws-sso ecs server</code> logs a warning at startup if <code>--bind-ip</code> is set to anything other than
+loopback or <code>169.254.170.2</code> for exactly this reason. See <code>docs/ecs-server.md</code> for the actual
+<code>--bind-ip</code>/<code>--self-signed</code> configuration.</p>
+<h2 id="solution-implemented">Solution (implemented)</h2>
+<p><code>aws-sso setup ecs ssl --self-signed</code> (see <a href="../ecs-server/#ecs-server-ssl-certificate">docs/ecs-server.md</a>) generates a private CA and a leaf certificate,
+stored in the SecureStore, covering <code>localhost</code>, <code>127.0.0.1</code>, <code>::1</code>, and <code>169.254.170.2</code>. This
+requires no account, API key, or public DNS registration, and is the actual solution in use
+today. It works well for every AWS SDK except Python/the AWS CLI, which is tracked upstream at
+<a href="https://github.com/aws/aws-cli/issues/9016">aws/aws-cli#9016</a>.</p>
+<p>An earlier draft of this document proposed a hosted CSR-signing web service (user accounts,
+per-user DNS records under <code>aws-sso-cli.org</code>, ACME DNS-01 signing via Let's Encrypt) as an
+alternative to running a private CA. That was never built, and the self-signed CA above covers
+the practical need. It remains a hypothetical future option only for zero-touch trust
+distribution across multiple users/machines, which a per-machine private CA doesn't solve, and not
+something currently planned.</p>
 <h2 id="attacks">Attacks</h2>
+<p>The threat model below covers the two mechanisms <code>aws-sso ecs server</code> actually implements: SSL/TLS
+(via the self-signed CA above) and HTTP Authentication (Bearer token).</p>
 <h3 id="attacker-has-root-on-the-box-running-aws-sso-ecs-server">Attacker has root on the box running aws-sso ECS Server</h3>
 <ul>
 <li>Without SSL: Game over.  Can do anything at this point.</li>
@@ -1622,40 +1573,28 @@ traffic, they can obtain the Bearer Token or AWS API credentials.</li>
     warning the user can ignore, which closes this attack even without SSL.</li>
 <li>With SSL: No attack; traffic is e2e encrypted and authenticated.</li>
 </ul>
-<h3 id="attacker-can-posion-dns-or-etchosts">Attacker can posion DNS or /etc/hosts</h3>
+<h3 id="attacker-can-poison-dns-or-etchosts">Attacker can poison DNS or /etc/hosts</h3>
 <ul>
 <li>Without SSL: Attacker can MITM the connection and get access to the Bearer Token
     and AWS API credentials.</li>
 <li>Mitigate: aws-sso can inspect DNS to ensure IP address is correct</li>
 <li>With SSL: Just a DoS because AWS SDK validates SSL cert before sending the Bearer Token</li>
 </ul>
-<h3 id="attacker-can-dos-the-certificate-signing-service">Attacker can DoS the certificate signing service</h3>
+<h3 id="attacker-controlled-host-tries-to-leak-the-bearer-token-via-aws_container_credentials_full_uri">Attacker-controlled host tries to leak the Bearer Token via <code>AWS_CONTAINER_CREDENTIALS_FULL_URI</code></h3>
 <ul>
-<li>Attacker can prevent users from getting updated certificates when they expire.</li>
-<li>Mitigations:<ul>
-<li>Consider configurable endpoints</li>
-<li>Use CloudFlare</li>
-</ul>
-</li>
-</ul>
-<h3 id="attacker-can-exploit-the-certificate-signing-service">Attacker can exploit the certificate signing service</h3>
-<ul>
-<li>Attacker can issue their own certificate for hostname.aws-sso-cli.org</li>
-<li>Attacker can update DNS and point hostname.aws-sso-cli.org at a different IP than 127.0.0.1</li>
-<li>Mitigate: aws-sso client can validate DNS record is valid</li>
-<li>Attacker can inject bad data and modify the database of users</li>
-<li>Attacker can steal API Key of users to sign CSRs</li>
-<li>Mitigate: use public key auth to mitigate</li>
-<li>Lookup "click jacking" -- run Burp scanner</li>
+<li>No attack: modern AWS SDKs only send the <code>Authorization</code> header (Bearer Token) when the
+  target host is <code>169.254.170.2</code>, <code>169.254.170.23</code>, <code>fd00:ec2::23</code>, or loopback (see the
+  SSRF mitigation section above). An attacker-controlled <code>FULL_URI</code> pointed elsewhere gets no
+  token.</li>
+<li>Caveat: this protection lives in the SDK, not in <code>aws-sso</code>, and was only added to some SDKs
+    in 2023-2024, so an outdated SDK version may not enforce it. See <code>docs/ecs-server.md</code> for the
+    minimum botocore version note.</li>
 </ul>
 <h2 id="suggestions">Suggestions</h2>
 <ul>
-<li>Examine need for certificate revocation for users.</li>
-<li>Look into a private/public cert method of API Key for authentication so people can't dump my database
-and issue certs for anyone.</li>
-<li>Add extensive logging since we're low traffic and anything interesting will show up easily</li>
-<li>Use Burp scanner/suite to do a pen test</li>
-<li>Examine what free security options CloudFlare &amp; Fly.io? provide</li>
+<li>Add extensive logging since we're low traffic and anything interesting will show up easily.</li>
+<li>Consider certificate revocation if multi-machine/multi-user trust distribution is ever
+  revisited.</li>
 </ul>
 
 
