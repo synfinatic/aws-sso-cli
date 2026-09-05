@@ -58,6 +58,32 @@ func TestEcsServerCmdAfterApply(t *testing.T) {
 	}
 }
 
+func TestBindIPWarning(t *testing.T) {
+	tests := []struct {
+		name   string
+		bindIP string
+		want   bool // true if a non-empty warning is expected
+	}{
+		{name: "loopback v4 is safe", bindIP: "127.0.0.1", want: false},
+		{name: "loopback v6 is safe", bindIP: "::1", want: false},
+		{name: "ecs credentials IP is safe", bindIP: "169.254.170.2", want: false},
+		{name: "all-interfaces is unsafe", bindIP: "0.0.0.0", want: true},
+		{name: "LAN IP is unsafe", bindIP: "192.168.1.50", want: true},
+		{name: "eks pod identity IP is unsafe", bindIP: "169.254.170.23", want: true},
+		{name: "unparseable bindIP is ignored", bindIP: "not-an-ip", want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := bindIPWarning(tt.bindIP)
+			if tt.want {
+				assert.NotEmpty(t, got)
+			} else {
+				assert.Empty(t, got)
+			}
+		})
+	}
+}
+
 func TestSetServerDefaultProfileNotFound(t *testing.T) {
 	// Build a RunContext with an empty SSO cache so GetRoleByProfile returns "not found".
 	c := &ssocache.Cache{SSO: map[string]*ssocache.SSOCache{}}
