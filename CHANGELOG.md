@@ -1,7 +1,11 @@
 <!-- markdownlint-disable MD024 -->
 # AWS SSO CLI Changelog
 
-## [Unreleased]
+## [v2.3.3] -- 2026-10-2026
+
+### Security
+
+* Update to Go 1.26.10 for [eMudhra revocation](https://github.com/golang/go/issues/82345)
 
 ## [v2.3.2] -- 2026-07-29
 
@@ -957,9 +961,10 @@ Initial release
 
 <!-- linkspector-disable -->
 <!-- markdownlint-disable-next-line MD053 -->
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.3.2...main
-[v2.3.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.3.2
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.3.3...main
+[v2.3.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.3.3
 <!-- linkspector-enable -->
+[v2.3.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.3.2
 [v2.3.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.3.1
 [v2.3.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.3.0
 [v2.2.5]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.2.5
