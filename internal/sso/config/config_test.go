@@ -176,14 +176,13 @@ func TestCreatedAt(t *testing.T) {
 	defer os.Remove(f.Name())
 	f.Close()
 
-	before := time.Now().Unix()
+	// set a known mtime so the test doesn't depend on filesystem vs. wall clock granularity
+	want := time.Unix(1700000000, 0)
+	assert.NoError(t, os.Chtimes(f.Name(), want, want))
+
 	c := &SSOConfig{}
 	c.SetConfigFile(f.Name())
-	ts := c.CreatedAt()
-	after := time.Now().Unix()
-
-	assert.GreaterOrEqual(t, ts, before)
-	assert.LessOrEqual(t, ts, after)
+	assert.Equal(t, want.Unix(), c.CreatedAt())
 }
 
 func TestGetRoles(t *testing.T) {
