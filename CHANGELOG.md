@@ -5,6 +5,8 @@
 
 ### New Features
 
+* The release workflow now verifies the release tag matches `PROJECT_VERSION` in the Makefile
+  before building or uploading any files
 * Add `setup ecs ssl --self-signed` to create a self-signed CA and leaf cert for the ECS Server,
   scoped so it can't sign for other hosts; prints the CA's SHA-256 fingerprint for verification
 * Add `login --force` to start a new SSO session, resetting its duration #1455
