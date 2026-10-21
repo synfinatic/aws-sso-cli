@@ -1,6 +1,6 @@
 module github.com/synfinatic/aws-sso-cli
 
-go 1.26.4
+go 1.26.10
 
 // toolchain go1.23.6
 
