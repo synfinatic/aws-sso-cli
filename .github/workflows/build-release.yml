@@ -9,12 +9,36 @@ on:
     types: [created]
 
 jobs:
+  # fail fast if the release tag does not match PROJECT_VERSION in the Makefile
+  verify-version:
+    name: Verify tag matches Makefile version
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Compare tag to PROJECT_VERSION
+        env:
+          TAG_NAME: ${{ github.event.release.tag_name }}
+        run: |
+          MAKE_VERSION=$(sed -n 's/^PROJECT_VERSION[[:space:]]*:=[[:space:]]*\([^[:space:]#]*\).*/\1/p' Makefile | head -1)
+          if [ -z "${MAKE_VERSION}" ]; then
+            echo "::error::Unable to find PROJECT_VERSION in Makefile"
+            exit 1
+          fi
+          if [ "${TAG_NAME#v}" != "${MAKE_VERSION#v}" ]; then
+            echo "::error::Release tag '${TAG_NAME}' does not match Makefile PROJECT_VERSION '${MAKE_VERSION}'"
+            exit 1
+          fi
+          echo "Tag ${TAG_NAME} matches PROJECT_VERSION ${MAKE_VERSION}"
+
   # most binaries can be built on linux machine which is the most cost-efficient on GitHub actions
   # for building darwin-arm64 binary we need Xcode, therefore, we need to build it on MacOS
 
   linux-build:
     name: Build binaries on Ubuntu
     runs-on: ubuntu-latest
+    needs: [verify-version]
 
     steps:
       - uses: actions/checkout@v7
@@ -43,6 +67,7 @@ jobs:
   macos-build:
     name: Build binaries on MacOS
     runs-on: macos-latest
+    needs: [verify-version]
 
     steps:
       - uses: actions/checkout@v7
