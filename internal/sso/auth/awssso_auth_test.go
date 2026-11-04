@@ -457,6 +457,7 @@ func TestValidAuthTokenPKCE(t *testing.T) { // nolint:dupl
 		ClientId:              "test-client-id",
 		ClientSecret:          "test-client-secret",
 		ClientSecretExpiresAt: 99999999999,
+		Scopes:                []string{SSO_ACCOUNT_ACCESS_SCOPE},
 		GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken},
 	}
 	err = jstore.SaveRegisterClientData(context.Background(), key, clientData)
@@ -484,6 +485,7 @@ func TestValidAuthTokenDeviceCode(t *testing.T) { // nolint:dupl
 		ClientId:              "test-client-id",
 		ClientSecret:          "test-client-secret",
 		ClientSecretExpiresAt: 99999999999,
+		Scopes:                []string{SSO_ACCOUNT_ACCESS_SCOPE},
 		GrantTypes:            []storage.GrantType{storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken},
 	}
 	err = jstore.SaveRegisterClientData(context.Background(), key, clientData)
@@ -499,6 +501,16 @@ func TestValidAuthTokenDeviceCode(t *testing.T) { // nolint:dupl
 	err = jstore.SaveRegisterClientData(context.Background(), key, clientData)
 	assert.NoError(t, err)
 	assert.False(t, as.ValidAuthToken(context.Background()))
+
+	// A registration made before we sent the scope has the right grant types
+	// but never gets a refresh token, so it must be replaced.
+	clientData.GrantTypes = []storage.GrantType{storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken}
+	clientData.Scopes = nil
+	err = jstore.SaveRegisterClientData(context.Background(), key, clientData)
+	assert.NoError(t, err)
+	assert.False(t, as.ValidAuthToken(context.Background()))
+	got := storage.RegisterClientData{}
+	assert.Error(t, jstore.GetRegisterClientData(key, &got), "stale registration should be deleted")
 }
 
 func TestAuthenticateFailure(t *testing.T) {
@@ -998,6 +1010,49 @@ func TestRegisterClientPKCE(t *testing.T) {
 	}
 }
 
+func TestRegisterClientDeviceCode(t *testing.T) {
+	tfile, err := os.CreateTemp("", "*storage.json")
+	assert.NoError(t, err)
+	defer os.Remove(tfile.Name())
+
+	jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
+	assert.NoError(t, err)
+
+	mock := &mockOIDCClient{
+		registerClientResult: storage.RegisterClientData{ // #nosec G101
+			ClientId:              "dc-client-id",
+			ClientSecret:          "dc-client-secret",
+			ClientSecretExpiresAt: time.Now().Add(time.Hour).Unix(),
+		},
+	}
+
+	as := &AWSSSO{
+		key:        "test",
+		SsoRegion:  "us-west-2",
+		StartUrl:   "https://d-test.awsapps.com/start",
+		ClientName: awsSSOClientName,
+		ClientType: awsSSOClientType,
+		store:      jstore,
+		oidcClient: mock,
+		SSOConfig:  &ssoconfig.SSOConfig{AuthWorkflow: oidc.AuthWorkflowDeviceCode},
+	}
+
+	err = as.registerClient(context.Background(), true)
+	assert.NoError(t, err)
+
+	// Without this scope AWS does not issue a refresh token.
+	if assert.Len(t, mock.registerClientInputs, 1) {
+		in := mock.registerClientInputs[0]
+		assert.Equal(t, []string{SSO_ACCOUNT_ACCESS_SCOPE}, in.Scopes)
+		assert.Empty(t, in.RedirectUris)
+	}
+
+	// The scope is stored so ValidAuthToken() can tell old registrations apart.
+	stored := storage.RegisterClientData{}
+	assert.NoError(t, jstore.GetRegisterClientData(as.StoreKey(), &stored))
+	assert.True(t, stored.SupportsScope(SSO_ACCOUNT_ACCESS_SCOPE))
+}
+
 func TestReauthenticatePKCE(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		tfile, err := os.CreateTemp("", "*storage.json")
@@ -1272,6 +1327,7 @@ func TestValidAuthTokenRefresh(t *testing.T) {
 			ClientId:              "cid",
 			ClientSecret:          "csecret",
 			ClientSecretExpiresAt: time.Now().Add(time.Hour).Unix(),
+			Scopes:                []string{SSO_ACCOUNT_ACCESS_SCOPE},
 			GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken},
 		}
 		err = jstore.SaveRegisterClientData(context.Background(), as.StoreKey(), clientData)
@@ -1319,6 +1375,7 @@ func TestValidAuthTokenRefresh(t *testing.T) {
 			ClientId:              "cid",
 			ClientSecret:          "csecret",
 			ClientSecretExpiresAt: time.Now().Add(time.Hour).Unix(),
+			Scopes:                []string{SSO_ACCOUNT_ACCESS_SCOPE},
 			GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken},
 		}
 		err = jstore.SaveRegisterClientData(context.Background(), as.StoreKey(), clientData)
@@ -1357,6 +1414,7 @@ func TestValidAuthTokenRefresh(t *testing.T) {
 			ClientId:              "cid",
 			ClientSecret:          "csecret",
 			ClientSecretExpiresAt: time.Now().Add(time.Hour).Unix(),
+			Scopes:                []string{SSO_ACCOUNT_ACCESS_SCOPE},
 			GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken},
 		}
 		err = jstore.SaveRegisterClientData(context.Background(), as.StoreKey(), clientData)

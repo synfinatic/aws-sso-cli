@@ -67,6 +67,16 @@ func (as *AWSSSO) ValidAuthToken(ctx context.Context) bool {
 				return false
 			}
 		}
+		// Registrations made without the scope never get a refresh token,
+		// even though they list the refresh_token grant type.
+		if !clientData.SupportsScope(SSO_ACCOUNT_ACCESS_SCOPE) {
+			log.Debug("client registration lacks necessary scope; forcing new registration",
+				"storeKey", as.StoreKey(), "missingScope", SSO_ACCOUNT_ACCESS_SCOPE)
+			if err = as.store.DeleteRegisterClientData(ctx, as.StoreKey()); err != nil {
+				log.Error("unable to delete RegisterClientData from secure store", "storeKey", as.StoreKey(), "error", err.Error())
+			}
+			return false
+		}
 	}
 
 	// check our cache
@@ -188,9 +198,10 @@ func (as *AWSSSO) registerClient(ctx context.Context, force bool) error {
 		ClientType: as.ClientType,
 		GrantTypes: as.authGrantTypes(),
 		IssuerUrl:  as.StartUrl,
+		// Without this scope AWS does not issue refresh tokens, for either workflow.
+		Scopes: []string{SSO_ACCOUNT_ACCESS_SCOPE},
 	}
 	if as.getAuthWorkflow() == oidc.AuthWorkflowPKCE {
-		input.Scopes = []string{SSO_ACCOUNT_ACCESS_SCOPE}
 		input.RedirectUris = []string{as.pkceRedirectURIBase()}
 	}
 	resp, err := as.oidcClient.RegisterClient(ctx, input)
@@ -203,6 +214,7 @@ func (as *AWSSSO) registerClient(ctx context.Context, force bool) error {
 	// AWS does not echo back the grant types we registered with, so we record
 	// them ourselves so ValidAuthToken() can check for refresh_token support.
 	as.ClientData.GrantTypes = as.GrantTypes()
+	as.ClientData.Scopes = input.Scopes
 	log.Trace("SaveRegisterClientData start", "storeKey", as.StoreKey())
 	err = as.store.SaveRegisterClientData(ctx, as.StoreKey(), as.ClientData)
 	if err != nil {
