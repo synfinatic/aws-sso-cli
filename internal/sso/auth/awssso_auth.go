@@ -38,7 +38,7 @@ const (
 	DEFAULT_AUTH_COLOR       = "blue"
 	DEFAULT_AUTH_ICON        = "fingerprint"
 	VERIFY_MSG               = "\n\tVerify this code in your browser: %s\n"
-	SSO_ACCOUNT_ACCESS_SCOPE = "sso:account:access"
+	SSO_ACCOUNT_ACCESS_SCOPE = storage.SSOAccountAccessScope
 	awsSSOClientName         = "aws-sso-cli"
 	awsSSOClientType         = "public"
 	// The default values for ODIC defined in:
@@ -66,16 +66,6 @@ func (as *AWSSSO) ValidAuthToken(ctx context.Context) bool {
 				}
 				return false
 			}
-		}
-		// Registrations made without the scope never get a refresh token,
-		// even though they list the refresh_token grant type.
-		if !clientData.SupportsScope(SSO_ACCOUNT_ACCESS_SCOPE) {
-			log.Debug("client registration lacks necessary scope; forcing new registration",
-				"storeKey", as.StoreKey(), "missingScope", SSO_ACCOUNT_ACCESS_SCOPE)
-			if err = as.store.DeleteRegisterClientData(ctx, as.StoreKey()); err != nil {
-				log.Error("unable to delete RegisterClientData from secure store", "storeKey", as.StoreKey(), "error", err.Error())
-			}
-			return false
 		}
 	}
 
@@ -186,9 +176,16 @@ func (as *AWSSSO) registerClient(ctx context.Context, force bool) error {
 	if !force {
 		log.Trace("Checking cache for RegisterClientData", "storeKey", as.StoreKey())
 		err := as.store.GetRegisterClientData(as.StoreKey(), &as.ClientData)
-		if err == nil && !as.ClientData.Expired() {
+		// Registrations made without the scope never get a refresh token, even
+		// though they list the refresh_token grant type, so replace them here.
+		// A still-valid token from such a registration keeps working until then.
+		if err == nil && !as.ClientData.Expired() && as.ClientData.SupportsScope(SSO_ACCOUNT_ACCESS_SCOPE) {
 			log.Debug("Using RegisterClient from secure store", "storeKey", as.StoreKey())
 			return nil
+		}
+		if err == nil && !as.ClientData.Expired() {
+			log.Debug("cached client registration lacks necessary scope; registering a new client",
+				"storeKey", as.StoreKey(), "missingScope", SSO_ACCOUNT_ACCESS_SCOPE)
 		}
 	}
 
