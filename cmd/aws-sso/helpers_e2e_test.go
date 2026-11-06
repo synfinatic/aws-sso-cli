@@ -234,6 +234,7 @@ func preAuth(t *testing.T, setup *e2eSetup) {
 			storage.GrantTypeDeviceCode,
 			storage.GrantTypeRefreshToken,
 		},
+		Scopes: []string{storage.SSOAccountAccessScope},
 	})
 	require.NoError(t, err)
 
@@ -261,6 +262,7 @@ func preAuthExpired(t *testing.T, setup *e2eSetup, refreshToken string) {
 			storage.GrantTypeDeviceCode,
 			storage.GrantTypeRefreshToken,
 		},
+		Scopes: []string{storage.SSOAccountAccessScope},
 	})
 	require.NoError(t, err)
 
