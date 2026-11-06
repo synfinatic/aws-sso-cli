@@ -38,7 +38,7 @@ const (
 	DEFAULT_AUTH_COLOR       = "blue"
 	DEFAULT_AUTH_ICON        = "fingerprint"
 	VERIFY_MSG               = "\n\tVerify this code in your browser: %s\n"
-	SSO_ACCOUNT_ACCESS_SCOPE = "sso:account:access"
+	SSO_ACCOUNT_ACCESS_SCOPE = storage.SSOAccountAccessScope
 	awsSSOClientName         = "aws-sso-cli"
 	awsSSOClientType         = "public"
 	// The default values for ODIC defined in:
@@ -176,9 +176,16 @@ func (as *AWSSSO) registerClient(ctx context.Context, force bool) error {
 	if !force {
 		log.Trace("Checking cache for RegisterClientData", "storeKey", as.StoreKey())
 		err := as.store.GetRegisterClientData(as.StoreKey(), &as.ClientData)
-		if err == nil && !as.ClientData.Expired() {
+		// Registrations made without the scope never get a refresh token, even
+		// though they list the refresh_token grant type, so replace them here.
+		// A still-valid token from such a registration keeps working until then.
+		if err == nil && !as.ClientData.Expired() && as.ClientData.SupportsScope(SSO_ACCOUNT_ACCESS_SCOPE) {
 			log.Debug("Using RegisterClient from secure store", "storeKey", as.StoreKey())
 			return nil
+		}
+		if err == nil && !as.ClientData.Expired() {
+			log.Debug("cached client registration lacks necessary scope; registering a new client",
+				"storeKey", as.StoreKey(), "missingScope", SSO_ACCOUNT_ACCESS_SCOPE)
 		}
 	}
 
@@ -188,9 +195,10 @@ func (as *AWSSSO) registerClient(ctx context.Context, force bool) error {
 		ClientType: as.ClientType,
 		GrantTypes: as.authGrantTypes(),
 		IssuerUrl:  as.StartUrl,
+		// Without this scope AWS does not issue refresh tokens, for either workflow.
+		Scopes: []string{SSO_ACCOUNT_ACCESS_SCOPE},
 	}
 	if as.getAuthWorkflow() == oidc.AuthWorkflowPKCE {
-		input.Scopes = []string{SSO_ACCOUNT_ACCESS_SCOPE}
 		input.RedirectUris = []string{as.pkceRedirectURIBase()}
 	}
 	resp, err := as.oidcClient.RegisterClient(ctx, input)
@@ -203,6 +211,7 @@ func (as *AWSSSO) registerClient(ctx context.Context, force bool) error {
 	// AWS does not echo back the grant types we registered with, so we record
 	// them ourselves so ValidAuthToken() can check for refresh_token support.
 	as.ClientData.GrantTypes = as.GrantTypes()
+	as.ClientData.Scopes = input.Scopes
 	log.Trace("SaveRegisterClientData start", "storeKey", as.StoreKey())
 	err = as.store.SaveRegisterClientData(ctx, as.StoreKey(), as.ClientData)
 	if err != nil {

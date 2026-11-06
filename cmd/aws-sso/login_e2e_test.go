@@ -21,6 +21,7 @@ package main
  */
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -147,6 +148,77 @@ func TestE2ELogin_Force(t *testing.T) {
 	require.NoError(t, setup.Store.GetCreateTokenResponse(AwsSSO.StoreKey(), &ctr))
 	assert.Equal(t, "forced-access-token", ctr.AccessToken, "--force must replace the valid token")
 	assert.False(t, ctr.Expired())
+}
+
+// TestE2ELogin_ForceScopelessRegistration is the upgrade path: a device_code
+// user whose registration was made before we sent the sso:account:access scope
+// still has a valid token. --force must still log out the old session once, and
+// the re-authentication must replace the registration with one that has the scope.
+func TestE2ELogin_ForceScopelessRegistration(t *testing.T) {
+	setup := newE2ESetup(t)
+	preAuth(t, setup)
+
+	// overwrite the seeded registration with one made without the scope
+	require.NoError(t, setup.Store.SaveRegisterClientData(context.Background(), AwsSSO.StoreKey(), storage.RegisterClientData{
+		ClientId:              "old-client-id",
+		ClientSecret:          "old-client-secret",
+		ClientIdIssuedAt:      time.Now().Unix(),
+		ClientSecretExpiresAt: time.Now().Add(90 * 24 * time.Hour).Unix(),
+		GrantTypes: []storage.GrantType{
+			storage.GrantTypeDeviceCode,
+			storage.GrantTypeRefreshToken,
+		},
+	}))
+
+	setup.Server.SSO.QueueLogout()
+	setup.Server.SSOOIDC.QueueRegisterClient(awsmock.RegisterClientResponse{
+		ClientID:              "new-client-id",
+		ClientSecret:          "new-client-secret",
+		ClientIDIssuedAt:      time.Now().Unix(),
+		ClientSecretExpiresAt: time.Now().Add(90 * 24 * time.Hour).Unix(),
+	})
+	setup.Server.SSOOIDC.QueueDeviceAuth(awsmock.DeviceAuthResponse{
+		DeviceCode:              "device-code",
+		UserCode:                "CODE-1234",
+		VerificationURI:         "https://verify.example.com",
+		VerificationURIComplete: "https://verify.example.com?user_code=CODE-1234",
+		ExpiresIn:               600,
+		Interval:                0,
+	})
+	setup.Server.SSOOIDC.QueueCreateToken(awsmock.OIDCTokenResponse{
+		AccessToken:  "forced-access-token",
+		ExpiresIn:    28800,
+		RefreshToken: "forced-refresh-token",
+		TokenType:    "Bearer",
+	})
+	setup.Server.SSO.QueueListAccounts(awsmock.ListAccountsResponse{
+		AccountList: []awsmock.AccountInfo{
+			{AccountID: "123456789012", AccountName: "TestAccount", EmailAddress: "admin@example.com"},
+		},
+	})
+	setup.Server.SSO.QueueListAccountRoles(awsmock.ListAccountRolesResponse{
+		RoleList: []awsmock.RoleInfo{
+			{AccountID: "123456789012", RoleName: "ReadOnly"},
+		},
+	})
+
+	ctx := newRunContext(setup, AUTH_SKIP)
+	ctx.Cli.Login = LoginCmd{UrlAction: "print", Threads: 1, Force: true}
+
+	cmd := &LoginCmd{}
+	require.NoError(t, cmd.Run(ctx))
+
+	assert.Equal(t, 1, setup.Server.SSO.LogoutCalls())
+
+	var rcd storage.RegisterClientData
+	require.NoError(t, setup.Store.GetRegisterClientData(AwsSSO.StoreKey(), &rcd))
+	assert.Equal(t, "new-client-id", rcd.ClientId)
+	assert.True(t, rcd.SupportsScope(storage.SSOAccountAccessScope))
+
+	var ctr storage.CreateTokenResponse
+	require.NoError(t, setup.Store.GetCreateTokenResponse(AwsSSO.StoreKey(), &ctr))
+	assert.Equal(t, "forced-access-token", ctr.AccessToken)
+	assert.Equal(t, "forced-refresh-token", ctr.RefreshToken)
 }
 
 // TestE2ELogin_ForceLogoutFailureStillLogsIn verifies a failed Logout is not fatal.

@@ -20,6 +20,7 @@
 
 ### Bugs
 
+* Fix `AuthWorkflow: device_code` never getting a refresh token, so sessions ended after 8 hours #1508
 * Remove `--no-config-check` and `--sts-refresh` from the documented `login` flags #1451
 * Fix documentation / examples related to using the ECS server with Docker Compose #1462
 * Document `ssh -o ExitOnForwardFailure=yes` to prevent another user on the remote host from

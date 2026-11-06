@@ -24,6 +24,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"reflect"
+	"slices"
 	"time"
 
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
@@ -47,7 +48,12 @@ type RegisterClientData struct {
 	ClientSecretExpiresAt int64       `json:"clientSecretExpiresAt"`
 	TokenEndpoint         string      `json:"tokenEndpoint,omitempty"`
 	GrantTypes            []GrantType `json:"grantTypes,omitempty"`
+	Scopes                []string    `json:"scopes,omitempty"`
 }
+
+// SSOAccountAccessScope is the scope AWS requires on a client registration
+// before it will issue refresh tokens.
+const SSOAccountAccessScope = "sso:account:access"
 
 // UnmarshalJSON implements json.Unmarshaler. If GrantTypes is absent or empty
 // in stored JSON (written by older versions of aws-sso-cli), it defaults to
@@ -63,7 +69,17 @@ func (r *RegisterClientData) UnmarshalJSON(b []byte) error {
 	if len(r.GrantTypes) == 0 {
 		r.GrantTypes = []GrantType{GrantTypeDeviceCode}
 	}
+	if len(r.Scopes) == 0 && slices.Contains(r.GrantTypes, GrantTypeAuthorizationCode) {
+		// PKCE registrations have always been made with this scope, but older
+		// versions did not record it. Don't force them to re-register.
+		r.Scopes = []string{SSOAccountAccessScope}
+	}
 	return nil
+}
+
+// SupportsScope returns true if the registration was made with the given scope.
+func (r *RegisterClientData) SupportsScope(scope string) bool {
+	return slices.Contains(r.Scopes, scope)
 }
 
 func (r *RegisterClientData) SupportsGrantType(gt GrantType) bool {

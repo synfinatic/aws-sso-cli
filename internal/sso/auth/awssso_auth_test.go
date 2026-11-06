@@ -457,6 +457,7 @@ func TestValidAuthTokenPKCE(t *testing.T) { // nolint:dupl
 		ClientId:              "test-client-id",
 		ClientSecret:          "test-client-secret",
 		ClientSecretExpiresAt: 99999999999,
+		Scopes:                []string{SSO_ACCOUNT_ACCESS_SCOPE},
 		GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken},
 	}
 	err = jstore.SaveRegisterClientData(context.Background(), key, clientData)
@@ -484,6 +485,7 @@ func TestValidAuthTokenDeviceCode(t *testing.T) { // nolint:dupl
 		ClientId:              "test-client-id",
 		ClientSecret:          "test-client-secret",
 		ClientSecretExpiresAt: 99999999999,
+		Scopes:                []string{SSO_ACCOUNT_ACCESS_SCOPE},
 		GrantTypes:            []storage.GrantType{storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken},
 	}
 	err = jstore.SaveRegisterClientData(context.Background(), key, clientData)
@@ -499,6 +501,18 @@ func TestValidAuthTokenDeviceCode(t *testing.T) { // nolint:dupl
 	err = jstore.SaveRegisterClientData(context.Background(), key, clientData)
 	assert.NoError(t, err)
 	assert.False(t, as.ValidAuthToken(context.Background()))
+
+	// A registration made before we sent the scope never gets a refresh token,
+	// but its token still works. Keep both until the next re-authentication
+	// (registerClient replaces the registration then).
+	clientData.GrantTypes = []storage.GrantType{storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken}
+	clientData.Scopes = nil
+	err = jstore.SaveRegisterClientData(context.Background(), key, clientData)
+	assert.NoError(t, err)
+	assert.True(t, as.ValidAuthToken(context.Background()))
+	got := storage.RegisterClientData{}
+	assert.NoError(t, jstore.GetRegisterClientData(key, &got), "scope-less registration should be kept")
+	assert.Equal(t, "test-client-id", got.ClientId)
 }
 
 func TestAuthenticateFailure(t *testing.T) {
@@ -998,6 +1012,166 @@ func TestRegisterClientPKCE(t *testing.T) {
 	}
 }
 
+func TestRegisterClientDeviceCode(t *testing.T) {
+	tfile, err := os.CreateTemp("", "*storage.json")
+	assert.NoError(t, err)
+	defer os.Remove(tfile.Name())
+
+	jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
+	assert.NoError(t, err)
+
+	mock := &mockOIDCClient{
+		registerClientResult: storage.RegisterClientData{ // #nosec G101
+			ClientId:              "dc-client-id",
+			ClientSecret:          "dc-client-secret",
+			ClientSecretExpiresAt: time.Now().Add(time.Hour).Unix(),
+		},
+	}
+
+	as := &AWSSSO{
+		key:        "test",
+		SsoRegion:  "us-west-2",
+		StartUrl:   "https://d-test.awsapps.com/start",
+		ClientName: awsSSOClientName,
+		ClientType: awsSSOClientType,
+		store:      jstore,
+		oidcClient: mock,
+		SSOConfig:  &ssoconfig.SSOConfig{AuthWorkflow: oidc.AuthWorkflowDeviceCode},
+	}
+
+	err = as.registerClient(context.Background(), true)
+	assert.NoError(t, err)
+
+	// Without this scope AWS does not issue a refresh token.
+	if assert.Len(t, mock.registerClientInputs, 1) {
+		in := mock.registerClientInputs[0]
+		assert.Equal(t, []string{SSO_ACCOUNT_ACCESS_SCOPE}, in.Scopes)
+		assert.Empty(t, in.RedirectUris)
+	}
+
+	// The scope is stored so ValidAuthToken() can tell old registrations apart.
+	stored := storage.RegisterClientData{}
+	assert.NoError(t, jstore.GetRegisterClientData(as.StoreKey(), &stored))
+	assert.True(t, stored.SupportsScope(SSO_ACCOUNT_ACCESS_SCOPE))
+}
+
+func TestRegisterClientCachedScope(t *testing.T) {
+	newAS := func(t *testing.T, workflow oidc.AuthWorkflow, cached storage.RegisterClientData) (*AWSSSO, *mockOIDCClient, storage.SecureStorage, string) {
+		t.Helper()
+		tfile, err := os.CreateTemp("", "*storage.json")
+		require.NoError(t, err)
+		t.Cleanup(func() { _ = os.Remove(tfile.Name()) }) // nolint:gosec
+		jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
+		require.NoError(t, err)
+
+		mock := &mockOIDCClient{
+			registerClientResult: storage.RegisterClientData{ // #nosec G101
+				ClientId:              "new-client-id",
+				ClientSecret:          "new-client-secret",
+				ClientSecretExpiresAt: time.Now().Add(time.Hour).Unix(),
+			},
+		}
+		as := &AWSSSO{
+			key:        "test",
+			SsoRegion:  "us-west-2",
+			StartUrl:   "https://d-test.awsapps.com/start",
+			ClientName: awsSSOClientName,
+			ClientType: awsSSOClientType,
+			store:      jstore,
+			oidcClient: mock,
+			SSOConfig:  &ssoconfig.SSOConfig{AuthWorkflow: workflow},
+		}
+		require.NoError(t, jstore.SaveRegisterClientData(context.Background(), as.StoreKey(), cached))
+		return as, mock, jstore, tfile.Name()
+	}
+	cached := func(scopes []string) storage.RegisterClientData {
+		return storage.RegisterClientData{ // #nosec G101
+			ClientId:              "old-client-id",
+			ClientSecret:          "old-client-secret",
+			ClientSecretExpiresAt: time.Now().Add(90 * 24 * time.Hour).Unix(),
+			GrantTypes:            []storage.GrantType{storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken},
+			Scopes:                scopes,
+		}
+	}
+
+	t.Run("scope-less registration is replaced", func(t *testing.T) {
+		as, mock, jstore, _ := newAS(t, oidc.AuthWorkflowDeviceCode, cached(nil))
+		require.NoError(t, as.registerClient(context.Background(), false))
+
+		require.Len(t, mock.registerClientInputs, 1)
+		assert.Equal(t, []string{SSO_ACCOUNT_ACCESS_SCOPE}, mock.registerClientInputs[0].Scopes)
+		stored := storage.RegisterClientData{}
+		require.NoError(t, jstore.GetRegisterClientData(as.StoreKey(), &stored))
+		assert.Equal(t, "new-client-id", stored.ClientId)
+		assert.True(t, stored.SupportsScope(SSO_ACCOUNT_ACCESS_SCOPE))
+	})
+
+	t.Run("registration with the scope is reused", func(t *testing.T) {
+		as, mock, _, _ := newAS(t, oidc.AuthWorkflowDeviceCode, cached([]string{SSO_ACCOUNT_ACCESS_SCOPE}))
+		require.NoError(t, as.registerClient(context.Background(), false))
+
+		assert.Empty(t, mock.registerClientInputs)
+		assert.Equal(t, "old-client-id", as.ClientData.ClientId)
+	})
+
+	t.Run("scope-less PKCE registration reloaded from the store file is reused", func(t *testing.T) {
+		// Older versions registered PKCE clients with the scope but did not
+		// record it. The JSON has no "scopes", and UnmarshalJSON backfills it.
+		pkce := cached(nil)
+		pkce.GrantTypes = []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken}
+		as, mock, _, fname := newAS(t, oidc.AuthWorkflowPKCE, pkce)
+
+		// reopen the store so the registration is read back from the file
+		jstore, err := storage.OpenJsonStore(context.Background(), fname)
+		require.NoError(t, err)
+		as.store = jstore
+
+		require.NoError(t, as.registerClient(context.Background(), false))
+		assert.Empty(t, mock.registerClientInputs)
+		assert.Equal(t, "old-client-id", as.ClientData.ClientId)
+	})
+}
+
+func TestReauthenticateReplacesScopelessRegistration(t *testing.T) {
+	// An upgraded device_code user: expired token with no refresh token, and a
+	// registration made without the scope. Re-authentication must register a
+	// new client, or the next token has no refresh token either.
+	as, _, jstore := authTokenSetup(t, oidc.AuthWorkflowDeviceCode)
+	as.key = "test"
+	key := as.StoreKey()
+	require.NoError(t, jstore.SaveRegisterClientData(context.Background(), key, storage.RegisterClientData{ // #nosec G101
+		ClientId:              "old-client-id",
+		ClientSecret:          "old-client-secret",
+		ClientSecretExpiresAt: time.Now().Add(90 * 24 * time.Hour).Unix(),
+		GrantTypes:            []storage.GrantType{storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken},
+	}))
+	require.NoError(t, jstore.SaveCreateTokenResponse(context.Background(), key, storage.CreateTokenResponse{
+		AccessToken: "expired",
+		ExpiresAt:   time.Now().Add(-time.Hour).Unix(),
+	}))
+	assert.False(t, as.ValidAuthToken(context.Background()))
+
+	mock := &mockOIDCClient{
+		registerClientResult: storage.RegisterClientData{ // #nosec G101
+			ClientId:              "new-client-id",
+			ClientSecret:          "new-client-secret",
+			ClientSecretExpiresAt: time.Now().Add(time.Hour).Unix(),
+		},
+		// StartDeviceAuthorization succeeds with no verification URL, so the flow
+		// stops in getDeviceAuthInfo, before the forced re-register on error.
+	}
+	as.oidcClient = mock
+	as.ClientName = awsSSOClientName
+	as.ClientType = awsSSOClientType
+
+	assert.Error(t, as.reauthenticate(context.Background()))
+	require.Len(t, mock.registerClientInputs, 1)
+	assert.Equal(t, []string{SSO_ACCOUNT_ACCESS_SCOPE}, mock.registerClientInputs[0].Scopes)
+	stored := storage.RegisterClientData{}
+	require.NoError(t, jstore.GetRegisterClientData(key, &stored))
+	assert.Equal(t, "new-client-id", stored.ClientId)
+}
+
 func TestReauthenticatePKCE(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		tfile, err := os.CreateTemp("", "*storage.json")
@@ -1272,6 +1446,7 @@ func TestValidAuthTokenRefresh(t *testing.T) {
 			ClientId:              "cid",
 			ClientSecret:          "csecret",
 			ClientSecretExpiresAt: time.Now().Add(time.Hour).Unix(),
+			Scopes:                []string{SSO_ACCOUNT_ACCESS_SCOPE},
 			GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken},
 		}
 		err = jstore.SaveRegisterClientData(context.Background(), as.StoreKey(), clientData)
@@ -1319,6 +1494,7 @@ func TestValidAuthTokenRefresh(t *testing.T) {
 			ClientId:              "cid",
 			ClientSecret:          "csecret",
 			ClientSecretExpiresAt: time.Now().Add(time.Hour).Unix(),
+			Scopes:                []string{SSO_ACCOUNT_ACCESS_SCOPE},
 			GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken},
 		}
 		err = jstore.SaveRegisterClientData(context.Background(), as.StoreKey(), clientData)
@@ -1357,6 +1533,7 @@ func TestValidAuthTokenRefresh(t *testing.T) {
 			ClientId:              "cid",
 			ClientSecret:          "csecret",
 			ClientSecretExpiresAt: time.Now().Add(time.Hour).Unix(),
+			Scopes:                []string{SSO_ACCOUNT_ACCESS_SCOPE},
 			GrantTypes:            []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken},
 		}
 		err = jstore.SaveRegisterClientData(context.Background(), as.StoreKey(), clientData)

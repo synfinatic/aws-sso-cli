@@ -63,6 +63,28 @@ func TestRegisterClientDataExpired(t *testing.T) {
 	assert.False(t, tr.Expired())
 }
 
+func TestRegisterClientDataScopes(t *testing.T) {
+	// Old device_code registration: no scopes recorded, so it must not claim the scope
+	old := []byte(`{"clientId":"cid","clientSecret":"sec","clientSecretExpiresAt":9999999999,"grantTypes":["urn:ietf:params:oauth:grant-type:device_code","refresh_token"]}`)
+	var r RegisterClientData
+	assert.NoError(t, json.Unmarshal(old, &r))
+	assert.False(t, r.SupportsScope(SSOAccountAccessScope))
+
+	// Old PKCE registration was always made with the scope, so assume it
+	pkce := []byte(`{"clientId":"cid","clientSecret":"sec","clientSecretExpiresAt":9999999999,"grantTypes":["authorization_code","refresh_token"]}`)
+	var r2 RegisterClientData
+	assert.NoError(t, json.Unmarshal(pkce, &r2))
+	assert.True(t, r2.SupportsScope(SSOAccountAccessScope))
+
+	// Recorded scopes round trip
+	r.Scopes = []string{SSOAccountAccessScope}
+	b, err := json.Marshal(r)
+	assert.NoError(t, err)
+	var r3 RegisterClientData
+	assert.NoError(t, json.Unmarshal(b, &r3))
+	assert.True(t, r3.SupportsScope(SSOAccountAccessScope))
+}
+
 func TestRegisterClientDataUnmarshalJSON(t *testing.T) {
 	// Old JSON with no grantTypes field should default to ["authorization_code"]
 	old := []byte(`{"clientId":"cid","clientIdIssuedAt":0,"clientSecret":"sec","clientSecretExpiresAt":9999999999}`)
