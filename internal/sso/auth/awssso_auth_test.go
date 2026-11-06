@@ -1060,7 +1060,7 @@ func TestRegisterClientCachedScope(t *testing.T) {
 		t.Helper()
 		tfile, err := os.CreateTemp("", "*storage.json")
 		require.NoError(t, err)
-		t.Cleanup(func() { _ = os.Remove(tfile.Name()) })
+		t.Cleanup(func() { _ = os.Remove(tfile.Name()) }) // nolint:gosec
 		jstore, err := storage.OpenJsonStore(context.Background(), tfile.Name())
 		require.NoError(t, err)
 
@@ -1136,9 +1136,9 @@ func TestReauthenticateReplacesScopelessRegistration(t *testing.T) {
 	// An upgraded device_code user: expired token with no refresh token, and a
 	// registration made without the scope. Re-authentication must register a
 	// new client, or the next token has no refresh token either.
-	as, key, jstore := authTokenSetup(t, oidc.AuthWorkflowDeviceCode)
+	as, _, jstore := authTokenSetup(t, oidc.AuthWorkflowDeviceCode)
 	as.key = "test"
-	key = as.StoreKey()
+	key := as.StoreKey()
 	require.NoError(t, jstore.SaveRegisterClientData(context.Background(), key, storage.RegisterClientData{ // #nosec G101
 		ClientId:              "old-client-id",
 		ClientSecret:          "old-client-secret",
