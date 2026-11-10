@@ -1,0 +1,2720 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="Aaron Turner">
+      
+      
+      
+        <link rel="prev" href="../FAQ/">
+      
+      
+        <link rel="next" href="../ecs-commands/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>ECS Server Mode - AWS SSO CLI</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../css/asciinema-player.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#using-ecs-server-mode" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="AWS SSO CLI" class="md-header__button md-logo" aria-label="AWS SSO CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            AWS SSO CLI
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              ECS Server Mode
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/synfinatic/aws-sso-cli/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="AWS SSO CLI" class="md-nav__button md-logo" aria-label="AWS SSO CLI" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    AWS SSO CLI
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/synfinatic/aws-sso-cli/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../demos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Demos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../wizard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Wizard
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Commands & Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../FAQ/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Frequently Asked Questions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ECS Server/Remote Access
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    ECS Server/Remote Access
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ECS Server Mode
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ECS Server Mode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Considerations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#starting-the-ecs-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Starting the ECS Server
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Starting the ECS Server">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#running-the-ecs-server-in-the-background" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running the ECS Server in the background
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ecs-server-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ECS Server security
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ECS Server security">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ecs-server-ssl-certificate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ECS Server SSL Certificate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generating-the-ca-and-regenerating-the-ssl-certificate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generating the CA and (re)generating the SSL Certificate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deleting-the-certificate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deleting the certificate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deleting-the-ca" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deleting the CA
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trusting-the-ca" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trusting the CA
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Trusting the CA">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#do-not-use-aws_ca_bundle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Do not use AWS_CA_BUNDLE
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#python-aws-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python / AWS CLI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#go" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Go
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nodejs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Node.js
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#java" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Java
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#net" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        .NET
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debianubuntu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Debian/Ubuntu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rhelfedoracentos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RHEL/Fedora/CentOS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#untrusting-the-ca" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Untrusting the CA
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ecs-server-http-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ECS Server HTTP Authentication
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment variables
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Environment variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws_container_credentials_full_uri" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        $AWS_CONTAINER_CREDENTIALS_FULL_URI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aws_container_credentials_relative_uri" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        $AWS_CONTAINER_CREDENTIALS_RELATIVE_URI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aws_container_authorization_token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        $AWS_CONTAINER_AUTHORIZATION_TOKEN
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#selecting-a-role-via-ecs-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Selecting a role via ECS Server
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#assuming-a-role-via-ecs-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Assuming a role via ECS Server
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#determining-the-current-role" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Determining the current role
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unloading-role-credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unloading role credentials
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#storing-multiple-roles-at-a-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Storing multiple roles at a time
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Storing multiple roles at a time">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Loading
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#listing-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Listing Profiles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#querying" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Querying
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unloading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unloading
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kubernetes-docker-compose-healthcheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes / Docker Compose Healthcheck
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Kubernetes / Docker Compose Healthcheck">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docker-compose-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Compose example
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Docker Compose example">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-ssl-is-not-needed-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why SSL is not needed here
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#https-transport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTPS Transport
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecs-commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ECS Server Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecs-server-example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ECS Server with Docker Compose Example
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../remote-ssh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Remote Access to IAM Roles
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecs-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ECS Server API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    About
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../license/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    License
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../aws-vault/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compared to aws-vault
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Security
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reporting Security Vulnerabilities
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_7_2" id="__nav_7_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GPG Signing Keys
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    GPG Signing Keys
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../code-sign-key.asc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Signing Key
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commit-sign-key.asc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Commit Signing Key
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Notes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Developer Notes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release New Version
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ecs-threats/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ECS Server Threat Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Considerations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#starting-the-ecs-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Starting the ECS Server
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Starting the ECS Server">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#running-the-ecs-server-in-the-background" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running the ECS Server in the background
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ecs-server-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ECS Server security
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ECS Server security">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ecs-server-ssl-certificate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ECS Server SSL Certificate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#generating-the-ca-and-regenerating-the-ssl-certificate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generating the CA and (re)generating the SSL Certificate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deleting-the-certificate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deleting the certificate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deleting-the-ca" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deleting the CA
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trusting-the-ca" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trusting the CA
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Trusting the CA">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#do-not-use-aws_ca_bundle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Do not use AWS_CA_BUNDLE
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#python-aws-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python / AWS CLI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#go" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Go
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nodejs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Node.js
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#java" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Java
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#net" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        .NET
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debianubuntu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Debian/Ubuntu
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rhelfedoracentos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RHEL/Fedora/CentOS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#untrusting-the-ca" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Untrusting the CA
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ecs-server-http-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ECS Server HTTP Authentication
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment variables
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Environment variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws_container_credentials_full_uri" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        $AWS_CONTAINER_CREDENTIALS_FULL_URI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aws_container_credentials_relative_uri" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        $AWS_CONTAINER_CREDENTIALS_RELATIVE_URI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aws_container_authorization_token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        $AWS_CONTAINER_AUTHORIZATION_TOKEN
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#selecting-a-role-via-ecs-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Selecting a role via ECS Server
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#assuming-a-role-via-ecs-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Assuming a role via ECS Server
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#determining-the-current-role" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Determining the current role
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unloading-role-credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unloading role credentials
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#storing-multiple-roles-at-a-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Storing multiple roles at a time
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Storing multiple roles at a time">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Loading
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#listing-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Listing Profiles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#querying" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Querying
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unloading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unloading
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kubernetes-docker-compose-healthcheck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes / Docker Compose Healthcheck
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Kubernetes / Docker Compose Healthcheck">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docker-compose-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Compose example
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Docker Compose example">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-ssl-is-not-needed-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why SSL is not needed here
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#https-transport" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTPS Transport
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="using-ecs-server-mode">Using ECS Server Mode</h1>
+<h2 id="overview">Overview</h2>
+<p>AWS provides the ability for <a href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html">ECS Tasks to assume an IAM role</a>
+via an HTTP endpoint defined via the <code>AWS_CONTAINER_CREDENTIALS_FULL_URI</code> shell
+ENV variable.</p>
+<p>All AWS SDK clients using the the same ECS Server container credentials endpoint
+URL will utilize the same AWS IAM Role.  Note that this feature is also compatible
+with the <a href="https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/credentials/endpointcreds">HTTP Client Provider</a>.</p>
+<p><code>aws-sso</code> can emulate this ECS service and allow any process to utilize one or more IAM
+roles backed by AWS Identity Center/SSO.</p>
+<p>One important distinction between <code>aws-sso</code> and this ECS Server, is that the ECS Server
+<em>does not have access to the SecureStore</em>.  The only SSO or IAM credentials it has
+available to it are those you manually load into it's memory.</p>
+<h2 id="why">Why?</h2>
+<p>ECS Server emulation exists to aid software developers who wish to test their
+applications locally.  Modern software development has moved to containers, for
+deploying in Kubernetes (Amazon EKS, etc), Amazon ECS, or one of the <a href="https://docs.aws.amazon.com/decision-guides/latest/containers-on-aws-how-to-choose/choosing-aws-container-service.html">many other
+AWS container services</a>.</p>
+<p>However, managing multiple AWS API credentials across containers is not easy or
+standardized. The limited time usage aspect of AWS SSO/Identity Center managed
+credentials only makes it harder.</p>
+<p>AWS SSO ECS Server solves that problem by emulating the <a href="https://docs.aws.amazon.com/sdkref/latest/guide/feature-container-credentials.html">AWS ECS method of injecting
+API credentials</a>
+so the only thing you need to do is manage an environment variable in your container.</p>
+<p>And since AWS SSO ECS server can run in a container itself, it makes it trivial
+to add to your test harness, Docker compose file, etc.</p>
+<h2 id="security-considerations">Security Considerations</h2>
+<p>The <code>aws-sso</code> ECS Server by default has no SSL or authentication and is intended to
+run on hosts where a single user has access.  The security of your IAM credentials
+is dependent on nobody else being able to talk to the server.</p>
+<p>For multi-user systems, <a href="#ecs-server-http-authentication">enabling HTTP Authentication</a> makes it
+possible to limit who can fetch AWS IAM security tokens from the service.</p>
+<p>For multi-user systems where the network/root user is not trusted,
+<code>aws-sso setup ecs ssl --self-signed</code> (see below) makes SSL/TLS practical to enable for
+most AWS SDKs, but the Python Boto SDK/AWS CLI
+<a href="#python--aws-cli">cannot easily trust a private CA for this endpoint</a> until the proposed fix in
+<a href="https://github.com/boto/botocore/pull/3789">boto/botocore#3789</a> is merged.</p>
+<h2 id="starting-the-ecs-server">Starting the ECS Server</h2>
+<p>The server runs in the foreground to make it easy to start via systemd and Docker.</p>
+<p><code>aws-sso ecs server</code></p>
+<p>Will start the server on <code>localhost:4144</code>.   For security purposes, the <code>aws-sso</code>
+ECS Server will default listen on localhost (127.0.0.1) port 4144.  You may select
+an alternative IP/port via the <code>--bind-ip</code> and <code>--port</code> flags.</p>
+<p><strong>Note:</strong> <code>aws-sso ecs server</code> logs a warning at startup if <code>--bind-ip</code> is anything other than
+<code>127.0.0.1</code>, <code>::1</code>, or <code>169.254.170.2</code>, the only addresses covered by the self-signed cert's
+SANs (see <a href="#ecs-server-ssl-certificate">ECS Server SSL Certificate</a>) and by the AWS SDKs'
+SSRF-related allow-list for sending the Bearer Token (see
+<a href="../ecs-threats/#ssrf-mitigation-built-into-the-aws-sdks">docs/ecs-threats.md</a>). Binding elsewhere
+means TLS won't verify and the Bearer Token may be silently dropped by the connecting SDK.</p>
+<h3 id="running-the-ecs-server-in-the-background">Running the ECS Server in the background</h3>
+<p>The recommended way to run the ECS server in the background is via the
+<a href="https://hub.docker.com/repository/docker/synfinatic/aws-sso-cli-ecs-server/general">aws-sso-cli-ecs-server</a>
+Docker image and the <code>aws-sso ecs docker [start|stop]</code> commands as this will
+automatically configure your SSL key pair and bearer token from the secure store
+in the most secure means possible.</p>
+<p><strong>Note:</strong> For security, by default the Docker container will default listen the
+host's loopback interface (<code>127.0.0.1</code>), but you can enable it listening on
+other interfaces using the <code>--bind-ip</code> flag.</p>
+<h2 id="ecs-server-security">ECS Server security</h2>
+<p>The ECS Server supports both SSL/TLS encryption as well as HTTP Authentication.
+Together, they allow using the <code>aws-sso</code> ECS Server on multi-user systems in a
+secure manner.</p>
+<p><strong>Important:</strong> Failure to configure HTTP Authentication <em>and</em> SSL/TLS encryption
+risks exposing your AWS IAM authentication tokens to other users on the system or
+when traversing untrusted network links.</p>
+<h3 id="ecs-server-ssl-certificate">ECS Server SSL Certificate</h3>
+<p>No public CA (DigiCert, Let's Encrypt, etc.) will issue a certificate for
+<code>localhost</code>, <code>127.0.0.1</code>, or the special ECS credentials IP <code>169.254.170.2</code>, so
+getting SSL/TLS working here means running your own private CA. <code>aws-sso</code> can do
+this for you.</p>
+<h3 id="generating-the-ca-and-regenerating-the-ssl-certificate">Generating the CA and (re)generating the SSL Certificate</h3>
+<pre><code class="language-bash">aws-sso setup ecs ssl --self-signed
+</code></pre>
+<p>This generates a local CA and a leaf certificate signed by that CA, covering
+<code>localhost</code>, <code>127.0.0.1</code>, <code>::1</code>, and <code>169.254.170.2</code>. Both are stored in the secure store — the
+same place <code>aws-sso ecs server</code> reads the leaf cert/key from.</p>
+<p>Rerunning <code>--self-signed</code> reuses the existing CA and only issues a new leaf, so
+after the first run you never need to re-trust anything — just rerun it whenever
+the leaf is close to expiring (30 days). If you need to force a brand new CA,
+run <code>--delete</code>, then <code>--delete-ca</code>, then <code>--self-signed</code>, which does require
+repeating the trust steps everywhere.</p>
+<p>Once the leaf has fewer than 5 days of validity left, <code>aws-sso ecs server</code> logs a warning
+every time new IAM role credentials are loaded, as a reminder to rerun <code>--self-signed</code>. The
+<code>aws-sso ecs load</code>/<code>list</code>/<code>profile</code>/<code>unload</code> client commands log the same warning locally
+whenever they read a soon-to-expire leaf cert from the secure store, so you see the reminder
+even if you aren't watching the server's own log output.</p>
+<p>Once you have generated the CA/leaf certificate, future invocations of the aws-sso
+ECS Server will automatically disable HTTP and enable HTTPS. There is no flag to
+force HTTP while a certificate is stored — run <code>aws-sso setup ecs ssl --delete</code>
+to disable SSL/TLS instead (see <a href="#deleting-the-certificate">Deleting the certificate</a>
+below).</p>
+<p><strong>Note:</strong> <code>aws-sso</code> provides no command to export the CA private key; <code>--print-ca</code> prints only the
+certificate.  The CA private key is kept securely in the <a href="../config/#securestore--jsonstore">secure store</a>.</p>
+<p>See <a href="#trusting-the-ca">Trusting the CA</a> below for how to trust this certificate in your OS and
+in each AWS SDK runtime.</p>
+<h3 id="deleting-the-certificate">Deleting the certificate</h3>
+<p>To remove just the leaf certificate/key from the secure store, leaving the CA intact:</p>
+<pre><code class="language-bash">aws-sso setup ecs ssl --delete
+</code></pre>
+<p>This will automatically disable HTTPS and re-enable HTTP for the ECS Server. Since the
+CA is untouched, rerunning <code>--self-signed</code> afterward reissues a leaf from the same CA
+and nothing needs to be re-trusted.</p>
+<h3 id="deleting-the-ca">Deleting the CA</h3>
+<p>The CA can only be deleted once the leaf certificate/key is already gone (run
+<code>--delete</code> first, above):</p>
+<pre><code class="language-bash">aws-sso setup ecs ssl --delete-ca
+</code></pre>
+<p>This only removes the CA from the secure store — anything you trusted it in keeps trusting it.
+See <a href="#untrusting-the-ca">Untrusting the CA</a> below, and note the fingerprint printed by
+<code>--self-signed</code> before you delete the CA: afterwards there is no way to recover it.</p>
+<h3 id="trusting-the-ca">Trusting the CA</h3>
+<p>First export the local CA certificate to a file:</p>
+<pre><code class="language-bash">aws-sso setup ecs ssl --print-ca &gt; /tmp/ecs-ca.pem
+</code></pre>
+<p>The CA is reused (not regenerated) every time you rerun <code>--self-signed</code>, so you only need to
+export and trust it once per machine/runtime below.</p>
+<p><code>--self-signed</code> prints the CA's SHA-256 fingerprint on every run. Compare it with the fingerprint
+your OS or runtime trust store shows for <code>aws-sso-cli ECS Server CA</code> to confirm you trusted the
+right certificate, or check the exported file directly:</p>
+<pre><code class="language-bash">openssl x509 -in /tmp/ecs-ca.pem -noout -fingerprint -sha256
+</code></pre>
+<p>The CA is scoped as narrowly as X.509 allows: Name Constraints restrict it to only ever sign
+certificates for <code>localhost</code>, <code>127.0.0.1</code>, <code>::1</code>, and <code>169.254.170.2</code> — the same fixed set of
+names the leaf certificate above always uses — an Extended Key Usage of <code>serverAuth</code> declares it
+usable only for TLS servers, and a path length of 0 prevents it from signing another CA. On a
+verifier that enforces those constraints, trusting it system-wide does not grant it (or aws-sso)
+the ability to impersonate other sites.</p>
+<p><strong>How much of that is actually enforced depends on the verifier.</strong> RFC 5280 treats a trust anchor
+as an input to path validation rather than as a certificate to validate, so honoring a self-signed
+root's own name constraints is implementation-specific rather than required.  Covering how each
+X.509 library implementation handles this is beyond the scope of this documentation.</p>
+<h4 id="do-not-use-aws_ca_bundle">Do not use <code>AWS_CA_BUNDLE</code></h4>
+<p><code>AWS_CA_BUNDLE</code> looks like the obvious way to point an AWS SDK at this CA, but it <em>replaces</em> the
+trust store used by every AWS API call that SDK makes rather than adding to it:</p>
+<ul>
+<li>the Go SDK reads the bundle into a fresh, empty certificate pool (<code>resolveCustomCABundle</code> in
+  <code>aws-sdk-go-v2/config</code>)</li>
+<li>botocore assigns the one path to <code>conn.ca_certs</code>, displacing the <code>certifi</code>/vendored bundle it
+  would otherwise use</li>
+</ul>
+<p>So <code>export AWS_CA_BUNDLE=/tmp/ecs-ca.pem</code> makes the process trust this CA and <em>nothing else</em> — its
+real calls to <code>sts.amazonaws.com</code> and friends then fail certificate verification with
+<code>x509: certificate signed by unknown authority</code> (Go) or <code>CERTIFICATE_VERIFY_FAILED</code> (Python).</p>
+<p>Use the per-runtime and per-OS instructions below instead. If you genuinely need one process to
+trust both this CA and the public roots through <code>AWS_CA_BUNDLE</code>, concatenate them into a single
+file and point it at that.</p>
+<h4 id="python-aws-cli">Python / AWS CLI</h4>
+<p><strong>Important caveat:</strong> botocore's container-credentials fetcher hardcodes
+certificate verification against a bundle it resolves internally — pip's <code>certifi</code> package if
+importable in that exact Python environment, otherwise a <code>cacert.pem</code> file vendored inside the
+botocore install itself (never the system trust store, and not the same file a bare
+<code>python3</code> on your <code>$PATH</code> would report — Homebrew, pipx, and the official AWS CLI v2 installer
+each bundle their own isolated Python). It ignores both <code>AWS_CA_BUNDLE</code> and the OS trust store,
+so trusting this (or any) private CA has no effect on Python or the AWS CLI. This is tracked
+upstream at <a href="https://github.com/aws/aws-cli/issues/9016">aws/aws-cli#9016</a>, with a fix proposed in
+<a href="https://github.com/boto/botocore/pull/3789">boto/botocore#3789</a>, and can't be fixed from
+<code>aws-sso-cli</code>. Every other SDK above (Go, Node.js, Java/JVM, .NET) works once its OS or runtime
+trust store trusts the CA.</p>
+<p>As a hack, to update the AWS CLI CA store, run:</p>
+<pre><code class="language-bash">cat /tmp/ecs-ca.pem &gt;&gt; $(find &quot;$(dirname &quot;$(dirname &quot;$(readlink -f &quot;$(command -v aws)&quot;)&quot;)&quot;)&quot; -iname cacert.pem)
+</code></pre>
+<p>Note that that command must be run every time you update the AWS Python SDK!</p>
+<p><strong>Minimum botocore version:</strong> if the ECS Server is not bound to loopback, botocore 1.43.0+ is
+required for the "https to any hostname" short-circuit; older versions reject non-loopback
+hostnames outright regardless of certificate trust.</p>
+<h4 id="go">Go</h4>
+<p>Go's <code>crypto/x509</code> uses the platform trust store on macOS and Windows, and the usual certificate
+files/directories on Linux, so for most programs the OS instructions below are all that is needed.</p>
+<p><strong>Avoid <code>SSL_CERT_FILE</code> for this.</strong> Go honors <code>SSL_CERT_FILE</code> / <code>SSL_CERT_DIR</code> — on Linux always,
+and as of Go 1.27 on macOS and Windows as well — but <code>SSL_CERT_FILE</code> <em>replaces</em> the trust store
+instead of adding to it — the same trap as <a href="#do-not-use-aws_ca_bundle"><code>AWS_CA_BUNDLE</code></a> above.
+Pointing it at the CA makes the process trust this CA and nothing else, so its real AWS API calls
+then fail with <code>x509: certificate signed by unknown authority</code>.</p>
+<p>To trust the CA in one Go program without touching the OS trust store, append it to a copy of the
+system pool (<code>x509.SystemCertPool()</code> + <code>AppendCertsFromPEM</code>) and pass that pool as <code>RootCAs</code> in
+the <code>http.Client</code> you hand to <code>config.LoadDefaultConfig(ctx, config.WithHTTPClient(client))</code>.
+Unlike the environment variables above, this is additive, so the program's real AWS API calls are
+unaffected.</p>
+<p><strong>Note:</strong> the <code>aws-sso ecs</code> client commands need no trust configuration at all, but they do not
+work the way the paragraph above describes. They read the ECS Server's <em>leaf</em> certificate — not
+the CA — from the secure store and put it straight into <code>RootCAs</code> (<code>newClient</code> in
+<code>cmd/aws-sso/ecs_client_cmd.go</code>, <code>NewHTTPClient</code> in <code>internal/ecs/client/client.go</code>). Go's
+verifier accepts a leaf that is itself present in the root pool, so this pins that one
+certificate rather than trusting the CA to sign anything. <code>NewHTTPClient</code> seeds the pool from
+<code>x509.SystemCertPool()</code>, but that is incidental — on macOS it returns an empty pool — and it is
+safe here only because that client talks to nothing but the ECS Server. Don't copy the pattern
+into a client that also makes real AWS API calls.</p>
+<h4 id="nodejs">Node.js</h4>
+<p>Unlike <a href="#do-not-use-aws_ca_bundle"><code>AWS_CA_BUNDLE</code></a>, this is additive to Node's existing trust
+store, so your
+real AWS API calls are unaffected. Set it in the environment of the process using the SDK (not
+just your shell):</p>
+<pre><code class="language-bash">mv /tmp/ecs-ca.pem ~/.aws-sso/
+export NODE_EXTRA_CA_CERTS=~/.aws-sso/ecs-ca.pem
+</code></pre>
+<h4 id="java">Java</h4>
+<pre><code class="language-bash">keytool -importcert -alias aws-sso-ecs-ca -keystore &lt;path to cacerts&gt; -file /tmp/ecs-ca.pem
+</code></pre>
+<h4 id="net">.NET</h4>
+<p>Uses the OS trust store, so no separate step is needed beyond the macOS/Linux/Windows
+instructions above.</p>
+<h4 id="macos">macOS</h4>
+<p>Trust the CA for your user (no sudo required). <code>-p ssl</code> limits the trust to the SSL
+policy, so the CA is not trusted for code signing, S/MIME, or anything else:</p>
+<pre><code class="language-bash">security add-trusted-cert -d -r trustRoot -p ssl -k ~/Library/Keychains/login.keychain-db \
+  /tmp/ecs-ca.pem
+</code></pre>
+<p>To trust it for every user on the machine instead, add it to the System keychain (requires sudo):</p>
+<pre><code class="language-bash">sudo security add-trusted-cert -d -r trustRoot -p ssl -k /Library/Keychains/System.keychain \
+  /tmp/ecs-ca.pem
+</code></pre>
+<h4 id="debianubuntu">Debian/Ubuntu</h4>
+<pre><code class="language-bash">sudo cp /tmp/ecs-ca.pem /usr/local/share/ca-certificates/aws-sso-ecs-ca.crt
+sudo update-ca-certificates
+</code></pre>
+<h4 id="rhelfedoracentos">RHEL/Fedora/CentOS</h4>
+<pre><code class="language-bash">sudo cp /tmp/ecs-ca.pem /etc/pki/ca-trust/source/anchors/aws-sso-ecs-ca.pem
+sudo update-ca-trust extract
+</code></pre>
+<h4 id="windows">Windows</h4>
+<pre><code class="language-bash">certutil -addstore -user Root %USERPROFILE%\ecs-ca.pem
+</code></pre>
+<h3 id="untrusting-the-ca">Untrusting the CA</h3>
+<p><code>aws-sso setup ecs ssl --delete-ca</code> removes the CA from the secure store, but nothing outside
+<code>aws-sso</code> learns about that — every copy you installed above stays trusted. Since forcing a new CA
+means <code>--delete</code>, <code>--delete-ca</code>, and then <code>--self-signed</code>, rotating without removing the old root
+leaves a dead trusted CA behind each time, so undo the steps above before generating a
+replacement.</p>
+<p>Every generated CA shares the common name <code>aws-sso-cli ECS Server CA</code>, so if several have already
+accumulated, use the SHA-256 fingerprint to tell them apart. <code>--self-signed</code> prints it, and
+<code>openssl x509 -in /tmp/ecs-ca.pem -noout -fingerprint -sha256</code> reads it back from an exported
+copy — but do that <em>before</em> <code>--delete-ca</code>, which leaves you with no way to work out which stored
+certificate was which.</p>
+<p><strong>macOS</strong> — <code>-t</code> removes the trust setting as well as the certificate itself:</p>
+<pre><code class="language-bash">security delete-certificate -t -c &quot;aws-sso-cli ECS Server CA&quot; ~/Library/Keychains/login.keychain-db
+</code></pre>
+<p>Use <code>sudo</code> and <code>/Library/Keychains/System.keychain</code> instead if you trusted it machine-wide. <code>-c</code>
+requires the name to match exactly one certificate; where it doesn't, select by fingerprint with
+<code>-Z &lt;sha256&gt;</code> (hex only, no colons).</p>
+<p><strong>Debian/Ubuntu:</strong></p>
+<pre><code class="language-bash">sudo rm /usr/local/share/ca-certificates/aws-sso-ecs-ca.crt
+sudo update-ca-certificates --fresh
+</code></pre>
+<p><strong>RHEL/Fedora/CentOS:</strong></p>
+<pre><code class="language-bash">sudo rm /etc/pki/ca-trust/source/anchors/aws-sso-ecs-ca.pem
+sudo update-ca-trust extract
+</code></pre>
+<p><strong>Windows:</strong></p>
+<pre><code class="language-bash">certutil -delstore -user Root &quot;aws-sso-cli ECS Server CA&quot;
+</code></pre>
+<p><strong>Java:</strong></p>
+<pre><code class="language-bash">keytool -delete -alias aws-sso-ecs-ca -keystore &lt;path to cacerts&gt;
+</code></pre>
+<p><strong>Node.js:</strong> unset <code>NODE_EXTRA_CA_CERTS</code> (or point it at something else) in the environment of the
+process using the SDK, and delete <code>~/.aws-sso/ecs-ca.pem</code>.</p>
+<p><strong>Go and .NET</strong> use the OS trust store, so the OS steps above are all that is needed.</p>
+<h2 id="ecs-server-http-authentication">ECS Server HTTP Authentication</h2>
+<p>The way to configure HTTP Authentication is with a
+<a href="https://datatracker.ietf.org/doc/html/rfc6750#section-2.1">bearer token</a>
+as <a href="https://docs.aws.amazon.com/sdkref/latest/guide/feature-container-credentials.html">documented by AWS</a>.</p>
+<p>Once you have selected a sufficiently secure secret to use as the bearer token,
+you can load it into the Secure Store via:</p>
+<pre><code class="language-bash">aws-sso setup ecs auth --bearer-token '&lt;token&gt;`
+</code></pre>
+<p>Once loaded, all future invocations of the aws-sso ECS Server will require a bearer token to
+read/write to the service.  The aws-sso client will automatically provide the bearer token
+by reading the SecureStore, but you will need to configure any other AWS SDK/cli tool to
+use it to read loaded IAM role credentials.</p>
+<p><strong>Note:</strong> Unlike the <code>$AWS_CONTAINER_AUTHORIZATION_TOKEN</code> variable, do not include the</p>
+<!--  markdownlint-disable-next-line MD038 -->
+<p>prefix <code>Bearer</code> in the token value.</p>
+<p><strong>Important:</strong> You must choose a strong secret value for your bearer token secret!  This is
+what prevents anyone else from using your IAM credentials without your permission.  Your bearer
+token should be long and random enough to prevent bruteforce attacks.</p>
+<h2 id="environment-variables">Environment variables</h2>
+<h3 id="aws_container_credentials_full_uri">$AWS_CONTAINER_CREDENTIALS_FULL_URI</h3>
+<p>AWS clients and <code>aws-sso</code> should use:</p>
+<p><code>export AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:4144/</code></p>
+<p><strong>Note:</strong> If you have configured an SSL certificate as described above, use <code>https://localhost:4144</code>.</p>
+<h3 id="aws_container_credentials_relative_uri">$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI</h3>
+<p>It is important to <em>not</em> set <code>AWS_CONTAINER_CREDENTIALS_RELATIVE_URI</code>
+as that takes precedence for <code>AWS_CONTAINER_CREDENTIALS_FULL_URI</code> and it is not
+compatible with <code>aws-sso</code>.</p>
+<h3 id="aws_container_authorization_token">$AWS_CONTAINER_AUTHORIZATION_TOKEN</h3>
+<p>Specify the HTTP Authentication token used to authenticate communication between the
+ECS Server and clients (aws-sso and AWS SDK/CLI).  Should be specified
+in the format of <code>Bearer &lt;auth token value&gt;</code>.</p>
+<h2 id="selecting-a-role-via-ecs-server">Selecting a role via ECS Server</h2>
+<p>Before you can assume a role, you must select an IAM role for the aws-sso ecs
+server to present to clients.</p>
+<p><code>aws-sso ecs load</code></p>
+<p>Will start the interactive profile selector.  Or you may specify the <code>--profile</code>
+flag or the <code>--account</code> and <code>--role</code> flags to specify the role on the command line.</p>
+<p><strong>Note:</strong> Subsequent calls to <code>aws-sso ecs load</code> will alter the current IAM Role
+for all AWS Client SDKs using it.</p>
+<h2 id="assuming-a-role-via-ecs-server">Assuming a role via ECS Server</h2>
+<p>Ensure you have exported the following shell ENV variable:</p>
+<p><code>export AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:4144/</code></p>
+<p><strong>Note:</strong> If you have configured an SSL certificate as described above, use <code>https://localhost:4144/</code>.</p>
+<p>Then just:</p>
+<p><code>aws sts get-caller-identity</code></p>
+<p>should show that you are using the IAM Role you loaded into the ecs server process.</p>
+<h2 id="determining-the-current-role">Determining the current role</h2>
+<p>Since only one role can be loaded at any given time in the default slot, there
+may be times you would like to quickly determine the current role without
+resorting to an IAM call:</p>
+<p><code>aws-sso ecs profile</code></p>
+<p>will return the currently loaded default profile.</p>
+<h2 id="unloading-role-credentials">Unloading role credentials</h2>
+<p>If you would like to remove the default IAM Role credentials:</p>
+<p><code>aws-sso ecs unload</code></p>
+<h2 id="storing-multiple-roles-at-a-time">Storing multiple roles at a time</h2>
+<p>There may be cases where you would like to make multiple roles available at the
+same time without running multiple copies of the ECS server via <code>aws-sso ecs server</code>.
+Each role is stored in a unique named slot based on the <code>ProfileName</code> which is
+either set via <a href="../config/#Profile">Profile</a> or the <a href="../config/#ProfileFormat">ProfileFormat</a> configuration options.</p>
+<h3 id="loading">Loading</h3>
+<p>Specify <code>aws-sso ecs load --slotted ...</code> and the individual role will be stored in
+it's unique named slot based on it's profile name.</p>
+<h3 id="listing-profiles">Listing Profiles</h3>
+<p>To see a list of profiles loaded in named slots use <code>aws-sso ecs list</code>.</p>
+<h3 id="querying">Querying</h3>
+<p>Accessing the individual credentials is done via the <code>profile</code> query parameter:</p>
+<p><code>export AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:4144/slot/ExampleProfileName</code></p>
+<p><strong>Note:</strong> If you have configured an SSL certificate as described above, use <code>httpss://localhost:4144/slot/ExampleProfileName</code>.</p>
+<p>Would utilize the <code>ExampleProfileName</code> role.  Note that the <code>profile</code> value
+value in the URL must be <a href="https://www.w3schools.com/tags/ref_urlencode.ASP">URL Escaped</a>.</p>
+<h3 id="unloading">Unloading</h3>
+<p>To remove a specific IAM Role credential from a named slot in the ECS Server,
+you can use:</p>
+<p><code>aws-sso ecs unload --profile &lt;profile&gt;</code></p>
+<h2 id="kubernetes-docker-compose-healthcheck">Kubernetes / Docker Compose Healthcheck</h2>
+<p>The ECS server exposes a <code>/healthcheck</code> endpoint that does <strong>not</strong> require
+authentication, making it suitable for k8s probes and Docker Compose <code>healthcheck:</code>
+commands.</p>
+<ul>
+<li><code>GET /healthcheck</code> — returns <code>200 OK</code> when the default slot has valid credentials,
+  <code>503</code> otherwise.</li>
+<li><code>GET /healthcheck/slot/&lt;profile&gt;</code> — returns <code>200 OK</code> when the named slot has valid
+  credentials, <code>503</code> otherwise.</li>
+</ul>
+<h3 id="kubernetes-example">Kubernetes example</h3>
+<pre><code class="language-yaml">livenessProbe:
+  httpGet:
+    path: /healthcheck
+    port: 4144
+  initialDelaySeconds: 5
+  periodSeconds: 30
+
+readinessProbe:
+  httpGet:
+    path: /healthcheck
+    port: 4144
+  initialDelaySeconds: 5
+  periodSeconds: 10
+</code></pre>
+<p>For a named slot replace the path with <code>/healthcheck/slot/&lt;profile&gt;</code> (URL-encode the
+profile name if it contains special characters).</p>
+<h3 id="docker-compose-example">Docker Compose example</h3>
+<p>Unlike <code>aws-sso ecs docker start</code>, <code>docker compose</code> does not automatically provision
+your configured bearer token or SSL certificate/key into the container. If you have
+either configured (via <code>aws-sso setup ecs auth</code> and/or <code>aws-sso setup ecs ssl</code>), run
+<code>aws-sso ecs docker write-secrets</code> before every <code>docker compose up</code> to write whatever is
+currently in the SecureStore to <code>~/.aws-sso/mnt/docker-ecs</code>, which the container reads
+on startup and then deletes. This example intentionally has no SSL certificate
+configured (see <a href="#why-ssl-is-not-needed-here">Why SSL is not needed here</a> below) — if
+you previously ran <code>--self-signed</code>, run <code>aws-sso setup ecs ssl --delete</code> first so
+<code>write-secrets</code> has no certificate to pick up.
+Otherwise the container starts with HTTP Auth disabled, and any client (including
+<code>aws-sso ecs list</code>) that still sends a bearer token from a previously configured
+SecureStore will be rejected with a <code>403 Forbidden</code>.</p>
+<pre><code class="language-bash">export AWS_SSO_ECS_TOKEN='&lt;the token you passed to aws-sso setup ecs auth&gt;'
+aws-sso ecs docker write-secrets
+docker compose up &amp;
+aws-sso ecs load ...
+</code></pre>
+<p>The example below reads <code>AWS_SSO_ECS_TOKEN</code> from your shell rather than hard coding the bearer
+token into <code>compose.yaml</code>, so the secret does not end up in version control.</p>
+<h4 id="why-ssl-is-not-needed-here">Why SSL is not needed here</h4>
+<p><code>169.254.170.2</code> is the address AWS uses for the real ECS credential endpoint, so every AWS SDK
+and the AWS CLI accept it over <strong>plain HTTP</strong>, the same way they accept <code>127.0.0.1</code>.  Assigning
+that address to the <code>aws-sso</code> container gets you a working setup without an SSL certificate,
+which is otherwise more setup than needed for a local endpoint (see
+<a href="#ecs-server-ssl-certificate"><code>--self-signed</code></a> if you do want SSL/TLS here — its default SANs
+already include <code>169.254.170.2</code>).
+Credentials stay on the Docker bridge network and access is controlled by the bearer token.</p>
+<p>If you still have a certificate loaded (run <code>aws-sso setup ecs ssl --delete</code> to remove
+it), the container serves HTTPS instead, and <code>myapp</code> would have to use
+<code>https://169.254.170.2:4144</code> with a certificate the AWS SDK trusts <em>for that IP
+address</em> -- which no public CA will issue.</p>
+<pre><code class="language-yaml"># Run `aws-sso ecs docker write-secrets` before every `docker compose up` to provision
+# the bearer token into ${HOME}/.aws-sso/mnt/docker-ecs (deleted by the container after
+# it reads it), otherwise this starts with HTTP Auth disabled and any client still
+# sending a configured bearer token will get a 403.
+networks:
+  aws-sso-ecs:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: &quot;169.254.170.0/24&quot;
+          gateway: &quot;169.254.170.1&quot;
+
+services:
+  aws-sso:
+    image: synfinatic/aws-sso-cli-ecs-server:latest
+    networks:
+      aws-sso-ecs:
+        # This special IP address is recognized by the AWS SDKs and AWS CLI
+        ipv4_address: &quot;169.254.170.2&quot;
+      default: {}
+    volumes:
+      # necessary for the container to read the security config written by write-secrets
+      - ${HOME}/.aws-sso/mnt:/app/.aws-sso/mnt
+    ports:
+      # necessary for local management
+      - &quot;127.0.0.1:4144:4144&quot;
+
+  myapp:
+    image: amazon/aws-cli # replace with your service
+    entrypoint: &quot;&quot;
+    command: /usr/local/bin/aws sts get-caller-identity
+    depends_on:
+      aws-sso:
+        # ensures this container doesn't start until credentials have been loaded in the ecs server
+        condition: service_healthy
+    environment:
+      AWS_CONTAINER_CREDENTIALS_FULL_URI: http://169.254.170.2:4144
+      # must match the token stored via `aws-sso setup ecs auth`.  Omit this (and run
+      # `write-secrets --disable-auth`) only if you are not using HTTP Auth.
+      # Note that this exposes the bearer token via `docker inspect`.  For additional security
+      # consider passing in the bearer token via a mount or via docker compose secrets
+      # and AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE
+      # https://docs.docker.com/compose/how-tos/use-secrets/
+      AWS_CONTAINER_AUTHORIZATION_TOKEN: &quot;Bearer ${AWS_SSO_ECS_TOKEN}&quot;
+    networks:
+      aws-sso-ecs: {}
+      default: {}
+</code></pre>
+<h2 id="errors">Errors</h2>
+<p>The ECS Server API endpoint generates errors with the following JSON format:</p>
+<pre><code class="language-json">{
+    &quot;code&quot;: &quot;&lt;HTTP error code&gt;&quot;,
+    &quot;message&quot;: &quot;&lt;message&gt;&quot;
+}
+</code></pre>
+<h2 id="authentication">Authentication</h2>
+<p>Support for the <a href="https://docs.aws.amazon.com/sdkref/latest/guide/feature-container-credentials.html">$AWS_CONTAINER_AUTHORIZATION_TOKEN</a> environment
+variable is supported.</p>
+<h2 id="https-transport">HTTPS Transport</h2>
+<p><code>aws-sso setup ecs ssl --self-signed</code> (see <a href="#ecs-server-ssl-certificate">ECS Server SSL Certificate</a>)
+covers HTTPS for every AWS SDK runtime except Python/the AWS CLI. That gap is tracked upstream at
+<a href="https://github.com/aws/aws-cli/issues/9016">aws/aws-cli#9016</a> and a fix has been proposed in
+<a href="https://github.com/boto/botocore/pull/3789">boto/botocore#3789</a>. If you think this feature would be
+useful to you, please leave a comment on the PR so AWS knows they should prioritize reviewing it.
+Progress is tracked in <a href="https://github.com/synfinatic/aws-sso-cli/issues/1514">#1514</a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright 2021-2026 Aaron Turner
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": [], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+        <script src="../js/asciinema-player.min.js"></script>
+      
+    
+  </body>
+</html>
