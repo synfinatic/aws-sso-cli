@@ -1504,7 +1504,8 @@ loopback or <code>169.254.170.2</code> for exactly this reason. See <code>docs/e
 stored in the SecureStore, covering <code>localhost</code>, <code>127.0.0.1</code>, <code>::1</code>, and <code>169.254.170.2</code>. This
 requires no account, API key, or public DNS registration, and is the actual solution in use
 today. It works well for every AWS SDK except Python/the AWS CLI, which is tracked upstream at
-<a href="https://github.com/aws/aws-cli/issues/9016">aws/aws-cli#9016</a>.</p>
+<a href="https://github.com/aws/aws-cli/issues/9016">aws/aws-cli#9016</a> with a fix proposed in
+<a href="https://github.com/boto/botocore/pull/3789">boto/botocore#3789</a>.</p>
 <p>An earlier draft of this document proposed a hosted CSR-signing web service (user accounts,
 per-user DNS records under <code>aws-sso-cli.org</code>, ACME DNS-01 signing via Let's Encrypt) as an
 alternative to running a private CA. That was never built, and the self-signed CA above covers

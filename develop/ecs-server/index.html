@@ -2234,7 +2234,9 @@ is dependent on nobody else being able to talk to the server.</p>
 possible to limit who can fetch AWS IAM security tokens from the service.</p>
 <p>For multi-user systems where the network/root user is not trusted,
 <code>aws-sso setup ecs ssl --self-signed</code> (see below) makes SSL/TLS practical to enable for
-most AWS SDKs, but the Python Boto SDK/AWS CLI <a href="https://github.com/boto/boto3/issues/4188">cannot easily trust a private CA for this endpoint</a>.</p>
+most AWS SDKs, but the Python Boto SDK/AWS CLI
+<a href="#python--aws-cli">cannot easily trust a private CA for this endpoint</a> until the proposed fix in
+<a href="https://github.com/boto/botocore/pull/3789">boto/botocore#3789</a> is merged.</p>
 <h2 id="starting-the-ecs-server">Starting the ECS Server</h2>
 <p>The server runs in the foreground to make it easy to start via systemd and Docker.</p>
 <p><code>aws-sso ecs server</code></p>
@@ -2352,9 +2354,10 @@ botocore install itself (never the system trust store, and not the same file a b
 <code>python3</code> on your <code>$PATH</code> would report — Homebrew, pipx, and the official AWS CLI v2 installer
 each bundle their own isolated Python). It ignores both <code>AWS_CA_BUNDLE</code> and the OS trust store,
 so trusting this (or any) private CA has no effect on Python or the AWS CLI. This is tracked
-upstream at <a href="https://github.com/aws/aws-cli/issues/9016">aws/aws-cli#9016</a> and can't be fixed
-from <code>aws-sso-cli</code>. Every other SDK above (Go, Node.js, Java/JVM, .NET) works once its OS or
-runtime trust store trusts the CA.</p>
+upstream at <a href="https://github.com/aws/aws-cli/issues/9016">aws/aws-cli#9016</a>, with a fix proposed in
+<a href="https://github.com/boto/botocore/pull/3789">boto/botocore#3789</a>, and can't be fixed from
+<code>aws-sso-cli</code>. Every other SDK above (Go, Node.js, Java/JVM, .NET) works once its OS or runtime
+trust store trusts the CA.</p>
 <p>As a hack, to update the AWS CLI CA store, run:</p>
 <pre><code class="language-bash">cat /tmp/ecs-ca.pem &gt;&gt; $(find &quot;$(dirname &quot;$(dirname &quot;$(readlink -f &quot;$(command -v aws)&quot;)&quot;)&quot;)&quot; -iname cacert.pem)
 </code></pre>
@@ -2648,8 +2651,10 @@ variable is supported.</p>
 <h2 id="https-transport">HTTPS Transport</h2>
 <p><code>aws-sso setup ecs ssl --self-signed</code> (see <a href="#ecs-server-ssl-certificate">ECS Server SSL Certificate</a>)
 covers HTTPS for every AWS SDK runtime except Python/the AWS CLI. That gap is tracked upstream at
-<a href="https://github.com/aws/aws-cli/issues/9016">aws/aws-cli#9016</a> — if you think this feature would be
-useful to you, please leave a comment so AWS knows they should prioritize this work.</p>
+<a href="https://github.com/aws/aws-cli/issues/9016">aws/aws-cli#9016</a> and a fix has been proposed in
+<a href="https://github.com/boto/botocore/pull/3789">boto/botocore#3789</a>. If you think this feature would be
+useful to you, please leave a comment on the PR so AWS knows they should prioritize reviewing it.
+Progress is tracked in <a href="https://github.com/synfinatic/aws-sso-cli/issues/1514">#1514</a>.</p>
 
 
 
