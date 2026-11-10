@@ -60,7 +60,8 @@ ecs-server.md#ecs-server-ssl-certificate)) generates a private CA and a leaf cer
 stored in the SecureStore, covering `localhost`, `127.0.0.1`, `::1`, and `169.254.170.2`. This
 requires no account, API key, or public DNS registration, and is the actual solution in use
 today. It works well for every AWS SDK except Python/the AWS CLI, which is tracked upstream at
-[aws/aws-cli#9016](https://github.com/aws/aws-cli/issues/9016).
+[aws/aws-cli#9016](https://github.com/aws/aws-cli/issues/9016) with a fix proposed in
+[boto/botocore#3789](https://github.com/boto/botocore/pull/3789).
 
 An earlier draft of this document proposed a hosted CSR-signing web service (user accounts,
 per-user DNS records under `aws-sso-cli.org`, ACME DNS-01 signing via Let's Encrypt) as an
