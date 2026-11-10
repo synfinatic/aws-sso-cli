@@ -54,18 +54,21 @@ func (as *AWSSSO) ValidAuthToken(ctx context.Context) bool {
 	// First verify the stored registration supports refresh tokens. Old
 	// registrations (or those written before GrantTypes was persisted) won't
 	// have "refresh_token" and must re-register to get a refresh-capable token.
+	//
+	// Don't check the grant type for the current AuthWorkflow here: each process
+	// detects the workflow on its own (e.g. from SSH_TTY), and a refresh works
+	// with either one.  registerClient() replaces a registration for the wrong
+	// workflow when a new login starts. See #1521.
 	clientData := storage.RegisterClientData{}
 	if err := as.store.GetRegisterClientData(as.StoreKey(), &clientData); err == nil {
-		for _, gt := range as.GrantTypes() {
-			if !clientData.SupportsGrantType(gt) {
-				log.Debug("client registration lacks necessary grant types; forcing new registration",
-					"storeKey", as.StoreKey(), "missingGrantType", gt)
-				err = as.store.DeleteRegisterClientData(ctx, as.StoreKey())
-				if err != nil {
-					log.Error("unable to delete RegisterClientData from secure store", "storeKey", as.StoreKey(), "error", err.Error())
-				}
-				return false
+		if !clientData.SupportsRefreshToken() {
+			log.Debug("client registration lacks refresh_token grant type; forcing new registration",
+				"storeKey", as.StoreKey())
+			err = as.store.DeleteRegisterClientData(ctx, as.StoreKey())
+			if err != nil {
+				log.Error("unable to delete RegisterClientData from secure store", "storeKey", as.StoreKey(), "error", err.Error())
 			}
+			return false
 		}
 	}
 
@@ -95,10 +98,14 @@ func (as *AWSSSO) ValidAuthToken(ctx context.Context) bool {
 
 	// Attempt a silent renewal using the stored refresh token before
 	// falling back to a full browser-based re-authentication.
-	if token.RefreshToken != "" && as.tryRefreshToken(ctx, token, clientData) {
-		return true
+	if token.RefreshToken == "" {
+		return false
 	}
-	return false
+	if clientData.ClientId == "" {
+		log.Warn("Unable to refresh SSO token: no client registration in the secure store", "storeKey", as.StoreKey())
+		return false
+	}
+	return as.tryRefreshToken(ctx, token, clientData)
 }
 
 // tryRefreshToken attempts to silently renew an expired access token using
@@ -113,7 +120,7 @@ func (as *AWSSSO) tryRefreshToken(ctx context.Context, expiredToken storage.Crea
 		RefreshToken: expiredToken.RefreshToken,
 	})
 	if err != nil {
-		log.Debug("Token refresh failed, falling back to full re-authentication", "error", err.Error())
+		log.Warn("Token refresh failed, falling back to full re-authentication", "error", err.Error())
 		return false
 	}
 	if newToken.RefreshToken == "" {
@@ -176,16 +183,9 @@ func (as *AWSSSO) registerClient(ctx context.Context, force bool) error {
 	if !force {
 		log.Trace("Checking cache for RegisterClientData", "storeKey", as.StoreKey())
 		err := as.store.GetRegisterClientData(as.StoreKey(), &as.ClientData)
-		// Registrations made without the scope never get a refresh token, even
-		// though they list the refresh_token grant type, so replace them here.
-		// A still-valid token from such a registration keeps working until then.
-		if err == nil && !as.ClientData.Expired() && as.ClientData.SupportsScope(SSO_ACCOUNT_ACCESS_SCOPE) {
+		if err == nil && !as.ClientData.Expired() && as.reusableClientData() {
 			log.Debug("Using RegisterClient from secure store", "storeKey", as.StoreKey())
 			return nil
-		}
-		if err == nil && !as.ClientData.Expired() {
-			log.Debug("cached client registration lacks necessary scope; registering a new client",
-				"storeKey", as.StoreKey(), "missingScope", SSO_ACCOUNT_ACCESS_SCOPE)
 		}
 	}
 
@@ -219,6 +219,29 @@ func (as *AWSSSO) registerClient(ctx context.Context, force bool) error {
 	}
 	log.Trace("SaveRegisterClientData complete", "storeKey", as.StoreKey())
 	return nil
+}
+
+// reusableClientData returns true if the cached as.ClientData can be used to
+// start a new login with the current AuthWorkflow.
+func (as *AWSSSO) reusableClientData() bool {
+	// Registrations made without the scope never get a refresh token, even
+	// though they list the refresh_token grant type, so replace them here.
+	// A still-valid token from such a registration keeps working until then.
+	if !as.ClientData.SupportsScope(SSO_ACCOUNT_ACCESS_SCOPE) {
+		log.Debug("cached client registration lacks necessary scope; registering a new client",
+			"storeKey", as.StoreKey(), "missingScope", SSO_ACCOUNT_ACCESS_SCOPE)
+		return false
+	}
+	// A registration for the other AuthWorkflow still refreshes tokens, but
+	// can't start a login with this one.
+	for _, gt := range as.GrantTypes() {
+		if !as.ClientData.SupportsGrantType(gt) {
+			log.Debug("cached client registration lacks necessary grant type; registering a new client",
+				"storeKey", as.StoreKey(), "missingGrantType", gt)
+			return false
+		}
+	}
+	return true
 }
 
 // startDeviceAuthorization makes the call to AWS to initiate the OIDC auth

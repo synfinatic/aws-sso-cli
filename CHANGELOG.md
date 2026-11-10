@@ -3,6 +3,13 @@
 
 ## [Unreleased]
 
+## [v2.4.1] -- 2026-11-10
+
+### Bugs
+
+* Fix a process detecting a different `AuthWorkflow` than the login (e.g. without `SSH_TTY`)
+  deleting the client registration, so token refresh failed #1521
+
 ## [v2.4.0] -- 2026-11-09
 
 ### New Features
@@ -1010,9 +1017,10 @@ Initial release
 
 <!-- linkspector-disable -->
 <!-- markdownlint-disable-next-line MD053 -->
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.4.0...main
-[v2.4.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.4.0
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.4.1...main
+[v2.4.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.4.1
 <!-- linkspector-enable -->
+[v2.4.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.4.0
 [v2.3.4]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.3.4
 [v2.3.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.3.3
 [v2.3.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.3.2
