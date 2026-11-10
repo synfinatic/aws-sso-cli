@@ -527,6 +527,33 @@ func TestValidAuthTokenDeviceCode(t *testing.T) { // nolint:dupl
 	assert.Equal(t, "test-client-id", got.ClientId)
 }
 
+// failDeleteStore wraps a SecureStorage so DeleteRegisterClientData fails.
+type failDeleteStore struct {
+	storage.SecureStorage
+}
+
+func (f failDeleteStore) DeleteRegisterClientData(_ context.Context, _ string) error {
+	return fmt.Errorf("test: delete failed")
+}
+
+func TestValidAuthTokenDeleteRegistrationFails(t *testing.T) {
+	// A registration without refresh_token must still force a new login,
+	// even if it can't be deleted from the secure store.
+	as, key, jstore := authTokenSetup(t, oidc.AuthWorkflowDeviceCode)
+	require.NoError(t, jstore.SaveRegisterClientData(context.Background(), key, storage.RegisterClientData{ // #nosec G101
+		ClientId:              "test-client-id",
+		ClientSecret:          "test-client-secret",
+		ClientSecretExpiresAt: 99999999999,
+		Scopes:                []string{SSO_ACCOUNT_ACCESS_SCOPE},
+		GrantTypes:            []storage.GrantType{storage.GrantTypeDeviceCode},
+	}))
+	as.store = failDeleteStore{SecureStorage: jstore}
+
+	assert.False(t, as.ValidAuthToken(context.Background()))
+	got := storage.RegisterClientData{}
+	assert.NoError(t, jstore.GetRegisterClientData(key, &got), "failed delete leaves the registration")
+}
+
 func TestValidAuthTokenWorkflowMismatchRefresh(t *testing.T) {
 	// #1521: login over SSH (device_code), then a process without SSH_TTY
 	// (pkce). Once the access token expires, the refresh must use the stored
