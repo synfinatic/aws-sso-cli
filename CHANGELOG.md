@@ -3,6 +3,8 @@
 
 ## [Unreleased]
 
+## [v2.4.0] -- 2026-11-09
+
 ### New Features
 
 * The release workflow now verifies the release tag matches `PROJECT_VERSION` in the Makefile
@@ -1008,9 +1010,10 @@ Initial release
 
 <!-- linkspector-disable -->
 <!-- markdownlint-disable-next-line MD053 -->
-[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.3.4...main
-[v2.3.4]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.3.4
+[Unreleased]: https://github.com/synfinatic/aws-sso-cli/compare/v2.4.0...main
+[v2.4.0]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.4.0
 <!-- linkspector-enable -->
+[v2.3.4]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.3.4
 [v2.3.3]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.3.3
 [v2.3.2]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.3.2
 [v2.3.1]: https://github.com/synfinatic/aws-sso-cli/releases/tag/v2.3.1
