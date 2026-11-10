@@ -48,8 +48,9 @@ possible to limit who can fetch AWS IAM security tokens from the service.
 
 For multi-user systems where the network/root user is not trusted,
 `aws-sso setup ecs ssl --self-signed` (see below) makes SSL/TLS practical to enable for
-most AWS SDKs, but the Python Boto SDK/AWS CLI [cannot easily trust a private CA for this endpoint](
-https://github.com/boto/boto3/issues/4188).
+most AWS SDKs, but the Python Boto SDK/AWS CLI
+[cannot easily trust a private CA for this endpoint](#python--aws-cli) until the proposed fix in
+[boto/botocore#3789](https://github.com/boto/botocore/pull/3789) is merged.
 
 ## Starting the ECS Server
 
@@ -214,9 +215,10 @@ botocore install itself (never the system trust store, and not the same file a b
 `python3` on your `$PATH` would report — Homebrew, pipx, and the official AWS CLI v2 installer
 each bundle their own isolated Python). It ignores both `AWS_CA_BUNDLE` and the OS trust store,
 so trusting this (or any) private CA has no effect on Python or the AWS CLI. This is tracked
-upstream at [aws/aws-cli#9016](https://github.com/aws/aws-cli/issues/9016) and can't be fixed
-from `aws-sso-cli`. Every other SDK above (Go, Node.js, Java/JVM, .NET) works once its OS or
-runtime trust store trusts the CA.
+upstream at [aws/aws-cli#9016](https://github.com/aws/aws-cli/issues/9016), with a fix proposed in
+[boto/botocore#3789](https://github.com/boto/botocore/pull/3789), and can't be fixed from
+`aws-sso-cli`. Every other SDK above (Go, Node.js, Java/JVM, .NET) works once its OS or runtime
+trust store trusts the CA.
 
 As a hack, to update the AWS CLI CA store, run:
 
@@ -641,5 +643,7 @@ variable is supported.
 
 `aws-sso setup ecs ssl --self-signed` (see [ECS Server SSL Certificate](#ecs-server-ssl-certificate))
 covers HTTPS for every AWS SDK runtime except Python/the AWS CLI. That gap is tracked upstream at
-[aws/aws-cli#9016](https://github.com/aws/aws-cli/issues/9016) — if you think this feature would be
-useful to you, please leave a comment so AWS knows they should prioritize this work.
+[aws/aws-cli#9016](https://github.com/aws/aws-cli/issues/9016) and a fix has been proposed in
+[boto/botocore#3789](https://github.com/boto/botocore/pull/3789). If you think this feature would be
+useful to you, please leave a comment on the PR so AWS knows they should prioritize reviewing it.
+Progress is tracked in [#1514](https://github.com/synfinatic/aws-sso-cli/issues/1514).
