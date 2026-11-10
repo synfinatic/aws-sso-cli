@@ -21,11 +21,15 @@ package main
  */
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/synfinatic/aws-sso-cli/internal/awsmock"
+	"github.com/synfinatic/aws-sso-cli/internal/storage"
 )
 
 // TestE2EProcess verifies that ProcessCmd.Run outputs valid AWS credential_process
@@ -55,4 +59,56 @@ func TestE2EProcess(t *testing.T) {
 	assert.Equal(t, "SECRETTEST12345", cpo.SecretAccessKey)
 	assert.Equal(t, "TOKENTEST12345", cpo.SessionToken)
 	assert.NotEmpty(t, cpo.Expiration, "Expiration should be set")
+}
+
+// TestE2EProcess_WorkflowMismatchKeepsRegistration covers #1521: a device_code
+// login (over SSH), then `process` run by something without SSH_TTY, which
+// detects pkce.  The registration must survive so the refresh token works
+// once the access token expires.
+func TestE2EProcess_WorkflowMismatchKeepsRegistration(t *testing.T) {
+	setup := newE2ESetupWithDefaults(t, "Default", nil, "pkce", "")
+	preAuth(t, setup) // device_code registration with a valid token
+	populateCache(t, setup)
+	key := AwsSSO.StoreKey()
+
+	ctx := newRunContext(setup, AUTH_REQUIRED)
+	require.True(t, checkAuth(ctx), "valid token must be accepted with the other workflow's registration")
+
+	var rcd storage.RegisterClientData
+	require.NoError(t, setup.Store.GetRegisterClientData(key, &rcd), "registration must not be deleted")
+	assert.Equal(t, "test-client-id", rcd.ClientId)
+
+	// the access token expires; the next process must refresh it silently
+	require.NoError(t, setup.Store.SaveCreateTokenResponse(context.Background(), key, storage.CreateTokenResponse{
+		AccessToken:  "expired-access-token",
+		ExpiresAt:    time.Now().Add(-1 * time.Hour).Unix(),
+		RefreshToken: "seeded-refresh-token",
+		TokenType:    "Bearer",
+	}))
+	setup.Server.SSOOIDC.QueueCreateToken(awsmock.OIDCTokenResponse{
+		AccessToken:  "refreshed-access-token",
+		ExpiresIn:    3600,
+		RefreshToken: "rotated-refresh-token",
+		TokenType:    "Bearer",
+	})
+	queueRoleCredentials(setup.Server)
+
+	ctx = newRunContext(setup, AUTH_REQUIRED)
+	ctx.Cli.Process = ProcessCmd{
+		AccountId: 123456789012,
+		Role:      "ReadOnly",
+	}
+	require.True(t, checkAuth(ctx), "expired token must be refreshed")
+	assert.Equal(t, []string{string(storage.GrantTypeRefreshToken)}, setup.Server.SSOOIDC.TokenGrants())
+
+	output := captureStdout(func() {
+		require.NoError(t, (&ProcessCmd{}).Run(ctx))
+	})
+	var cpo CredentialProcessOutput
+	require.NoError(t, json.Unmarshal([]byte(output), &cpo))
+	assert.Equal(t, "AKIDTEST12345", cpo.AccessKeyId)
+
+	var ctr storage.CreateTokenResponse
+	require.NoError(t, setup.Store.GetCreateTokenResponse(key, &ctr))
+	assert.Equal(t, "refreshed-access-token", ctr.AccessToken)
 }

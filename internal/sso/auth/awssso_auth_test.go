@@ -464,15 +464,21 @@ func TestValidAuthTokenPKCE(t *testing.T) { // nolint:dupl
 	assert.NoError(t, err)
 	assert.True(t, as.ValidAuthToken(context.Background()))
 
+	// A registration from the other workflow (e.g. login over SSH) can still
+	// refresh tokens, so it must be kept (#1521).
 	clientData.GrantTypes = []storage.GrantType{storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken}
 	err = jstore.SaveRegisterClientData(context.Background(), key, clientData)
 	assert.NoError(t, err)
-	assert.False(t, as.ValidAuthToken(context.Background()))
+	assert.True(t, as.ValidAuthToken(context.Background()))
+	got := storage.RegisterClientData{}
+	assert.NoError(t, jstore.GetRegisterClientData(key, &got), "other workflow's registration should be kept")
 
+	// No refresh_token support: force a new registration
 	clientData.GrantTypes = []storage.GrantType{storage.GrantTypeAuthorizationCode}
 	err = jstore.SaveRegisterClientData(context.Background(), key, clientData)
 	assert.NoError(t, err)
 	assert.False(t, as.ValidAuthToken(context.Background()))
+	assert.Error(t, jstore.GetRegisterClientData(key, &got), "registration without refresh_token should be deleted")
 }
 
 func TestValidAuthTokenDeviceCode(t *testing.T) { // nolint:dupl
@@ -492,15 +498,21 @@ func TestValidAuthTokenDeviceCode(t *testing.T) { // nolint:dupl
 	assert.NoError(t, err)
 	assert.True(t, as.ValidAuthToken(context.Background()))
 
+	// A registration from the other workflow (e.g. a pkce login, then a
+	// process in an SSH shell) can still refresh tokens, so keep it (#1521).
 	clientData.GrantTypes = []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken}
 	err = jstore.SaveRegisterClientData(context.Background(), key, clientData)
 	assert.NoError(t, err)
-	assert.False(t, as.ValidAuthToken(context.Background()))
+	assert.True(t, as.ValidAuthToken(context.Background()))
+	kept := storage.RegisterClientData{}
+	assert.NoError(t, jstore.GetRegisterClientData(key, &kept), "other workflow's registration should be kept")
 
+	// No refresh_token support: force a new registration
 	clientData.GrantTypes = []storage.GrantType{storage.GrantTypeDeviceCode}
 	err = jstore.SaveRegisterClientData(context.Background(), key, clientData)
 	assert.NoError(t, err)
 	assert.False(t, as.ValidAuthToken(context.Background()))
+	assert.Error(t, jstore.GetRegisterClientData(key, &kept), "registration without refresh_token should be deleted")
 
 	// A registration made before we sent the scope never gets a refresh token,
 	// but its token still works. Keep both until the next re-authentication
@@ -513,6 +525,91 @@ func TestValidAuthTokenDeviceCode(t *testing.T) { // nolint:dupl
 	got := storage.RegisterClientData{}
 	assert.NoError(t, jstore.GetRegisterClientData(key, &got), "scope-less registration should be kept")
 	assert.Equal(t, "test-client-id", got.ClientId)
+}
+
+// failDeleteStore wraps a SecureStorage so DeleteRegisterClientData fails.
+type failDeleteStore struct {
+	storage.SecureStorage
+}
+
+func (f failDeleteStore) DeleteRegisterClientData(_ context.Context, _ string) error {
+	return fmt.Errorf("test: delete failed")
+}
+
+func TestValidAuthTokenDeleteRegistrationFails(t *testing.T) {
+	// A registration without refresh_token must still force a new login,
+	// even if it can't be deleted from the secure store.
+	as, key, jstore := authTokenSetup(t, oidc.AuthWorkflowDeviceCode)
+	require.NoError(t, jstore.SaveRegisterClientData(context.Background(), key, storage.RegisterClientData{ // #nosec G101
+		ClientId:              "test-client-id",
+		ClientSecret:          "test-client-secret",
+		ClientSecretExpiresAt: 99999999999,
+		Scopes:                []string{SSO_ACCOUNT_ACCESS_SCOPE},
+		GrantTypes:            []storage.GrantType{storage.GrantTypeDeviceCode},
+	}))
+	as.store = failDeleteStore{SecureStorage: jstore}
+
+	assert.False(t, as.ValidAuthToken(context.Background()))
+	got := storage.RegisterClientData{}
+	assert.NoError(t, jstore.GetRegisterClientData(key, &got), "failed delete leaves the registration")
+}
+
+func TestValidAuthTokenWorkflowMismatchRefresh(t *testing.T) {
+	// #1521: login over SSH (device_code), then a process without SSH_TTY
+	// (pkce). Once the access token expires, the refresh must use the stored
+	// device_code registration.
+	as, key, jstore := authTokenSetup(t, oidc.AuthWorkflowPKCE)
+	require.NoError(t, jstore.SaveRegisterClientData(context.Background(), key, storage.RegisterClientData{ // #nosec G101
+		ClientId:              "dc-client-id",
+		ClientSecret:          "dc-client-secret",
+		ClientSecretExpiresAt: time.Now().Add(time.Hour).Unix(),
+		Scopes:                []string{SSO_ACCOUNT_ACCESS_SCOPE},
+		GrantTypes:            []storage.GrantType{storage.GrantTypeDeviceCode, storage.GrantTypeRefreshToken},
+	}))
+	require.NoError(t, jstore.SaveCreateTokenResponse(context.Background(), key, storage.CreateTokenResponse{
+		AccessToken:  "expired",
+		ExpiresAt:    time.Now().Add(-time.Hour).Unix(),
+		RefreshToken: "refresh-token",
+	}))
+	mock := &mockOIDCClient{
+		exchangeRefreshResult: storage.CreateTokenResponse{
+			AccessToken: "refreshed",
+			ExpiresIn:   3600,
+			ExpiresAt:   time.Now().Add(time.Hour).Unix(),
+		},
+	}
+	as.oidcClient = mock
+
+	assert.True(t, as.ValidAuthToken(context.Background()))
+	require.Len(t, mock.exchangeRefreshInputs, 1)
+	assert.Equal(t, "dc-client-id", mock.exchangeRefreshInputs[0].ClientID)
+	assert.Equal(t, "dc-client-secret", mock.exchangeRefreshInputs[0].ClientSecret)
+	assert.Equal(t, "refresh-token", mock.exchangeRefreshInputs[0].RefreshToken)
+
+	token := storage.CreateTokenResponse{}
+	require.NoError(t, jstore.GetCreateTokenResponse(key, &token))
+	assert.Equal(t, "refreshed", token.AccessToken)
+	assert.Equal(t, "refresh-token", token.RefreshToken)
+
+	rcd := storage.RegisterClientData{}
+	require.NoError(t, jstore.GetRegisterClientData(key, &rcd))
+	assert.Equal(t, "dc-client-id", rcd.ClientId)
+}
+
+func TestValidAuthTokenMissingRegistration(t *testing.T) {
+	// An expired token with a refresh token, but no registration: a refresh
+	// can't work without a client id, so don't try.
+	as, key, jstore := authTokenSetup(t, oidc.AuthWorkflowDeviceCode)
+	require.NoError(t, jstore.SaveCreateTokenResponse(context.Background(), key, storage.CreateTokenResponse{
+		AccessToken:  "expired",
+		ExpiresAt:    time.Now().Add(-time.Hour).Unix(),
+		RefreshToken: "refresh-token",
+	}))
+	mock := &mockOIDCClient{}
+	as.oidcClient = mock
+
+	assert.False(t, as.ValidAuthToken(context.Background()))
+	assert.Empty(t, mock.exchangeRefreshInputs)
 }
 
 func TestAuthenticateFailure(t *testing.T) {
@@ -1112,6 +1209,36 @@ func TestRegisterClientCachedScope(t *testing.T) {
 
 		assert.Empty(t, mock.registerClientInputs)
 		assert.Equal(t, "old-client-id", as.ClientData.ClientId)
+	})
+
+	t.Run("device_code registration is replaced for a pkce login", func(t *testing.T) {
+		as, mock, jstore, _ := newAS(t, oidc.AuthWorkflowPKCE, cached([]string{SSO_ACCOUNT_ACCESS_SCOPE}))
+		require.NoError(t, as.registerClient(context.Background(), false))
+
+		require.Len(t, mock.registerClientInputs, 1)
+		assert.Equal(t, []string{string(storage.GrantTypeAuthorizationCode), string(storage.GrantTypeRefreshToken)},
+			mock.registerClientInputs[0].GrantTypes)
+		assert.NotEmpty(t, mock.registerClientInputs[0].RedirectUris)
+		stored := storage.RegisterClientData{}
+		require.NoError(t, jstore.GetRegisterClientData(as.StoreKey(), &stored))
+		assert.Equal(t, "new-client-id", stored.ClientId)
+		assert.True(t, stored.SupportsAuthorizationCode())
+	})
+
+	t.Run("pkce registration is replaced for a device_code login", func(t *testing.T) {
+		pkce := cached([]string{SSO_ACCOUNT_ACCESS_SCOPE})
+		pkce.GrantTypes = []storage.GrantType{storage.GrantTypeAuthorizationCode, storage.GrantTypeRefreshToken}
+		as, mock, jstore, _ := newAS(t, oidc.AuthWorkflowDeviceCode, pkce)
+		require.NoError(t, as.registerClient(context.Background(), false))
+
+		require.Len(t, mock.registerClientInputs, 1)
+		assert.Equal(t, []string{string(storage.GrantTypeDeviceCode), string(storage.GrantTypeRefreshToken)},
+			mock.registerClientInputs[0].GrantTypes)
+		assert.Empty(t, mock.registerClientInputs[0].RedirectUris)
+		stored := storage.RegisterClientData{}
+		require.NoError(t, jstore.GetRegisterClientData(as.StoreKey(), &stored))
+		assert.Equal(t, "new-client-id", stored.ClientId)
+		assert.True(t, stored.SupportsGrantType(storage.GrantTypeDeviceCode))
 	})
 
 	t.Run("scope-less PKCE registration reloaded from the store file is reused", func(t *testing.T) {

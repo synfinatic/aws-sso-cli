@@ -61,6 +61,11 @@ However, `device_code` is the correct choice for remote or headless environments
 `aws-sso` does not run on the same machine as the browser, since PKCE relies
 on a loopback redirect that is not reachable in those environments.
 
+If `AuthWorkflow` is not set, `aws-sso` uses `device_code` when `SSH_TTY` or
+`WSL_DISTRO_NAME` is set, and `pkce` otherwise. If you log in over SSH but other tools on that
+host run `aws-sso` without `SSH_TTY` (for example as a `credential_process`), set
+`AuthWorkflow` explicitly so every process uses the same workflow.
+
 See [AuthWorkflow](config.md#authworkflow) for global configuration examples.
 
 ---
