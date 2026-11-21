@@ -85,6 +85,10 @@ Priority is given to:
 * `AWS_PROFILE` environment variable (works with both SSO and static profiles)
 * Prompt user interactively
 
+An `--arn` given on the command line wins over `--account` and `--role`.  But if the ARN
+only comes from `$AWS_SSO_ROLE_ARN` (for example after `eval`), an explicit `--account` and
+`--role` on the command line win instead.
+
 ---
 
 ### credentials
