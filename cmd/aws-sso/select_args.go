@@ -20,6 +20,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/synfinatic/aws-sso-cli/internal/awsparse"
 )
@@ -72,7 +73,11 @@ func (a *SelectCliArgs) Update(ctx *RunContext) error {
 		return nil
 	}
 
-	if a.Arn != "" {
+	// An ARN that only came from $AWS_SSO_ROLE_ARN (e.g. exported by `eval`)
+	// must not override an explicit --account and --role.  An explicit --arn
+	// still wins.
+	envArn := a.Arn == os.Getenv("AWS_SSO_ROLE_ARN")
+	if a.Arn != "" && (!envArn || a.AccountId == 0 || a.RoleName == "") {
 		accountId, role, err := awsparse.ParseRoleARN(a.Arn)
 		if err != nil {
 			return &InvalidArgsError{msg: "Invalid --arn %s", arg: a.Arn}

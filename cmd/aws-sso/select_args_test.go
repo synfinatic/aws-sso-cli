@@ -85,3 +85,47 @@ func TestSelectCliArgsUpdate_NoArgs(t *testing.T) {
 	var nErr *NoRoleSelectedError
 	assert.ErrorAs(t, err, &nErr)
 }
+
+func TestSelectCliArgsUpdate_EnvArnVsAccountRole(t *testing.T) {
+	ctx := &RunContext{Cli: &CLI{}}
+	envArn := "arn:aws:iam::111111111111:role/EnvRole"
+
+	t.Run("ARN from env loses to explicit account and role", func(t *testing.T) {
+		t.Setenv("AWS_SSO_ROLE_ARN", envArn)
+		a := NewSelectCliArgs(envArn, 222222222222, "FlagRole", "")
+		assert.NoError(t, a.Update(ctx))
+		assert.Equal(t, int64(222222222222), a.AccountId)
+		assert.Equal(t, "FlagRole", a.RoleName)
+	})
+
+	t.Run("explicit --arn wins over account and role", func(t *testing.T) {
+		t.Setenv("AWS_SSO_ROLE_ARN", "")
+		a := NewSelectCliArgs(envArn, 222222222222, "FlagRole", "")
+		assert.NoError(t, a.Update(ctx))
+		assert.Equal(t, int64(111111111111), a.AccountId)
+		assert.Equal(t, "EnvRole", a.RoleName)
+	})
+
+	t.Run("ARN from env alone is still used", func(t *testing.T) {
+		t.Setenv("AWS_SSO_ROLE_ARN", envArn)
+		a := NewSelectCliArgs(envArn, 0, "", "")
+		assert.NoError(t, a.Update(ctx))
+		assert.Equal(t, int64(111111111111), a.AccountId)
+		assert.Equal(t, "EnvRole", a.RoleName)
+	})
+
+	t.Run("ARN from env with only one of account or role is still used", func(t *testing.T) {
+		t.Setenv("AWS_SSO_ROLE_ARN", envArn)
+		a := NewSelectCliArgs(envArn, 222222222222, "", "")
+		assert.NoError(t, a.Update(ctx))
+		assert.Equal(t, int64(111111111111), a.AccountId)
+		assert.Equal(t, "EnvRole", a.RoleName)
+	})
+
+	t.Run("only account set without ARN: InvalidArgsError", func(t *testing.T) {
+		t.Setenv("AWS_SSO_ROLE_ARN", "")
+		a := NewSelectCliArgs("", 222222222222, "", "")
+		var iErr *InvalidArgsError
+		assert.ErrorAs(t, a.Update(ctx), &iErr)
+	})
+}

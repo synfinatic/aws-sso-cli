@@ -3,6 +3,11 @@
 
 ## [Unreleased]
 
+### Bugs
+
+* Fix `console`, `exec` and `ecs load` ignoring an explicit `--account` and `--role` when
+  `$AWS_SSO_ROLE_ARN` is set (e.g. after `eval`) #1525
+
 ## [v2.4.1] -- 2026-11-10
 
 ### Bugs
